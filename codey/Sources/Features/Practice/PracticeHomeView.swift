@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct PracticeHomeView: View {
+    @Binding var selectedTab: AppTab
+
     var body: some View {
         ScrollView {
             VStack(spacing: CodeySpacing.md) {
@@ -14,29 +16,28 @@ struct PracticeHomeView: View {
                                 .font(.codeyHeadline)
                         }
 
-                        Text("Your daily study deck is ready. Sprint 2 will bring flashcard swiping, spaced repetition, and timed quiz modes.")
+                        Text("Pick a topic and choose Practice for flashcard review or Quiz to earn XP.")
                             .font(.codeySubheadline)
                             .foregroundStyle(ThemeColor.muted)
 
                         HStack {
-                            CodeyBadge("0 cards reviewed", variant: .neutral)
-                            CodeyBadge("Mixed difficulty", variant: .warning)
+                            CodeyBadge("Flashcards", variant: .neutral)
+                            CodeyBadge("XP in Quiz mode", variant: .success)
                         }
 
-                        CodeyProgress(value: 0, label: "Today's progress")
-
-                        CodeyButton("Start Practice", variant: .ghost, size: .lg) {}
+                        CodeyButton("Browse Topics", variant: .primary, size: .lg) {
+                            selectedTab = .topics
+                        }
                     }
                 }
 
                 CodeyCard {
                     VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                        Text("Coming in Sprint 2")
+                        Text("How it works")
                             .font(.codeyHeadline)
-                        Text("Swipe through flashcards, track answer streaks, and earn XP for every correct response.")
+                        Text("Practice mode lets you swipe through flashcards with tap-to-reveal answers — no grading. Quiz mode tests you with multiple choice and awards XP with streak bonuses.")
                             .font(.codeySubheadline)
                             .foregroundStyle(ThemeColor.muted)
-                        CodeyButton("Browse Topics", variant: .outline) {}
                     }
                 }
             }
@@ -49,7 +50,7 @@ struct PracticeHomeView: View {
 
 #Preview {
     NavigationStack {
-        PracticeHomeView()
+        PracticeHomeView(selectedTab: .constant(.practice))
     }
-    .modelContainer(PreviewContainer.make())
+    .modelContainer(ModelContainerFactory.makePreview())
 }

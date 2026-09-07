@@ -1,15 +1,25 @@
 import SwiftData
 import SwiftUI
 
+enum AppTab: Hashable {
+    case practice
+    case topics
+    case analytics
+    case settings
+}
+
 struct MainTabView: View {
+    @State private var selectedTab: AppTab = .practice
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
-                PracticeHomeView()
+                PracticeHomeView(selectedTab: $selectedTab)
             }
             .tabItem {
                 Label("Practice", systemImage: "square.stack.fill")
             }
+            .tag(AppTab.practice)
 
             NavigationStack {
                 TopicListView()
@@ -17,6 +27,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Topics", systemImage: "folder.fill")
             }
+            .tag(AppTab.topics)
 
             NavigationStack {
                 AnalyticsDashboardView()
@@ -24,6 +35,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Analytics", systemImage: "chart.bar.xaxis")
             }
+            .tag(AppTab.analytics)
 
             NavigationStack {
                 SettingsView()
@@ -31,11 +43,12 @@ struct MainTabView: View {
             .tabItem {
                 Label("Settings", systemImage: "gearshape.fill")
             }
+            .tag(AppTab.settings)
         }
     }
 }
 
 #Preview {
     MainTabView()
-        .modelContainer(PreviewContainer.make())
+        .modelContainer(ModelContainerFactory.makePreview())
 }
