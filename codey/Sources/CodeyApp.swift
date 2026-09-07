@@ -4,7 +4,7 @@ import SwiftUI
 struct CodeyApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            LoadingView()
         }
     }
 }
