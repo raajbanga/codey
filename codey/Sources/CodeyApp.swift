@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 @main
@@ -6,5 +7,6 @@ struct CodeyApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [UserProfile.self, Topic.self, Question.self])
     }
 }
