@@ -1,17 +1,20 @@
+import SwiftData
 import SwiftUI
 
 public struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+
     public init() {}
 
     public var body: some View {
-        Text("Hello, World!")
-            .padding()
+        MainTabView()
+            .task {
+                DataSeeder.seedIfNeeded(context: modelContext)
+            }
     }
 }
 
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
-    }
+#Preview {
+    ContentView()
+        .modelContainer(PreviewContainer.make())
 }
