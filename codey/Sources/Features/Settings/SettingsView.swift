@@ -34,7 +34,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                         Text("Local Data")
                             .font(.codeyHeadline)
-                        Text("All data is stored on-device. Sprint 2 will add export and sync options.")
+                        Text("All data is stored on-device.")
                             .font(.codeySubheadline)
                             .foregroundStyle(ThemeColor.muted)
                         CodeyBadge("Local only", variant: .success)
@@ -74,5 +74,5 @@ struct SettingsView: View {
     NavigationStack {
         SettingsView()
     }
-    .modelContainer(PreviewContainer.make())
+    .modelContainer(ModelContainerFactory.makePreview())
 }

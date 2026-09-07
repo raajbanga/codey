@@ -9,7 +9,7 @@ enum Difficulty: String, Codable {
 
 @Model
 final class Question {
-    var id: UUID
+    @Attribute(.unique) var id: String
     var prompt: String
     var options: [String]
     var correctOptionIndex: Int
@@ -18,7 +18,7 @@ final class Question {
     var topic: Topic?
 
     init(
-        id: UUID = UUID(),
+        id: String,
         prompt: String,
         options: [String],
         correctOptionIndex: Int,

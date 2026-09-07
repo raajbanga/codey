@@ -1,111 +1,101 @@
 import Foundation
 import SwiftData
+import os
+
+enum DataSeederError: Error, LocalizedError {
+    case insufficientTopics(found: Int, expected: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .insufficientTopics(let found, let expected):
+            return "Question bank loaded \(found) topics; expected \(expected)"
+        }
+    }
+}
 
 enum DataSeeder {
+    /// Bump when the bundled question bank changes materially.
+    static let seedVersion = 2
+    private static let seedVersionKey = "codey.seedVersion"
+    private static let logger = Logger(subsystem: "dev.tuist.codey", category: "DataSeeder")
+
+    static func needsSeeding(context: ModelContext) -> Bool {
+        let storedVersion = UserDefaults.standard.integer(forKey: seedVersionKey)
+        let topicCount = fetchCount(Topic.self, context: context)
+        return storedVersion != seedVersion || topicCount < QuestionBankLoader.expectedTopicCount
+    }
+
     static func seedIfNeeded(context: ModelContext) {
-        let descriptor = FetchDescriptor<Topic>()
-        let existingTopics = (try? context.fetch(descriptor)) ?? []
-        guard existingTopics.isEmpty else { return }
-
-        let profile = UserProfile(
-            username: "Codey Learner",
-            totalXP: 1250,
-            currentStreak: 7,
-            lastActiveDate: .now
-        )
-        context.insert(profile)
-
-        let dataStructures = Topic(
-            title: "Data Structures",
-            summary: "Arrays, linked lists, stacks, queues, and hash tables.",
-            iconName: "square.stack.3d.up.fill"
-        )
-
-        let algorithms = Topic(
-            title: "Algorithms",
-            summary: "Sorting, searching, recursion, and complexity analysis.",
-            iconName: "function"
-        )
-
-        let dsQuestions = [
-            Question(
-                prompt: "What is the average time complexity of accessing an element in a dynamic array by index?",
-                options: ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
-                correctOptionIndex: 0,
-                explanation: "Dynamic arrays support constant-time random access via index.",
-                difficulty: .easy,
-                topic: dataStructures
-            ),
-            Question(
-                prompt: "Which data structure uses FIFO (First In, First Out) ordering?",
-                options: ["Stack", "Queue", "Binary Tree", "Hash Map"],
-                correctOptionIndex: 1,
-                explanation: "Queues process elements in the order they were enqueued.",
-                difficulty: .easy,
-                topic: dataStructures
-            ),
-            Question(
-                prompt: "What is the worst-case time complexity of lookup in a hash table with many collisions?",
-                options: ["O(1)", "O(log n)", "O(n)", "O(n²)"],
-                correctOptionIndex: 2,
-                explanation: "With poor hashing or many collisions, lookup degrades to linear scan.",
-                difficulty: .medium,
-                topic: dataStructures
-            ),
-        ]
-
-        let algoQuestions = [
-            Question(
-                prompt: "What is the time complexity of binary search on a sorted array?",
-                options: ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
-                correctOptionIndex: 1,
-                explanation: "Binary search halves the search space each step, giving O(log n).",
-                difficulty: .easy,
-                topic: algorithms
-            ),
-            Question(
-                prompt: "Which sorting algorithm has a best-case time complexity of O(n)?",
-                options: ["Merge Sort", "Quick Sort", "Insertion Sort", "Heap Sort"],
-                correctOptionIndex: 2,
-                explanation: "Insertion sort runs in O(n) when the input is already nearly sorted.",
-                difficulty: .medium,
-                topic: algorithms
-            ),
-            Question(
-                prompt: "What does the Master Theorem help analyze?",
-                options: [
-                    "Graph traversal order",
-                    "Divide-and-conquer recurrence relations",
-                    "Hash collision resolution",
-                    "Memory allocation patterns",
-                ],
-                correctOptionIndex: 1,
-                explanation: "The Master Theorem provides closed-form solutions for common recurrences.",
-                difficulty: .hard,
-                topic: algorithms
-            ),
-        ]
-
-        dataStructures.questions = dsQuestions
-        algorithms.questions = algoQuestions
-
-        context.insert(dataStructures)
-        context.insert(algorithms)
-
-        try? context.save()
+        guard needsSeeding(context: context) else { return }
+        do {
+            let topics = try QuestionBankLoader.loadTopics()
+            try seed(context: context, topics: topics)
+        } catch {
+            logger.error("Seed failed: \(error.localizedDescription)")
+        }
     }
 
     static func resetAllData(context: ModelContext) {
-        let profiles = (try? context.fetch(FetchDescriptor<UserProfile>())) ?? []
-        profiles.forEach { context.delete($0) }
+        clearContent(context: context)
+        UserDefaults.standard.removeObject(forKey: seedVersionKey)
+        do {
+            let topics = try QuestionBankLoader.loadTopics()
+            try seed(context: context, topics: topics)
+        } catch {
+            logger.error("Reset failed: \(error.localizedDescription)")
+        }
+    }
 
-        let topics = (try? context.fetch(FetchDescriptor<Topic>())) ?? []
-        topics.forEach { context.delete($0) }
+    static func seed(context: ModelContext, topics: [Topic]) throws {
+        clearContent(context: context)
+        try insertSeedData(context: context, topics: topics)
+    }
 
-        let questions = (try? context.fetch(FetchDescriptor<Question>())) ?? []
-        questions.forEach { context.delete($0) }
+    static func insertSeedData(context: ModelContext, topics: [Topic]) throws {
+        guard topics.count >= QuestionBankLoader.expectedTopicCount else {
+            throw DataSeederError.insufficientTopics(
+                found: topics.count,
+                expected: QuestionBankLoader.expectedTopicCount
+            )
+        }
 
+        context.insert(
+            UserProfile(
+                username: "Codey Learner",
+                totalXP: 1250,
+                currentStreak: 7,
+                lastActiveDate: .now
+            )
+        )
+
+        topics.forEach { topic in
+            context.insert(topic)
+            topic.questions.forEach { context.insert($0) }
+        }
+
+        try context.save()
+        UserDefaults.standard.set(seedVersion, forKey: seedVersionKey)
+        logger.info("Seeded \(topics.count) topics, \(topics.reduce(0) { $0 + $1.questions.count }) questions")
+    }
+
+    private static func clearContent(context: ModelContext) {
+        deleteAll(UserProfile.self, context: context)
+        deleteAll(Question.self, context: context)
+        deleteAll(Topic.self, context: context)
         try? context.save()
-        seedIfNeeded(context: context)
+    }
+
+    private static func fetchCount<T: PersistentModel>(
+        _ type: T.Type,
+        context: ModelContext
+    ) -> Int {
+        (try? context.fetchCount(FetchDescriptor<T>())) ?? 0
+    }
+
+    private static func deleteAll<T: PersistentModel>(
+        _ type: T.Type,
+        context: ModelContext
+    ) {
+        ((try? context.fetch(FetchDescriptor<T>())) ?? []).forEach { context.delete($0) }
     }
 }

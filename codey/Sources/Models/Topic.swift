@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class Topic {
-    var id: UUID
+    @Attribute(.unique) var id: String
     var title: String
     var summary: String
     var iconName: String
@@ -11,7 +11,7 @@ final class Topic {
     var questions: [Question]
 
     init(
-        id: UUID = UUID(),
+        id: String,
         title: String,
         summary: String,
         iconName: String,

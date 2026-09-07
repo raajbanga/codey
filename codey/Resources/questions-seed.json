@@ -1,0 +1,603 @@
+{
+  "schemaVersion": 1,
+  "topics": [
+    {
+      "id": "topic-data-structures",
+      "title": "Data Structures",
+      "summary": "Arrays, linked lists, trees, hash maps, and the trade-offs between them.",
+      "iconName": "square.stack.3d.up.fill"
+    },
+    {
+      "id": "topic-algorithms",
+      "title": "Algorithms",
+      "summary": "Sorting, searching, recursion, and divide-and-conquer strategies.",
+      "iconName": "function"
+    },
+    {
+      "id": "topic-os-basics",
+      "title": "OS Basics",
+      "summary": "Processes, threads, memory management, and scheduling fundamentals.",
+      "iconName": "cpu"
+    },
+    {
+      "id": "topic-databases",
+      "title": "Databases",
+      "summary": "Relational models, SQL, indexing, and transaction basics.",
+      "iconName": "cylinder.split.1x2.fill"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q-ds-001",
+      "topicId": "topic-data-structures",
+      "prompt": "What is the average-case time complexity of a hash table lookup?",
+      "options": ["O(1)", "O(n)", "O(log n)", "O(n^2)"],
+      "correctOptionIndex": 0,
+      "explanation": "With a good hash function and low load factor, lookups are amortized O(1). Worst case (many collisions) degrades to O(n).",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-002",
+      "topicId": "topic-data-structures",
+      "prompt": "What is the average time complexity of accessing an element in a dynamic array by index?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "correctOptionIndex": 0,
+      "explanation": "Dynamic arrays support constant-time random access via index.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-003",
+      "topicId": "topic-data-structures",
+      "prompt": "Which data structure uses FIFO (First In, First Out) ordering?",
+      "options": ["Stack", "Queue", "Binary Tree", "Hash Map"],
+      "correctOptionIndex": 1,
+      "explanation": "Queues process elements in the order they were enqueued.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-004",
+      "topicId": "topic-data-structures",
+      "prompt": "What is the worst-case time complexity of lookup in a hash table with many collisions?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n²)"],
+      "correctOptionIndex": 2,
+      "explanation": "With poor hashing or many collisions, lookup degrades to linear scan.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-005",
+      "topicId": "topic-data-structures",
+      "prompt": "In a balanced binary search tree, what is the time complexity of search?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "correctOptionIndex": 1,
+      "explanation": "A balanced BST halves the search space at each level, giving O(log n) search.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-006",
+      "topicId": "topic-data-structures",
+      "prompt": "Which data structure uses LIFO (Last In, First Out) ordering?",
+      "options": ["Queue", "Stack", "Heap", "Deque"],
+      "correctOptionIndex": 1,
+      "explanation": "Stacks push and pop from the same end, so the most recently added element is removed first.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-007",
+      "topicId": "topic-data-structures",
+      "prompt": "What is the time complexity of inserting at the head of a singly linked list (given a pointer to the head)?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "correctOptionIndex": 0,
+      "explanation": "Head insertion only requires updating a few pointers, regardless of list size.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-008",
+      "topicId": "topic-data-structures",
+      "prompt": "What property does a min-heap maintain?",
+      "options": [
+        "Every parent is smaller than or equal to its children",
+        "Every parent is larger than or equal to its children",
+        "The tree is always perfectly balanced",
+        "All leaves are at the same depth"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "In a min-heap, the smallest element is at the root and each parent is ≤ its children — ideal for priority queues.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-009",
+      "topicId": "topic-data-structures",
+      "prompt": "For a sparse graph with few edges, which representation is typically more space-efficient?",
+      "options": ["Adjacency matrix", "Adjacency list", "Incidence matrix", "Edge list with full vertex pairs"],
+      "correctOptionIndex": 1,
+      "explanation": "Adjacency lists store only existing edges, while an adjacency matrix uses O(V²) space regardless of edge count.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-010",
+      "topicId": "topic-data-structures",
+      "prompt": "When is a hash set preferred over a sorted array for lookups?",
+      "options": [
+        "When you need ordered traversal",
+        "When you need average O(1) membership checks on unsorted data",
+        "When memory must be minimized at all costs",
+        "When duplicate values must be preserved in order"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Hash sets provide fast average-case contains checks without maintaining sorted order.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-011",
+      "topicId": "topic-data-structures",
+      "prompt": "Why is a linked list often preferred over a dynamic array for frequent insertions at the front?",
+      "options": [
+        "Linked lists have O(1) random access",
+        "Linked lists avoid shifting all existing elements on each front insert",
+        "Linked lists always use less memory than arrays",
+        "Linked lists guarantee cache-friendly memory layout"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Array front inserts require shifting O(n) elements; linked list head inserts are O(1).",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-012",
+      "topicId": "topic-data-structures",
+      "prompt": "Why are B-trees commonly used in database indexes?",
+      "options": [
+        "They guarantee O(1) lookup in all cases",
+        "They stay balanced and minimize disk reads with high branching factor",
+        "They store data only in leaf nodes with no internal keys",
+        "They are simpler to implement than hash tables"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "B-trees are shallow and disk-friendly, reducing I/O compared to binary tree structures.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-algo-001",
+      "topicId": "topic-algorithms",
+      "prompt": "What is the time complexity of binary search on a sorted array?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "correctOptionIndex": 1,
+      "explanation": "Binary search halves the search space each step, giving O(log n).",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-002",
+      "topicId": "topic-algorithms",
+      "prompt": "Which sorting algorithm has a best-case time complexity of O(n)?",
+      "options": ["Merge Sort", "Quick Sort", "Insertion Sort", "Heap Sort"],
+      "correctOptionIndex": 2,
+      "explanation": "Insertion sort runs in O(n) when the input is already nearly sorted.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-003",
+      "topicId": "topic-algorithms",
+      "prompt": "What does the Master Theorem help analyze?",
+      "options": [
+        "Graph traversal order",
+        "Divide-and-conquer recurrence relations",
+        "Hash collision resolution",
+        "Memory allocation patterns"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "The Master Theorem provides closed-form solutions for common recurrences.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-algo-004",
+      "topicId": "topic-algorithms",
+      "prompt": "Which algorithm design paradigm breaks a problem into independent subproblems, solves them recursively, and combines results?",
+      "options": ["Greedy", "Dynamic Programming", "Divide and Conquer", "Backtracking"],
+      "correctOptionIndex": 2,
+      "explanation": "Divide and conquer splits the problem, solves subproblems independently, and merges results.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-005",
+      "topicId": "topic-algorithms",
+      "prompt": "What is the average-case time complexity of Quick Sort?",
+      "options": ["O(n)", "O(n log n)", "O(n²)", "O(log n)"],
+      "correctOptionIndex": 1,
+      "explanation": "Quick Sort averages O(n log n) with good pivot selection, though worst case is O(n²).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-006",
+      "topicId": "topic-algorithms",
+      "prompt": "What is the time and auxiliary space complexity of Merge Sort?",
+      "options": ["O(n log n) time, O(1) space", "O(n log n) time, O(n) space", "O(n²) time, O(n) space", "O(n) time, O(log n) space"],
+      "correctOptionIndex": 1,
+      "explanation": "Merge Sort always runs in O(n log n) but requires O(n) extra space for merging.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-007",
+      "topicId": "topic-algorithms",
+      "prompt": "Which traversal uses a queue and explores neighbors level by level?",
+      "options": ["Depth-First Search (DFS)", "Breadth-First Search (BFS)", "Dijkstra's algorithm", "Topological sort"],
+      "correctOptionIndex": 1,
+      "explanation": "BFS processes nodes in order of increasing distance from the start, using a FIFO queue.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-008",
+      "topicId": "topic-algorithms",
+      "prompt": "What is the key difference between greedy algorithms and dynamic programming?",
+      "options": [
+        "Greedy always uses recursion; DP never does",
+        "Greedy makes locally optimal choices without revisiting; DP solves overlapping subproblems with stored results",
+        "Greedy is only for graphs; DP is only for arrays",
+        "Greedy guarantees optimal solutions; DP does not"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Greedy commits to the best immediate choice; DP builds optimal solutions by caching subproblem answers.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-algo-009",
+      "topicId": "topic-algorithms",
+      "prompt": "What problem does Dijkstra's algorithm solve?",
+      "options": [
+        "Finding a minimum spanning tree",
+        "Finding shortest paths from a source in a graph with non-negative edge weights",
+        "Detecting cycles in a directed graph",
+        "Sorting vertices in topological order"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Dijkstra's algorithm computes shortest paths from a single source when edge weights are non-negative.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-010",
+      "topicId": "topic-algorithms",
+      "prompt": "The two-pointer technique is commonly used on:",
+      "options": [
+        "Unsorted arrays to find pairs meeting a condition in linear time",
+        "Binary trees to compute height",
+        "Hash tables to resolve collisions",
+        "Graphs to find articulation points"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Two pointers on a sorted (or appropriately structured) array can solve many pair/sum problems in O(n).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-011",
+      "topicId": "topic-algorithms",
+      "prompt": "What is the purpose of a base case in recursion?",
+      "options": [
+        "To improve average-case performance",
+        "To stop the recursion and prevent infinite self-calls",
+        "To allocate heap memory for the call stack",
+        "To convert the algorithm from top-down to bottom-up"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Without a base case, recursive calls never terminate.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-012",
+      "topicId": "topic-algorithms",
+      "prompt": "A sorting algorithm is 'stable' if:",
+      "options": [
+        "It always runs in O(n log n) time",
+        "It preserves the relative order of equal elements",
+        "It uses O(1) extra space",
+        "It never compares adjacent elements"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Stability matters when sorting records by multiple keys — equal primary keys keep their original order.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-os-001",
+      "topicId": "topic-os-basics",
+      "prompt": "What is the main difference between a process and a thread?",
+      "options": [
+        "Processes share memory; threads do not",
+        "Threads share a process's memory space; processes do not",
+        "Processes are faster than threads",
+        "Threads require more memory than processes"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Threads within the same process share address space; processes have isolated memory.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-002",
+      "topicId": "topic-os-basics",
+      "prompt": "Which scheduling algorithm can cause starvation?",
+      "options": ["Round Robin", "First-Come First-Served", "Priority Scheduling", "FIFO"],
+      "correctOptionIndex": 2,
+      "explanation": "Low-priority processes may never run if higher-priority work keeps arriving.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-003",
+      "topicId": "topic-os-basics",
+      "prompt": "What does virtual memory allow an OS to do?",
+      "options": [
+        "Run programs faster than physical RAM allows",
+        "Give each process the illusion of a large, private address space",
+        "Eliminate the need for a hard drive",
+        "Share CPU time equally among processes"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Virtual memory maps process addresses to physical RAM or disk, giving each process its own address space.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-004",
+      "topicId": "topic-os-basics",
+      "prompt": "A deadlock requires which of the following conditions (Coffman conditions)?",
+      "options": [
+        "Preemption, timeout, and priority inversion",
+        "Mutual exclusion, hold and wait, no preemption, circular wait",
+        "Paging, segmentation, and swapping",
+        "Caching, buffering, and spooling"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "All four Coffman conditions must hold simultaneously for deadlock to occur.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-os-005",
+      "topicId": "topic-os-basics",
+      "prompt": "What is context switching?",
+      "options": [
+        "Switching between user mode and kernel mode",
+        "Saving the state of one process/thread and loading another's",
+        "Moving data from disk to RAM",
+        "Changing the priority of a running process"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Context switching saves the current execution state and restores another's so the CPU can run a different task.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-006",
+      "topicId": "topic-os-basics",
+      "prompt": "What is the main purpose of kernel mode?",
+      "options": [
+        "Run user applications with fewer permissions",
+        "Execute privileged operations like I/O and memory management",
+        "Display the graphical user interface",
+        "Compile source code into machine instructions"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Kernel mode allows the OS to perform protected hardware and system operations unsafe for user mode.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-007",
+      "topicId": "topic-os-basics",
+      "prompt": "How does paging differ from segmentation?",
+      "options": [
+        "Paging uses fixed-size blocks; segmentation uses variable-size logical segments",
+        "Paging is only used for cache; segmentation is only for disk",
+        "Paging requires more programmer effort than segmentation",
+        "Segmentation eliminates the need for a page table"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Paging splits memory into equal pages; segmentation divides a program into logical units like code, stack, and heap.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-os-008",
+      "topicId": "topic-os-basics",
+      "prompt": "In Round Robin scheduling, what determines how long each process runs before being preempted?",
+      "options": ["Priority level", "Time quantum", "Process arrival order only", "Available physical memory"],
+      "correctOptionIndex": 1,
+      "explanation": "Each process gets a fixed time slice (quantum); when it expires, the CPU moves to the next ready process.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-009",
+      "topicId": "topic-os-basics",
+      "prompt": "What is the primary difference between a mutex and a semaphore?",
+      "options": [
+        "A mutex allows multiple threads in; a semaphore allows only one",
+        "A mutex is typically binary (one owner); a semaphore can permit a counted number of concurrent accesses",
+        "A mutex is for processes only; a semaphore is for threads only",
+        "A mutex prevents deadlock; a semaphore causes deadlock"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Mutexes enforce mutual exclusion for one holder; counting semaphores can allow N simultaneous accesses.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-010",
+      "topicId": "topic-os-basics",
+      "prompt": "What is thrashing?",
+      "options": [
+        "When the CPU runs at 100% utilization efficiently",
+        "When excessive paging causes the system to spend most time on disk I/O instead of useful work",
+        "When all processes finish simultaneously",
+        "When a thread exits before acquiring a lock"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Thrashing occurs when there is insufficient physical memory and constant page faults dominate performance.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-011",
+      "topicId": "topic-os-basics",
+      "prompt": "Why does a program use a system call?",
+      "options": [
+        "To bypass the OS entirely for faster I/O",
+        "To request a privileged service from the operating system kernel",
+        "To allocate stack space for local variables",
+        "To convert high-level code to bytecode"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "System calls are the controlled interface through which user programs ask the kernel to perform protected operations.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-012",
+      "topicId": "topic-os-basics",
+      "prompt": "The producer-consumer problem primarily illustrates the need for:",
+      "options": [
+        "Faster CPU clock speeds",
+        "Synchronization between threads sharing a bounded buffer",
+        "Virtual memory address translation",
+        "Static linking of libraries"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Producers and consumers must coordinate access to shared buffer space to avoid race conditions and overflow/underflow.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-db-001",
+      "topicId": "topic-databases",
+      "prompt": "Which SQL clause filters rows before grouping?",
+      "options": ["HAVING", "WHERE", "ORDER BY", "GROUP BY"],
+      "correctOptionIndex": 1,
+      "explanation": "WHERE filters rows before aggregation; HAVING filters after GROUP BY.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-002",
+      "topicId": "topic-databases",
+      "prompt": "What property ensures a transaction is all-or-nothing?",
+      "options": ["Consistency", "Isolation", "Atomicity", "Durability"],
+      "correctOptionIndex": 2,
+      "explanation": "Atomicity guarantees that either all operations in a transaction commit or none do.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-003",
+      "topicId": "topic-databases",
+      "prompt": "What is the primary purpose of a database index?",
+      "options": [
+        "To enforce referential integrity",
+        "To speed up data retrieval at the cost of extra storage and write overhead",
+        "To encrypt sensitive columns",
+        "To normalize tables to 3NF"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Indexes create lookup structures (like B-trees) that reduce query scan time.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-004",
+      "topicId": "topic-databases",
+      "prompt": "In a relational database, a foreign key is used to:",
+      "options": [
+        "Uniquely identify each row in a table",
+        "Reference a primary key in another table to enforce relationships",
+        "Index a column for faster search",
+        "Encrypt a column's values"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Foreign keys link rows across tables and enforce referential integrity.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-005",
+      "topicId": "topic-databases",
+      "prompt": "Which normal form eliminates partial dependencies on a composite primary key?",
+      "options": ["1NF", "2NF", "3NF", "BCNF"],
+      "correctOptionIndex": 1,
+      "explanation": "Second Normal Form (2NF) removes partial dependencies — non-key attributes must depend on the entire primary key.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-db-006",
+      "topicId": "topic-databases",
+      "prompt": "What does an INNER JOIN return?",
+      "options": [
+        "All rows from both tables regardless of match",
+        "Only rows where the join condition matches in both tables",
+        "All rows from the left table and matching rows from the right",
+        "Only rows that appear in exactly one table"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "INNER JOIN includes only rows with matching key values in both joined tables.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-007",
+      "topicId": "topic-databases",
+      "prompt": "Which isolation problem occurs when a transaction reads uncommitted data from another transaction?",
+      "options": ["Lost update", "Dirty read", "Non-repeatable read", "Phantom read"],
+      "correctOptionIndex": 1,
+      "explanation": "A dirty read sees data that may be rolled back if the other transaction aborts.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-008",
+      "topicId": "topic-databases",
+      "prompt": "How does a PRIMARY KEY differ from a UNIQUE constraint?",
+      "options": [
+        "PRIMARY KEY allows NULL; UNIQUE does not",
+        "PRIMARY KEY uniquely identifies a row and a table typically has one; UNIQUE allows one NULL (in SQL) and a table may have several",
+        "UNIQUE is faster than PRIMARY KEY for all queries",
+        "PRIMARY KEY automatically creates a foreign key"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Both enforce uniqueness, but PRIMARY KEY is the main row identifier and implies NOT NULL.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-009",
+      "topicId": "topic-databases",
+      "prompt": "What is the main goal of database normalization?",
+      "options": [
+        "Increase redundant storage for speed",
+        "Reduce data redundancy and improve data integrity",
+        "Eliminate all indexes",
+        "Convert relational data to JSON documents"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Normalization organizes data to minimize duplication and update anomalies.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-010",
+      "topicId": "topic-databases",
+      "prompt": "In ACID, what does Durability guarantee?",
+      "options": [
+        "Transactions execute in isolation from each other",
+        "Committed changes survive system failures",
+        "All constraints are validated before commit",
+        "Transactions are indivisible"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Once a transaction commits, its effects persist even if the system crashes immediately after.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-011",
+      "topicId": "topic-databases",
+      "prompt": "What is the best defense against SQL injection in application code?",
+      "options": [
+        "Building queries by concatenating user input",
+        "Using parameterized queries / prepared statements",
+        "Storing passwords in plain text",
+        "Disabling all database indexes"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Parameterized queries separate SQL structure from user data, preventing injected commands from executing.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-012",
+      "topicId": "topic-databases",
+      "prompt": "When is a NoSQL document store often a reasonable choice over a relational database?",
+      "options": [
+        "When complex multi-table joins and strict ACID across entities are the primary need",
+        "When schema is flexible and data is naturally hierarchical or document-shaped",
+        "When every query requires strong relational normalization",
+        "When SQL is required by regulation in all cases"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Document stores fit evolving schemas and nested data; relational DBs excel at structured relationships and complex joins.",
+      "difficulty": "hard"
+    }
+  ]
+}
