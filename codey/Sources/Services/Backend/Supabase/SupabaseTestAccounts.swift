@@ -16,28 +16,11 @@ enum SupabaseTestAccounts {
     /// A signed-out data client on a custom session (unit tests stub the
     /// network with a URLProtocol).
     static func dataClient(url: URL, key: String, configuration: URLSessionConfiguration) -> any RemoteDeckStore {
-        let client = SupabaseClient(
-            supabaseURL: url,
-            supabaseKey: key,
-            options: SupabaseClientOptions(
-                auth: .init(storage: KeychainSessionStorage(service: "edu.wku.cs360.codey.stub.\(UUID().uuidString)"),
-                            autoRefreshToken: false, emitLocalSessionAsInitialSession: true),
-                global: .init(session: URLSession(configuration: configuration))
-            )
-        )
-        return SupabaseDataClient(client: client)
+        SupabaseDataClient(client: makeClient(url: url, key: key, configuration: configuration))
     }
 
     static func signIn(url: URL, key: String, email: String, password: String) async throws -> Session {
-        let client = SupabaseClient(
-            supabaseURL: url,
-            supabaseKey: key,
-            options: SupabaseClientOptions(auth: .init(
-                storage: KeychainSessionStorage(service: "edu.wku.cs360.codey.integration.\(UUID().uuidString)"),
-                autoRefreshToken: false,
-                emitLocalSessionAsInitialSession: true
-            ), global: .init(session: URLSession(configuration: SupabaseServices.tlsConfiguration)))
-        )
+        let client = makeClient(url: url, key: key, configuration: SupabaseServices.tlsConfiguration)
         let session = try await client.auth.signIn(email: email, password: password)
         let userID = session.user.id
         return Session(
@@ -46,6 +29,22 @@ enum SupabaseTestAccounts {
             deleteAllDecks: {
                 try await client.from("decks").delete().eq("owner_id", value: userID.uuidString).execute()
             }
+        )
+    }
+
+    /// A client with its own throwaway Keychain service and no auto-refresh.
+    private static func makeClient(url: URL, key: String, configuration: URLSessionConfiguration) -> SupabaseClient {
+        SupabaseClient(
+            supabaseURL: url,
+            supabaseKey: key,
+            options: SupabaseClientOptions(
+                auth: .init(
+                    storage: KeychainSessionStorage(service: "edu.wku.cs360.codey.tests.\(UUID().uuidString)"),
+                    autoRefreshToken: false,
+                    emitLocalSessionAsInitialSession: true
+                ),
+                global: .init(session: URLSession(configuration: configuration))
+            )
         )
     }
 }

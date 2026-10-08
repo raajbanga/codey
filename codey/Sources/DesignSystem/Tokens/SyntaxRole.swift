@@ -4,35 +4,13 @@ import SwiftUI
 /// Prism token types (Textual, display) and tree-sitter captures
 /// (Runestone, editor). So a keyword is the same color in the builder and in
 /// study.
-enum SyntaxRole: CaseIterable {
+enum SyntaxRole: String, CaseIterable {
     case plain, keyword, type, string, number, comment, function, attribute
 
-    var color: Color {
-        switch self {
-        case .plain: CodeyColor.Syntax.plain
-        case .keyword: CodeyColor.Syntax.keyword
-        case .type: CodeyColor.Syntax.type
-        case .string: CodeyColor.Syntax.string
-        case .number: CodeyColor.Syntax.number
-        case .comment: CodeyColor.Syntax.comment
-        case .function: CodeyColor.Syntax.function
-        case .attribute: CodeyColor.Syntax.attribute
-        }
-    }
+    /// Asset-catalog name ("SyntaxKeyword"), also used by UIKit (Runestone).
+    var assetName: String { "Syntax" + rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
 
-    /// Asset name of `color`, for UIKit (Runestone).
-    var assetName: String {
-        switch self {
-        case .plain: "SyntaxPlain"
-        case .keyword: "SyntaxKeyword"
-        case .type: "SyntaxType"
-        case .string: "SyntaxString"
-        case .number: "SyntaxNumber"
-        case .comment: "SyntaxComment"
-        case .function: "SyntaxFunction"
-        case .attribute: "SyntaxAttribute"
-        }
-    }
+    var color: Color { Color(assetName) }
 
     /// Prism token type → role. Unknown tokens render plain.
     static let prismTokens: [String: SyntaxRole] = [

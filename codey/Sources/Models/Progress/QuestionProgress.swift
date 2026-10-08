@@ -28,6 +28,12 @@ extension CodeySchemaV4 {
 extension QuestionProgress {
     var isRetired: Bool { retiredAt != nil }
 
+    /// FR-28: retired at least `reviewAfterDays` ago.
+    func isDueForReview(now: Date, config: GatingConfig = .standard) -> Bool {
+        guard let retiredAt else { return false }
+        return now >= retiredAt.addingTimeInterval(TimeInterval(config.reviewAfterDays) * 86_400)
+    }
+
     /// FR-23/24/28. Correct: streak +1; a review retires again at once,
     /// otherwise retire at the threshold. Wrong: streak resets; a review
     /// stays active as a normal question. Returns true if this answer
@@ -56,10 +62,8 @@ extension QuestionProgress {
     /// as a review. Returns true if it was returned.
     @discardableResult
     func returnForReviewIfDue(now: Date, config: GatingConfig = .standard) -> Bool {
-        guard let retiredAt,
-              now >= retiredAt.addingTimeInterval(TimeInterval(config.reviewAfterDays) * 86_400)
-        else { return false }
-        self.retiredAt = nil
+        guard isDueForReview(now: now, config: config) else { return false }
+        retiredAt = nil
         isReview = true
         consecutiveCorrect = 0
         return true

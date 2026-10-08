@@ -139,11 +139,13 @@ struct SyncEngineTests {
         #expect(h.facade.pendingCount == 0)
     }
 
-    @Test func deleteIsRefusedWhileSyncing() throws {
+    @Test(arguments: [DeckSyncStateKind.syncing, .conflict, .drafting])
+    func deleteIsRefusedWhileBusy(state: DeckSyncStateKind) throws {
         let h = try SyncHarness()
         let deck = try h.saveNewDeck()
-        deck.push()
+        deck.syncState = state
         #expect(throws: DeckBackendError.self) { try h.facade.deleteDeck(deck) }
+        #expect(try h.decks().count == 1)
     }
 
     // MARK: Conflicts (Syncing → ConflictDetected → merge → re-push)

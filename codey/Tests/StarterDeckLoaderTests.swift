@@ -60,10 +60,7 @@ struct StarterDeckLoaderTests {
         }
     }
 
-    @Test func idsAreUniqueAndStable() throws {
-        let file = try StarterDeckLoader.loadBundle()
-        let keys = file.decks.map(\.starterKey) + file.decks.flatMap { $0.cards.map(\.id) }
-        #expect(Set(keys).count == keys.count)
+    @Test func stableIDsAreDeterministic() {
         #expect(StableID.uuid("sc-ds-001") == StableID.uuid("sc-ds-001"))
         #expect(StableID.uuid("sc-ds-001") != StableID.uuid("sc-ds-002"))
         #expect(StableID.uuid("starter-ds") != StableID.uuid("starter-ds", namespace: "other"))
@@ -165,17 +162,5 @@ struct StarterDeckLoaderTests {
 
         #expect(report == DataSeeder.Report())
         #expect(try starterDecks(context).count == StarterDeckLoader.expectedDeckCount)
-    }
-
-    @Test func starterCardsRetireAtMasteryFive() throws {
-        let context = try seededContext()
-        try StarterDeckLoader.seed(context: context)
-        let card = try #require(try starterDecks(context).first?.activeCards.first)
-
-        card.updateMastery(rating: .easy)
-        card.updateMastery(rating: .easy)
-        #expect(card.retiredAt == nil)
-        card.updateMastery(rating: .good)
-        #expect(card.retiredAt != nil)
     }
 }

@@ -97,11 +97,10 @@ struct MigrationTests {
             let context = ModelContext(container)
             let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
             deckId = deck.id
-            context.insert(StudyProgressSnapshot(
-                deckId: deck.id, cardIDs: deck.activeCards.map(\.id), position: 1, requeuedIDs: [],
-                tierFilterRaw: nil, reviewedCount: 1, newlyMasteredIDs: [], startMasteryRate: 0,
-                startUnlockedTiersRaw: ["easy"], updatedAt: .now
-            ))
+            let snapshot = StudyProgressSnapshot(deckId: deck.id)
+            snapshot.cardIDs = deck.activeCards.map(\.id)
+            snapshot.position = 1
+            context.insert(snapshot)
             try context.save()
         }
 

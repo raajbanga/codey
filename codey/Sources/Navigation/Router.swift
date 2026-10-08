@@ -46,13 +46,11 @@ final class Router {
             tab = .decks
             decksPath = [DeckRoute(id: id)]
         case .study(let id):
-            guard let deck = fetchDeck(id, context: context) else { return }
+            guard let deck = try? context.first(#Predicate<FlashcardDeck> { $0.id == id && $0.deletedAt == nil }) else { return }
             let resumable = (try? StudyProgressSnapshot.fetch(deckId: id, context: context)) != nil
             study = StudyRequest(deck: deck, start: resumable ? .resume : .fresh(tierFilter: nil))
         case .quiz(let topicId):
-            var descriptor = FetchDescriptor<Topic>(predicate: #Predicate { $0.id == topicId })
-            descriptor.fetchLimit = 1
-            quizSetupTopic = try? context.fetch(descriptor).first
+            quizSetupTopic = try? context.first(#Predicate<Topic> { $0.id == topicId })
         case .profile:
             showProfile = true
         }
@@ -73,11 +71,5 @@ final class Router {
         guard let pendingQuiz else { return }
         quiz = pendingQuiz
         self.pendingQuiz = nil
-    }
-
-    private func fetchDeck(_ id: UUID, context: ModelContext) -> FlashcardDeck? {
-        var descriptor = FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.id == id && $0.deletedAt == nil })
-        descriptor.fetchLimit = 1
-        return try? context.fetch(descriptor).first
     }
 }

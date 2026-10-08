@@ -43,10 +43,7 @@ struct QuizTopicsView: View {
     }
 
     private func stats(for topic: Topic) -> QuizTopicStats {
-        let progress = Dictionary(
-            progressRows.filter { $0.topicId == topic.id }.map { ($0.questionId, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
+        let progress = progressRows.filter { $0.topicId == topic.id }.keyed(by: \.questionId)
         let sticky = topicProgress.first { $0.topicId == topic.id }?.unlockedTiers ?? []
         return QuizTopicStats(
             topic: topic,
@@ -83,12 +80,7 @@ private struct QuizTopicRow: View {
         CodeyCard {
             VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                 HStack(alignment: .top, spacing: CodeySpacing.md) {
-                    Image(systemName: stats.topic.iconName)
-                        .font(.codeyTitle)
-                        .foregroundStyle(CodeyColor.brand)
-                        .frame(width: iconSize, height: iconSize)
-                        .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.sm))
-                        .accessibilityHidden(true)
+                    IconTile(systemName: stats.topic.iconName, size: iconSize, radius: CodeyRadius.sm)
                     VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                         Text(stats.topic.title)
                             .font(.codeyHeadline)
@@ -116,8 +108,7 @@ private struct QuizTopicRow: View {
     }
 
     private var accuracyText: String {
-        guard let accuracy = stats.accuracy else { return "No answers yet" }
-        return "\(Int((accuracy * 100).rounded()))% accuracy"
+        stats.accuracy.map { "\($0.percentText) accuracy" } ?? "No answers yet"
     }
 }
 

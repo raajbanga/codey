@@ -36,7 +36,7 @@ final class BackendFacade: DeckBackend {
         self.auth = auth
         self.cursors = cursors
         self.now = now
-        weak var weakAuth = auth
+        weak let weakAuth = auth
         engine = SyncEngine(
             context: context, remote: remote, reachability: reachability, cursors: cursors,
             deviceID: deviceID, now: now, sleep: sleep, currentUserID: { weakAuth?.currentUserID() }
@@ -110,7 +110,7 @@ final class BackendFacade: DeckBackend {
         let recovered = decks.filter { $0.recoverAfterLaunch() }
         guard !recovered.isEmpty else { return }
         for deck in recovered where !queue.hasPending(.deck, id: deck.id) {
-            try? queue.enqueue(.deck, id: deck.id, op: deck.deletedAt == nil ? .upsert : .delete, ownerId: deck.ownerId)
+            try? queue.enqueue(.deck, id: deck.id, op: SyncOperationKind(deletedAt: deck.deletedAt), ownerId: deck.ownerId)
         }
         saveLoggingErrors()
         Logger.sync.notice("Recovered \(recovered.count) deck(s) after launch")
@@ -171,12 +171,11 @@ final class BackendFacade: DeckBackend {
         }
         let deck = result.deck
         if result.deckChanged {
-            deck.edit()
-            deck.save()
+            deck.editAndSave()
             try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
             for id in result.changedCardIDs {
-                let tombstoned = (try? store.fetchCard(id: id))??.deletedAt != nil
-                try queue.enqueue(.card, id: id, op: tombstoned ? .delete : .upsert, ownerId: deck.ownerId)
+                let card = try? store.fetchCard(id: id)
+                try queue.enqueue(.card, id: id, op: SyncOperationKind(deletedAt: card?.deletedAt), ownerId: deck.ownerId)
             }
             try queue.remove(.card, ids: result.hardDeletedCardIDs)
         } else if deck.syncState == .drafting {
@@ -196,7 +195,7 @@ final class BackendFacade: DeckBackend {
             try queue.enqueue(.deck, id: deck.id, op: .delete, ownerId: deck.ownerId)
         } else {
             try queue.remove(.deck, ids: [deck.id])
-            store.delete(deck)
+            context.delete(deck)
         }
         try persist()
     }
@@ -222,14 +221,6 @@ final class BackendFacade: DeckBackend {
         guard deck.origin == .starter else { return }
         deck.isHidden = hidden
         try context.save()
-    }
-
-    func fetchDecks() -> [FlashcardDeck] {
-        (try? store.fetchDecks()) ?? []
-    }
-
-    func syncStatus(for deck: FlashcardDeck) -> DeckSyncStateKind {
-        deck.syncState
     }
 
     /// "Reset progress" writes XP 0 explicitly instead of max-merging (D10).
@@ -273,13 +264,13 @@ final class BackendFacade: DeckBackend {
         try queue.claimGuestOperations(for: ownerId)
         for deck in decks {
             deck.ownerId = ownerId
-            if deck.syncState == .synced { deck.edit(); deck.save() }
+            if deck.syncState == .synced { deck.editAndSave() }
             guard deck.deletedAt == nil || deck.hasEverSynced else { continue }
             if !queue.hasPending(.deck, id: deck.id) {
-                try queue.enqueue(.deck, id: deck.id, op: deck.deletedAt == nil ? .upsert : .delete, ownerId: ownerId)
+                try queue.enqueue(.deck, id: deck.id, op: SyncOperationKind(deletedAt: deck.deletedAt), ownerId: ownerId)
             }
             for card in deck.cards where !queue.hasPending(.card, id: card.id) {
-                try queue.enqueue(.card, id: card.id, op: card.deletedAt == nil ? .upsert : .delete, ownerId: ownerId)
+                try queue.enqueue(.card, id: card.id, op: SyncOperationKind(deletedAt: card.deletedAt), ownerId: ownerId)
             }
         }
         try context.save()

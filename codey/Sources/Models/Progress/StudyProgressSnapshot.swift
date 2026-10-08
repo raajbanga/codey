@@ -25,28 +25,17 @@ extension CodeySchemaV3 {
         var startUnlockedTiersRaw: [String]
         var updatedAt: Date
 
-        init(
-            deckId: UUID,
-            cardIDs: [UUID],
-            position: Int,
-            requeuedIDs: [UUID],
-            tierFilterRaw: String?,
-            reviewedCount: Int,
-            newlyMasteredIDs: [UUID],
-            startMasteryRate: Double,
-            startUnlockedTiersRaw: [String],
-            updatedAt: Date
-        ) {
+        /// An empty session; the view model fills it in before saving.
+        init(deckId: UUID) {
             self.deckId = deckId
-            self.cardIDs = cardIDs
-            self.position = position
-            self.requeuedIDs = requeuedIDs
-            self.tierFilterRaw = tierFilterRaw
-            self.reviewedCount = reviewedCount
-            self.newlyMasteredIDs = newlyMasteredIDs
-            self.startMasteryRate = startMasteryRate
-            self.startUnlockedTiersRaw = startUnlockedTiersRaw
-            self.updatedAt = updatedAt
+            cardIDs = []
+            position = 0
+            requeuedIDs = []
+            reviewedCount = 0
+            newlyMasteredIDs = []
+            startMasteryRate = 0
+            startUnlockedTiersRaw = []
+            updatedAt = .now
         }
     }
 }
@@ -58,15 +47,6 @@ extension StudyProgressSnapshot {
     var displayPosition: Int { min(position + 1, cardIDs.count) }
 
     static func fetch(deckId: UUID, context: ModelContext) throws -> StudyProgressSnapshot? {
-        var descriptor = FetchDescriptor<StudyProgressSnapshot>(predicate: #Predicate { $0.deckId == deckId })
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
-    }
-
-    /// The most recently touched snapshot (what the Home accessory resumes).
-    static func latest(context: ModelContext) throws -> StudyProgressSnapshot? {
-        var descriptor = FetchDescriptor<StudyProgressSnapshot>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
+        try context.first(#Predicate { $0.deckId == deckId })
     }
 }
