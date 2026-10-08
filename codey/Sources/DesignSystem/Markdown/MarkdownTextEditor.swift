@@ -8,6 +8,9 @@ struct MarkdownTextEditor: View {
     @Binding var text: String
     var limit: Int = ModelValidator.Limits.prompt.upperBound
     var errorMessage: String?
+    /// Set to true to move focus here (e.g. to the first invalid field after
+    /// a failed save); reset to false once focused.
+    var focusRequested: Binding<Bool> = .constant(false)
 
     @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
@@ -29,6 +32,11 @@ struct MarkdownTextEditor: View {
                     }
                 }
                 .accessibilityLabel(title)
+                .onChange(of: focusRequested.wrappedValue, initial: true) { _, requested in
+                    guard requested else { return }
+                    isFocused = true
+                    focusRequested.wrappedValue = false
+                }
 
             HStack(spacing: CodeySpacing.xs) {
                 ForEach(MarkdownFormat.allCases, id: \.self) { format in

@@ -581,7 +581,7 @@ HOW TO READ THIS FILE
  UC-01 / UC-02 / UC-03; sequence diagram Fig. 6.
 
  3.1 View model (ViewModels/DeckViewModel.swift)
- [ ] @MainActor @Observable final class DeckViewModel (Observation framework
+ [x] @MainActor @Observable final class DeckViewModel (Observation framework
      replaces the doc's @Published; same role).
        state: DeckDraft (value type: title, topicId, [CardDraft])
        CardDraft: id, prompt, answer, snippet: SnippetDraft?, difficulty?
@@ -593,35 +593,35 @@ HOW TO READ THIS FILE
        Calls FlashcardFactory to build cards, then backend.saveDeck(...)
        (BackendFacade from Stage 9; until then a LocalOnlyBackend
        conforming to the same protocol, so the swap needs no VM change).
- [ ] Validation runs on Save (and live, debounced, after the first failed
+ [x] Validation runs on Save (and live, debounced, after the first failed
      save), so the first keystroke doesn't flash errors.
 
  3.2 Deck library (Features/Decks/DeckLibraryView.swift)
- [ ] Decks tab root. Large title "Decks" + .searchable (filter by title or
+ [x] Decks tab root. Large title "Decks" + .searchable (filter by title or
      topic). Segmented filter: All / Mine / Starter.
      Sections: "My Decks" (user) and "Starter Decks". @Query, sorted by
      updatedAt desc / title.
- [ ] DeckTile (2-column grid on larger phones, 1 column on SE): topic
+ [x] DeckTile (2-column grid on larger phones, 1 column on SE): topic
      symbol on a tinted tile, title, "12 cards", mastery ProgressBar,
      sync status as an SF Symbol + label (FR-48):
        Draft · Saved locally · Syncing (animated) · Synced · Conflict
        (signed-out user decks always show "Saved locally").
      Context menu: Study, Edit, Hide/Delete.
- [ ] Toolbar "+" (glass) → DeckBuilderView as a full-height sheet (UC-01
+ [x] Toolbar "+" (glass) → DeckBuilderView as a full-height sheet (UC-01
      step 1).
- [ ] Starter decks: no edit/delete. Swipe or context menu "Hide". A "Show
+ [x] Starter decks: no edit/delete. Swipe or context menu "Hide". A "Show
      hidden starter decks" toggle at the bottom of the list, with Restore
      (FR-15).
- [ ] User decks: tap → DeckDetailView (cards list, Study, Edit, Delete).
- [ ] Delete deck: confirmation dialog (FR-12). Only allowed when the sync
+ [x] User decks: tap → DeckDetailView (cards list, Study, Edit, Delete).
+ [x] Delete deck: confirmation dialog (FR-12). Only allowed when the sync
      state is locallyPersisted or synced (state diagram). Otherwise the
      button is disabled with the reason shown.
- [ ] Empty state: "Make your first deck" CTA.
+ [x] Empty state: "Make your first deck" CTA.
 
  3.3 Builder = CARD PAGER (D15)
      Files: Features/Decks/Builder/DeckBuilderView, DeckHeaderEditor,
             CardPagerView, CardPageEditor, CardThumbnailStrip
- [ ] Layout (top → bottom):
+ [x] Layout (top → bottom):
 
        ┌ Cancel        New Deck          Save ┐  ← nav bar (Save = glassProminent)
        │ [Title ______________ 12/60]         │  ← DeckHeaderEditor
@@ -635,12 +635,12 @@ HOW TO READ THIS FILE
        │  ▢ ▣ ▢ ▢ ▢ [+]                       │  ← CardThumbnailStrip
        └──────────────────────────────────────┘
 
- [ ] DeckHeaderEditor: Title (counter n/60), Topic menu picker with topic
+ [x] DeckHeaderEditor: Title (counter n/60), Topic menu picker with topic
      symbols (Topics from SwiftData). Inline errors (FR-10).
- [ ] CardPagerView: horizontal paging; the last page is "+ New card" (tap
+ [x] CardPagerView: horizontal paging; the last page is "+ New card" (tap
      adds and moves to it). The page indicator shows the error count per
      card (red dot) after a failed save.
- [ ] CardPageEditor (looks like the real study card):
+ [x] CardPageEditor (looks like the real study card):
        - Front/Back segmented toggle. Front = prompt (+ snippet if
          placement front); Back = answer.
        - Edit/Preview toggle: Preview renders via CardMarkdownView (2.4),
@@ -652,26 +652,62 @@ HOW TO READ THIS FILE
          (Swift/Python/Java/C++) + CodeEditorView (Runestone, 2.5) +
          counter n/80 lines + "Remove code".
        - Inline error text under each failing field (FR-10).
- [ ] CardThumbnailStrip: mini card per page (first line of the prompt +
+ [x] CardThumbnailStrip: mini card per page (first line of the prompt +
      code icon). Tap = jump. Long-press drag = reorder. Context menu
      Duplicate / Delete (FR-13; delete has an undo toast).
- [ ] Save Deck → VM.createDeck → on success: success haptic, dismiss, the
+ [x] Save Deck → VM.createDeck → on success: success haptic, dismiss, the
      new deck tile animates into the library (Fig. 6 steps 8–9). On
      validation failure: page to the first invalid card and focus the
      field.
- [ ] Cancel with unsaved changes → "Discard changes?" confirmation.
- [ ] Edit existing deck (FR-11): same builder, prefilled. Opening it moves
+ [x] Cancel with unsaved changes → "Discard changes?" confirmation.
+ [x] Edit existing deck (FR-11): same builder, prefilled. Opening it moves
      the deck to Drafting (in memory, see 9.2).
- [ ] Keyboard: toolbar "Done"; fields don't hide under the keyboard on
+ [x] Keyboard: toolbar "Done"; fields don't hide under the keyboard on
      iPhone SE (NFR-10).
- [ ] Accessibility labels on the code toggle, counters, errors.
+ [x] Accessibility labels on the code toggle, counters, errors.
 
  3.4 Tests
- [ ] DeckViewModel: create valid deck → persisted with N cards; invalid →
+ [x] DeckViewModel: create valid deck → persisted with N cards; invalid →
      fieldErrors populated, nothing persisted; edit; delete card; delete
      deck blocked in syncing/conflict.
- [ ] UI test (XCUITest): create a deck with 2 cards, one with a Python
+ [x] UI test (XCUITest): create a deck with 2 cards, one with a Python
      snippet → appears in the library with the "Saved locally" badge.
+
+ STATUS 2026-10-07 (branch feature/stage-0-1): implemented. App, unit tests,
+ and the new codeyUITests target all compile with no warnings in our code.
+ Design guardrails pass. Reachable via a new "Decks" tab in the CURRENT
+ MainTabView (Stage 7 replaces the shell).
+ [ ] OPEN: DeckViewModelTests (17 tests) and DeckBuilderUITests are written
+     but NOT run. The UI test drives the Runestone editor by identifier
+     "card.codeEditor"; if XCUITest can't type into it, fall back to
+     pasting via the accessory row.
+ [ ] OPEN: on-device pass. Pager + horizontal code editor gesture
+     conflicts, keyboard on iPhone SE (NFR-10), drag-to-reorder in the
+     strip, glass undo toast position.
+ Notes / deviations:
+   - Persistence goes through protocol DeckBackend; LocalOnlyBackend
+     implements it (saveDeck / deleteDeck / setHidden). Stage 9's
+     BackendFacade adopts the same protocol.
+   - Edits also go through the factory: new FlashcardFactory.updateCard
+     (normalize + validate; bumps updatedAt only on a real change).
+   - Deletes: never-synced decks/cards are hard-deleted. Synced ones get a
+     tombstone (deletedAt) for Stage 9 to push. The library filters
+     deletedAt == nil.
+   - Delete rules live in FlashcardDeck.canDelete / deleteBlockedReason for
+     now. Stage 9's DeckSyncState objects take them over.
+   - "Opening edit moves the deck to Drafting" is in-memory only (the VM's
+     draft). Nothing is persisted, so crash recovery isn't needed yet.
+   - No "Study" menu item or button yet. It arrives with StudySessionView
+     (Stage 5).
+   - The pager is ScrollView + .scrollTargetBehavior(.paging) +
+     .scrollPosition(id:), not TabView(.page), which fights nested text/code
+     editors. Per-card errors show as a red outline on the page plus a red
+     dot on its thumbnail (a dot, not a count: white on dark-mode danger
+     fails 4.5:1).
+   - Starter "Hide" is in the context menu (grid tiles don't swipe), and
+     Restore appears once "Show hidden starter decks" is on.
+   - UI tests launch with -UITestInMemoryStore (AppLaunchOptions) so they
+     never touch real data.
 
  Done when: a user can create, edit, and delete decks and cards with
  optional code, see inline errors, and everything persists across launches.

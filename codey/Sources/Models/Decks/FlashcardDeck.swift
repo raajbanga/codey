@@ -85,6 +85,24 @@ extension FlashcardDeck {
 
     var isEditable: Bool { origin == .user }
 
+    /// FR-12 + state diagram: only user decks that are saved locally or
+    /// synced can be deleted (not while drafting, syncing, or in conflict).
+    var canDelete: Bool { deleteBlockedReason == nil }
+
+    var deleteBlockedReason: String? {
+        guard origin == .user else { return "Starter decks can be hidden, not deleted." }
+        switch syncState {
+        case .locallyPersisted, .synced: return nil
+        case .drafting: return "Finish editing this deck first."
+        case .syncing: return "Wait for this deck to finish syncing."
+        case .conflict: return "Resolve this deck's sync conflict first."
+        }
+    }
+
+    /// Whether this deck ever reached the server. Never-synced rows can be
+    /// hard-deleted; synced ones need a tombstone until the delete syncs.
+    var hasEverSynced: Bool { lastSyncedAt != nil }
+
     /// Doc: #markDirty() — records a local content change.
     func markDirty(at date: Date = .now) {
         updatedAt = date

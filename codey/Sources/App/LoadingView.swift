@@ -91,7 +91,7 @@ struct LoadingView: View {
         guard container == nil, errorMessage == nil else { return }
 
         do {
-            let bootContainer = try ModelContainerFactory.make()
+            let bootContainer = try ModelContainerFactory.make(inMemory: AppLaunchOptions.usesInMemoryStore)
             progress = 0.25
 
             let bank = try QuestionBankLoader.loadBank()
