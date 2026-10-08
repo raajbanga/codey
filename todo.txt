@@ -1730,6 +1730,19 @@ HOW TO READ THIS FILE
  [ ] Gantt for Sprint 3 from the stage estimates above (× 1.9 realism
      factor, doc §4.4).
  [ ] Traceability: map each TC-xx to the actual test names.
+ [ ] Post-audit API drift (2533123 removed unused code; don't re-add it):
+     - ISyncQueue and LocalDeckStore protocols are gone. SyncQueue and
+       SwiftDataService are concrete types; update FR-12/FR-45/NFR-09
+       rows (§ traceability table) and the class diagrams.
+     - SwiftDataService has no insert/fetchDecks/delete (callers use the
+       ModelContext). Drop them from the domain-model diagram, and FR-44's
+       "SwiftDataService.insert()" → BackendFacade.saveDeck().
+     - DeckViewModel has no isLoading, deleteDeck, or moveCards (uiState
+       covers loading; deletes go through BackendFacade.deleteDeck).
+     - BackendFacade has no fetchDecks()/syncStatus(for:) (views use @Query
+       and deck.syncState).
+     - Test count is now 278 (tautological/duplicate tests pruned); refresh
+       any test-count or coverage figures.
 
 
 --------------------------------------------------------------------------------
@@ -1775,11 +1788,15 @@ HOW TO READ THIS FILE
      Backend/      BackendFacade, protocols, SwiftDataService, NetworkMonitor
        Supabase/   SupabaseAuthProvider, SupabaseDataClient   ← only Supabase imports
      (existing)    QuestionBankLoader, DataSeeder, ModelContainerFactory
+   Support/        Helpers (keyed(by:), ModelContext.first, percentText, counted)
    DesignSystem/
-     Tokens/       Colors, Radius, Spacing, Typography, Motion, TierStyle
+     Tokens/       Colors, Radius, Spacing, Typography, Motion, TierStyle,
+                   SyntaxRole
      Components/   CodeyCard, CodeyButton, AnswerOptionRow, Chip, ProgressRing,
-                   ProgressBar, StatTile, TierChipRow, EmptyStateView,
-                   CelebrationOverlay, XPGainLabel
+                   ProgressBar, StatTile(+Row), TierChipRow(+UnlockedBanner),
+                   EmptyStateView, CelebrationOverlay, XPGainLabel,
+                   FormFeedback (field errors, counters, errorAlert),
+                   CloseButton, IconTile, AppGlyph
      Markdown/     CardMarkdownView, CodeyMarkdownStyle   ← only Textual import
      CodeEditor/   CodeEditorView, CodeyRunestoneTheme   ← only Runestone import
      Gallery/      ComponentGallery (#Previews)
