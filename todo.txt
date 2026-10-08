@@ -2,7 +2,7 @@
  CODEY — IMPLEMENTATION PRD / TODO
  Covers: everything Sprint 2 documentation promises + level gating (FR-22–31)
  Source of truth: docs/Sprint2_Documentation.tex (+ Activity4_1 … 6_1 PDFs)
- Written: 2026-10-07   Branching: feature/* -> dev -> main (per doc §4.2)
+ Written: 2026-10-07   Branching: work on dev -> merge to main (no ad-hoc feature branches)
 ================================================================================
 
 HOW TO READ THIS FILE
@@ -247,11 +247,23 @@ HOW TO READ THIS FILE
  STATUS 2026-10-07 (branch feature/stage-0-1): implemented. App builds clean
  for iOS 26 (bundle edu.wku.cs360.codey, iPhone only, coverage on, empty
  secrets → local-only). Works on device per RB.
- [ ] OPEN: the CLI `xcodebuild test` run is reported failing and hasn't been
-     triaged yet. First CLI run showed the host app's boot failing on a
-     fresh simulator: an explicit store URL means SwiftData doesn't create
-     Application Support. Fixed (ModelContainerFactory creates the dir) but
-     not re-run. Re-run, triage, and only then call Stage 0 "done".
+ [x] CLI `xcodebuild test` triaged + FIXED 2026-10-07 (Stage 5 session).
+     Root cause of "codey closed unexpectedly": test helpers kept only
+     `container.mainContext` / `ModelContext(container)` and let the
+     ModelContainer deallocate. A ModelContext does NOT retain its
+     container, so the next fetch trapped inside SwiftData (EXC_BREAKPOINT
+     in DataSeeder.upsertBundledContent). The app was never affected (it
+     holds its container). Fix: TestSupport.retain(_:) keeps containers alive;
+     use TestSupport.inMemoryContext() / context(storeURL:). Result: 125/125
+     unit tests passed before Stage 5; 164/164 after.
+     Run: xcodebuild test -workspace codey.xcworkspace -scheme codey
+          -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+          -only-testing:codeyTests
+ [ ] OPEN (environment, not code): UI tests (codeyUITests) can't run on the
+     dev Mac. macOS refuses to launch codeyUITests-Runner ("Check with the
+     developer to make sure codeyUITests-Runner works with this version of
+     macOS"). They compile (build-for-testing). Retry after an Xcode/macOS
+     update, or run them from the Xcode GUI or on another Mac.
  Notes / deviations:
    - Models stay in Question/Topic/UserProfile.swift as `extension
      CodeySchemaV1`. Typealiases in Schema/CodeyMigrationPlan.swift point the
@@ -378,7 +390,7 @@ HOW TO READ THIS FILE
 
  STATUS 2026-10-07: implemented with tests written (ModelValidatorTests,
  FlashcardFactoryTests, FlashcardMasteryTests incl. deck tests,
- FlashcardSchemaFileTests, MigrationTests). Same OPEN test-run caveat as Stage 0.
+ FlashcardSchemaFileTests, MigrationTests). All PASS on CLI (2026-10-07).
  Notes / deviations:
    - Factory guard: Flashcard.init takes a FlashcardFactory.Token whose
      init is fileprivate to FlashcardFactory.swift. That's a COMPILE-TIME
@@ -537,8 +549,7 @@ HOW TO READ THIS FILE
      - CodeEditorView: confirm Runestone honors autocorrect/smart-quote-off,
        the accessory row, and the dark-mode theme swap; all 4 languages.
      - 80-line snippet perf in a study card (2.4 Perf).
-     - Stage 2 unit tests are written but NOT run (CLI test run still
-       needs triage, see Stage 0).
+     - [x] Stage 2 unit tests now run and PASS (CLI fix, see Stage 0).
  Notes / deviations:
    - Pinned EXACT: textual 0.5.0, Runestone 0.5.2, TreeSitterLanguages
      0.1.10 (tree-sitter 0.20.9 transitively). All compile on Xcode 27 /
@@ -677,8 +688,8 @@ HOW TO READ THIS FILE
  and the new codeyUITests target all compile with no warnings in our code.
  Design guardrails pass. Reachable via a new "Decks" tab in the CURRENT
  MainTabView (Stage 7 replaces the shell).
- [ ] OPEN: DeckViewModelTests (17 tests) and DeckBuilderUITests are written
-     but NOT run. The UI test drives the Runestone editor by identifier
+ [~] DeckViewModelTests PASS on CLI (2026-10-07). DeckBuilderUITests still
+     NOT run (UI-runner environment issue, see Stage 0). The UI test drives the Runestone editor by identifier
      "card.codeEditor"; if XCUITest can't type into it, fall back to
      pasting via the accessory row.
  [ ] OPEN: on-device pass. Pager + horizontal code editor gesture
@@ -747,8 +758,8 @@ HOW TO READ THIS FILE
  Every Python, C++, and Swift snippet was EXECUTED, and its output matches
  the card's answer (12/12). Java (4 cards) was checked by hand: no JRE on
  this Mac.
- [ ] OPEN: StarterDeckLoaderTests (11 tests) written but NOT run. A content
-     review by RB is still worthwhile (wording, difficulty calibration).
+ [x] StarterDeckLoaderTests PASS on CLI (2026-10-07).
+ [ ] OPEN: a content review by RB is still worthwhile (wording, difficulty calibration).
  Notes / deviations:
    - JSON ids are strings ("starter-ds", "sc-ds-001"). Flashcard/Deck ids
      are UUIDs, so StableID.uuid(key) hashes the key (SHA-256 → UUID v8):
@@ -773,7 +784,7 @@ HOW TO READ THIS FILE
 ================================================================================
  Implements: FR-16, FR-17, FR-18, FR-29 (deck side), UC-04; D14, D17, B15
 
- [ ] StudySessionView(deck:, tierFilter: Difficulty?) replaces
+ [x] StudySessionView(deck:, tierFilter: Difficulty?) replaces
      PracticeSwipeView. Presented as .fullScreenCover (focus mode, D8):
      the tab bar is hidden; close (✕) top-left; progress top-center.
 
@@ -789,14 +800,14 @@ HOW TO READ THIS FILE
         (Again)  (Hard)  (Good)  (Easy)     ← GlassEffectContainer, after flip
           ↺0      =      +1      +2         ← mastery-delta hint
 
- [ ] StudyCardView (B15 rebuild): two separate faces in a ZStack. Each
+ [x] StudyCardView (B15 rebuild): two separate faces in a ZStack. Each
      face rotates on its own (front 0→90°, back −90→0°) with perspective,
      so neither face is ever mirrored and text stays selectable. Card
      height fits the content up to a max, then scrolls inside the card
      for long code. Reduce Motion → crossfade instead of flip.
- [ ] Answer hidden until tap (FR-16). Tap anywhere on the card, or press
+ [x] Answer hidden until tap (FR-16). Tap anywhere on the card, or press
      Space on a hardware keyboard, flips it.
- [ ] Rating (FR-17), shown only after reveal: 4 glass buttons in a
+ [x] Rating (FR-17), shown only after reveal: 4 glass buttons in a
      GlassEffectContainer.
        Colors: Again danger, Hard warning, Good brand, Easy success.
        Each shows the mastery-delta hint (↺0 / = / +1 / +2).
@@ -806,36 +817,97 @@ HOW TO READ THIS FILE
        Distinct .sensoryFeedback per rating.
        VoiceOver: rating buttons are the primary path; swipes are exposed
        as accessibility actions.
- [ ] Rating → card.updateMastery(rating) (FR-18), save. "Again" cards go
+ [x] Rating → card.updateMastery(rating) (FR-18), save. "Again" cards go
      back into the end of the session queue once.
- [ ] Reaching mastery 5: a "Mastered" chip pops on the card (symbol
+ [x] Reaching mastery 5: a "Mastered" chip pops on the card (symbol
      bounce). For starter cards it also notes "retired".
- [ ] Resumable session: persist StudyProgressSnapshot(deckId, queue,
+ [x] Resumable session: persist StudyProgressSnapshot(deckId, queue,
      index) so the Home bottom accessory can show "▶ Continue <deck>
      n/N" (D8).
- [ ] Summary screen: StatTiles (reviewed, newly mastered, deck mastery %
+ [x] Summary screen: StatTiles (reviewed, newly mastered, deck mastery %
      delta), "Study again" / "Done". CelebrationOverlay if this session
      unlocked a tier.
- [ ] Deck pool for STARTER decks: active cards = not retired, in unlocked
+ [x] Deck pool for STARTER decks: active cards = not retired, in unlocked
      tiers (Stage 6 TierGate). Tier picker limited to unlocked tiers
      (FR-29). User decks: all cards, with an optional tier filter if any
      cards are tagged.
- [ ] Each rating increments a DailyActivity counter (prep for FR-32;
+ [x] Each rating increments a DailyActivity counter (prep for FR-32;
      cheap now).
- [ ] Remove the old Topic → Practice entry (topics are quiz-only now; decks
+ [x] Remove the old Topic → Practice entry (topics are quiz-only now; decks
      own flashcards). Delete PracticeSwipeView/PracticeHomeView once
      unused. FlashcardView is replaced by StudyCardView + CardMarkdownView.
- [ ] Tests: StudySession queue logic (again requeue, finish condition),
+ [x] Tests: StudySession queue logic (again requeue, finish condition),
      mastery integration.
 
  Done when: studying any deck updates mastery that persists; mastered
  starter cards retire.
+
+ STATUS 2026-10-07 (dev): implemented. App, unit tests, and UI tests compile
+ with no warnings. 164/164 unit tests PASS on CLI (39 new). Design
+ guardrails 7/7.
+ [ ] OPEN: StudySessionUITests (study → rate → close → resume) is written
+     but NOT run (UI-runner environment issue, see Stage 0).
+ [ ] OPEN, needs on-device/simulator eyes:
+     - Flip feel (two-face 0→90 / −90→0, 0.18 s per half) and the Reduce
+       Motion crossfade.
+     - Swipe vs. inner ScrollView: a long card scrolls vertically, so ↑ Easy
+       may scroll instead of swiping on long content (buttons are the main
+       path). Swipe threshold is 110 pt.
+     - Glass rating buttons (.glass + tint + rounded md shape) contrast in
+       both modes; per-rating haptics on a device.
+     - Space / 1–4 hardware-keyboard shortcuts.
+ Notes / deviations:
+   - Schema V3 (lightweight from V2): StudyProgressSnapshot (one per deck,
+     unique deckId; queue, position, requeued ids, tier filter, running
+     stats, starting unlocked tiers) and DailyActivity (day "yyyy-MM-dd"
+     local, cardsRated, quizAnswers; quizAnswers is wired in Stage 6).
+     Migration test: v2StoreMigratesToCurrentWithStudyProgress.
+   - Pure logic: Services/Study/StudyQueue (Again re-queues once; finish =
+     queue exhausted; retain(only:) drops deleted cards on resume) and
+     StudyPool. ViewModels/StudySessionViewModel does the persistence.
+   - TierGate + GatingConfig were pulled forward from Stage 6
+     (Services/Practice/). For now only starter decks use them:
+     tallies(for: deck) uses "retired" = retiredAt set. Stage 6 adds the
+     quiz side + sticky TopicProgress. Unlocks are computed live from the
+     cards. That's effectively sticky, because retired cards leave the pool
+     and can't be rated Again. Exceptions: "Reset progress", or a content
+     update that adds Easy cards.
+     CLARIFICATION: Hard also requires Medium to be unlocked. This stops an
+     empty Medium tier from letting a learner skip straight to Hard. Stage 6
+     should keep it (TierGateTests.hardNeedsMediumUnlockedEvenIfMediumIsEmpty).
+   - Snapshot is written on the FIRST rating (opening and closing a session
+     doesn't create a "Continue" entry). A fresh start deletes the old
+     snapshot; finishing deletes it. StudyProgressSnapshot.latest(context:)
+     is what the Stage 7 accessory should read.
+   - Rating requires the answer to have been revealed once; flipping back
+     to peek at the prompt keeps the ratings visible.
+   - "Mastered" chip: if a rating will reach 5 (computed before applying),
+     the card holds ~0.9 s with the chip ("Mastered · retired" for starter
+     cards), then advances. Applies to button and swipe ratings.
+   - Pre-reveal, a glass "Show Answer" button is shown (VoiceOver path +
+     discoverability), along with tap-on-card and Space.
+   - Keyboard: Space flips; 1–4 = Again/Hard/Good/Easy.
+   - Entry points: Study section in DeckDetailView (TierChipRow for starter
+     decks, tier picker limited to unlocked tagged tiers, Continue n/N +
+     Start Over) and "Study" / "Continue Studying" in the library context
+     menu.
+   - Old Practice flow deleted (PracticeHomeView, PracticeSwipeView,
+     FlashcardView). MainTabView is now Decks | Quiz | Analytics |
+     Settings (default tab Decks; "Topics" relabeled "Quiz", quiz-only).
+     Stage 7 replaces the shell anyway.
+   - "Reset progress" and "Erase all local data" also clear snapshots and
+     DailyActivity.
+   - Fixed the pre-existing trailing-closure warning in StarterDeckLoader.
 
 
 ================================================================================
  STAGE 6 — XP, LEVELS, ADAPTIVE TIERS (LEVEL GATING)               (AB + ES, ~4 days)
 ================================================================================
  Implements: FR-19, FR-20, FR-22–FR-31, prep for FR-36 / FR-37. D5, D9.
+
+ NOTE (from Stage 5): TierGate.swift + GatingConfig.swift already exist with
+ the unlock rules + lock-reason strings (starter-deck side). Extend them;
+ don't duplicate. DailyActivity.quizAnswers exists; increment it per answer.
 
  6.1 XP & levels
  [ ] Services/Gamification/XPPolicy.swift (pure, unit-tested):
@@ -957,7 +1029,9 @@ HOW TO READ THIS FILE
      (short lists won't collapse; that's expected).
  [ ] .tabViewBottomAccessory: the ContinueStudyingAccessory
      ("▶ Swift Closures · 7/12" + small ring) appears ONLY when a
-     resumable StudyProgressSnapshot exists (the accessory shows on every
+     resumable StudyProgressSnapshot exists (Stage 5: use
+     StudyProgressSnapshot.latest(context:) / a @Query sorted by updatedAt;
+     resume = StudyRequest(deck:, start: .resume) → StudySessionView) (the accessory shows on every
      tab, so it must be globally relevant). Handle the inline/expanded
      placements (environment tabViewBottomAccessoryPlacement): compact
      label when inline. Tap → resume the study fullScreenCover.

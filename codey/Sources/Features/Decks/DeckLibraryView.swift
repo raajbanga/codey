@@ -24,6 +24,8 @@ struct DeckLibraryView: View {
     @State private var builder: BuilderRequest?
     @State private var deckToDelete: FlashcardDeck?
     @State private var actionError: String?
+    @State private var studyRequest: StudyRequest?
+    @Query private var snapshots: [StudyProgressSnapshot]
 
     private var topicsByID: [String: Topic] {
         Dictionary(topics.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -94,6 +96,9 @@ struct DeckLibraryView: View {
                 DeckDetailView(deck: deck, topic: topicsByID[deck.topicId])
             }
         }
+        .fullScreenCover(item: $studyRequest) { request in
+            StudySessionView(request: request, context: modelContext)
+        }
         .sheet(item: $builder) { request in
             DeckBuilderView(
                 viewModel: DeckViewModel(
@@ -148,6 +153,10 @@ struct DeckLibraryView: View {
 
     @ViewBuilder
     private func menu(for deck: FlashcardDeck) -> some View {
+        Button(hasSnapshot(deck) ? "Continue Studying" : "Study", systemImage: "play.fill") {
+            studyRequest = StudyRequest(deck: deck, start: hasSnapshot(deck) ? .resume : .fresh(tierFilter: nil))
+        }
+        .disabled(deck.cardCount == 0)
         if deck.isEditable {
             Button("Edit", systemImage: "pencil") { builder = .edit(deck) }
             Button("Delete", systemImage: "trash", role: .destructive) { deckToDelete = deck }
@@ -185,6 +194,10 @@ struct DeckLibraryView: View {
 
     private var hasHiddenStarters: Bool {
         decks.contains { $0.origin == .starter && $0.isHidden }
+    }
+
+    private func hasSnapshot(_ deck: FlashcardDeck) -> Bool {
+        snapshots.contains { $0.deckId == deck.id }
     }
 
     private func perform(_ action: () throws -> Void) {
