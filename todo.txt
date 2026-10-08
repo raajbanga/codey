@@ -2,7 +2,7 @@
  CODEY — IMPLEMENTATION PRD / TODO
  Covers: everything Sprint 2 documentation promises + level gating (FR-22–31)
  Source of truth: docs/Sprint2_Documentation.tex (+ Activity4_1 … 6_1 PDFs)
- Written: 2026-10-07   Branching: feature/* -> dev -> main (per doc §4.2)
+ Written: 2026-10-07   Branching: work on dev -> merge to main (no ad-hoc feature branches)
 ================================================================================
 
 HOW TO READ THIS FILE
@@ -60,6 +60,19 @@ HOW TO READ THIS FILE
          bar and accessory are hidden.
        - PracticeHomeView, AnalyticsDashboardView, and the Settings tab
          are removed.
+ D8 r3 (2026-10-07, QoL pass): navigation de-duplicated.
+       - Home = greeting + LevelCard + ONE "Up next" card (resume a
+         session > new learner's starter deck > suggested quiz on the
+         weakest pinned topic) + a compact "Your topics" list (→ quiz
+         setup). Hub tiles, Home quiz Start/Choose, and deck Open/New
+         were removed; those actions live in their tabs.
+       - The tab-bar "Continue studying" accessory was REMOVED. Resume from
+         the deck screen or Home's Up next card. The library long-press
+         "Study" was removed (tap the tile → deck screen).
+       - Starting a quiz has one path: topic → setup sheet → Start.
+       - Profile: avatar on Home only.
+       - Every study session and quiz is presented by RootView via the
+         Router (one owner).
  D9  Tier gating applies to the QUIZ BANK and STARTER DECKS only.
      - Quiz question retires after 3 consecutive correct answers (FR-23/24).
      - Starter card retires when mastery reaches 5 (FR-18 "mastered").
@@ -82,7 +95,12 @@ HOW TO READ THIS FILE
        - Celebratory moments.
  D13 Brand color = ELECTRIC INDIGO (≈ #5B5BF7 light / #8C8CFF dark; tune
      for 4.5:1 contrast on text use).
- D14 Study UX = 3D FLIP + RATE BUTTONS + SWIPE SHORTCUTS.
+ D14 [REVISED 2026-10-07 r3] Study UX = 3D FLIP + SWIPE TO RATE (no buttons).
+       The floating rating buttons were removed (felt out of place).
+       Tap/Space flips; swipes rate: ← Again, ↓ Hard, ↑ Easy, → Good. A
+       caption under the card shows the gestures. Keyboard 1–4 and
+       VoiceOver card actions remain the non-gesture paths.
+     Original r2 text, kept for history: 3D FLIP + RATE BUTTONS + SWIPE SHORTCUTS.
        - Tap to flip.
        - 4 glass rating buttons (Again / Hard / Good / Easy), each with
          a mastery-delta hint.
@@ -247,11 +265,23 @@ HOW TO READ THIS FILE
  STATUS 2026-10-07 (branch feature/stage-0-1): implemented. App builds clean
  for iOS 26 (bundle edu.wku.cs360.codey, iPhone only, coverage on, empty
  secrets → local-only). Works on device per RB.
- [ ] OPEN: the CLI `xcodebuild test` run is reported failing and hasn't been
-     triaged yet. First CLI run showed the host app's boot failing on a
-     fresh simulator: an explicit store URL means SwiftData doesn't create
-     Application Support. Fixed (ModelContainerFactory creates the dir) but
-     not re-run. Re-run, triage, and only then call Stage 0 "done".
+ [x] CLI `xcodebuild test` triaged + FIXED 2026-10-07 (Stage 5 session).
+     Root cause of "codey closed unexpectedly": test helpers kept only
+     `container.mainContext` / `ModelContext(container)` and let the
+     ModelContainer deallocate. A ModelContext does NOT retain its
+     container, so the next fetch trapped inside SwiftData (EXC_BREAKPOINT
+     in DataSeeder.upsertBundledContent). The app was never affected (it
+     holds its container). Fix: TestSupport.retain(_:) keeps containers alive;
+     use TestSupport.inMemoryContext() / context(storeURL:). Result: 125/125
+     unit tests passed before Stage 5; 164/164 after.
+     Run: xcodebuild test -workspace codey.xcworkspace -scheme codey
+          -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+          -only-testing:codeyTests
+ [ ] OPEN (environment, not code): UI tests (codeyUITests) can't run on the
+     dev Mac. macOS refuses to launch codeyUITests-Runner ("Check with the
+     developer to make sure codeyUITests-Runner works with this version of
+     macOS"). They compile (build-for-testing). Retry after an Xcode/macOS
+     update, or run them from the Xcode GUI or on another Mac.
  Notes / deviations:
    - Models stay in Question/Topic/UserProfile.swift as `extension
      CodeySchemaV1`. Typealiases in Schema/CodeyMigrationPlan.swift point the
@@ -378,7 +408,7 @@ HOW TO READ THIS FILE
 
  STATUS 2026-10-07: implemented with tests written (ModelValidatorTests,
  FlashcardFactoryTests, FlashcardMasteryTests incl. deck tests,
- FlashcardSchemaFileTests, MigrationTests). Same OPEN test-run caveat as Stage 0.
+ FlashcardSchemaFileTests, MigrationTests). All PASS on CLI (2026-10-07).
  Notes / deviations:
    - Factory guard: Flashcard.init takes a FlashcardFactory.Token whose
      init is fileprivate to FlashcardFactory.swift. That's a COMPILE-TIME
@@ -537,8 +567,7 @@ HOW TO READ THIS FILE
      - CodeEditorView: confirm Runestone honors autocorrect/smart-quote-off,
        the accessory row, and the dark-mode theme swap; all 4 languages.
      - 80-line snippet perf in a study card (2.4 Perf).
-     - Stage 2 unit tests are written but NOT run (CLI test run still
-       needs triage, see Stage 0).
+     - [x] Stage 2 unit tests now run and PASS (CLI fix, see Stage 0).
  Notes / deviations:
    - Pinned EXACT: textual 0.5.0, Runestone 0.5.2, TreeSitterLanguages
      0.1.10 (tree-sitter 0.20.9 transitively). All compile on Xcode 27 /
@@ -677,8 +706,8 @@ HOW TO READ THIS FILE
  and the new codeyUITests target all compile with no warnings in our code.
  Design guardrails pass. Reachable via a new "Decks" tab in the CURRENT
  MainTabView (Stage 7 replaces the shell).
- [ ] OPEN: DeckViewModelTests (17 tests) and DeckBuilderUITests are written
-     but NOT run. The UI test drives the Runestone editor by identifier
+ [~] DeckViewModelTests PASS on CLI (2026-10-07). DeckBuilderUITests still
+     NOT run (UI-runner environment issue, see Stage 0). The UI test drives the Runestone editor by identifier
      "card.codeEditor"; if XCUITest can't type into it, fall back to
      pasting via the accessory row.
  [ ] OPEN: on-device pass. Pager + horizontal code editor gesture
@@ -747,8 +776,8 @@ HOW TO READ THIS FILE
  Every Python, C++, and Swift snippet was EXECUTED, and its output matches
  the card's answer (12/12). Java (4 cards) was checked by hand: no JRE on
  this Mac.
- [ ] OPEN: StarterDeckLoaderTests (11 tests) written but NOT run. A content
-     review by RB is still worthwhile (wording, difficulty calibration).
+ [x] StarterDeckLoaderTests PASS on CLI (2026-10-07).
+ [ ] OPEN: a content review by RB is still worthwhile (wording, difficulty calibration).
  Notes / deviations:
    - JSON ids are strings ("starter-ds", "sc-ds-001"). Flashcard/Deck ids
      are UUIDs, so StableID.uuid(key) hashes the key (SHA-256 → UUID v8):
@@ -773,7 +802,7 @@ HOW TO READ THIS FILE
 ================================================================================
  Implements: FR-16, FR-17, FR-18, FR-29 (deck side), UC-04; D14, D17, B15
 
- [ ] StudySessionView(deck:, tierFilter: Difficulty?) replaces
+ [x] StudySessionView(deck:, tierFilter: Difficulty?) replaces
      PracticeSwipeView. Presented as .fullScreenCover (focus mode, D8):
      the tab bar is hidden; close (✕) top-left; progress top-center.
 
@@ -789,14 +818,14 @@ HOW TO READ THIS FILE
         (Again)  (Hard)  (Good)  (Easy)     ← GlassEffectContainer, after flip
           ↺0      =      +1      +2         ← mastery-delta hint
 
- [ ] StudyCardView (B15 rebuild): two separate faces in a ZStack. Each
+ [x] StudyCardView (B15 rebuild): two separate faces in a ZStack. Each
      face rotates on its own (front 0→90°, back −90→0°) with perspective,
      so neither face is ever mirrored and text stays selectable. Card
      height fits the content up to a max, then scrolls inside the card
      for long code. Reduce Motion → crossfade instead of flip.
- [ ] Answer hidden until tap (FR-16). Tap anywhere on the card, or press
+ [x] Answer hidden until tap (FR-16). Tap anywhere on the card, or press
      Space on a hardware keyboard, flips it.
- [ ] Rating (FR-17), shown only after reveal: 4 glass buttons in a
+ [x] Rating (FR-17), shown only after reveal: 4 glass buttons in a
      GlassEffectContainer.
        Colors: Again danger, Hard warning, Good brand, Easy success.
        Each shows the mastery-delta hint (↺0 / = / +1 / +2).
@@ -806,30 +835,91 @@ HOW TO READ THIS FILE
        Distinct .sensoryFeedback per rating.
        VoiceOver: rating buttons are the primary path; swipes are exposed
        as accessibility actions.
- [ ] Rating → card.updateMastery(rating) (FR-18), save. "Again" cards go
+ [x] Rating → card.updateMastery(rating) (FR-18), save. "Again" cards go
      back into the end of the session queue once.
- [ ] Reaching mastery 5: a "Mastered" chip pops on the card (symbol
+ [x] Reaching mastery 5: a "Mastered" chip pops on the card (symbol
      bounce). For starter cards it also notes "retired".
- [ ] Resumable session: persist StudyProgressSnapshot(deckId, queue,
+ [x] Resumable session: persist StudyProgressSnapshot(deckId, queue,
      index) so the Home bottom accessory can show "▶ Continue <deck>
      n/N" (D8).
- [ ] Summary screen: StatTiles (reviewed, newly mastered, deck mastery %
+ [x] Summary screen: StatTiles (reviewed, newly mastered, deck mastery %
      delta), "Study again" / "Done". CelebrationOverlay if this session
      unlocked a tier.
- [ ] Deck pool for STARTER decks: active cards = not retired, in unlocked
+ [x] Deck pool for STARTER decks: active cards = not retired, in unlocked
      tiers (Stage 6 TierGate). Tier picker limited to unlocked tiers
      (FR-29). User decks: all cards, with an optional tier filter if any
      cards are tagged.
- [ ] Each rating increments a DailyActivity counter (prep for FR-32;
+ [x] Each rating increments a DailyActivity counter (prep for FR-32;
      cheap now).
- [ ] Remove the old Topic → Practice entry (topics are quiz-only now; decks
+ [x] Remove the old Topic → Practice entry (topics are quiz-only now; decks
      own flashcards). Delete PracticeSwipeView/PracticeHomeView once
      unused. FlashcardView is replaced by StudyCardView + CardMarkdownView.
- [ ] Tests: StudySession queue logic (again requeue, finish condition),
+ [x] Tests: StudySession queue logic (again requeue, finish condition),
      mastery integration.
 
  Done when: studying any deck updates mastery that persists; mastered
  starter cards retire.
+
+ STATUS 2026-10-07 (dev): implemented. App, unit tests, and UI tests compile
+ with no warnings. 164/164 unit tests PASS on CLI (39 new). Design
+ guardrails 7/7.
+ [ ] OPEN: StudySessionUITests (study → rate → close → resume) is written
+     but NOT run (UI-runner environment issue, see Stage 0).
+ [ ] OPEN, needs on-device/simulator eyes:
+     - Flip feel (two-face 0→90 / −90→0, 0.18 s per half) and the Reduce
+       Motion crossfade.
+     - Swipe vs. inner ScrollView: a long card scrolls vertically, so ↑ Easy
+       may scroll instead of swiping on long content (buttons are the main
+       path). Swipe threshold is 110 pt.
+     - Glass rating buttons (.glass + tint + rounded md shape) contrast in
+       both modes; per-rating haptics on a device.
+     - Space / 1–4 hardware-keyboard shortcuts.
+ Notes / deviations:
+   - Schema V3 (lightweight from V2): StudyProgressSnapshot (one per deck,
+     unique deckId; queue, position, requeued ids, tier filter, running
+     stats, starting unlocked tiers) and DailyActivity (day "yyyy-MM-dd"
+     local, cardsRated, quizAnswers; quizAnswers is wired in Stage 6).
+     Migration test: v2StoreMigratesToCurrentWithStudyProgress.
+   - Pure logic: Services/Study/StudyQueue (Again re-queues once; finish =
+     queue exhausted; retain(only:) drops deleted cards on resume) and
+     StudyPool. ViewModels/StudySessionViewModel does the persistence.
+   - TierGate + GatingConfig were pulled forward from Stage 6
+     (Services/Practice/). For now only starter decks use them:
+     tallies(for: deck) uses "retired" = retiredAt set. Stage 6 adds the
+     quiz side + sticky TopicProgress. Unlocks are computed live from the
+     cards. That's effectively sticky, because retired cards leave the pool
+     and can't be rated Again. Exceptions: "Reset progress", or a content
+     update that adds Easy cards.
+     CLARIFICATION: Hard also requires Medium to be unlocked. This stops an
+     empty Medium tier from letting a learner skip straight to Hard. Stage 6
+     should keep it (TierGateTests.hardNeedsMediumUnlockedEvenIfMediumIsEmpty).
+   - Snapshot is written on the FIRST rating (opening and closing a session
+     doesn't create a "Continue" entry). A fresh start deletes the old
+     snapshot; finishing deletes it. StudyProgressSnapshot.latest(context:)
+     is what the Stage 7 accessory should read.
+   - Rating requires the answer to have been revealed once; flipping back
+     to peek at the prompt keeps the ratings visible.
+   - "Mastered" chip: if a rating will reach 5 (computed before applying),
+     the card holds ~0.9 s with the chip ("Mastered · retired" for starter
+     cards), then advances. Applies to button and swipe ratings.
+   - Pre-reveal, a glass "Show Answer" button is shown (VoiceOver path +
+     discoverability), along with tap-on-card and Space.
+   - Keyboard: Space flips; 1–4 = Again/Hard/Good/Easy.
+   - Entry points: Study section in DeckDetailView (TierChipRow for starter
+     decks, tier picker limited to unlocked tagged tiers, Continue n/N +
+     Start Over) and "Study" / "Continue Studying" in the library context
+     menu.
+   - Old Practice flow deleted (PracticeHomeView, PracticeSwipeView,
+     FlashcardView). MainTabView is now Decks | Quiz | Analytics |
+     Settings (default tab Decks; "Topics" relabeled "Quiz", quiz-only).
+     Stage 7 replaces the shell anyway.
+   - "Reset progress" and "Erase all local data" also clear snapshots and
+     DailyActivity.
+   - Fixed the pre-existing trailing-closure warning in StarterDeckLoader.
+   - [r3, D14 revised] Rating buttons and "Show Answer" removed. Swipe
+     only (↓ = Hard is new). SwipeHint caption under the card; "Tap the
+     card to see the answer" before the flip. StudySessionUITests is now
+     swipe-based (still not run).
 
 
 ================================================================================
@@ -837,42 +927,46 @@ HOW TO READ THIS FILE
 ================================================================================
  Implements: FR-19, FR-20, FR-22–FR-31, prep for FR-36 / FR-37. D5, D9.
 
+ NOTE (from Stage 5): TierGate.swift + GatingConfig.swift already exist with
+ the unlock rules + lock-reason strings (starter-deck side). Extend them;
+ don't duplicate. DailyActivity.quizAnswers exists; increment it per answer.
+
  6.1 XP & levels
- [ ] Services/Gamification/XPPolicy.swift (pure, unit-tested):
+ [x] Services/Gamification/XPPolicy.swift (pure, unit-tested):
        base(tier): easy 10, medium 15, hard 20
        streakBonus(streak) = min(5 × (streak − 1), 25)   // streak ≥ 1
        xpForCorrectAnswer(tier:, streakAfterIncrement:)
      Replaces QuizSession.baseXP / streakBonusPerLevel (B5). Update
      QuizSessionTests (expected values change: easy 10,15,20,25,30,35,35…).
- [ ] Level-up detection: compare LevelCalculator.level before and after
+ [x] Level-up detection: compare LevelCalculator.level before and after
      the award. Show a level-up banner/toast in the quiz and summary.
- [ ] Flashcard study awards NO XP (prevents farming; XP stays a quiz
+ [x] Flashcard study awards NO XP (prevents farming; XP stays a quiz
      reward). → open item O2.
 
  6.2 Progress models (local only, D10)
- [ ] @Model QuestionProgress: questionId (unique), topicId, difficulty,
+ [x] @Model QuestionProgress: questionId (unique), topicId, difficulty,
        consecutiveCorrect, totalAttempts, totalCorrect, retiredAt: Date?,
        isReview: Bool, lastAnsweredAt.
- [ ] @Model TopicProgress: topicId (unique), unlockedTiers: [Difficulty]
+ [x] @Model TopicProgress: topicId (unique), unlockedTiers: [Difficulty]
        (STICKY: once unlocked, never relocks, even when FR-28 reviews
        return questions to the pool and the retired % drops), unlockedAt
        dates.
- [ ] @Model QuizAnswerRecord: questionId, topicId, correct, answeredAt.
+ [x] @Model QuizAnswerRecord: questionId, topicId, correct, answeredAt.
        Feeds FR-36 accuracy over the last 50 answers. Prune to the last 200
        per topic.
- [ ] Add to the schema version + migration.
+ [x] Add to the schema version + migration.
 
  6.3 Rules (Services/Practice/TierGate.swift + QuestionPool.swift)
- [ ] recordAnswer(question, correct) (FR-23/24/28):
+ [x] recordAnswer(question, correct) (FR-23/24/28):
        correct   → consecutiveCorrect += 1;
                    if isReview → retire again immediately (FR-28), isReview=false
                    else if consecutiveCorrect ≥ 3 → retiredAt = now
        incorrect → consecutiveCorrect = 0; if isReview → isReview=false,
                    stays active (FR-28)
- [ ] Review return (FR-28): a retired question with retiredAt + 7 days ≤
+ [x] Review return (FR-28): a retired question with retiredAt + 7 days ≤
      now becomes active with isReview = true. Computed at pool-build time;
      no background job.
- [ ] Unlocks (FR-25/26), evaluated after every answer and stored in
+ [x] Unlocks (FR-25/26), evaluated after every answer and stored in
      TopicProgress:
        Medium: retired(Easy) ≥ ceil(0.70 × count(Easy))
        Hard:   retired(Medium) ≥ ceil(0.70 × count(Medium)) AND level ≥ 3
@@ -880,7 +974,7 @@ HOW TO READ THIS FILE
        GatingConfig struct (the doc says they'll be calibrated in Sprint 3).
        Starter-deck cards use the same thresholds, with "retired" = mastery 5
        (D9).
- [ ] Quiz builder (FR-19, FR-27):
+ [x] Quiz builder (FR-19, FR-27):
        size 10 (or fewer if the pool is smaller; show "n questions
        available").
        active pool = unlocked tiers, not retired, or due for review.
@@ -890,11 +984,11 @@ HOW TO READ THIS FILE
        unlocked → all Easy.
        FR-29 restricted mode: all questions from the chosen unlocked tier.
        Deterministic when given a seeded RNG (for tests).
- [ ] Pool exhausted → "Topic mastered!" state with "Review retired
+ [x] Pool exhausted → "Topic mastered!" state with "Review retired
      questions" (practice only, no XP).
 
  6.4 Quiz UI updates
- [ ] Quiz tab root (QuizTopicsView, replaces TopicListView): one row-card
+ [x] Quiz tab root (QuizTopicsView, replaces TopicListView): one row-card
      per topic. Shows the topic symbol, a TierChipRow, accuracy, and
      "x of y retired". Tap → QuizSetupView sheet (.presentationDetents
      medium):
@@ -903,7 +997,7 @@ HOW TO READ THIS FILE
        "Mixed (recommended)" vs a single-tier picker (FR-29), question
        count, and a Start button (glassProminent) that opens the quiz as a
        .fullScreenCover.
- [ ] QuizModeView (focus mode):
+ [x] QuizModeView (focus mode):
        - Top bar: ✕, segmented progress (10 ticks colored correct/wrong
          as you go), streak chip with flame (shown at streak ≥ 2).
        - Question card: tier chip and review badge; prompt rendered via
@@ -914,30 +1008,59 @@ HOW TO READ THIS FILE
          ("Medium 15 + streak 10").
        - Explanation slides up in a card, with a glass "Next" button
          pinned at the bottom.
- [ ] QuizSummaryView:
+ [x] QuizSummaryView:
        - Big percentage ring + "8/10 correct" (FR-20).
        - StatTiles: XP earned (rolls up), best streak, newly retired.
        - "Tier unlocked: Medium" and "Level 4!" banners with
          CelebrationOverlay.
        - Buttons: "Quiz again" / "Done".
- [ ] Snapshot/preview states for locked/unlocked chips.
+ [x] Snapshot/preview states for locked/unlocked chips.
 
  6.5 Content (B12)
- [ ] Expand questions-seed.json so every topic has ≥ 8 Easy, ≥ 8 Medium,
+ [x] Expand questions-seed.json so every topic has ≥ 8 Easy, ≥ 8 Medium,
      ≥ 6 Hard (~22+/topic, ~90 total). Update expectedQuestionCount and
      the tests. Bump the seed content version (non-destructive upsert from
      Stage 0).
- [ ] Optional: add an OOP topic (B13 / FR-21). Needs a 5th starter deck too.
+ [x] Optional: add an OOP topic (B13 / FR-21). Done in the Stage 7 QoL pass,
+     along with Networking, Swift Basics, and Python Basics.
 
  6.6 Tests (TC-22 … TC-31)
- [ ] XPPolicy table tests (all tiers × streak 1…8, cap).
- [ ] Retire after 3; reset on wrong; review after 7 days (inject a Clock);
+ [x] XPPolicy table tests (all tiers × streak 1…8, cap).
+ [x] Retire after 3; reset on wrong; review after 7 days (inject a Clock);
      review retire-on-1; unlock thresholds incl. ceil and empty tier;
      Hard needs level 3; sticky unlock; quiz mix 7/3; backfill; Easy-only;
      restricted tier.
 
  Done when: a new user starts with only Easy, unlocks Medium by play,
  can't see Hard before level 3, and quizzes are 10 questions with % score.
+
+ STATUS 2026-10-07 (dev): implemented. The app target builds clean.
+ [x] (RESOLVED 2026-10-07, Stage 9: all run and pass after the pruneHistory fix.) Stage 6 unit tests are written but NOT RUN: XPPolicyTests,
+     QuestionProgressTests, QuestionPoolTests, QuizViewModelTests,
+     V3→V4 migration, bank-coverage tests, extended Tier/Reset tests.
+     Last compile error fixed (#expect + key path) but not re-verified.
+     Run codeyTests only (⌘6 → right-click codeyTests → Run, or
+     -only-testing:codeyTests) and fix any failures.
+ [ ] OPEN: manual UI pass of QuizTopics → Setup sheet → focus-mode quiz →
+     summary. Check: setup sheet → fullScreenCover hand-off, level-up
+     toast, celebration, segmented ticks, Dynamic Type.
+ [ ] Optional OOP topic (B13) not done.
+ Notes / deviations:
+   - QuizSession replaced by ViewModels/QuizViewModel (+ QuizSessionTests
+     removed). TopicListView replaced by Features/Quiz/QuizTopicsView.
+   - Schema V4 (lightweight from V3). TopicProgress stores
+     mediumUnlockedAt/hardUnlockedAt dates instead of an array (sticky).
+   - Services/Practice/QuizProgressStore does the fetch/apply/insert work.
+     The rules are pure: QuestionProgress.record/returnForReviewIfDue,
+     TierGate (+ alreadyUnlocked), QuestionPool, and SeededGenerator
+     (SplitMix64) for deterministic tests.
+   - Review practice (pool exhausted) = QuizMode.review: no XP, no progress,
+     no history. Counts toward DailyActivity.quizAnswers like every answer.
+   - Starter-deck unlocks stay live-computed (not in TopicProgress).
+   - Content: +40 questions → 88 (8 Easy / 8 Medium / 6 Hard per topic).
+     The JSON diff is additions only. Correct answers are spread across A–D.
+   - Reset progress / Erase all also clear QuestionProgress, TopicProgress,
+     and QuizAnswerRecord.
 
 
 ================================================================================
@@ -947,7 +1070,7 @@ HOW TO READ THIS FILE
  "taps to study ≤ 3" metric
 
  7.1 Shell (Navigation/RootView.swift, replaces MainTabView)
- [ ] TabView using the Tab API:
+ [x] TabView using the Tab API:
        Tab("Home", systemImage: "house.fill")
        Tab("Decks", systemImage: "rectangle.stack.fill")
        Tab("Quiz", systemImage: "questionmark.bubble.fill")
@@ -955,18 +1078,20 @@ HOW TO READ THIS FILE
      .tabBarMinimizeBehavior(.onScrollDown). Each tab has its own
      NavigationStack; screens must be scrollable for minimize to kick in
      (short lists won't collapse; that's expected).
- [ ] .tabViewBottomAccessory: the ContinueStudyingAccessory
+ [x] .tabViewBottomAccessory: the ContinueStudyingAccessory
      ("▶ Swift Closures · 7/12" + small ring) appears ONLY when a
-     resumable StudyProgressSnapshot exists (the accessory shows on every
+     resumable StudyProgressSnapshot exists (REMOVED in D8 r3; was: use
+     StudyProgressSnapshot.latest(context:) / a @Query sorted by updatedAt;
+     resume = StudyRequest(deck:, start: .resume) → StudySessionView) (the accessory shows on every
      tab, so it must be globally relevant). Handle the inline/expanded
      placements (environment tabViewBottomAccessoryPlacement): compact
      label when inline. Tap → resume the study fullScreenCover.
- [ ] Focus mode: Study and Quiz are .fullScreenCover presentations, so the
+ [x] Focus mode: Study and Quiz are .fullScreenCover presentations, so the
      tab bar and accessory never cover rating buttons or answers.
- [ ] Deep-link enum AppRoute (home, deck(id), study(id), quiz(topic),
+ [x] Deep-link enum AppRoute (home, deck(id), study(id), quiz(topic),
      profile) owned by an @Observable Router. Ready for the widget (stretch)
      and for sign-in callbacks.
- [ ] Avatar button (top-right toolbar item on Home only) → ProfileSheet.
+ [x] Avatar button (top-right toolbar item on Home only) → ProfileSheet.
 
  7.2 HomeView (hub)  — scroll content; title area is custom, not a nav title
          Good evening, Raaj                              (◎)
@@ -981,23 +1106,23 @@ HOW TO READ THIS FILE
          ◆ Data Structures   ● ● ○   78%                    ← TierChipRow + accuracy
          ◆ Algorithms        ● ○ 🔒  64%
          ╭ Sign in to back up your decks   [Sign in] ✕ ╮     ← only if signed out
- [ ] Greeting by time of day + display name (or "Codey Learner").
- [ ] LevelCard: ProgressRing (LevelCalculator), XP total (numericText),
+ [x] Greeting by time of day + display name (or "Codey Learner").
+ [x] LevelCard: ProgressRing (LevelCalculator), XP total (numericText),
      "n XP to Level N+1", streak chip (static currentStreak until stretch
      FR-32–34).
- [ ] HubTiles: Decks (count, "+ New" opens the builder sheet directly) and
+ [x] HubTiles: Decks (count, "+ New" opens the builder sheet directly) and
      Quiz (Start → a mixed quiz on the weakest pinned topic, or QuizSetup).
- [ ] Topics section: pinned topics first (from onboarding), each with
+ [x] Topics section: pinned topics first (from onboarding), each with
      TierChipRow + accuracy over the last 50 answers (FR-36,
      QuizAnswerRecord). Tap → QuizSetupView.
- [ ] Sign-in nudge card (dismissible, remembered) when signed out.
- [ ] Empty/new-user state: friendly EmptyStateView prompts ("Start with a
+ [x] Sign-in nudge card (dismissible, remembered) when signed out.
+ [x] Empty/new-user state: friendly EmptyStateView prompts ("Start with a
      starter deck").
- [ ] Remove AnalyticsDashboardView, PracticeHomeView, SettingsView (moved),
+ [x] Remove AnalyticsDashboardView, PracticeHomeView, SettingsView (moved),
      TopicListView (→ QuizTopicsView), MainTabView.
 
  7.3 ProfileSheet (replaces the Settings tab)
- [ ] .sheet with a NavigationStack + List(.insetGrouped) — native rows,
+ [x] .sheet with a NavigationStack + List(.insetGrouped) — native rows,
      no custom cards:
        Header: avatar, display name, Level / XP, account status
          (Signed in as … / Guest).
@@ -1013,7 +1138,7 @@ HOW TO READ THIS FILE
          requires us to credit), "Report a problem" (stretch FR-49).
 
  7.4 Onboarding (D16)  — Features/Onboarding/
- [ ] Shown once (hasCompletedOnboarding in @AppStorage) after boot
+ [x] Shown once (hasCompletedOnboarding in @AppStorage) after boot
      seeding, as a fullScreenCover over RootView.
        1. Welcome: app symbol/icon, "Learn CS with flashcards & quizzes",
           3 feature bullets with SF Symbols, Continue.
@@ -1026,17 +1151,17 @@ HOW TO READ THIS FILE
           only).
      Page indicator, Back, works at large Dynamic Type, Reduce Motion
      friendly.
- [ ] Profile → "Replay onboarding" (debug builds only) for demos.
+ [x] Profile → "Replay onboarding" (debug builds only) for demos.
 
  7.5 Launch & app icon (D18)
- [ ] LoadingView restyle: brand gradient background, app glyph, slim
+ [x] LoadingView restyle: brand gradient background, app glyph, slim
      ProgressBar. Skip the artificial 200 ms delays (keep a minimum of
      ~400 ms total only to avoid flashing).
- [ ] App icon in Icon Composer (.icon): indigo, a "terminal cursor / card
+ [x] App icon in Icon Composer (.icon): indigo, a "terminal cursor / card
      stack" glyph, light/dark/tinted (clear) variants. Replace
      AppIcon.appiconset (verify that Tuist's buildableFolders picks up a
      .icon file; if not, add it as an explicit resource).
- [ ] Accent color asset = brand indigo (AccentColor.colorset).
+ [x] Accent color asset = brand indigo (AccentColor.colorset).
 
  7.6 QA
  [ ] Layout check on iPhone SE (3rd gen), iPhone 16, 16 Pro Max in
@@ -1045,6 +1170,76 @@ HOW TO READ THIS FILE
 
  Done when: every flow is reachable from Home in ≤ 3 taps and no screen
  clips on the 3 device sizes.
+
+ STATUS 2026-10-07 (dev): implemented (app icon added later the same day). App, unit
+ tests, and UI tests all COMPILE with no warnings; guardrails 7/7.
+ [x] QoL pass (D8 r3): Home simplified; accessory removed; duplicate
+     entry points removed; Router owns all study/quiz presentations.
+ [x] QoL pass 2 (2026-10-07):
+     - Home lists ALL topics again, pinned first. Showing only pinned
+       topics had hidden the rest.
+     - Topics are bigger cards: icon, title, "% mastered · % accuracy", a
+       mastery bar, and two buttons. Practice studies the topic's deck
+       (a menu when the topic has several; marks any deck with a session
+       to continue). Quiz opens the setup sheet.
+     - Content: 4 new topics (OOP, Networking, Swift Basics, Python
+       Basics), 22 questions each (8/8/6) → 8 topics, 176 questions.
+       8 new starter decks: a starter deck per new topic, plus a 2nd deck
+       for each original topic (Trees & Graphs, Sorting & Searching,
+       Concurrency, SQL Queries) → 12 decks, 144 cards. All 41 new code
+       snippets (Python/Swift/C++) were EXECUTED and match their answers.
+       The SQL deck uses Python sqlite3 snippets. New quiz answers are
+       spread evenly over A–D. Both JSON diffs are additions only.
+     - expectedTopicCount 8, expectedQuestionCount 176, expectedDeckCount
+       12. StarterDeckLoaderTests no longer hard-code 4.
+     - Resolves B13/O7 (OOP topic added).
+ [x] (RESOLVED 2026-10-07: all pass.) new unit tests NOT RUN: HomeLogicTests (incl. upNextPriority),
+     RouterTests, V4→V5 migration. (The Stage 6 tests are also still not run.)
+ [x] DONE 2026-10-07: app icon (7.5). Matches the launch-screen AppGlyph
+     (white bold </> SF Symbol at 42% on BrandFill #4F4FE8). Variants in
+     AppIcon.appiconset: light, dark (#8C8CFF glyph on #14142B), tinted
+     (white on black; iOS tints by luminance). Checked on Simulator by RB.
+     Deviation: an asset-catalog appiconset with appearance variants, not
+     an Icon Composer .icon. Same light/dark/tinted behaviour, and Tuist
+     picks it up with no extra config. The PNGs are generated by
+     scripts/render-app-icon.swift (swift scripts/render-app-icon.swift <out-dir>).
+     AccentColor was already the brand indigo.
+ [ ] OPEN: 7.6 QA on device sizes (manual).
+ [ ] OPEN, check on device: the tab bar minimizes on scroll; the accessory
+     appears only with a resumable session (inline vs expanded label);
+     setup sheet → quiz cover hand-off from Home and from the Quiz tab;
+     onboarding at AX sizes.
+ Notes / deviations:
+   - Schema V5: UserProfile is re-declared in CodeySchemaV5 with
+     pinnedTopicIds: [String] = [] (lightweight). V1's UserProfile stays
+     frozen; the UserProfile typealias now points at V5.
+   - Router (Navigation/Router.swift) owns the tab, the Decks path, and the
+     study/quiz covers, quiz setup sheet, profile sheet, and new-deck
+     sheet. AppRoute = home | decks | deck(id) | study(id) | quiz(topicId)
+     | profile. QuizTopicsView now goes through the Router (its own sheet
+     and cover were removed). DeckLibraryView/DeckDetailView still present
+     their own covers (fine; could move to the Router later).
+   - Accessory: iOS 26.1+ uses tabViewBottomAccessory(isEnabled:). On
+     26.0 the modifier is applied only while a session exists.
+   - Home Quiz tile: Start = mixed quiz on the weakest pinned topic (O9
+     default; untried counts as 0%), plus a "Choose" button that opens
+     QuizSetup. Decks tile: Open + "New" (opens the builder sheet). Detail
+     line = "n decks · m in progress" (snapshots), since we have no "due"
+     concept.
+   - Sign-in nudge shows only when backend keys are configured (sign-in
+     needs Stage 9). Sign-in buttons in Profile and onboarding are disabled
+     until then.
+   - Topic pins: onboarding step 2 (≥ 1 topic) and Profile → Study (toggle).
+     Pinned topics show first on Home; their starter decks show first in
+     Decks.
+   - Onboarding is skipped under -UITestInMemoryStore / -SkipOnboarding so
+     UI tests aren't blocked. Existing installs will see it once.
+   - LoadingView: gradient + AppGlyph (DesignSystem/Components), slim bar,
+     no fixed step delays, 400 ms minimum.
+   - Removed: MainTabView, SettingsView, AnalyticsDashboardView.
+   - Profile Acknowledgements lists Textual, swiftui-math,
+     swift-concurrency-extras, Runestone, TreeSitterLanguages, Tree-sitter,
+     and Prism. Add Supabase and GoogleSignIn in Stage 9.
 
 
 ================================================================================
@@ -1071,13 +1266,13 @@ HOW TO READ THIS FILE
      committed. `supabase link`. Migrations applied with `supabase db push`.
 
  8.2 Migrations (supabase/migrations/<timestamp>_*.sql)
- [ ] 0001_profiles.sql
+ [x] 0001_profiles.sql
        profiles(id uuid PK references auth.users on delete cascade,
                 display_name text check (char_length between 1 and 30),
                 avatar_id text, total_xp int not null default 0 check (>= 0),
                 created_at, updated_at timestamptz default now())
        trigger on auth.users insert → create profile row.
- [ ] 0002_decks_flashcards.sql
+ [x] 0002_decks_flashcards.sql
        decks(id uuid PK  -- client-generated, equals local id
              owner_id uuid not null default auth.uid() references auth.users on delete cascade,
              title text not null check (char_length(title) between 1 and 60),
@@ -1098,12 +1293,12 @@ HOW TO READ THIS FILE
        trigger: BEFORE INSERT OR UPDATE set server_updated_at = now().
        Limits MUST match ModelValidator (test in 1.2 compares them; note it
        in the PR template).
- [ ] 0003_sync_log.sql — sync_log(id bigserial, owner_id, entity text,
+ [x] 0003_sync_log.sql — sync_log(id bigserial, owner_id, entity text,
        entity_id uuid, op text check in ('upsert','delete'),
        client_ts timestamptz, server_ts timestamptz default now(),
        device_id text). Insert-only for the owner; no update/delete
        policies (audit ledger, R2).
- [ ] 0004_rls.sql — ENABLE RLS on every table (metric: 100%).
+ [x] 0004_rls.sql — ENABLE RLS on every table (metric: 100%).
        profiles: select/update where id = auth.uid().
        decks/flashcards: select/insert/update/delete where owner_id = auth.uid();
          flashcards insert/update also requires
@@ -1112,19 +1307,69 @@ HOW TO READ THIS FILE
  [ ] (stretch, FR-49) 0005_feedback.sql — feedback_reports(id, owner_id
        nullable, description text 1..2000, app_version, created_at);
        insert-only.
- [ ] supabase/tests/rls.sql (pgTAP via `supabase test db`): user B sees 0 of
+ [x] supabase/tests/rls.sql (pgTAP via `supabase test db`): user B sees 0 of
      user A's rows on every table; B can't insert a card into A's deck
      (NFR-07, metric "cross-account successes = 0").
  [ ] supabase/seed.sql for local `supabase start` dev (optional).
 
  8.3 Ops (R11, NFR-20)
- [ ] scripts/backup.sh: pg_dump of the remote DB to a dated file (gitignored).
+ [x] scripts/backup.sh: pg_dump of the remote DB to a dated file (gitignored).
      Weekly calendar reminder or a GitHub Actions cron (free) that also
      pings the API to stop the 1-week inactivity pause.
- [ ] Monthly check of the Supabase usage page (NFR-20).
+ [x] Monthly check of the Supabase usage page (NFR-20).
 
  Done when: migrations apply cleanly to a fresh project; RLS tests pass;
  setup doc lets a teammate reproduce everything.
+
+ STATUS 2026-10-08 (dev): DONE. The live project is set up and verified.
+ [x] 8.1 Supabase project gwnxkcjijuhkyklsvuta (Free). Google Cloud iOS +
+     Web OAuth clients; Supabase Google provider enabled with
+     "<web id>,<ios id>", skip nonce checks on. All 5 keys are in
+     Config/Secrets.xcconfig (gitignored; publishable key, not the legacy
+     anon JWT). The web client secret was shared in chat; the owner chose
+     not to rotate it.
+ [x] Migrations applied through the Supabase MCP (no CLI needed). Repo files
+     renamed to the remote versions 20261008022407…22702. Added
+     _lock_down_signup_trigger (revoke EXECUTE on handle_new_user from
+     anon/authenticated; Supabase lints 0028/0029).
+ [x] Security advisor: clean for our objects. The remaining WARN is
+     Supabase's own public.rls_auto_enable() (left alone). The performance
+     advisor only flags unused indexes (empty database).
+ [x] RLS verified LIVE: supabase/checks/rls_live_check.sql, 0 failed of 30.
+     It always raises at the end so everything rolls back; the database was
+     confirmed empty afterward (0 users/profiles/decks/cards/log rows).
+ [x] Supabase MCP added at project scope (.mcp.json, no secrets).
+ [ ] OPEN (optional): `supabase test db` (pgTAP version, tests/rls.sql)
+     still hasn't run; it needs the CLI + Docker. The live check covers the
+     same 30 assertions.
+ [x] Keep-alive: repo secrets SUPABASE_URL / SUPABASE_ANON_KEY set with
+     gh (2026-10-08). The same request returns HTTP 200 [] when run locally.
+     NOTE: GitHub runs scheduled workflows only from the DEFAULT branch
+     (main), so the 3-day ping starts once dev is merged into main.
+ [ ] OPEN: `supabase init` for config.toml, only if the CLI is adopted
+     later.
+ Notes / deviations:
+   - Setup doc is supabase/README.md, NOT docs/backend-setup.md (/docs is
+     gitignored in this repo).
+   - Migrations: supabase/migrations/<remote version>_*.sql. sync_log.id is an
+     identity column (modern bigserial).
+   - Length CHECKs use char_length(btrim(col, E' \t\r\n')) and the
+     line CHECK counts lines after trimming newlines, matching
+     ModelValidator (trimmed, Unicode scalars). New
+     codey/Tests/SupabaseSchemaTests reads the migration via #filePath and
+     checks the limits, enums, and "every table has RLS" (written, not run).
+   - profiles: the sign-up trigger fills display_name from the Google
+     full_name (≤ 30 chars) or "Codey Learner". updated_at is touched by a
+     trigger. total_xp is client-written (cheatable; documented,
+     acceptable without leaderboards).
+   - Policies are `to authenticated` with `(select auth.uid())`, so anon
+     gets nothing. flashcards insert/update also requires owning the deck.
+   - Keep-alive: .github/workflows/supabase-keepalive.yml every 3 days, a
+     no-op until the secrets are set. backups/ and supabase/.temp are
+     gitignored.
+   - 0005_feedback.sql (stretch, FR-49) and seed.sql are skipped.
+   - PR template now covers RLS on new tables and migrations being
+     append-only.
 
 
 ================================================================================
@@ -1136,19 +1381,19 @@ HOW TO READ THIS FILE
              patterns; R2, R7, R8, R9, R10.
 
  9.1 Dependencies
- [ ] Tuist/Package.swift: add supabase-swift (product "Supabase", or
+ [x] Tuist/Package.swift: add supabase-swift (product "Supabase", or
      just "Auth" + "PostgREST") and GoogleSignIn-iOS. Pin exact versions
      (current stable at implementation time). `tuist install` and
      `tuist generate`. Third-party packages are now exactly: Supabase,
      GoogleSignIn-iOS, Textual, Runestone, TreeSitterLanguages (NFR-15
      as amended).
- [ ] Info.plist: GIDClientID, CFBundleURLTypes with the reversed client
+ [x] Info.plist: GIDClientID, CFBundleURLTypes with the reversed client
      ID, Supabase keys from xcconfig. No NSAppTransportSecurity exceptions
      (NFR-06).
- [ ] CodeyApp: .onOpenURL { GIDSignIn.sharedInstance.handle($0) }.
+ [x] CodeyApp: .onOpenURL { GIDSignIn.sharedInstance.handle($0) }.
 
  9.2 State pattern  (Services/Sync/DeckSyncState.swift — ALL states in this one file, R9)
- [ ] protocol DeckSyncState { var kind: DeckSyncStateKind { get };
+ [x] protocol DeckSyncState { var kind: DeckSyncStateKind { get };
        var name: String { get }
        func onSave(_ deck) -> DeckSyncState
        func onEdit(_ deck) -> DeckSyncState
@@ -1164,7 +1409,7 @@ HOW TO READ THIS FILE
      (Streamlining: SwiftData can't store a protocol existential, so we
       persist the enum raw value and rebuild the state object. The pattern
       is intact and the .tex should get a one-line note.)
- [ ] Transition table = Fig. 7, exactly:
+ [x] Transition table = Fig. 7, exactly:
        (new) ──New Deck──▶ Drafting
        Drafting ──save, invalid──▶ Drafting (errors shown)
        Drafting ──save, valid──▶ LocallyPersisted (markDirty; enqueue upsert)
@@ -1180,24 +1425,24 @@ HOW TO READ THIS FILE
        Drafting | Syncing | ConflictDetected ──delete──▶ not allowed
        Starter decks: edit/delete not allowed, never pushed.
      Any other call is a no-op that returns self and logs at .debug.
- [ ] Crash recovery on launch: Syncing → LocallyPersisted; Drafting →
+ [x] Crash recovery on launch: Syncing → LocallyPersisted; Drafting →
      LocallyPersisted if it was persisted before (Drafting is otherwise an
      in-editor state only; a killed app must not strand a deck).
- [ ] Tests: one @Test per transition arrow above plus each disallowed
+ [x] Tests: one @Test per transition arrow above plus each disallowed
      operation (R9: "every transition has a test").
 
  9.3 Sync queue  (FR-45)
- [ ] @Model SyncOperation: id, entity (deck|card|profile), entityId,
+ [x] @Model SyncOperation: id, entity (deck|card|profile), entityId,
      op (upsert|delete), enqueuedAt, attempts, lastError, ownerId.
      Coalescing: a new upsert replaces a pending upsert for the same entity;
      a delete replaces any pending upsert; an upsert after delete is
      impossible (the tombstone blocks edits).
- [ ] ISyncQueue protocol: enqueue, peekBatch(limit:), markDone, markFailed.
- [ ] Queueing happens even when signed out (guest). The queue drains after
+ [x] ISyncQueue protocol: enqueue, peekBatch(limit:), markDone, markFailed.
+ [x] Queueing happens even when signed out (guest). The queue drains after
      sign-in.
 
  9.4 Subsystems behind protocols (testable with mocks, R7)
- [ ] AuthProviding — SupabaseAuthProvider:
+ [x] AuthProviding — SupabaseAuthProvider:
        signIn(presenting: UIViewController) async throws -> AppUser
          GIDSignIn.signIn(withPresenting:) → idToken + accessToken →
          supabase.auth.signInWithIdToken(credentials: .init(provider: .google,
@@ -1208,20 +1453,20 @@ HOW TO READ THIS FILE
        Verify the item is in the Keychain and NOT in UserDefaults. Set the
        accessibility to afterFirstUnlockThisDeviceOnly if configurable.
        Sign-out removes it (FR-03); add a test.
- [ ] RemoteDeckStore — SupabaseDataClient: upsertDecks([DeckPayload]),
+ [x] RemoteDeckStore — SupabaseDataClient: upsertDecks([DeckPayload]),
        upsertCards([FlashcardPayload]) (one batched request each, NFR-02),
        fetchChanges(since: Date) -> (decks, cards), upsertProfile,
        fetchProfile, appendSyncLog.
- [ ] LocalDeckStore — SwiftDataService (doc name): insert, fetchDecks,
+ [x] LocalDeckStore — SwiftDataService (doc name): insert, fetchDecks,
        delete, fetch(id:).
- [ ] Reachability — NetworkMonitor (NWPathMonitor): isReachable, AsyncStream
+ [x] Reachability — NetworkMonitor (NWPathMonitor): isReachable, AsyncStream
        of changes.
- [ ] Only files under Services/Backend/Supabase/ may `import Supabase` or
+ [x] Only files under Services/Backend/Supabase/ may `import Supabase` or
      `import GoogleSignIn`. Add scripts/check-imports.sh to the PR
      checklist (R7 trigger).
 
  9.5 BackendFacade  (Services/Backend/BackendFacade.swift; ≤ 300 lines or split, R8)
- [ ] @MainActor @Observable. Public API (all the UI ever sees):
+ [x] @MainActor @Observable. Public API (all the UI ever sees):
        authState: signedOut | signingIn | signedIn(AppUser) | error(String)
        signInWithGoogle() async, signOut() async
        saveDeck(_ draft) throws -> FlashcardDeck   // local FIRST (FR-44), then notifyPendingSync
@@ -1229,23 +1474,23 @@ HOW TO READ THIS FILE
        fetchDecks() -> [FlashcardDeck]
        syncPending() async
        syncStatus(for deck) -> DeckSyncStateKind
- [ ] LocalOnlyBackend from Stage 3 is deleted. DeckViewModel takes
+ [x] LocalOnlyBackend from Stage 3 is deleted. DeckViewModel takes
      BackendFacade (or a protocol it conforms to, for VM tests).
 
  9.6 SyncEngine  (FR-46, FR-47, NFR-09)
- [ ] Triggers: after saveDeck (debounced 2 s), reachability restored,
+ [x] Triggers: after saveDeck (debounced 2 s), reachability restored,
      app didBecomeActive, sign-in completed, manual pull-to-refresh in the
      library. Guarantees a sync within 30 s of reconnect (NFR-09).
- [ ] Push: drain the queue in batches (decks then cards), set Syncing →
+ [x] Push: drain the queue in batches (decks then cards), set Syncing →
      Synced/LocallyPersisted, append to sync_log. Exponential backoff
      (2, 4, 8 … max 300 s) on failure.
- [ ] Pull: fetchChanges(since: lastPullCursor) using server_updated_at.
+ [x] Pull: fetchChanges(since: lastPullCursor) using server_updated_at.
      New remote cards come through FlashcardFactory.createCard(from:)
      (factory rule for sync). Remote tombstones delete locally.
- [ ] Conflict detection (Syncing → ConflictDetected): the remote deck's
+ [x] Conflict detection (Syncing → ConflictDetected): the remote deck's
      server_updated_at > local.serverUpdatedAt (someone else changed it
      since our last sync) AND the local deck is dirty.
- [ ] Additive merge (FR-47, ConflictState.onResolve):
+ [x] Additive merge (FR-47, ConflictState.onResolve):
        cards = union by id;
        card in both & both edited → later updatedAt wins;
        delete vs edit → later timestamp wins (tombstone deletedAt vs
@@ -1254,25 +1499,25 @@ HOW TO READ THIS FILE
        result marked dirty → LocallyPersisted → re-push.
      Known limit: relies on device clocks; acceptable for a class project.
      Documented.
- [ ] Profile sync (D10): total_xp merge = max(local, remote) (XP only
+ [x] Profile sync (D10): total_xp merge = max(local, remote) (XP only
      goes up, except via "Reset progress", which writes 0 explicitly);
      display_name/avatar = last write wins.
- [ ] First sign-in on a device: claim guest decks (ownerId = user),
+ [x] First sign-in on a device: claim guest decks (ownerId = user),
      enqueue upserts, then pull remote decks.
- [ ] Sign-out (FR-03): confirmation "Keep decks on this device / Remove
+ [x] Sign-out (FR-03): confirmation "Keep decks on this device / Remove
      them". Default = remove this account's synced decks; unsynced changes
      trigger a warning. This stops account B from uploading account A's
      decks. → open item O3.
- [ ] UI: library badges driven by syncStateRaw (FR-48). Settings Account
+ [x] UI: library badges driven by syncStateRaw (FR-48). Settings Account
      card shows signed-in email/name, Sign out, last sync time, a "Sync
      now" button, and the pending count.
 
  9.7 Tests
- [ ] Unit (mocks, no network): queue coalescing; push success → Synced;
+ [x] Unit (mocks, no network): queue coalescing; push success → Synced;
      push timeout → LocallyPersisted + backoff; conflict → merge cases
      (add/add, edit/edit, delete/edit both orders); offline save never
      touches the network (FR-44); reconnect triggers a sync.
- [ ] Integration (opt-in, runs only if SUPABASE_TEST_URL + 2 test-account
+ [~] Integration (opt-in, runs only if SUPABASE_TEST_URL + 2 test-account
      credentials are set in the env):
        100-card deck push ≤ 5 s on Wi-Fi (NFR-02),
        account B reads 0 of account A's rows (NFR-07),
@@ -1282,6 +1527,68 @@ HOW TO READ THIS FILE
  Done when: sign in with Google works on Simulator; decks made offline sync
  after reconnect; two simulators signed into the same account converge
  after concurrent edits; the badges reflect each state.
+
+ STATUS 2026-10-07 (dev): implemented. App builds with no warnings in our
+ code; 287/287 unit tests PASS on CLI (incl. the earlier not-run Stage 6/7
+ tests). check-imports.sh and check-design-tokens.sh pass. Facade is
+ 300 lines (R8).
+ [x] Verified with mocks (no network): every Fig. 7 arrow + disallowed op
+     (DeckSyncStateTests), queue coalescing (SyncQueueTests), all merge
+     cases (ConflictResolverTests), and push/ack, timeout + backoff,
+     offline save, reconnect, 100-card batching, pull, tombstones, profile
+     merge/reset, guest claim, sign-out keep/remove, two-device convergence
+     (SyncEngineTests). Keychain storage is ThisDeviceOnly, not in
+     UserDefaults, and removed on sign-out (KeychainSessionStorageTests).
+ [x] Verified LIVE (read-only, anon key): every PostgREST select/filter the
+     client sends returns 200 against the real schema (RLS returns []); a
+     bogus column returns 400, so the column names are really checked.
+ [ ] OPEN (manual): Google sign-in on Simulator/device, offline → reconnect
+     sync, and two simulators converging. Needs a person to click through
+     Google's sheet; not automatable from the CLI.
+ [ ] OPEN (opt-in): SupabaseIntegrationTests (NFR-02/07/09) are written but
+     SKIPPED. They need two email/password test users in the project and
+     TEST_RUNNER_SUPABASE_TEST_{URL,KEY,EMAIL_A,PASSWORD_A,EMAIL_B,PASSWORD_B}.
+     Not created: they would add accounts to the live project.
+ Notes / deviations:
+   - Versions: supabase-swift 2.55.3, GoogleSignIn-iOS 10.0.0 (first with
+     Xcode 27 support). Also pinned xctest-dynamic-overlay 1.11.0 and
+     swift-clocks 1.0.6: 1.13's shim over swift-issue-reporting reuses a
+     product name, and Tuist resolves that into a self-cycle. The transitive
+     packages (AppAuth, GTMAppAuth, GTMSessionFetcher, GoogleUtilities,
+     App Check, Promises, interop, swift-crypto/asn1/http-types) are
+     credited in Profile → Acknowledgements.
+   - Schema V6 adds SyncOperation (lightweight). The pull cursor and the
+     persisted "last synced" time are in UserDefaults, per account
+     (SyncCursorStore).
+   - Session storage is our KeychainSessionStorage (Supabase/), not the SDK
+     default: the default uses AfterFirstUnlock, and FR-02 wants ThisDeviceOnly.
+   - States change only deck fields (markDirty, lastSyncedAt, tombstone).
+     Queueing lives in the facade/engine; the merge lives in
+     ConflictResolver, and the engine calls it before ConflictState.onResolve.
+   - Drafting is in-editor only: the builder's save runs edit → save, and
+     only when something changed, so an unchanged save doesn't bump
+     updatedAt. Edit is disabled while Syncing/Conflict (FlashcardDeck.canEdit).
+     If a save lands mid-push, the ACK leaves the deck LocallyPersisted.
+   - Conflict check runs at PUSH time: one batched fetchDeckVersions call,
+     then fetchDeckSnapshot only for decks whose server_updated_at moved.
+     Pull skips decks with unpushed changes, so nothing is lost if the app
+     dies between pull and push. Timestamps within 1 ms count as equal
+     (Postgres keeps microseconds).
+   - A "delete" goes to the server as a tombstone (deleted_at). After the
+     ACK the local deck is hard-deleted (Fig. 7 final state).
+     Never-synced decks/cards are hard-deleted at once, with no queue entry.
+   - Profile: display_name currently = remote wins (no local name editor
+     until FR-04); a queued profile op (Reset progress) makes local win.
+     Guest profile ops are dropped at sign-in (the account's XP max-merges).
+   - Sign-in claims ownerless user decks and queues them, including decks
+     from before sync existed. Decks kept at sign-out keep their owner, so
+     another account never claims or uploads them. Sign-out uses scope
+     .local (other devices stay signed in). Erase-all requires sign-out.
+   - sync_log append failures are logged, not fatal (audit aid, R2).
+   - Pre-existing bug fixed: QuizProgressStore.pruneHistory used fetchOffset,
+     which SwiftData ignores for unsaved inserts, so each answer deleted the
+     topic's whole history (it broke FR-36 accuracy). Found via
+     historyIsPrunedPerTopic + the V3 migration test; both failed on b518fe5 too.
 
 
 ================================================================================
@@ -1381,7 +1688,7 @@ HOW TO READ THIS FILE
  O5 Snippet shown on the prompt side by default. Is per-card placement
     needed?
  O6 FileProtection .complete vs .completeUnlessOpen (Stage 10).
- O7 Add an OOP topic now or later (B13).
+ O7 [RESOLVED] OOP topic added (plus Networking, Swift, Python).
  O8 Final SF Symbols for tiers/tabs and the exact indigo hex (ES; must pass
     4.5:1).
  O9 Quiz hub tile "Start": a mixed quiz on the weakest pinned topic (default)

@@ -10,13 +10,13 @@ struct DeckLibraryView: View {
         var id: String { rawValue }
     }
 
-    @Environment(\.modelContext) private var modelContext
     @Query(
         filter: #Predicate<FlashcardDeck> { $0.deletedAt == nil },
         sort: [SortDescriptor(\FlashcardDeck.updatedAt, order: .reverse)]
     )
     private var decks: [FlashcardDeck]
     @Query(sort: \Topic.title) private var topics: [Topic]
+    @Query private var profiles: [UserProfile]
 
     @State private var filter: Filter = .all
     @State private var searchText = ""
@@ -29,7 +29,7 @@ struct DeckLibraryView: View {
         Dictionary(topics.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
-    private var backend: LocalOnlyBackend { LocalOnlyBackend(context: modelContext) }
+    @Environment(BackendFacade.self) private var backend
 
     var body: some View {
         ScrollView {
@@ -79,6 +79,7 @@ struct DeckLibraryView: View {
         .background(CodeyColor.surface)
         .navigationTitle("Decks")
         .searchable(text: $searchText, prompt: "Title or topic")
+        .refreshable { await backend.syncPending() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -150,6 +151,7 @@ struct DeckLibraryView: View {
     private func menu(for deck: FlashcardDeck) -> some View {
         if deck.isEditable {
             Button("Edit", systemImage: "pencil") { builder = .edit(deck) }
+                .disabled(!deck.canEdit)
             Button("Delete", systemImage: "trash", role: .destructive) { deckToDelete = deck }
                 .disabled(!deck.canDelete)
             if let reason = deck.deleteBlockedReason {
@@ -180,7 +182,14 @@ struct DeckLibraryView: View {
     private var starterDecks: [FlashcardDeck] {
         visibleDecks
             .filter { $0.origin == .starter && (showHiddenStarters || !$0.isHidden) }
-            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+            .sorted { lhs, rhs in
+                // Pinned topics' starter decks first (onboarding, D16), in pin order.
+                let pins = profiles.first?.pinnedTopicIds ?? []
+                let l = pins.firstIndex(of: lhs.topicId) ?? Int.max
+                let r = pins.firstIndex(of: rhs.topicId) ?? Int.max
+                if l != r { return l < r }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
     }
 
     private var hasHiddenStarters: Bool {
@@ -219,8 +228,11 @@ enum BuilderRequest: Identifiable {
 }
 
 #Preview {
+    let container = ModelContainerFactory.makePreview()
     NavigationStack {
         DeckLibraryView()
     }
-    .modelContainer(ModelContainerFactory.makePreview())
+    .environment(Router())
+    .environment(BackendFacade.localOnly(context: container.mainContext))
+    .modelContainer(container)
 }

@@ -380,6 +380,802 @@
           }
         }
       ]
+    },
+    {
+      "starterKey": "starter-ds-2",
+      "topicId": "topic-data-structures",
+      "title": "Trees & Graphs",
+      "cards": [
+        {
+          "id": "sc-ds2-001",
+          "difficulty": "easy",
+          "prompt": "What is a binary tree?",
+          "answer": "A tree where every node has **at most two children**, usually called left and right."
+        },
+        {
+          "id": "sc-ds2-002",
+          "difficulty": "easy",
+          "prompt": "What makes a binary *search* tree special?",
+          "answer": "For every node, keys in the **left** subtree are smaller and keys in the **right** subtree are larger. That ordering lets a search skip half the tree at each step when the tree is balanced."
+        },
+        {
+          "id": "sc-ds2-003",
+          "difficulty": "easy",
+          "prompt": "What is a graph?",
+          "answer": "A set of **vertices** (nodes) connected by **edges**. Edges can be directed or undirected, weighted or unweighted."
+        },
+        {
+          "id": "sc-ds2-004",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`[1, 3, 5, 8, 9]`. An **in-order** traversal (left, node, right) of a binary search tree visits the keys in sorted order.",
+          "code": {
+            "language": "python",
+            "source": "class Node:\n    def __init__(self, key, left=None, right=None):\n        self.key, self.left, self.right = key, left, right\n\ndef inorder(node):\n    if node:\n        yield from inorder(node.left)\n        yield node.key\n        yield from inorder(node.right)\n\nroot = Node(5, Node(3, Node(1)), Node(8, None, Node(9)))\nprint(list(inorder(root)))"
+          }
+        },
+        {
+          "id": "sc-ds2-005",
+          "difficulty": "medium",
+          "prompt": "In what order does this breadth-first search visit the nodes?",
+          "answer": "`ABCDE`. BFS uses a **queue**: it visits A, then A's neighbors (B, C), then theirs (D, E). The `seen` set stops D from being queued twice.",
+          "code": {
+            "language": "python",
+            "source": "from collections import deque\n\ngraph = {\"A\": [\"B\", \"C\"], \"B\": [\"D\"], \"C\": [\"D\", \"E\"], \"D\": [], \"E\": []}\nseen, order, queue = {\"A\"}, [], deque([\"A\"])\nwhile queue:\n    node = queue.popleft()\n    order.append(node)\n    for nxt in graph[node]:\n        if nxt not in seen:\n            seen.add(nxt)\n            queue.append(nxt)\nprint(\"\".join(order))"
+          }
+        },
+        {
+          "id": "sc-ds2-006",
+          "difficulty": "medium",
+          "prompt": "Adjacency list or adjacency matrix: which answers \"is there an edge u→v?\" in O(1)?",
+          "answer": "The **adjacency matrix**: just read `matrix[u][v]`. A list must scan u's neighbors (O(degree)), but it needs only O(V + E) space instead of O(V²), which wins for sparse graphs."
+        },
+        {
+          "id": "sc-ds2-007",
+          "difficulty": "medium",
+          "prompt": "What is a *complete* binary tree, and why do heaps use one?",
+          "answer": "Every level is full except possibly the last, which fills left to right. That shape lets a heap live in a plain array with no pointers."
+        },
+        {
+          "id": "sc-ds2-008",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`7 4`. In an array-backed binary heap, node `i`'s children are at `2i + 1` and `2i + 2`. Node 1 (value 3) has children at indexes 3 and 4.",
+          "code": {
+            "language": "swift",
+            "source": "let heap = [1, 3, 2, 7, 4, 5]\nlet i = 1\nprint(heap[2 * i + 1], heap[2 * i + 2])"
+          }
+        },
+        {
+          "id": "sc-ds2-009",
+          "difficulty": "hard",
+          "prompt": "Why is DFS a natural fit for finding cycles in a directed graph?",
+          "answer": "DFS tracks the current path. Reaching a node that's **still on the path** (a back edge) means there's a cycle. Nodes that are already finished can't be part of a new one."
+        },
+        {
+          "id": "sc-ds2-010",
+          "difficulty": "hard",
+          "prompt": "What does this print, and what algorithm is it?",
+          "answer": "`['shop', 'cook', 'eat', 'wash']`. It's **Kahn's algorithm** for topological sort: repeatedly take a task whose dependencies are all done (in-degree 0). If some task never reaches 0, the graph has a cycle.",
+          "code": {
+            "language": "python",
+            "source": "from collections import deque\n\ndeps = {\"shop\": [], \"cook\": [\"shop\"], \"eat\": [\"cook\"], \"wash\": [\"eat\", \"cook\"]}\nindegree = {task: len(before) for task, before in deps.items()}\nunlocks = {task: [] for task in deps}\nfor task, before in deps.items():\n    for b in before:\n        unlocks[b].append(task)\n\nqueue = deque(t for t, d in indegree.items() if d == 0)\norder = []\nwhile queue:\n    task = queue.popleft()\n    order.append(task)\n    for nxt in unlocks[task]:\n        indegree[nxt] -= 1\n        if indegree[nxt] == 0:\n            queue.append(nxt)\nprint(order)"
+          }
+        },
+        {
+          "id": "sc-ds2-011",
+          "difficulty": "hard",
+          "prompt": "How do AVL and red-black trees guarantee O(log n) search?",
+          "answer": "They **rebalance** with rotations after inserts and deletes, keeping the height O(log n). A plain BST fed sorted keys degrades into a chain of height n."
+        },
+        {
+          "id": "sc-ds2-012",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`1 0`. This is **union-find** (disjoint sets) with path compression: 0, 1, 3, and 4 end up in one set and 2 stays alone. It's the core of Kruskal's minimum-spanning-tree algorithm.",
+          "code": {
+            "language": "cpp",
+            "source": "#include <iostream>\n#include <vector>\n\nstd::vector<int> parent;\n\nint find(int x) { return parent[x] == x ? x : parent[x] = find(parent[x]); }\nvoid unite(int a, int b) { parent[find(a)] = find(b); }\n\nint main() {\n    parent = {0, 1, 2, 3, 4};\n    unite(0, 1);\n    unite(3, 4);\n    unite(1, 4);\n    std::cout << (find(0) == find(3)) << \" \" << (find(2) == find(0)) << \"\\n\";\n}"
+          }
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-algo-2",
+      "topicId": "topic-algorithms",
+      "title": "Sorting & Searching",
+      "cards": [
+        {
+          "id": "sc-algo2-001",
+          "difficulty": "easy",
+          "prompt": "Why does binary search need a sorted array?",
+          "answer": "Comparing with the middle element tells you which **half** can't contain the target. That only works when the order is known."
+        },
+        {
+          "id": "sc-algo2-002",
+          "difficulty": "easy",
+          "prompt": "What does selection sort do on each pass?",
+          "answer": "Finds the **smallest** remaining element and swaps it into the next position. It always makes O(n²) comparisons, even on sorted input."
+        },
+        {
+          "id": "sc-algo2-003",
+          "difficulty": "easy",
+          "prompt": "When does insertion sort run in O(n)?",
+          "answer": "On an **already sorted** array: each new element is compared once and stays where it is."
+        },
+        {
+          "id": "sc-algo2-004",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`(5, 2)`. Step 1 checks index 3 (value 7) and moves right; step 2 checks index 5 and finds 11. Each step halves the range, so binary search is **O(log n)**.",
+          "code": {
+            "language": "python",
+            "source": "def binary_search(items, target):\n    lo, hi, steps = 0, len(items) - 1, 0\n    while lo <= hi:\n        steps += 1\n        mid = (lo + hi) // 2\n        if items[mid] == target:\n            return mid, steps\n        if items[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1, steps\n\nprint(binary_search([1, 3, 5, 7, 9, 11, 13], 11))"
+          }
+        },
+        {
+          "id": "sc-algo2-005",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`[1, 2, 3, 4, 9, 10, 12]`. This is merge sort's **merge** step: walk both sorted lists and always take the smaller head. It runs in O(len(a) + len(b)).",
+          "code": {
+            "language": "python",
+            "source": "def merge(a, b):\n    out, i, j = [], 0, 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            out.append(a[i])\n            i += 1\n        else:\n            out.append(b[j])\n            j += 1\n    return out + a[i:] + b[j:]\n\nprint(merge([1, 4, 9], [2, 3, 10, 12]))"
+          }
+        },
+        {
+          "id": "sc-algo2-006",
+          "difficulty": "medium",
+          "prompt": "Why is quicksort's worst case O(n²)?",
+          "answer": "If the pivot is always the smallest or largest element (say, the first element of sorted input), each partition removes just one element: n levels of O(n) work. Random or median-of-three pivots make that very unlikely."
+        },
+        {
+          "id": "sc-algo2-007",
+          "difficulty": "medium",
+          "prompt": "Which sort suits a *nearly* sorted array?",
+          "answer": "**Insertion sort**. It does O(n + k) work, where k is the number of out-of-order pairs, so a few misplaced elements cost little."
+        },
+        {
+          "id": "sc-algo2-008",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`fig banana`. `sorted(by:)` takes a comparator; here shorter words come first, so the shortest is `fig` and the longest is `banana`.",
+          "code": {
+            "language": "swift",
+            "source": "let words = [\"pear\", \"fig\", \"banana\", \"kiwi\"]\nlet sorted = words.sorted { $0.count < $1.count }\nprint(sorted.first!, sorted.last!)"
+          }
+        },
+        {
+          "id": "sc-algo2-009",
+          "difficulty": "hard",
+          "prompt": "Counting sort runs in O(n + k). Why doesn't that break the Ω(n log n) sorting bound?",
+          "answer": "That bound is for **comparison** sorts. Counting sort never compares elements; it counts how many of each key (0..<k) there are. It's only practical when k is small."
+        },
+        {
+          "id": "sc-algo2-010",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`1 4 3`. `lower_bound` finds the first element ≥ 3 and `upper_bound` the first element > 3, both by binary search. Their difference counts the 3s in **O(log n)**.",
+          "code": {
+            "language": "cpp",
+            "source": "#include <algorithm>\n#include <iostream>\n#include <vector>\n\nint main() {\n    std::vector<int> v = {1, 3, 3, 3, 8};\n    auto lo = std::lower_bound(v.begin(), v.end(), 3) - v.begin();\n    auto hi = std::upper_bound(v.begin(), v.end(), 3) - v.begin();\n    std::cout << lo << \" \" << hi << \" \" << hi - lo << \"\\n\";\n}"
+          }
+        },
+        {
+          "id": "sc-algo2-011",
+          "difficulty": "hard",
+          "prompt": "How does quickselect find the k-th smallest element in O(n) on average?",
+          "answer": "It partitions like quicksort but recurses into **only the side** that contains index k. The expected work is n + n/2 + n/4 + … ≈ 2n."
+        },
+        {
+          "id": "sc-algo2-012",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`[7, 8, 15] [99, 63]`. `heapq` keeps a heap of size k, so finding the k smallest or largest costs **O(n log k)**, cheaper than a full sort when k is small.",
+          "code": {
+            "language": "python",
+            "source": "import heapq\n\nscores = [42, 7, 99, 15, 63, 8]\nprint(heapq.nsmallest(3, scores), heapq.nlargest(2, scores))"
+          }
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-os-2",
+      "topicId": "topic-os-basics",
+      "title": "Concurrency",
+      "cards": [
+        {
+          "id": "sc-os2-001",
+          "difficulty": "easy",
+          "prompt": "What is a thread?",
+          "answer": "An independent path of execution **inside a process**. Threads in one process share memory, so they can cooperate quickly but must coordinate access."
+        },
+        {
+          "id": "sc-os2-002",
+          "difficulty": "easy",
+          "prompt": "What does a mutex (lock) do?",
+          "answer": "It lets **only one thread at a time** into a critical section. Other threads wait until the holder unlocks."
+        },
+        {
+          "id": "sc-os2-003",
+          "difficulty": "easy",
+          "prompt": "What is a critical section?",
+          "answer": "Code that touches **shared data** and must not run in more than one thread at once."
+        },
+        {
+          "id": "sc-os2-004",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`400000`, every time. The lock makes `count += 1` (read, add, write) happen as one step. Without it, threads could overwrite each other's updates.",
+          "code": {
+            "language": "python",
+            "source": "import threading\n\ncount = 0\nlock = threading.Lock()\n\ndef work():\n    global count\n    for _ in range(100_000):\n        with lock:\n            count += 1\n\nthreads = [threading.Thread(target=work) for _ in range(4)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(count)"
+          }
+        },
+        {
+          "id": "sc-os2-005",
+          "difficulty": "medium",
+          "prompt": "Concurrency vs parallelism?",
+          "answer": "**Concurrency** is structuring work as tasks whose progress overlaps in time. **Parallelism** is tasks running at the same instant on different cores. A single core can be concurrent but not parallel."
+        },
+        {
+          "id": "sc-os2-006",
+          "difficulty": "medium",
+          "prompt": "Give a two-thread deadlock example.",
+          "answer": "Thread 1 holds lock A and waits for B; thread 2 holds B and waits for A. Neither can move. Always taking locks in one global order prevents it."
+        },
+        {
+          "id": "sc-os2-007",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`2`. An **actor** protects its state: outside calls are `await`ed and run one at a time, so `value` can't be corrupted by a data race.",
+          "code": {
+            "language": "swift",
+            "source": "actor Counter {\n    private var value = 0\n\n    func increment() -> Int {\n        value += 1\n        return value\n    }\n}\n\nlet counter = Counter()\n_ = await counter.increment()\nprint(await counter.increment())"
+          }
+        },
+        {
+          "id": "sc-os2-008",
+          "difficulty": "medium",
+          "prompt": "What is a semaphore with a count of 3 good for?",
+          "answer": "Letting **up to 3** threads into a section at once, for example to cap concurrent downloads. A count of 1 behaves like a lock."
+        },
+        {
+          "id": "sc-os2-009",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`[2, 4, 6]`. `queue.Queue` is thread-safe, which makes it the classic **producer–consumer** channel. The `None` sentinel tells the consumer to stop, and `join()` waits for it.",
+          "code": {
+            "language": "python",
+            "source": "import queue\nimport threading\n\nq = queue.Queue()\nresults = []\n\ndef consumer():\n    while (item := q.get()) is not None:\n        results.append(item * 2)\n\nt = threading.Thread(target=consumer)\nt.start()\nfor n in [1, 2, 3]:\n    q.put(n)\nq.put(None)  # sentinel: tells the consumer to stop\nt.join()\nprint(results)"
+          }
+        },
+        {
+          "id": "sc-os2-010",
+          "difficulty": "hard",
+          "prompt": "Why isn't `count += 1` atomic?",
+          "answer": "It's three steps: **read** count, **add** 1, **write** it back. Two threads can read the same old value, and one increment is lost."
+        },
+        {
+          "id": "sc-os2-011",
+          "difficulty": "hard",
+          "prompt": "What is a livelock?",
+          "answer": "Threads keep **reacting to each other** (for example, both backing off and retrying in lockstep), so they stay busy but make no progress. Random backoff usually breaks the pattern."
+        },
+        {
+          "id": "sc-os2-012",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`200000`. `std::atomic<int>` makes `count++` a single indivisible operation, so no increments are lost and no mutex is needed. More complex shared state still needs a lock.",
+          "code": {
+            "language": "cpp",
+            "source": "#include <atomic>\n#include <iostream>\n#include <thread>\n#include <vector>\n\nint main() {\n    std::atomic<int> count{0};\n    std::vector<std::thread> threads;\n    for (int t = 0; t < 4; ++t)\n        threads.emplace_back([&] { for (int i = 0; i < 50000; ++i) count++; });\n    for (auto& th : threads) th.join();\n    std::cout << count << \"\\n\";\n}"
+          }
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-db-2",
+      "topicId": "topic-databases",
+      "title": "SQL Queries",
+      "cards": [
+        {
+          "id": "sc-db2-001",
+          "difficulty": "easy",
+          "prompt": "What does `SELECT DISTINCT city FROM users` return?",
+          "answer": "Each city **once**, however many users live there."
+        },
+        {
+          "id": "sc-db2-002",
+          "difficulty": "easy",
+          "prompt": "What does `ORDER BY score DESC` do?",
+          "answer": "Sorts rows by `score` from **highest to lowest**. `ASC`, the default, sorts lowest first."
+        },
+        {
+          "id": "sc-db2-003",
+          "difficulty": "easy",
+          "prompt": "`COUNT(*)` vs `COUNT(email)`?",
+          "answer": "`COUNT(*)` counts **rows**. `COUNT(email)` counts only rows where `email` is **not NULL**."
+        },
+        {
+          "id": "sc-db2-004",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`[('Cy',), ('Ana',)]`. `WHERE` keeps people older than 20 (Ana, Cy), and `ORDER BY age` sorts them youngest first. The `?` placeholders are also how you prevent SQL injection.",
+          "code": {
+            "language": "python",
+            "source": "import sqlite3\n\ndb = sqlite3.connect(\":memory:\")\ndb.execute(\"CREATE TABLE users (name TEXT, age INTEGER)\")\ndb.executemany(\"INSERT INTO users VALUES (?, ?)\", [(\"Ana\", 31), (\"Bo\", 19), (\"Cy\", 25)])\nrows = db.execute(\"SELECT name FROM users WHERE age > 20 ORDER BY age\").fetchall()\nprint(rows)"
+          }
+        },
+        {
+          "id": "sc-db2-005",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`[('ana', 30.0), ('cy', 7.0)]`. `GROUP BY` makes one row per customer, `SUM` adds their totals, and `HAVING` filters the groups. Bo's total is exactly 6, so Bo is dropped.",
+          "code": {
+            "language": "python",
+            "source": "import sqlite3\n\ndb = sqlite3.connect(\":memory:\")\ndb.execute(\"CREATE TABLE orders (customer TEXT, total REAL)\")\ndb.executemany(\"INSERT INTO orders VALUES (?, ?)\",\n               [(\"ana\", 10), (\"bo\", 5), (\"ana\", 20), (\"bo\", 1), (\"cy\", 7)])\nrows = db.execute(\"\"\"\n    SELECT customer, SUM(total) FROM orders\n    GROUP BY customer HAVING SUM(total) > 6\n    ORDER BY customer\n\"\"\").fetchall()\nprint(rows)"
+          }
+        },
+        {
+          "id": "sc-db2-006",
+          "difficulty": "medium",
+          "prompt": "INNER JOIN vs LEFT JOIN, in one sentence?",
+          "answer": "An INNER JOIN keeps only rows that match in **both** tables; a LEFT JOIN keeps **every** left row and fills in NULLs where the right side has no match."
+        },
+        {
+          "id": "sc-db2-007",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`[('Bo',)]`. The LEFT JOIN keeps every user, and users without orders get NULLs on the order side. `WHERE o.user_id IS NULL` is the classic \"rows with no match\" pattern.",
+          "code": {
+            "language": "python",
+            "source": "import sqlite3\n\ndb = sqlite3.connect(\":memory:\")\ndb.executescript(\"\"\"\n    CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);\n    CREATE TABLE orders (user_id INTEGER, item TEXT);\n    INSERT INTO users VALUES (1, 'Ana'), (2, 'Bo'), (3, 'Cy');\n    INSERT INTO orders VALUES (1, 'book'), (1, 'pen'), (3, 'mug');\n\"\"\")\nrows = db.execute(\"\"\"\n    SELECT u.name FROM users u\n    LEFT JOIN orders o ON o.user_id = u.id\n    WHERE o.user_id IS NULL\n\"\"\").fetchall()\nprint(rows)"
+          }
+        },
+        {
+          "id": "sc-db2-008",
+          "difficulty": "medium",
+          "prompt": "What does `LIMIT 10 OFFSET 20` return?",
+          "answer": "Rows **21–30** of the result: skip 20, take 10. It's used for paging. Add an `ORDER BY` so the pages stay stable."
+        },
+        {
+          "id": "sc-db2-009",
+          "difficulty": "hard",
+          "prompt": "What does `WHERE price > (SELECT AVG(price) FROM items)` do?",
+          "answer": "The **subquery** computes the average price once, and the outer query keeps only the items priced above it."
+        },
+        {
+          "id": "sc-db2-010",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`[('blue', 'cy'), ('red', 'bo')]`. `ROW_NUMBER() OVER (PARTITION BY team …)` numbers rows within each team by points, so `rank = 1` picks each team's top scorer. Unlike GROUP BY, a window function keeps every row.",
+          "code": {
+            "language": "python",
+            "source": "import sqlite3\n\ndb = sqlite3.connect(\":memory:\")\ndb.execute(\"CREATE TABLE scores (player TEXT, team TEXT, points INTEGER)\")\ndb.executemany(\"INSERT INTO scores VALUES (?, ?, ?)\", [\n    (\"ana\", \"red\", 30), (\"bo\", \"red\", 50), (\"cy\", \"blue\", 40), (\"di\", \"blue\", 20)])\nrows = db.execute(\"\"\"\n    SELECT team, player FROM (\n        SELECT team, player,\n               ROW_NUMBER() OVER (PARTITION BY team ORDER BY points DESC) AS rank\n        FROM scores)\n    WHERE rank = 1 ORDER BY team\n\"\"\").fetchall()\nprint(rows)"
+          }
+        },
+        {
+          "id": "sc-db2-011",
+          "difficulty": "hard",
+          "prompt": "Why can `WHERE LOWER(email) = ?` be slow even though `email` has an index?",
+          "answer": "Wrapping the column in a function means the plain index on `email` can't be used, so the database **scans every row**. Use an index on `LOWER(email)` or store emails already lowercased."
+        },
+        {
+          "id": "sc-db2-012",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`[(100,), (20,)]`. Ana's balance would go negative, so the CHECK fails and the whole transaction **rolls back**, including Bo's +50. That's atomicity: all or nothing.",
+          "code": {
+            "language": "python",
+            "source": "import sqlite3\n\ndb = sqlite3.connect(\":memory:\")\ndb.execute(\"CREATE TABLE accounts (name TEXT PRIMARY KEY, balance INTEGER CHECK (balance >= 0))\")\ndb.executemany(\"INSERT INTO accounts VALUES (?, ?)\", [(\"ana\", 100), (\"bo\", 20)])\ndb.commit()\ntry:\n    with db:  # one transaction: commit on success, roll back on error\n        db.execute(\"UPDATE accounts SET balance = balance + 50 WHERE name = 'bo'\")\n        db.execute(\"UPDATE accounts SET balance = balance - 150 WHERE name = 'ana'\")\nexcept sqlite3.IntegrityError:\n    pass\nprint(db.execute(\"SELECT balance FROM accounts ORDER BY name\").fetchall())"
+          }
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-oop",
+      "topicId": "topic-oop",
+      "title": "OOP Essentials",
+      "cards": [
+        {
+          "id": "sc-oop-001",
+          "difficulty": "easy",
+          "prompt": "Class vs object?",
+          "answer": "A **class** is the blueprint (fields and methods). An **object** is one instance built from it, with its own state."
+        },
+        {
+          "id": "sc-oop-002",
+          "difficulty": "easy",
+          "prompt": "What is encapsulation?",
+          "answer": "Keeping an object's data **private** and exposing behavior through methods, so callers can't put the object into an invalid state."
+        },
+        {
+          "id": "sc-oop-003",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`3`. Each `tap()` changes this object's own `count`, and returning `self` lets the calls chain.",
+          "code": {
+            "language": "python",
+            "source": "class Counter:\n    def __init__(self):\n        self.count = 0\n\n    def tap(self):\n        self.count += 1\n        return self\n\nc = Counter()\nc.tap().tap().tap()\nprint(c.count)"
+          }
+        },
+        {
+          "id": "sc-oop-004",
+          "difficulty": "easy",
+          "prompt": "What does a subclass inherit?",
+          "answer": "Its superclass's **properties and methods**. It can add new ones and override existing ones."
+        },
+        {
+          "id": "sc-oop-005",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`[9, 3.1]`. **Polymorphism**: the same `area()` call runs each class's own version, and the caller doesn't need to know which shape it has.",
+          "code": {
+            "language": "python",
+            "source": "class Shape:\n    def area(self):\n        raise NotImplementedError\n\nclass Square(Shape):\n    def __init__(self, side):\n        self.side = side\n\n    def area(self):\n        return self.side ** 2\n\nclass Circle(Shape):\n    def __init__(self, r):\n        self.r = r\n\n    def area(self):\n        return round(3.14159 * self.r ** 2, 1)\n\nprint([s.area() for s in [Square(3), Circle(1)]])"
+          }
+        },
+        {
+          "id": "sc-oop-006",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`Hello, Hola`. Both types conform to the `Greeter` **protocol** (an interface), so they can share one array and be used the same way.",
+          "code": {
+            "language": "swift",
+            "source": "protocol Greeter {\n    func greet() -> String\n}\n\nstruct English: Greeter {\n    func greet() -> String { \"Hello\" }\n}\n\nstruct Spanish: Greeter {\n    func greet() -> String { \"Hola\" }\n}\n\nlet greeters: [any Greeter] = [English(), Spanish()]\nprint(greeters.map { $0.greet() }.joined(separator: \", \"))"
+          }
+        },
+        {
+          "id": "sc-oop-007",
+          "difficulty": "medium",
+          "prompt": "What is composition, and why is it often preferred to inheritance?",
+          "answer": "An object **has** other objects and delegates to them (a Car has an Engine) instead of **being** a subclass. Classes stay small, and parts can be swapped without reshaping a hierarchy."
+        },
+        {
+          "id": "sc-oop-008",
+          "difficulty": "medium",
+          "prompt": "Overriding vs overloading?",
+          "answer": "**Overriding**: a subclass replaces a superclass method with the same signature, chosen at runtime. **Overloading**: several methods share a name but take different parameters, chosen at compile time."
+        },
+        {
+          "id": "sc-oop-009",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`Woof animal`. `speak` is **virtual**, so the call reaches Dog's override through an `Animal&`. `name` isn't virtual, so the reference's static type (Animal) decides.",
+          "code": {
+            "language": "cpp",
+            "source": "#include <iostream>\n#include <string>\n\nstruct Animal {\n    virtual std::string speak() const { return \"...\"; }\n    std::string name() const { return \"animal\"; }\n    virtual ~Animal() = default;\n};\n\nstruct Dog : Animal {\n    std::string speak() const override { return \"Woof\"; }\n    std::string name() const { return \"dog\"; }\n};\n\nint main() {\n    Dog d;\n    const Animal& a = d;\n    std::cout << a.speak() << \" \" << a.name() << \"\\n\";\n}"
+          }
+        },
+        {
+          "id": "sc-oop-010",
+          "difficulty": "hard",
+          "prompt": "What does the Liskov Substitution Principle require?",
+          "answer": "Code that works with a base type must keep working with **any subclass**. A subclass can't demand more from callers or break the base type's promises."
+        },
+        {
+          "id": "sc-oop-011",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`DBCA ['D', 'B', 'C', 'A', 'object']`. Python resolves the diamond with its **method resolution order** (C3 linearization). Each `super()` moves to the next class in the MRO, so `A` runs only once.",
+          "code": {
+            "language": "python",
+            "source": "class A:\n    def hello(self):\n        return \"A\"\n\nclass B(A):\n    def hello(self):\n        return \"B\" + super().hello()\n\nclass C(A):\n    def hello(self):\n        return \"C\" + super().hello()\n\nclass D(B, C):\n    def hello(self):\n        return \"D\" + super().hello()\n\nprint(D().hello(), [k.__name__ for k in D.__mro__])"
+          }
+        },
+        {
+          "id": "sc-oop-012",
+          "difficulty": "hard",
+          "prompt": "What is dependency injection?",
+          "answer": "Passing an object's collaborators **in** (for example through its initializer) instead of creating them inside. It makes code easy to test with fakes and keeps it depending on abstractions."
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-net",
+      "topicId": "topic-networking",
+      "title": "Networking Essentials",
+      "cards": [
+        {
+          "id": "sc-net-001",
+          "difficulty": "easy",
+          "prompt": "What does DNS do?",
+          "answer": "Translates a **name** like `example.com` into an **IP address** the network can route to. Answers are cached at several levels so lookups stay fast."
+        },
+        {
+          "id": "sc-net-002",
+          "difficulty": "easy",
+          "prompt": "IP address vs port?",
+          "answer": "The **IP address** picks the machine; the **port** picks the program on it (443 for HTTPS, 22 for SSH)."
+        },
+        {
+          "id": "sc-net-003",
+          "difficulty": "easy",
+          "prompt": "What do the HTTP status classes mean?",
+          "answer": "**2xx** success, **3xx** redirect, **4xx** client error (like 404), **5xx** server error (like 500)."
+        },
+        {
+          "id": "sc-net-004",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`https api.example.com 8443 /v1/users id=7`. A URL names the scheme, host, optional port, path, and query. The `#fragment` never leaves the browser.",
+          "code": {
+            "language": "python",
+            "source": "from urllib.parse import urlparse\n\nu = urlparse(\"https://api.example.com:8443/v1/users?id=7#top\")\nprint(u.scheme, u.hostname, u.port, u.path, u.query)"
+          }
+        },
+        {
+          "id": "sc-net-005",
+          "difficulty": "medium",
+          "prompt": "TCP or UDP for downloading a file, and why?",
+          "answer": "**TCP**: it guarantees every byte arrives, in order, by retransmitting lost packets. A file with a missing chunk is useless."
+        },
+        {
+          "id": "sc-net-006",
+          "difficulty": "medium",
+          "prompt": "Walk through the TCP three-way handshake.",
+          "answer": "The client sends **SYN**, the server replies **SYN-ACK**, and the client sends **ACK**. Both sides have now agreed on starting sequence numbers, so data can flow."
+        },
+        {
+          "id": "sc-net-007",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`{\"id\": 7, \"done\": false, \"tags\": [\"a\", \"b\"]}`, then `True`. JSON is the usual body format for HTTP APIs: Python's `False` becomes JSON `false`, and parsing it back gives `False`.",
+          "code": {
+            "language": "python",
+            "source": "import json\n\npayload = {\"id\": 7, \"done\": False, \"tags\": [\"a\", \"b\"]}\ntext = json.dumps(payload)\nprint(text)\nprint(json.loads(text)[\"done\"] is False)"
+          }
+        },
+        {
+          "id": "sc-net-008",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`https://api.example.com/search?q=swift%20tips`. `URLComponents` builds URLs safely and **percent-encodes** the space. Gluing strings together by hand is how URLs break.",
+          "code": {
+            "language": "swift",
+            "source": "import Foundation\n\nvar parts = URLComponents()\nparts.scheme = \"https\"\nparts.host = \"api.example.com\"\nparts.path = \"/search\"\nparts.queryItems = [URLQueryItem(name: \"q\", value: \"swift tips\")]\nprint(parts.url!.absoluteString)"
+          }
+        },
+        {
+          "id": "sc-net-009",
+          "difficulty": "hard",
+          "prompt": "Why does HTTPS need both a certificate and a key exchange?",
+          "answer": "The **certificate** proves you reached the real server (a CA vouches for its public key). The **key exchange** (e.g. ECDHE) creates fresh session keys, so past traffic stays private even if the server's key later leaks."
+        },
+        {
+          "id": "sc-net-010",
+          "difficulty": "hard",
+          "prompt": "What is head-of-line blocking, and how does HTTP/3 avoid it?",
+          "answer": "On one TCP connection, a lost packet stalls **everything** behind it until it's resent. HTTP/3 runs on QUIC (over UDP), which orders each stream separately, so a loss only stalls its own stream."
+        },
+        {
+          "id": "sc-net-011",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`64 192.168.1.63 False`. A /26 leaves 6 host bits: 2⁶ = 64 addresses, .0 through .63 (the broadcast). So .70 is in the next subnet.",
+          "code": {
+            "language": "python",
+            "source": "import ipaddress\n\nnet = ipaddress.ip_network(\"192.168.1.0/26\")\nprint(net.num_addresses, net.broadcast_address, ipaddress.ip_address(\"192.168.1.70\") in net)"
+          }
+        },
+        {
+          "id": "sc-net-012",
+          "difficulty": "hard",
+          "prompt": "Why are retries of a POST request risky?",
+          "answer": "POST isn't **idempotent**: if the response was lost, retrying may create the order twice. APIs often accept an idempotency key so the server can recognize a repeat."
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-swift",
+      "topicId": "topic-swift",
+      "title": "Swift Essentials",
+      "cards": [
+        {
+          "id": "sc-swift-001",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`Hi, Guest!`. `??` (nil-coalescing) unwraps the optional, or uses the default when it's nil.",
+          "code": {
+            "language": "swift",
+            "source": "let input: String? = nil\nlet name = input ?? \"Guest\"\nprint(\"Hi, \\(name)!\")"
+          }
+        },
+        {
+          "id": "sc-swift-002",
+          "difficulty": "easy",
+          "prompt": "`let` or `var`?",
+          "answer": "`let` declares a **constant** that can't be reassigned; `var` declares a **variable**. Prefer `let` unless the value really changes."
+        },
+        {
+          "id": "sc-swift-003",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`18`. `1...10` is a closed range, and `where` keeps only the multiples of 3: 3 + 6 + 9.",
+          "code": {
+            "language": "swift",
+            "source": "var total = 0\nfor n in 1...10 where n % 3 == 0 {\n    total += n\n}\nprint(total)"
+          }
+        },
+        {
+          "id": "sc-swift-004",
+          "difficulty": "easy",
+          "prompt": "What does `if let` do?",
+          "answer": "Unwraps an optional **only if it has a value**, binding it to a new constant inside the `if`. If it's nil, the body is skipped."
+        },
+        {
+          "id": "sc-swift-005",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`0 5`. Structs are **value types**, so `p2` is a copy and `p1` is unchanged. Classes are **reference types**: `b1` and `b2` are the same object.",
+          "code": {
+            "language": "swift",
+            "source": "struct Point { var x = 0 }\nclass Box { var x = 0 }\n\nlet p1 = Point()\nvar p2 = p1\np2.x = 5\n\nlet b1 = Box()\nlet b2 = b1\nb2.x = 5\n\nprint(p1.x, b1.x)"
+          }
+        },
+        {
+          "id": "sc-swift-006",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`24`. `filter` keeps 72, 95, and 88; `map` turns them into 7, 9, and 8 (integer division); `reduce(0, +)` adds them up.",
+          "code": {
+            "language": "swift",
+            "source": "let scores = [72, 95, 88, 61]\nlet result = scores.filter { $0 >= 70 }.map { $0 / 10 }.reduce(0, +)\nprint(result)"
+          }
+        },
+        {
+          "id": "sc-swift-007",
+          "difficulty": "medium",
+          "prompt": "`guard let` vs `if let`?",
+          "answer": "`guard let` unwraps and **requires** its `else` to leave the scope (return, throw, break). The value stays available for the rest of the function, which avoids deep nesting."
+        },
+        {
+          "id": "sc-swift-008",
+          "difficulty": "medium",
+          "prompt": "What is a protocol extension good for?",
+          "answer": "Giving **default implementations** to every conforming type at once. A type can still provide its own version."
+        },
+        {
+          "id": "sc-swift-009",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`freed`, then `end`. `[weak self]` stops the stored closure from keeping the object alive. With a strong capture, object and closure would form a **retain cycle**, and `deinit` would never run.",
+          "code": {
+            "language": "swift",
+            "source": "final class Downloader {\n    var onFinish: (() -> Void)?\n    var name = \"dl\"\n\n    func start() {\n        onFinish = { [weak self] in print(self?.name ?? \"gone\") }\n    }\n\n    deinit { print(\"freed\") }\n}\n\nvar downloader: Downloader? = Downloader()\ndownloader?.start()\ndownloader = nil\nprint(\"end\")"
+          }
+        },
+        {
+          "id": "sc-swift-010",
+          "difficulty": "hard",
+          "prompt": "What does `@escaping` mean?",
+          "answer": "The closure may be stored and **called after the function returns**, like a completion handler. Escaping closures must use `self` explicitly, which makes possible retain cycles visible."
+        },
+        {
+          "id": "sc-swift-011",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`9 pear true`. One **generic** function works for any `Comparable` type: Ints, Strings (compared alphabetically), and it returns nil for an empty array.",
+          "code": {
+            "language": "swift",
+            "source": "func largest<T: Comparable>(_ items: [T]) -> T? {\n    guard var best = items.first else { return nil }\n    for item in items.dropFirst() where item > best {\n        best = item\n    }\n    return best\n}\n\nprint(largest([3, 9, 4])!, largest([\"pear\", \"apple\"])!, largest([Int]()) == nil)"
+          }
+        },
+        {
+          "id": "sc-swift-012",
+          "difficulty": "hard",
+          "prompt": "What does an `actor` guarantee?",
+          "answer": "Its mutable state is **isolated**: only one task touches it at a time. Outside callers must `await`, and the compiler rejects unsynchronized access, which rules out data races."
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-python",
+      "topicId": "topic-python",
+      "title": "Python Essentials",
+      "cards": [
+        {
+          "id": "sc-py-001",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`['b', 'c'] ['d', 'e'] ['a', 'c', 'e']`. Slices are `[start:stop:step]`: `stop` is excluded, and negative indexes count from the end.",
+          "code": {
+            "language": "python",
+            "source": "letters = [\"a\", \"b\", \"c\", \"d\", \"e\"]\nprint(letters[1:3], letters[-2:], letters[::2])"
+          }
+        },
+        {
+          "id": "sc-py-002",
+          "difficulty": "easy",
+          "prompt": "List vs tuple?",
+          "answer": "Both are ordered sequences. A **list** is mutable (append, change items); a **tuple** is immutable, so it can be a dict key."
+        },
+        {
+          "id": "sc-py-003",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`['apples', 'kiwis']`. `.items()` yields key–value pairs, and the comprehension keeps names with a positive quantity. Dicts keep insertion order.",
+          "code": {
+            "language": "python",
+            "source": "stock = {\"apples\": 3, \"pears\": 0, \"kiwis\": 5}\nin_stock = [name for name, qty in stock.items() if qty > 0]\nprint(in_stock)"
+          }
+        },
+        {
+          "id": "sc-py-004",
+          "difficulty": "easy",
+          "prompt": "What does `def greet(name=\"you\")` mean?",
+          "answer": "`name` has a **default value**: `greet()` works with no argument, and `greet(\"Ana\")` overrides it."
+        },
+        {
+          "id": "sc-py-005",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`[1, 2, 3] [1, 2]`. `b = a` is a second name for the **same** list, so appending through `b` changes `a`. `a[:]` made a separate (shallow) copy.",
+          "code": {
+            "language": "python",
+            "source": "a = [1, 2]\nb = a\nc = a[:]\nb.append(3)\nprint(a, c)"
+          }
+        },
+        {
+          "id": "sc-py-006",
+          "difficulty": "medium",
+          "prompt": "What does this print?",
+          "answer": "`3 [2, 1]`. A **generator** produces values lazily: `next` takes the first one, and `list` drains the rest.",
+          "code": {
+            "language": "python",
+            "source": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\ngen = countdown(3)\nprint(next(gen), list(gen))"
+          }
+        },
+        {
+          "id": "sc-py-007",
+          "difficulty": "medium",
+          "prompt": "What do `*args` and `**kwargs` collect?",
+          "answer": "`*args` gathers extra **positional** arguments into a tuple; `**kwargs` gathers extra **keyword** arguments into a dict."
+        },
+        {
+          "id": "sc-py-008",
+          "difficulty": "medium",
+          "prompt": "Why write `with open(path) as f:`?",
+          "answer": "`with` uses a **context manager**: the file is closed when the block ends, even if an exception is raised."
+        },
+        {
+          "id": "sc-py-009",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`[1, 2] [1, 2]`. The default list is created **once**, when `def` runs, and every call shares it, so both calls return the same list. Use `bucket=None` and make a new list inside.",
+          "code": {
+            "language": "python",
+            "source": "def add(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\nprint(add(1), add(2))"
+          }
+        },
+        {
+          "id": "sc-py-010",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`HI ANA! greet`. A **decorator** wraps a function to add behavior. `functools.wraps` copies the original's name and docstring onto the wrapper.",
+          "code": {
+            "language": "python",
+            "source": "import functools\n\ndef shout(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs).upper() + \"!\"\n    return wrapper\n\n@shout\ndef greet(name):\n    return f\"hi {name}\"\n\nprint(greet(\"ana\"), greet.__name__)"
+          }
+        },
+        {
+          "id": "sc-py-011",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`[2, 2, 2]`, then `[0, 1, 2]`. The lambdas look up `i` when they're **called**, after the loop ended at 2. Binding it as a default (`i=i`) captures each value.",
+          "code": {
+            "language": "python",
+            "source": "funcs = [lambda: i for i in range(3)]\nprint([f() for f in funcs])\n\nfixed = [lambda i=i: i for i in range(3)]\nprint([f() for f in fixed])"
+          }
+        },
+        {
+          "id": "sc-py-012",
+          "difficulty": "hard",
+          "prompt": "What does the GIL mean for CPU-bound threads in CPython?",
+          "answer": "Only one thread runs Python bytecode at a time, so CPU-heavy threads don't speed up. Use `multiprocessing` (or native code) for parallel CPU work; threads still help while waiting on I/O."
+        }
+      ]
     }
   ]
 }
