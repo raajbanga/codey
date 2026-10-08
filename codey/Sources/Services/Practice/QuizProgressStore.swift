@@ -121,12 +121,13 @@ struct QuizProgressStore {
 
     /// Keeps the newest `answerHistoryCap` records for the topic.
     private func pruneHistory(topicId: String) throws {
-        var descriptor = FetchDescriptor<QuizAnswerRecord>(
+        // Drop the newest in memory: SwiftData's fetchOffset ignores unsaved
+        // inserts and returned every row, wiping the whole history.
+        let descriptor = FetchDescriptor<QuizAnswerRecord>(
             predicate: #Predicate { $0.topicId == topicId },
             sortBy: [SortDescriptor(\.answeredAt, order: .reverse)]
         )
-        descriptor.fetchOffset = config.answerHistoryCap
-        for old in try context.fetch(descriptor) {
+        for old in try context.fetch(descriptor).dropFirst(config.answerHistoryCap) {
             context.delete(old)
         }
     }

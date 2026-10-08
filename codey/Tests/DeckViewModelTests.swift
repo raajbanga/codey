@@ -13,7 +13,7 @@ struct DeckViewModelTests {
 
     private func makeVM(_ context: ModelContext, editing deck: FlashcardDeck? = nil) -> DeckViewModel {
         DeckViewModel(
-            backend: LocalOnlyBackend(context: context),
+            backend: BackendFacade.localOnly(context: context),
             knownTopicIds: topicIds,
             editing: deck,
             defaultTopicId: "topic-data-structures",
@@ -271,7 +271,7 @@ struct DeckViewModelTests {
         let starter = try TestSupport.insertDeck(context, origin: .starter, prompts: ["a"])
         starter.syncState = .locallyPersisted
         try context.save()
-        let backend = LocalOnlyBackend(context: context)
+        let backend = BackendFacade.localOnly(context: context)
 
         #expect(!starter.isEditable)
         #expect(throws: DeckBackendError.notEditable) {
