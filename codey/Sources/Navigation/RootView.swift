@@ -41,6 +41,8 @@ struct RootView: View {
 }
 
 #Preview {
+    let container = ModelContainerFactory.makePreview()
     RootView()
-        .modelContainer(ModelContainerFactory.makePreview())
+        .modelContainer(container)
+        .environment(BackendFacade.localOnly(context: container.mainContext))
 }

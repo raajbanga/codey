@@ -146,7 +146,7 @@ struct DeckBuilderView: View {
     let topics = (try? container.mainContext.fetch(FetchDescriptor<Topic>())) ?? []
     return DeckBuilderView(
         viewModel: DeckViewModel(
-            backend: LocalOnlyBackend(context: container.mainContext),
+            backend: BackendFacade.localOnly(context: container.mainContext),
             knownTopicIds: Set(topics.map(\.id))
         ),
         topics: topics

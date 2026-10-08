@@ -11,6 +11,7 @@ struct OnboardingView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(BackendFacade.self) private var backend
     @Query(sort: \Topic.title) private var topics: [Topic]
 
     @State private var step = Step.welcome
@@ -28,7 +29,7 @@ struct OnboardingView: View {
                 switch step {
                 case .welcome: WelcomeStep().transition(stepTransition)
                 case .topics: TopicPickStep(topics: topics, picked: $picked).transition(stepTransition)
-                case .sync: SyncStep().transition(stepTransition)
+                case .sync: SyncStep(isSignInAvailable: backend.isSignInAvailable, authState: backend.authState).transition(stepTransition)
                 }
             }
             .frame(maxHeight: .infinity)
@@ -81,8 +82,16 @@ struct OnboardingView: View {
                 .disabled(picked.isEmpty)
                 .accessibilityIdentifier("onboarding.continue")
             case .sync:
-                CodeyButton("Sign in with Google", systemImage: "person.badge.key", kind: .glassSecondary, fullWidth: true) {}
-                    .disabled(true) // Stage 9
+                if backend.isSignInAvailable {
+                    CodeyButton("Sign in with Google", systemImage: "person.badge.key", kind: .glassSecondary, fullWidth: true) {
+                        Task {
+                            await backend.signInWithGoogle()
+                            if backend.currentUser != nil { complete() }
+                        }
+                    }
+                    .disabled(backend.authState == .signingIn)
+                    .accessibilityIdentifier("onboarding.signIn")
+                }
                 CodeyButton("Skip for Now", kind: .glassPrimary, fullWidth: true) { complete() }
                     .accessibilityIdentifier("onboarding.skip")
             }
@@ -248,6 +257,9 @@ private struct TopicPickStep: View {
 }
 
 private struct SyncStep: View {
+    let isSignInAvailable: Bool
+    let authState: AuthState
+
     var body: some View {
         ScrollView {
             VStack(spacing: CodeySpacing.lg) {
@@ -260,12 +272,18 @@ private struct SyncStep: View {
                 Text("Back up & sync")
                     .font(.codeyDisplay)
                     .multilineTextAlignment(.center)
-                Text(AppConfig.current.isBackendConfigured
-                     ? "Sign in with Google to back up your decks and XP. Sign-in arrives in a later update, so skip for now."
-                     : "Codey works fully offline. Everything is saved on this device, and you can sign in later from your profile.")
+                Text(isSignInAvailable
+                     ? "Sign in with Google to back up your decks and XP and sync them across devices. You can also skip and sign in later from your profile."
+                     : "Codey works fully offline. Everything is saved on this device.")
                     .font(.codeyCallout)
                     .foregroundStyle(CodeyColor.textSecondary)
                     .multilineTextAlignment(.center)
+                if case .error(let message) = authState {
+                    Text(message)
+                        .font(.codeyCallout)
+                        .foregroundStyle(CodeyColor.danger)
+                        .multilineTextAlignment(.center)
+                }
             }
             .padding(CodeySpacing.lg)
         }
@@ -292,6 +310,8 @@ private struct PageDots: View {
 }
 
 #Preview {
+    let container = ModelContainerFactory.makePreview()
     OnboardingView {}
-        .modelContainer(ModelContainerFactory.makePreview())
+        .modelContainer(container)
+        .environment(BackendFacade.localOnly(context: container.mainContext))
 }

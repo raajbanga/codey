@@ -10,7 +10,6 @@ struct DeckLibraryView: View {
         var id: String { rawValue }
     }
 
-    @Environment(\.modelContext) private var modelContext
     @Query(
         filter: #Predicate<FlashcardDeck> { $0.deletedAt == nil },
         sort: [SortDescriptor(\FlashcardDeck.updatedAt, order: .reverse)]
@@ -30,7 +29,7 @@ struct DeckLibraryView: View {
         Dictionary(topics.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
-    private var backend: LocalOnlyBackend { LocalOnlyBackend(context: modelContext) }
+    @Environment(BackendFacade.self) private var backend
 
     var body: some View {
         ScrollView {
@@ -80,6 +79,7 @@ struct DeckLibraryView: View {
         .background(CodeyColor.surface)
         .navigationTitle("Decks")
         .searchable(text: $searchText, prompt: "Title or topic")
+        .refreshable { await backend.syncPending() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -151,6 +151,7 @@ struct DeckLibraryView: View {
     private func menu(for deck: FlashcardDeck) -> some View {
         if deck.isEditable {
             Button("Edit", systemImage: "pencil") { builder = .edit(deck) }
+                .disabled(!deck.canEdit)
             Button("Delete", systemImage: "trash", role: .destructive) { deckToDelete = deck }
                 .disabled(!deck.canDelete)
             if let reason = deck.deleteBlockedReason {
@@ -227,9 +228,11 @@ enum BuilderRequest: Identifiable {
 }
 
 #Preview {
+    let container = ModelContainerFactory.makePreview()
     NavigationStack {
         DeckLibraryView()
     }
     .environment(Router())
-    .modelContainer(ModelContainerFactory.makePreview())
+    .environment(BackendFacade.localOnly(context: container.mainContext))
+    .modelContainer(container)
 }

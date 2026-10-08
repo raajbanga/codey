@@ -16,6 +16,7 @@ import SwiftUI
 /// Everything else lives in its tab (Decks, Quiz); Home doesn't duplicate it.
 struct HomeView: View {
     @Environment(Router.self) private var router
+    @Environment(BackendFacade.self) private var backend
     @AppStorage("home.signInNudgeDismissed") private var nudgeDismissed = false
 
     @Query private var profiles: [UserProfile]
@@ -206,9 +207,9 @@ struct HomeView: View {
 
     // MARK: Sign-in nudge
 
-    /// Only once sign-in exists (Stage 9 needs backend keys).
+    /// Only when sign-in is possible in this build and the user is a guest.
     private var showsSignInNudge: Bool {
-        AppConfig.current.isBackendConfigured && !nudgeDismissed
+        backend.isSignInAvailable && backend.currentUser == nil && !nudgeDismissed
     }
 
     private var signInNudge: some View {
@@ -488,9 +489,11 @@ private struct TopicCard: View {
 }
 
 #Preview {
+    let container = ModelContainerFactory.makePreview()
     NavigationStack {
         HomeView()
     }
     .environment(Router())
-    .modelContainer(ModelContainerFactory.makePreview())
+    .environment(BackendFacade.localOnly(context: container.mainContext))
+    .modelContainer(container)
 }
