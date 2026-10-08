@@ -1,11 +1,14 @@
 import SwiftData
 import SwiftUI
+import os
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("preferredDarkMode") private var preferredDarkMode = false
+    @AppStorage(AppAppearance.storageKey) private var appearance: AppAppearance = .system
 
-    @State private var showResetConfirmation = false
+    @State private var showResetProgressConfirmation = false
+    @State private var showEraseConfirmation = false
+    @State private var actionError: String?
 
     var body: some View {
         ScrollView {
@@ -15,18 +18,12 @@ struct SettingsView: View {
                         Text("Appearance")
                             .font(.codeyHeadline)
 
-                        HStack {
-                            VStack(alignment: .leading, spacing: CodeySpacing.xs) {
-                                Text("Dark Mode")
-                                    .font(.codeySubheadline)
-                                Text("Override system appearance for the app.")
-                                    .font(.caption)
-                                    .foregroundStyle(ThemeColor.muted)
+                        Picker("Appearance", selection: $appearance) {
+                            ForEach(AppAppearance.allCases) { option in
+                                Text(option.title).tag(option)
                             }
-                            Spacer()
-                            Toggle("", isOn: $preferredDarkMode)
-                                .labelsHidden()
                         }
+                        .pickerStyle(.segmented)
                     }
                 }
 
@@ -36,8 +33,8 @@ struct SettingsView: View {
                             .font(.codeyHeadline)
                         Text("All data is stored on-device.")
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
-                        CodeyBadge("Local only", variant: .success)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                        CodeyChip("Local only", variant: .success)
                     }
                 }
 
@@ -45,27 +42,62 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                         Text("Danger Zone")
                             .font(.codeyHeadline)
-                        Text("Reset all local progress, topics, and questions. Fresh sample data will be re-seeded automatically.")
+                        Text("Reset progress sets XP, streak, and card mastery back to zero. Your decks stay.")
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
-                        CodeyButton("Reset Local Data", variant: .destructive) {
-                            showResetConfirmation = true
+                            .foregroundStyle(CodeyColor.textSecondary)
+                        CodeyButton("Reset Progress", kind: .secondary) {
+                            showResetProgressConfirmation = true
+                        }
+                        Text("Erase all local data deletes your decks, progress, and profile from this device.")
+                            .font(.codeySubheadline)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                        CodeyButton("Erase All Local Data", kind: .destructive) {
+                            showEraseConfirmation = true
                         }
                     }
                 }
             }
             .padding(CodeySpacing.md)
         }
-        .background(ThemeColor.canvas)
+        .background(CodeyColor.surface)
         .navigationTitle("Settings")
-        .preferredColorScheme(preferredDarkMode ? .dark : .light)
-        .alert("Reset Local Data?", isPresented: $showResetConfirmation) {
+        .alert("Reset Progress?", isPresented: $showResetProgressConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Reset", role: .destructive) {
-                DataSeeder.resetAllData(context: modelContext)
+                perform { try LocalDataReset.resetProgress(context: modelContext) }
             }
         } message: {
-            Text("This will erase all local progress and re-seed sample data. This action cannot be undone.")
+            Text("XP, streak, and card mastery go back to zero. This can't be undone.")
+        }
+        .alert("Erase All Local Data?", isPresented: $showEraseConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Erase", role: .destructive) {
+                perform {
+                    try LocalDataReset.eraseAllLocalData(
+                        context: modelContext,
+                        bank: QuestionBankLoader.loadBank()
+                    )
+                }
+            }
+        } message: {
+            Text("Your decks, progress, and profile will be deleted from this device. This can't be undone.")
+        }
+        .alert(
+            "Something Went Wrong",
+            isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(actionError ?? "")
+        }
+    }
+
+    private func perform(_ action: () throws -> Void) {
+        do {
+            try action()
+        } catch {
+            Logger.settings.error("Data action failed: \(String(describing: error))")
+            actionError = error.localizedDescription
         }
     }
 }

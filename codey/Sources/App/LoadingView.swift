@@ -1,10 +1,12 @@
 import SwiftData
 import SwiftUI
+import os
 
 struct LoadingView: View {
     @State private var progress: Double = 0
     @State private var errorMessage: String?
     @State private var container: ModelContainer?
+    @State private var showResetConfirmation = false
 
     private let stepDelay: Duration = .milliseconds(200)
 
@@ -25,8 +27,9 @@ struct LoadingView: View {
     private var loadingContent: some View {
         VStack(spacing: CodeySpacing.lg) {
             Image(systemName: "terminal.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(ThemeColor.primary)
+                .font(.codeyDisplay)
+                .imageScale(.large)
+                .foregroundStyle(CodeyColor.brand)
 
             Text("Codey")
                 .font(.codeyHeadline)
@@ -34,16 +37,53 @@ struct LoadingView: View {
             if let errorMessage {
                 Text(errorMessage)
                     .font(.codeySubheadline)
-                    .foregroundStyle(ThemeColor.destructive)
+                    .foregroundStyle(CodeyColor.danger)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, CodeySpacing.md)
+
+                CodeyButton("Try Again", kind: .secondary) {
+                    retryBoot()
+                }
+                .padding(.horizontal, CodeySpacing.xl)
+
+                CodeyButton("Reset Local Data", kind: .destructive) {
+                    showResetConfirmation = true
+                }
+                .padding(.horizontal, CodeySpacing.xl)
             } else {
-                CodeyProgress(value: progress, label: "Loading…")
+                ProgressBar(value: progress, label: "Loading…")
                     .padding(.horizontal, CodeySpacing.xl)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ThemeColor.canvas)
+        .background(CodeyColor.surface)
+        .confirmationDialog(
+            "Reset local data?",
+            isPresented: $showResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Local Data", role: .destructive) {
+                resetStoreAndRetry()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Codey couldn't open its data. Resetting deletes your decks, XP, and progress on this device.")
+        }
+    }
+
+    private func retryBoot() {
+        errorMessage = nil
+        progress = 0
+        Task { await runBootSequence() }
+    }
+
+    private func resetStoreAndRetry() {
+        do {
+            try ModelContainerFactory.destroyStore()
+            retryBoot()
+        } catch {
+            errorMessage = "Couldn't delete local data: \(error.localizedDescription)"
+        }
     }
 
     @MainActor
@@ -54,23 +94,17 @@ struct LoadingView: View {
             let bootContainer = try ModelContainerFactory.make()
             progress = 0.25
 
-            let context = bootContainer.mainContext
-            let shouldSeed = DataSeeder.needsSeeding(context: context)
+            let bank = try QuestionBankLoader.loadBank()
             progress = 0.50
-            if !shouldSeed { try await Task.sleep(for: stepDelay) }
+            try await Task.sleep(for: stepDelay)
 
-            let topics = try QuestionBankLoader.loadTopics()
-            progress = 0.75
-            if !shouldSeed { try await Task.sleep(for: stepDelay) }
-
-            if shouldSeed {
-                try DataSeeder.seed(context: context, topics: topics)
-            }
+            try DataSeeder.seed(context: bootContainer.mainContext, bank: bank)
             progress = 1.0
-            if !shouldSeed { try await Task.sleep(for: stepDelay) }
+            try await Task.sleep(for: stepDelay)
 
             container = bootContainer
         } catch {
+            Logger.persistence.error("Boot failed: \(String(describing: error))")
             errorMessage = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
         }
     }

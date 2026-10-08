@@ -19,7 +19,7 @@ struct PracticeSwipeView: View {
                 cardStack
             }
         }
-        .background(ThemeColor.canvas)
+        .background(CodeyColor.surface)
         .navigationTitle("Practice")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -30,9 +30,9 @@ struct PracticeSwipeView: View {
     private var cardStack: some View {
         VStack(spacing: CodeySpacing.md) {
             HStack {
-                CodeyBadge("\(deck.count) cards left", variant: .neutral)
+                CodeyChip("\(deck.count) cards left", variant: .neutral)
                 Spacer()
-                CodeyBadge(topic.title, variant: .success)
+                CodeyChip(topic.title, variant: .success)
             }
             .padding(.horizontal, CodeySpacing.md)
 
@@ -64,8 +64,8 @@ struct PracticeSwipeView: View {
             }
 
             Text("Swipe left or right to continue")
-                .font(.caption)
-                .foregroundStyle(ThemeColor.muted)
+                .font(.codeyCaption)
+                .foregroundStyle(CodeyColor.textSecondary)
 
             Spacer()
         }
@@ -80,10 +80,10 @@ struct PracticeSwipeView: View {
                             .font(.codeyHeadline)
                         Text("You've reviewed all \(topic.questions.count) cards in \(topic.title).")
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
+                            .foregroundStyle(CodeyColor.textSecondary)
                     }
                 }
-                CodeyButton("Back to Topics", variant: .primary, size: .lg) { dismiss() }
+                CodeyButton("Back to Topics", fullWidth: true) { dismiss() }
             }
             .padding(CodeySpacing.md)
         }

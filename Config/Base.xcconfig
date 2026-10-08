@@ -1,0 +1,14 @@
+// Shared build settings for every configuration. Committed.
+//
+// Secrets live in Config/Secrets.xcconfig (gitignored). Copy
+// Config/Secrets.example.xcconfig to get started. Every key below defaults to
+// empty, and the app runs in local-only mode (no sign-in, no sync) until they
+// are filled in.
+
+SUPABASE_URL =
+SUPABASE_ANON_KEY =
+GOOGLE_IOS_CLIENT_ID =
+GOOGLE_REVERSED_CLIENT_ID =
+GOOGLE_SERVER_CLIENT_ID =
+
+#include? "Secrets.xcconfig"

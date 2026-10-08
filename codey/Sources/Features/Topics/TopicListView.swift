@@ -13,7 +13,7 @@ struct TopicListView: View {
                             .font(.codeyHeadline)
                         Text("Pull to refresh or use Settings → Reset Local Data to reload the question bank.")
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
+                            .foregroundStyle(CodeyColor.textSecondary)
                     }
                 }
                 .padding(CodeySpacing.md)
@@ -26,7 +26,7 @@ struct TopicListView: View {
                 .padding(CodeySpacing.md)
             }
         }
-        .background(ThemeColor.canvas)
+        .background(CodeyColor.surface)
         .navigationTitle("Topics")
     }
 }
@@ -39,8 +39,8 @@ private struct TopicCard: View {
             VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                 HStack(spacing: CodeySpacing.md) {
                     Image(systemName: topic.iconName)
-                        .font(.title2)
-                        .foregroundStyle(ThemeColor.primary)
+                        .font(.codeyTitle)
+                        .foregroundStyle(CodeyColor.brand)
                         .frame(width: 36)
 
                     VStack(alignment: .leading, spacing: CodeySpacing.xs) {
@@ -48,53 +48,34 @@ private struct TopicCard: View {
                             .font(.codeyHeadline)
                         Text(topic.summary)
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
-                        CodeyBadge("\(topic.questions.count) questions", variant: .neutral)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                        CodeyChip("\(topic.questions.count) questions", variant: .neutral)
                     }
                 }
 
                 HStack(spacing: CodeySpacing.sm) {
-                    StudyModeLink("Practice", variant: .outline) {
+                    NavigationLink {
                         PracticeSwipeView(topic: topic)
+                    } label: {
+                        Text("Practice").frame(maxWidth: .infinity)
                     }
-                    StudyModeLink("Quiz", variant: .primary) {
+                    .buttonStyle(.bordered)
+                    .tint(CodeyColor.brand)
+
+                    NavigationLink {
                         QuizModeView(topic: topic)
+                    } label: {
+                        Text("Quiz").frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .tint(CodeyColor.brandFill)
                 }
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
             }
         }
-    }
-}
-
-private struct StudyModeLink<Destination: View>: View {
-    let title: String
-    let variant: CodeyButtonVariant
-    @ViewBuilder let destination: () -> Destination
-
-    init(_ title: String, variant: CodeyButtonVariant, @ViewBuilder destination: @escaping () -> Destination) {
-        self.title = title
-        self.variant = variant
-        self.destination = destination
-    }
-
-    var body: some View {
-        NavigationLink {
-            destination()
-        } label: {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, CodeySpacing.sm + 2)
-                .foregroundStyle(variant == .primary ? .white : ThemeColor.primary)
-                .background(variant == .primary ? ThemeColor.primary : .clear)
-                .overlay {
-                    if variant == .outline {
-                        Capsule().stroke(ThemeColor.border, lineWidth: 1)
-                    }
-                }
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }
 
