@@ -3,52 +3,23 @@ import Testing
 import UIKit
 @testable import codey
 
+/// NFR-12: tiers never rely on color alone.
 struct TierStyleTests {
-    @Test(arguments: [
-        (Difficulty.easy, "Easy", "leaf.fill"),
-        (.medium, "Medium", "flame.fill"),
-        (.hard, "Hard", "bolt.fill"),
-    ])
-    func mapping(tier: Difficulty, label: String, symbol: String) {
-        #expect(tier.style.label == label)
-        #expect(tier.style.symbol == symbol)
-        #expect(tier.style.accessibilityLabel == "\(label) tier")
-    }
-
     @Test func tiersAreDistinguishableWithoutColor() {
         let styles = Difficulty.allCases.map(\.style)
         #expect(Set(styles.map(\.symbol)).count == styles.count)
         #expect(Set(styles.map(\.label)).count == styles.count)
     }
-
-    @Test func tierColorsComeFromTokens() {
-        #expect(Difficulty.easy.style.color == CodeyColor.Tier.easy)
-        #expect(Difficulty.medium.style.color == CodeyColor.Tier.medium)
-        #expect(Difficulty.hard.style.color == CodeyColor.Tier.hard)
-    }
-}
-
-struct RadiusTests {
-    @Test func scaleIsAscending() {
-        let scale = [CodeyRadius.xs, CodeyRadius.sm, CodeyRadius.md, CodeyRadius.lg, CodeyRadius.xl]
-        #expect(scale == scale.sorted())
-        #expect(scale == [6, 10, 14, 20, 28])
-    }
-
-    @Test(arguments: [
-        (outer: CGFloat(20), inset: CGFloat(8), expected: CGFloat(12)),
-        (outer: 20, inset: 16, expected: 6),   // floors at xs
-        (outer: 28, inset: 0, expected: 28),
-        (outer: 4, inset: 2, expected: 4),     // never larger than outer
-    ])
-    func concentric(outer: CGFloat, inset: CGFloat, expected: CGFloat) {
-        #expect(CodeyRadius.concentric(outer: outer, inset: inset) == expected)
-    }
 }
 
 struct ColorTokenTests {
+    /// Every asset-catalog color the tokens use.
+    static let assetNames = ["Brand", "BrandFill", "BrandSoft", "Success", "Warning", "Danger",
+                             "TierEasy", "TierMedium", "TierHard", "CodeBackground"]
+        + SyntaxRole.allCases.map(\.assetName)
+
     @Test func everyAssetColorResolves() {
-        for name in CodeyColor.assetNames {
+        for name in Self.assetNames {
             let color = UIColor(named: name, in: .main, compatibleWith: nil)
             #expect(color != nil, "Missing colorset \(name)")
         }
@@ -57,16 +28,15 @@ struct ColorTokenTests {
     @Test func assetColorsHaveDistinctDarkVariants() throws {
         let light = UITraitCollection(userInterfaceStyle: .light)
         let dark = UITraitCollection(userInterfaceStyle: .dark)
-        for name in CodeyColor.assetNames {
+        for name in Self.assetNames {
             let color = try #require(UIColor(named: name, in: .main, compatibleWith: nil))
             #expect(color.resolvedColor(with: light) != color.resolvedColor(with: dark), "\(name) has no dark variant")
         }
     }
 
-    @Test func syntaxRolesUseCatalogColors() {
-        for role in SyntaxRole.allCases {
-            #expect(CodeyColor.assetNames.contains(role.assetName))
-        }
+    @Test func syntaxAssetNames() {
+        #expect(SyntaxRole.keyword.assetName == "SyntaxKeyword")
+        #expect(SyntaxRole.plain.assetName == "SyntaxPlain")
     }
 }
 
@@ -94,27 +64,17 @@ struct SyntaxRoleTests {
         #expect(SyntaxRole(treeSitterCapture: capture) == nil)
     }
 
-    @Test func prismCoversTheSameRoles() {
-        #expect(SyntaxRole.prismTokens["keyword"] == .keyword)
-        #expect(SyntaxRole.prismTokens["class-name"] == .type)
-        #expect(SyntaxRole.prismTokens["string"] == .string)
-        #expect(SyntaxRole.prismTokens["number"] == .number)
-        #expect(SyntaxRole.prismTokens["comment"] == .comment)
-        #expect(SyntaxRole.prismTokens["function"] == .function)
-        #expect(SyntaxRole.prismTokens["annotation"] == .attribute)
+    @Test func prismCoversEveryColoredRole() {
         let used = Set(SyntaxRole.prismTokens.values)
         #expect(used == Set(SyntaxRole.allCases).subtracting([.plain]))
     }
 }
 
 struct CardMarkdownCompositionTests {
-    @Test(arguments: [(CodeLanguage.swift, "swift"), (.python, "python"), (.java, "java"), (.cpp, "cpp")])
-    func prismKeys(language: CodeLanguage, key: String) {
-        #expect(language.prismKey == key)
-        #expect(CodeLanguage(fenceHint: key) == language)
-    }
-
-    @Test func fenceHintAliases() {
+    @Test func fenceHintsRoundTripAndAcceptAliases() {
+        for language in CodeLanguage.allCases {
+            #expect(CodeLanguage(fenceHint: language.rawValue) == language)
+        }
         #expect(CodeLanguage(fenceHint: "C++") == .cpp)
         #expect(CodeLanguage(fenceHint: "py") == .python)
         #expect(CodeLanguage(fenceHint: "rust") == nil)

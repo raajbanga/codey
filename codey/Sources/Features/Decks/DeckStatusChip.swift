@@ -1,14 +1,20 @@
 import SwiftUI
 
-/// FR-48 badge: a symbol + label per sync state (never color alone).
-struct SyncStatusLabel: View {
-    let state: DeckSyncStateKind
+/// A deck's badge: "Starter" for bundled decks, otherwise the FR-48 sync
+/// state as symbol + label (never color alone).
+struct DeckStatusChip: View {
+    let deck: FlashcardDeck
 
     var body: some View {
-        CodeyChip(state.displayName, systemImage: state.symbol, variant: state.chipVariant)
-            .symbolEffect(.rotate, isActive: state == .syncing)
-            .accessibilityLabel("Sync status: \(state.displayName)")
-            .accessibilityIdentifier("syncStatus")
+        if deck.origin == .starter {
+            CodeyChip("Starter", systemImage: "sparkles", variant: .brand)
+        } else {
+            let state = deck.syncState
+            CodeyChip(state.displayName, systemImage: state.symbol, variant: state.chipVariant)
+                .symbolEffect(.rotate, isActive: state == .syncing)
+                .accessibilityLabel("Sync status: \(state.displayName)")
+                .accessibilityIdentifier("syncStatus")
+        }
     }
 }
 

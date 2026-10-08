@@ -25,23 +25,10 @@ enum DataSeeder {
         var inserted = 0
         var updated = 0
         var deleted = 0
-
-        var changedAnything: Bool { inserted + updated + deleted > 0 }
     }
 
     /// UserDefaults key the old destructive seeder used. Removed on seed.
     private static let legacySeedVersionKey = "codey.seedVersion"
-
-    /// Loads the bundled bank + starter decks and seeds; logs instead of
-    /// throwing (previews, tests).
-    static func seedIfNeeded(context: ModelContext) {
-        do {
-            try seed(context: context, bank: QuestionBankLoader.loadBank())
-            try StarterDeckLoader.seed(context: context)
-        } catch {
-            Logger.seeding.error("Seed failed: \(String(describing: error))")
-        }
-    }
 
     /// Boot-time entry point: upsert bundled content, make sure a profile
     /// exists, save.
@@ -71,10 +58,7 @@ enum DataSeeder {
     static func upsertBundledContent(_ bank: QuestionBank, context: ModelContext) throws -> Report {
         var report = Report()
 
-        var topics = Dictionary(
-            try context.fetch(FetchDescriptor<Topic>()).map { ($0.id, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
+        var topics = try context.fetch(FetchDescriptor<Topic>()).keyed(by: \.id)
         for seed in bank.topics {
             if let topic = topics[seed.id] {
                 var changed = false
@@ -90,10 +74,7 @@ enum DataSeeder {
             }
         }
 
-        let questions = Dictionary(
-            try context.fetch(FetchDescriptor<Question>()).map { ($0.id, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
+        let questions = try context.fetch(FetchDescriptor<Question>()).keyed(by: \.id)
         for seed in bank.questions {
             guard let topic = topics[seed.topicId] else { continue }
             if let question = questions[seed.id] {
@@ -141,9 +122,7 @@ enum DataSeeder {
     /// first launch. Never modifies an existing profile.
     @discardableResult
     static func ensureProfile(context: ModelContext) -> UserProfile {
-        var descriptor = FetchDescriptor<UserProfile>()
-        descriptor.fetchLimit = 1
-        if let existing = try? context.fetch(descriptor).first {
+        if let existing: UserProfile = try? context.first() {
             return existing
         }
         let profile = UserProfile(username: UserProfile.defaultUsername)

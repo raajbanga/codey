@@ -61,18 +61,8 @@ struct StudySessionView: View {
 
     private var topBar: some View {
         HStack(spacing: CodeySpacing.md) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.codeyHeadline)
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .accessibilityLabel("Close")
-            .accessibilityHint("Your progress is saved")
-            .accessibilityIdentifier("study.close")
+            CloseButton(label: "Close", hint: "Your progress is saved") { dismiss() }
+                .accessibilityIdentifier("study.close")
 
             if viewModel.summary == nil {
                 ProgressBar(value: viewModel.queue.progress)
@@ -106,7 +96,7 @@ struct StudySessionView: View {
             }
             .overlay(alignment: .top) {
                 if let pastThreshold {
-                    CodeyChip(pastThreshold.title, variant: chipVariant(pastThreshold))
+                    CodeyChip(pastThreshold.title, variant: pastThreshold.chipVariant)
                         .padding(.top, CodeySpacing.sm)
                         .transition(.opacity)
                         .accessibilityHidden(true)
@@ -221,15 +211,6 @@ struct StudySessionView: View {
                 _ = viewModel.rate(rating)
             }
             isCommitting = false
-        }
-    }
-
-    private func chipVariant(_ rating: CardRating) -> CodeyChipVariant {
-        switch rating {
-        case .again: .danger
-        case .hard: .warning
-        case .good: .brand
-        case .easy: .success
         }
     }
 

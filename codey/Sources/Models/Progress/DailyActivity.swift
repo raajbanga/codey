@@ -29,9 +29,7 @@ extension DailyActivity {
     /// Fetches today's row, inserting it if missing. Does not save.
     static func forDay(_ date: Date, context: ModelContext, calendar: Calendar = .current) throws -> DailyActivity {
         let key = dayKey(for: date, calendar: calendar)
-        var descriptor = FetchDescriptor<DailyActivity>(predicate: #Predicate { $0.day == key })
-        descriptor.fetchLimit = 1
-        if let existing = try context.fetch(descriptor).first {
+        if let existing = try context.first(#Predicate<DailyActivity> { $0.day == key }) {
             return existing
         }
         let activity = DailyActivity(day: key)

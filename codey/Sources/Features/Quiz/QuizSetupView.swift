@@ -11,19 +11,8 @@ struct QuizSetupView: View {
     @Query private var progressRows: [QuestionProgress]
     @Query private var topicProgress: [TopicProgress]
     @Query private var profiles: [UserProfile]
-    @State private var choice: Choice = .mixed
-
-    enum Choice: Hashable {
-        case mixed
-        case tier(Difficulty)
-
-        var mode: QuizMode {
-            switch self {
-            case .mixed: .mixed
-            case .tier(let tier): .tier(tier)
-            }
-        }
-    }
+    /// .mixed or .tier(_); review has its own button.
+    @State private var choice: QuizMode = .mixed
 
     init(topic: Topic, start: @escaping (QuizMode) -> Void) {
         self.topic = topic
@@ -34,9 +23,7 @@ struct QuizSetupView: View {
     }
 
     private var config: GatingConfig { .standard }
-    private var progress: [String: QuestionProgress] {
-        Dictionary(progressRows.map { ($0.questionId, $0) }, uniquingKeysWith: { first, _ in first })
-    }
+    private var progress: [String: QuestionProgress] { progressRows.keyed(by: \.questionId) }
     private var xp: Int { profiles.first?.totalXP ?? 0 }
     private var tiers: [TierAvailability] {
         QuizProgressStore.availability(
@@ -115,9 +102,9 @@ struct QuizSetupView: View {
     private var picker: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
             Picker("Questions", selection: $choice) {
-                Text("Mixed").tag(Choice.mixed)
+                Text("Mixed").tag(QuizMode.mixed)
                 ForEach(Difficulty.allCases.filter(unlocked.contains), id: \.self) { tier in
-                    Text(tier.style.label).tag(Choice.tier(tier))
+                    Text(tier.style.label).tag(QuizMode.tier(tier))
                 }
             }
             .pickerStyle(.segmented)
@@ -166,7 +153,7 @@ struct QuizSetupView: View {
                 .accessibilityHint("Practice only. No XP.")
             } else {
                 CodeyButton("Start", systemImage: "play.fill", kind: .glassPrimary, fullWidth: true) {
-                    start(choice.mode)
+                    start(choice)
                 }
                 .disabled(activeCount == 0)
                 .accessibilityIdentifier("quizSetup.start")
@@ -183,8 +170,7 @@ struct QuizSetupView: View {
 
     private var countText: String {
         let size = config.quizSize
-        if activeCount >= size { return "\(size) questions" }
-        return activeCount == 1 ? "1 question available" : "\(activeCount) questions available"
+        return activeCount >= size ? size.counted("question") : "\(activeCount.counted("question")) available"
     }
 }
 

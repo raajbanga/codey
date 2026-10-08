@@ -5,7 +5,6 @@ import SwiftUI
 /// study will render (CardMarkdownView).
 struct CardPageEditor: View {
     @Binding var card: CardDraft
-    let number: Int
     let viewModel: DeckViewModel
     @Binding var focusRequest: FocusRequest?
 
@@ -19,8 +18,6 @@ struct CardPageEditor: View {
     @State private var isPreviewing = false
     @State private var focusPrompt = false
     @State private var focusAnswer = false
-
-    private var hasErrors: Bool { viewModel.errorCount(cardID: card.id) > 0 }
 
     var body: some View {
         ScrollView {
@@ -36,11 +33,7 @@ struct CardPageEditor: View {
             }
             .padding(CodeySpacing.md)
             .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
-            .overlay {
-                if hasErrors {
-                    RoundedRectangle.codey(CodeyRadius.lg).strokeBorder(CodeyColor.danger, lineWidth: 1.5)
-                }
-            }
+            .errorBorder(viewModel.errorCount(cardID: card.id) > 0, radius: CodeyRadius.lg)
             .padding(.vertical, CodeySpacing.xs)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -163,10 +156,11 @@ struct CardPageEditor: View {
 
                     Spacer(minLength: 0)
 
-                    let lines = ModelValidator.lineCount(snippet.source)
-                    Text("\(lines)/\(ModelValidator.Limits.snippetMaxLines) lines")
-                        .font(.codeyCaption.monospacedDigit())
-                        .foregroundStyle(lines > ModelValidator.Limits.snippetMaxLines ? CodeyColor.danger : CodeyColor.textSecondary)
+                    LimitCounter(
+                        count: ModelValidator.lineCount(snippet.source),
+                        limit: ModelValidator.Limits.snippetMaxLines,
+                        unit: "lines"
+                    )
 
                     Button("Remove code", systemImage: "trash", role: .destructive) {
                         withAnimation(CodeyMotion.snappy) { viewModel.toggleSnippet(cardID: card.id) }
@@ -178,21 +172,12 @@ struct CardPageEditor: View {
                 CodeEditorView(text: snippetBinding(\.source, default: ""), language: snippet.language)
                     .frame(height: 200)
                     .clipShape(.codey(CodeyRadius.md))
-                    .overlay {
-                        if viewModel.error(for: .snippetSource(card.id)) != nil {
-                            RoundedRectangle.codey(CodeyRadius.md).strokeBorder(CodeyColor.danger, lineWidth: 1.5)
-                        }
-                    }
+                    .errorBorder(viewModel.error(for: .snippetSource(card.id)) != nil, radius: CodeyRadius.md)
                     .accessibilityLabel("\(snippet.language.displayName) code")
                     .accessibilityIdentifier("card.codeEditor")
 
-                ForEach([ValidationField.snippetLanguage(card.id), .snippetSource(card.id)], id: \.self) { field in
-                    if let message = viewModel.error(for: field) {
-                        Label(message, systemImage: "exclamationmark.circle.fill")
-                            .font(.codeyCaption)
-                            .foregroundStyle(CodeyColor.danger)
-                    }
-                }
+                FieldErrorLabel(message: viewModel.error(for: .snippetLanguage(card.id)))
+                FieldErrorLabel(message: viewModel.error(for: .snippetSource(card.id)))
             }
         } else {
             Button {

@@ -82,7 +82,7 @@ struct StudyLauncherSection: View {
                 ? "Every unlocked card is mastered. Mastered starter cards retire."
                 : "No cards to study."
         }
-        let cards = count == 1 ? "1 card" : "\(count) cards"
+        let cards = count.counted("card")
         return deck.origin == .starter ? "\(cards) to study. Cards retire once mastered." : "\(cards) to study."
     }
 }

@@ -13,7 +13,6 @@ import UIKit
 struct CodeEditorView: UIViewRepresentable {
     @Binding var text: String
     var language: CodeLanguage
-    var isEditable = true
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -41,6 +40,7 @@ struct CodeEditorView: UIViewRepresentable {
         textView.smartInsertDeleteType = .no
         textView.spellCheckingType = .no
         textView.keyboardType = .asciiCapable
+        textView.inputAccessoryView = CodeKeyboardAccessory(textView: textView)
 
         textView.setState(TextViewState(
             text: text,
@@ -49,7 +49,6 @@ struct CodeEditorView: UIViewRepresentable {
         ))
         context.coordinator.language = language
         context.coordinator.colorScheme = colorScheme
-        apply(isEditable: isEditable, to: textView)
         return textView
     }
 
@@ -68,14 +67,6 @@ struct CodeEditorView: UIViewRepresentable {
             textView.theme = CodeyRunestoneTheme(traits: textView.traitCollection)
             textView.backgroundColor = UIColor(named: "CodeBackground")
         }
-        if textView.isEditable != isEditable {
-            apply(isEditable: isEditable, to: textView)
-        }
-    }
-
-    private func apply(isEditable: Bool, to textView: TextView) {
-        textView.isEditable = isEditable
-        textView.inputAccessoryView = isEditable ? CodeKeyboardAccessory(textView: textView) : nil
     }
 
     private static let characterPairs: [any CharacterPair] = [

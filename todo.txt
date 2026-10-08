@@ -1697,39 +1697,266 @@ HOW TO READ THIS FILE
 ================================================================================
  STAGE 12 — DOCUMENTATION RECONCILIATION                         (RB, ongoing)
 ================================================================================
- The .tex is ahead of the code and differs from the decisions above. Update
- it for the Sprint 3 document:
+ The .tex (docs/Sprint2_Documentation.tex) describes the Sprint 2 design;
+ the code has moved past it. Update it for the Sprint 3 document. Items are
+ grouped by .tex section. Rule: describe what the code does now. Don't add
+ code back to match old diagrams (the 2533123 audit removed unused APIs on
+ purpose).
+
+ 12.1 Overview, scope, process (§1, §4)
+ [ ] "Changes Since Sprint 1/2": add Sprint 3 changes (adaptive tiers,
+     XP/levels, sync engine, Home hub, onboarding, starter decks, Textual/
+     Runestone, the 2533123 cleanup).
+ [ ] Team workflow → branching is main + dev only (no feature/* branches;
+     work lands on dev, dev → main on review). Drop "/docs/minutes in the
+     repository": docs/ is gitignored, so say where minutes actually live.
+ [ ] Definition of done: keep "compiles without warnings". Add the scripts
+     (check-imports, check-design-tokens, check-secrets) and the PR template.
+ [ ] Gantt for Sprint 3 from the stage estimates above (× 1.9 realism
+     factor, doc §4.4); refresh the "as of Oct 1" text and the R5 note
+     (the sync queue is done).
+
+ 12.2 Requirements (§2)
  [ ] Status column: FR-05–11, 14, 16–18, 44 → "In progress"/"Implemented"
-     only as they actually land (DoD = tests pass + PR merged).
+     only as they actually land (DoD = tests pass + PR merged). As of
+     2026-10-08 the code implements FR-01–03, 05–31, 36, 37, 44–48. Still
+     Planned: FR-04 (display name is synced, but there is no editor or
+     avatar picker), FR-32–35 (DailyActivity counts exist, but nothing
+     computes currentStreak, the daily goal, or badges), FR-38 (Home
+     suggests ONE weakest topic, not a weekly 3-topic plan), FR-39–43, 49.
  [ ] FR-30 → tier base + capped streak bonus (D5). FR-31 unchanged.
  [ ] FR-08 → "rendered with Textual (Prism.js) and edited with Runestone
      (Tree-sitter)"; prompt/answer support markdown (D1/D2 r2).
- [ ] NFR-03 → minimum iOS 26 (D11); hardware table → Simulator iOS 26/27.
- [ ] NFR-15 + Table 3 (services) → add Textual, Runestone,
-     TreeSitterLanguages (MIT-licensed, $0). Credit them in the About
-     section.
- [ ] Risk register: add R12 "UI dependency abandonment / Xcode
-     incompatibility (Textual pre-1.0, Runestone)". Mitigation: exact
-     pins, single-file wrappers (CardMarkdownView, CodeEditorView),
-     fallbacks listed in 2.3. Trigger: fails to build on a new Xcode for
-     > 2 days.
- [ ] Add the UI/UX design section: tokens, glass usage, navigation model,
-     screen mockups (from 3.3 / 5 / 7.2), and the onboarding flow. Update
-     the use case diagram with Onboard / Manage Profile.
  [ ] FR-09 → "JSON card schema" = flashcard.schema.json + FlashcardPayload.
  [ ] FR-14 → starter-decks.json, one deck per topic, tier-tagged.
  [ ] FR-24/§2.2 → starter cards retire at mastery 5; unlocks are sticky.
+     Rewrite the last paragraph of "Adaptive Practice Rationale" (the
+     starter-deck expansion and tier tags are done).
  [ ] FR-19 → "up to 10" (the pool may be smaller).
- [ ] FR-21 → match the actual topics (or add OOP, B13).
- [ ] Class diagrams: CodeSnippet as a value type; FlashcardPayload instead
-     of Dictionary; DeckViewModel uses @Observable; DeckSyncState rebuilt
-     from a persisted kind; Drafting is in-editor plus crash recovery.
+ [ ] FR-21 → list the 8 bundled topics: Data Structures, Algorithms, OS
+     Basics, Databases, Object-Oriented Programming, Networking, Swift
+     Basics, Python Basics (OOP was added, O7/B13).
+ [ ] FR-03 → also covers the sign-out choice to remove or keep this
+     account's decks on the device (O3).
+ [ ] FR-45 → the queue holds deck, card, and profile (XP) changes. Study
+     results (mastery, quiz progress) stay local (D10), so take "study
+     results" out of the wording. Also say guest changes queue and drain
+     after sign-in.
+ [ ] FR-46 → push AND pull (cursor-based fetchChanges), with exponential
+     backoff of 2–300 s.
+ [ ] NFR-03 → minimum iOS 26 (D11); hardware table → Simulator iOS 26/27.
+     The deployment diagram and §3 still say "iOS 17+" in three places.
+ [ ] NFR-04 → "complete unless open" file protection (O6), not "complete".
+     The verification is StoreFileProtectionTests (the Simulator doesn't
+     store the attribute, so the device check is manual).
+ [ ] NFR-06 verification → the client enforces TLS 1.3
+     (SupabaseServices.tlsConfiguration + TransportSecurityTests). Proxyman
+     was never used. Remove it from Table 3 and the metrics table, or mark
+     it optional.
+ [ ] NFR-10 / hardware table → the iPhone 16 / 16 Pro Max profiles are
+     stale. Use the current Simulator set (e.g. iPhone SE 3, 17, 17 Pro Max
+     or 18 Pro). The snapshot tests are not built: the UI-test runner can't
+     launch on the dev Mac, so the method is a manual layout pass.
+ [ ] NFR-15 + Table 3 (services) → add Textual, Runestone,
+     TreeSitterLanguages (MIT-licensed, $0), and transitive packages as in
+     the in-app Acknowledgements. Credit them in the About section.
+ [ ] Table 3 → add GitHub Actions (the keep-alive workflow runs every 3
+     days; R11 says "weekly"). The pg_dump backup is manual
+     (scripts/backup.sh), not scheduled, so say "export before risky
+     changes / regularly" or schedule it.
+ [ ] Metrics table: fill the Sprint 3 baselines from Stage 10. Unit tests /
+     coverage are now 278 pass / 89.3% (Models 94.3%, ViewModels 92.6%,
+     Services 87.8%), measured after the 2533123 cleanup.
+ [ ] Metric "taps to start a study session ≤ 3": now 1 (Home "Up next") or
+     2 (Decks → tile → Study).
+
+ 12.3 Risks (§5)
+ [ ] Add R12 "UI dependency abandonment / Xcode incompatibility (Textual
+     pre-1.0, Runestone)". Mitigation: exact pins, single-file wrappers
+     (CardMarkdownView, CodeEditorView), fallbacks listed in 2.3. Trigger:
+     fails to build on a new Xcode for > 2 days.
+ [ ] R7 trigger → "Supabase/GoogleSignIn imported outside
+     Services/Backend/Supabase/ (scripts/check-imports.sh)". Supabase types
+     live in that adapter folder, not in the facade itself.
+ [ ] R8 → BackendFacade is 291 lines (limit 300). Note that it is close, or
+     plan the AuthFacade/DeckFacade split.
+ [ ] R2 / R9 / R11 statuses: the sync ledger (sync_log), per-arrow state
+     tests, and the keep-alive are done → Mitigated.
+ [ ] Risk monitoring text: drop "sync queue 40% complete".
+
+ 12.4 Use cases (§6)
+ [ ] Add the use cases built since Sprint 2: Take Quiz, Practice by Tier
+     (FR-29), Study with Ratings/Resume, Hide/Restore Starter Deck (FR-15),
+     Onboard, Manage Profile (appearance, pins, reset/erase), Sign Out.
+ [ ] "Report UI/UX Defect" (FR-49) is not built. Keep it, but mark it
+     Planned in the text.
+ [ ] UC-01 spec: "selects New Deck; the deck enters Drafting" → the builder
+     edits a DeckDraft value; the FlashcardDeck is created on Save and goes
+     Drafting → LocallyPersisted in one save. Step 6: queue = SyncQueue +
+     SyncEngine.requestSync (debounced 2 s).
+ [ ] UC-10/§6: say the conflict check happens at push time (the remote
+     server_updated_at moved past ours).
+
+ 12.5 Traceability (§7)
+ [ ] Map each TC-xx to the actual test names.
+ [ ] Design-element names that no longer exist (or never did):
+     FR-06 FlashcardDeck.addCard() → FlashcardFactory.createCard() +
+       SwiftDataService.apply(draft).
+     FR-09 Flashcard.validateFields() → ModelValidator.validateCard()
+       (called by FlashcardFactory.validatedSnippet).
+     FR-12 SwiftDataService.delete() + ISyncQueue → BackendFacade.deleteDeck()
+       → tombstone (DeckSyncState.onDelete) + SyncQueue delete operation;
+       never-synced decks are hard-deleted.
+     FR-13 → also BackendFacade.deleteCard() (outside the builder).
+     FR-15 → BackendFacade.setHidden(); Implemented.
+     FR-22–29 → QuizProgressStore, TierGate, QuestionPool, GatingConfig,
+       QuestionProgress, TopicProgress; Implemented.
+     FR-30–31 → XPPolicy, LevelCalculator. FR-36 → QuizAnswerRecord +
+       QuizProgressStore.accuracy. FR-37 → HomeView (LevelCard, TopicCard).
+     FR-44 SwiftDataService.insert() → BackendFacade.saveDeck() →
+       SwiftDataService.apply(_:ownerId:).
+     FR-45 ISyncQueue → SyncQueue (concrete; the protocol was removed).
+     FR-47 → ConflictResolver.merge() + ConflictState.onResolve().
+     FR-48 DeckSyncState.name → DeckStatusChip / DeckSyncStateKind.displayName.
+ [ ] NFR table: NFR-07 IRLSPolicy, NFR-08 IDeckRepository, and NFR-09
+     ISyncQueue are fictional interfaces. Use the real ones from 12.7, or
+     the RLS policies / ModelContext / SyncQueue + SyncEngine. NFR-02 →
+     SyncEngine batched push (500 operations per request).
+
+ 12.6 Behavior diagrams (§8 sequence, §9 state)
+ [ ] Sequence (Fig. 7), redraw the main flow:
+       View → DeckViewModel.save() → createDeck(title, topic, cardData)
+       → ModelValidator.validateDeck() returns [FieldError] (empty = valid,
+         NOT "ValidationResult.valid")
+       → backend.saveDeck(draft) [DeckBackend = BackendFacade]
+       → SwiftDataService.apply(draft) → FlashcardFactory.createCard/
+         updateCard (validates again)
+       → deck.editAndSave() / save(): Drafting → LocallyPersisted
+       → SyncQueue.enqueue(deck + changed cards) → context.save()
+       → SyncEngine.requestSync() (async, debounced)
+       ← uiState = .savedSuccess → dismiss.
+     Remove the "in Sprint 3, messages 5–7 will be routed through
+     BackendFacade" paragraph (they are now) and the "insertDeck(model,
+     state:)" message.
+ [ ] State diagram (Fig. 8): name the conflict state the way the code does
+     (ConflictState / .conflict, label "Conflict"). Add:
+     - launch crash recovery: Syncing → LocallyPersisted, persisted
+       Drafting → LocallyPersisted;
+     - delete: the tombstoned deck stays LocallyPersisted until the delete
+       syncs, then it is removed (final state). A never-synced deck is
+       deleted at once;
+     - pull: a remote tombstone deletes a clean Synced deck;
+     - Conflict on resume: a deck left in Conflict is merged again on the
+       next push.
+     The initial arrow "User taps New Deck" → "first valid Save" (no model
+     exists while drafting a new deck). Editing opens the builder = the edit
+     arrow, which Syncing/Conflict don't have (canEdit).
+
+ 12.7 Class diagrams (§10)
+ [ ] Core domain (Fig. 9):
+     DeckViewModel: draft: DeckDraft, fieldErrors, uiState, -backend:
+       DeckBackend (not currentDeck/isLoading/dataService); ops createDeck,
+       updateDeck, save, addCard, duplicateCard, deleteCard, restoreCard,
+       moveCard(_:onto:), toggleSnippet, validateNow. @Observable, not
+       @Published.
+     FlashcardDeck: topicId (not topicCategory), origin, isHidden, ownerId,
+       syncState (persisted kind), deletedAt; activeCards, cardCount,
+       masteryRate (properties, not get…/calculate… methods), markDirty(at:)
+       (internal). No addCard(): cards attach through the relationship.
+     SwiftDataService: apply(draft, ownerId) → DraftSaveResult,
+       fetch(id:), fetchCard(id:). No insert/fetchDecks/delete.
+     Flashcard: updateMastery(rating: CardRating), resetMastery(),
+       toPayload() → FlashcardPayload; difficulty, sortIndex, retiredAt,
+       deletedAt. No validateFields(); validation is in ModelValidator.
+     CodeSnippet is a value type (struct). language: CodeLanguage (enum).
+     Show the DeckViewModel → DeckBackend ← BackendFacade relationship
+     instead of VM → SwiftDataService.
+ [ ] Factory (Fig. 10): callers are SwiftDataService.apply (via
+     BackendFacade.saveDeck), StarterDeckLoader, RemoteChangeApplier
+     (pull), and ConflictResolver (merge). There is no
+     SyncEngine.pullRemoteCards, and DeckViewModel doesn't call the factory
+     directly. Operations: createCard(prompt…), createCard(from:
+     FlashcardPayload), updateCard, applyRemote; private validatedSnippet,
+     applyDefaults(FlashcardPayload). Show Flashcard.init requiring
+     FlashcardFactory.Token (that's how "only the factory creates cards"
+     is enforced, not code review).
+ [ ] State (Fig. 11): FlashcardDeck has no pendingEdits field. The state is
+     rebuilt from the persisted syncStateRaw (currentState is computed).
+     Protocol: kind, name, onSave, onEdit, onPush,
+     onRemoteResponse(deck, result), onResolve, onDelete → state?. Context
+     ops: save, edit, push, receive, resolve, delete, editAndSave,
+     recoverAfterLaunch. Default "no arrow" handling = a protocol
+     extension (logs and returns self).
+ [ ] Façade (Fig. 12): BackendFacade holds auth: AuthProviding?, engine:
+     SyncEngine, context, cursors. SupabaseDataClient, NetworkMonitor, and
+     SwiftDataService are reached through SyncEngine or created per call, so
+     they are not facade fields. Real API: authState, signInWithGoogle,
+     signOut(removingLocalDecks:), saveDeck(DeckDraft) → FlashcardDeck,
+     deleteDeck, deleteCard, setHidden, syncPending, didResetProgress,
+     start, handle(url). No fetchDecks/syncStatus/pushToRemote: views read
+     with @Query, and SyncEngine pushes. Subsystem methods:
+     SupabaseDataClient upsertDecks/upsertCards/fetchChanges/
+     fetchDeckVersions/fetchDeckSnapshot/fetchProfile/upsertProfile/
+     appendSyncLog (not insert/select); NetworkMonitor isReachable
+     (property) + changes(); SupabaseAuthProvider signIn(presenting:) →
+     AppUser?. Text: "view models use four operations" → DeckViewModel
+     uses DeckBackend (saveDeck/deleteDeck/setHidden); views use the facade
+     environment object for auth and sync.
+
+ 12.8 Component diagram (§11): REDRAW, it is drawn incorrectly
+ [ ] What's wrong now:
+     - Persistence (SwiftDataService) is drawn requiring ICloudReplication.
+       The local store never talks to the network. SyncEngine (behind
+       BackendFacade) does, through RemoteDeckStore.
+     - There is no component for BackendFacade / SyncEngine, even though the
+       text says the facade encapsulates the subsystem boundary.
+     - Mixed notation: required interfaces are dashed <<use>> arrows into a
+       ball instead of sockets (assembly connectors). ISyncQueue and
+       IDeckUIAction are balls with no consumer, and "Presentation provides
+       IDeckUIAction" means nothing (views provide nothing to other
+       components).
+     - The table lists IAuthContext, ISQLiteDriver, IAuthGateway, and
+       IRLSPolicy, but none are drawn. The whole auth path (Google Sign-In,
+       GoTrue, Keychain) is missing.
+     - Every interface name is invented. The code has real protocols; use
+       them.
+ [ ] Redraw (UML 2 ball-and-socket):
+     Client subsystem:
+       Presentation (SwiftUI views + view models): requires DeckBackend;
+         reads the local store through ModelContext (@Query).
+       Backend & Sync (BackendFacade, SyncEngine, SyncQueue,
+         ConflictResolver, DeckSyncState): provides DeckBackend; requires
+         AuthProviding, RemoteDeckStore, Reachability, ModelContext.
+       Local Store (SwiftData container, SwiftDataService, FlashcardFactory):
+         provides ModelContext.
+       Supabase Adapter (SupabaseAuthProvider, SupabaseDataClient,
+         KeychainSessionStorage; the only Supabase/GoogleSignIn importer):
+         provides AuthProviding and RemoteDeckStore; requires the Supabase
+         HTTPS APIs and the Google Sign-In SDK; uses the Keychain through
+         AuthLocalStorage.
+       NetworkMonitor: provides Reachability.
+     External/remote: Google OAuth; Supabase Auth (GoTrue); PostgREST
+       (enforces RLS) → PostgreSQL (profiles, decks, flashcards, sync_log).
+     Rewrite Table "Component interfaces" to match, one row per component.
+
+ 12.9 Deployment diagram (§12)
+ [ ] Client node: iOS 26+. Keychain holds the Supabase session as
+     AfterFirstUnlockThisDeviceOnly. The SwiftData store is protected
+     completeUnlessOpen. Add the Google Sign-In SDK on the client and a
+     Google OAuth (accounts.google.com) external node; the client reaches
+     it over HTTPS.
+ [ ] Data tier: add the profiles table (it exists in the migrations).
+ [ ] Text: the backups line → manual scripts/backup.sh (see 12.2); the
+     keep-alive is GitHub Actions every 3 days.
+
+ 12.10 New sections
+ [ ] Add the UI/UX design section: tokens, glass usage, navigation model,
+     screen mockups (from 3.3 / 5 / 7.2), and the onboarding flow. Update
+     the use case diagram with Onboard / Manage Profile (12.4).
  [ ] Navigation/UI: Home hub with a 3-tab glass bar + profile sheet (D8 r2).
- [ ] Metric "taps to start a study session ≤ 3": now 1 (accessory) or 2
-     (Decks → tile → Study).
- [ ] Gantt for Sprint 3 from the stage estimates above (× 1.9 realism
-     factor, doc §4.4).
- [ ] Traceability: map each TC-xx to the actual test names.
+ [ ] Note the shared design-system pieces from the audit (FormFeedback,
+     CloseButton, IconTile, StatTileRow, DeckStatusChip) if the UI section
+     lists components.
 
 
 --------------------------------------------------------------------------------
@@ -1775,11 +2002,15 @@ HOW TO READ THIS FILE
      Backend/      BackendFacade, protocols, SwiftDataService, NetworkMonitor
        Supabase/   SupabaseAuthProvider, SupabaseDataClient   ← only Supabase imports
      (existing)    QuestionBankLoader, DataSeeder, ModelContainerFactory
+   Support/        Helpers (keyed(by:), ModelContext.first, percentText, counted)
    DesignSystem/
-     Tokens/       Colors, Radius, Spacing, Typography, Motion, TierStyle
+     Tokens/       Colors, Radius, Spacing, Typography, Motion, TierStyle,
+                   SyntaxRole
      Components/   CodeyCard, CodeyButton, AnswerOptionRow, Chip, ProgressRing,
-                   ProgressBar, StatTile, TierChipRow, EmptyStateView,
-                   CelebrationOverlay, XPGainLabel
+                   ProgressBar, StatTile(+Row), TierChipRow(+UnlockedBanner),
+                   EmptyStateView, CelebrationOverlay, XPGainLabel,
+                   FormFeedback (field errors, counters, errorAlert),
+                   CloseButton, IconTile, AppGlyph
      Markdown/     CardMarkdownView, CodeyMarkdownStyle   ← only Textual import
      CodeEditor/   CodeEditorView, CodeyRunestoneTheme   ← only Runestone import
      Gallery/      ComponentGallery (#Previews)

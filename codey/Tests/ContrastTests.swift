@@ -69,7 +69,7 @@ struct ContrastTests {
         }
     }
 
-    @Test(arguments: SyntaxRole.allCases.map(\.assetName) + ["SyntaxPlain"])
+    @Test(arguments: SyntaxRole.allCases.map(\.assetName))
     func syntaxColorPassesOnCodeBackground(name: String) {
         for (style, label, _) in Self.styles {
             let ratio = RGB(Self.asset(name), style).contrast(with: RGB(Self.asset("CodeBackground"), style))
