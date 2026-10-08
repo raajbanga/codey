@@ -7,7 +7,6 @@ struct DeckDetailView: View {
     let deck: FlashcardDeck
     let topic: Topic?
 
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \Topic.title) private var topics: [Topic]
 
@@ -15,8 +14,9 @@ struct DeckDetailView: View {
     @State private var confirmDelete = false
     @State private var actionError: String?
     @State private var expandedCardID: UUID?
+    @Environment(Router.self) private var router
 
-    private var backend: LocalOnlyBackend { LocalOnlyBackend(context: modelContext) }
+    @Environment(BackendFacade.self) private var backend
 
     var body: some View {
         List {
@@ -40,6 +40,10 @@ struct DeckDetailView: View {
                 .padding(.vertical, CodeySpacing.xs)
             }
 
+            StudyLauncherSection(deck: deck) { start in
+                router.study = StudyRequest(deck: deck, start: start)
+            }
+
             Section("Cards") {
                 ForEach(deck.activeCards) { card in
                     CardRow(card: card, isExpanded: expandedCardID == card.id)
@@ -59,6 +63,7 @@ struct DeckDetailView: View {
             if deck.isEditable {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Edit") { isEditing = true }
+                        .disabled(!deck.canEdit)
                         .accessibilityIdentifier("deck.edit")
                 }
                 ToolbarItem(placement: .secondaryAction) {

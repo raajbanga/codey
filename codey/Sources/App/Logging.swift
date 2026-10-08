@@ -10,4 +10,7 @@ extension Logger {
     static let seeding = Logger(subsystem: subsystem, category: "Seeding")
     static let quiz = Logger(subsystem: subsystem, category: "Quiz")
     static let settings = Logger(subsystem: subsystem, category: "Settings")
+    static let study = Logger(subsystem: subsystem, category: "Study")
+    static let sync = Logger(subsystem: subsystem, category: "Sync")
+    static let auth = Logger(subsystem: subsystem, category: "Auth")
 }

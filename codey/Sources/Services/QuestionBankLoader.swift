@@ -74,8 +74,8 @@ enum QuestionBankLoaderError: Error, CustomStringConvertible {
 
 enum QuestionBankLoader {
     static let expectedSchemaVersion = 1
-    static let expectedTopicCount = 4
-    static let expectedQuestionCount = 48
+    static let expectedTopicCount = 8
+    static let expectedQuestionCount = 176
 
     private static let fileName = "questions-seed"
     private final class BundleToken {}

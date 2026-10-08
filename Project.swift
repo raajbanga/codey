@@ -35,6 +35,16 @@ let project = Project(
                     "GOOGLE_IOS_CLIENT_ID": "$(GOOGLE_IOS_CLIENT_ID)",
                     "GOOGLE_REVERSED_CLIENT_ID": "$(GOOGLE_REVERSED_CLIENT_ID)",
                     "GOOGLE_SERVER_CLIENT_ID": "$(GOOGLE_SERVER_CLIENT_ID)",
+                    // GoogleSignIn reads these; the reversed client ID is the
+                    // OAuth redirect scheme. No ATS exceptions (NFR-06).
+                    "GIDClientID": "$(GOOGLE_IOS_CLIENT_ID)",
+                    "GIDServerClientID": "$(GOOGLE_SERVER_CLIENT_ID)",
+                    "CFBundleURLTypes": [
+                        [
+                            "CFBundleURLName": "google-sign-in",
+                            "CFBundleURLSchemes": ["$(GOOGLE_REVERSED_CLIENT_ID)"],
+                        ],
+                    ],
                 ]
             ),
             buildableFolders: [
@@ -48,6 +58,8 @@ let project = Project(
                 .external(name: "TreeSitterPythonRunestone"),
                 .external(name: "TreeSitterJavaRunestone"),
                 .external(name: "TreeSitterCPPRunestone"),
+                .external(name: "Supabase"),
+                .external(name: "GoogleSignIn"),
             ]
         ),
         .target(

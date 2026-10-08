@@ -170,6 +170,13 @@ struct LocalDataResetTests {
         let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
         deck.activeCards.forEach { $0.updateMastery(rating: .easy) }
         try context.save()
+        let study = StudySessionViewModel(deck: deck, start: .fresh(tierFilter: nil), context: context)
+        study.toggleReveal()
+        study.rate(.good) // leaves a resumable snapshot + daily activity
+        let topic = try #require(try context.fetch(FetchDescriptor<Topic>()).first)
+        let quiz = QuizViewModel(topic: topic, mode: .mixed, context: context)
+        quiz.select(try #require(quiz.currentQuestion).correctOptionIndex) // quiz progress + history
+        profile.totalXP = 900
 
         try LocalDataReset.resetProgress(context: context)
 
@@ -178,6 +185,11 @@ struct LocalDataResetTests {
         #expect(profile.lastActiveDate == nil)
         #expect(deck.activeCards.count == 2)
         #expect(deck.activeCards.allSatisfy { $0.masteryScore == 0 && $0.lastReviewedAt == nil })
+        #expect(try context.fetchCount(FetchDescriptor<StudyProgressSnapshot>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<DailyActivity>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<QuestionProgress>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<TopicProgress>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<QuizAnswerRecord>()) == 0)
         #expect(try context.fetchCount(FetchDescriptor<Question>()) == QuestionBankLoader.expectedQuestionCount)
     }
 
