@@ -11,8 +11,8 @@ struct FlashcardView: View {
                 if isFlipped {
                     VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                         Text("Answer")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(ThemeColor.success)
+                            .font(.codeyCaption.weight(.semibold))
+                            .foregroundStyle(CodeyColor.success)
 
                         Text(correctAnswerText)
                             .font(.codeyHeadline)
@@ -21,23 +21,23 @@ struct FlashcardView: View {
 
                         Text(question.explanation)
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
+                            .foregroundStyle(CodeyColor.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
                 } else {
                     VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                         Text("Question")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(ThemeColor.primary)
+                            .font(.codeyCaption.weight(.semibold))
+                            .foregroundStyle(CodeyColor.brand)
 
                         Text(question.prompt)
                             .font(.codeyHeadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         Text("Tap to reveal answer")
-                            .font(.caption)
-                            .foregroundStyle(ThemeColor.muted)
+                            .font(.codeyCaption)
+                            .foregroundStyle(CodeyColor.textSecondary)
                             .padding(.top, CodeySpacing.sm)
                     }
                 }

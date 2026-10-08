@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codey.app/schemas/flashcard.schema.json",
+  "title": "FlashcardPayload",
+  "description": "One flashcard as bundled in starter-decks.json and sent during sync. Mirrors FlashcardPayload.swift. Lengths count Unicode code points AFTER trimming surrounding whitespace (ModelValidator does the trim; JSON Schema cannot). Limits must equal ModelValidator.Limits and the SQL CHECKs; FlashcardSchemaFileTests enforces the Swift side.",
+  "type": "object",
+  "required": ["prompt", "answer"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Client-generated UUID. Assigned by FlashcardFactory if missing.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "prompt": {
+      "description": "Front of the card. Block markdown; code fences allowed and counted.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "answer": {
+      "description": "Back of the card. Block markdown; code fences allowed and counted.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "codeLanguage": {
+      "description": "Language of the optional code snippet. Present iff codeSource is.",
+      "type": ["string", "null"],
+      "enum": ["swift", "python", "java", "cpp", null]
+    },
+    "codeSource": {
+      "description": "Optional code snippet source. Present iff codeLanguage is.",
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 2000,
+      "x-maxLines": 80
+    },
+    "difficulty": {
+      "description": "Tier tag. Required for starter cards, optional for user cards.",
+      "type": ["string", "null"],
+      "enum": ["easy", "medium", "hard", null]
+    },
+    "sortIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "masteryScore": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 5
+    },
+    "createdAt": { "type": ["string", "null"], "format": "date-time" },
+    "updatedAt": { "type": ["string", "null"], "format": "date-time" },
+    "deletedAt": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "dependentRequired": {
+    "codeLanguage": ["codeSource"],
+    "codeSource": ["codeLanguage"]
+  }
+}

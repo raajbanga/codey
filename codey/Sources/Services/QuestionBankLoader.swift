@@ -23,6 +23,29 @@ private struct QuestionBankFile: Codable {
     let questions: [QuestionDTO]
 }
 
+struct TopicSeed: Equatable {
+    let id: String
+    let title: String
+    let summary: String
+    let iconName: String
+}
+
+struct QuestionSeed: Equatable {
+    let id: String
+    let topicId: String
+    let prompt: String
+    let options: [String]
+    let correctOptionIndex: Int
+    let explanation: String
+    let difficulty: Difficulty
+}
+
+/// Bundled quiz content, as plain values (not yet in SwiftData).
+struct QuestionBank: Equatable {
+    var topics: [TopicSeed]
+    var questions: [QuestionSeed]
+}
+
 enum QuestionBankLoaderError: Error, CustomStringConvertible {
     case fileNotFound
     case unsupportedSchemaVersion(Int)
@@ -64,40 +87,27 @@ enum QuestionBankLoader {
         return Bundle(for: BundleToken.self)
     }
 
-    static func loadTopics(from bundle: Bundle = resourceBundle) throws -> [Topic] {
-        let bank = try decode(from: bundle)
-        var lookup: [String: Topic] = [:]
-
-        let topics = bank.topics.map { dto -> Topic in
-            let topic = Topic(
-                id: dto.id,
-                title: dto.title,
-                summary: dto.summary,
-                iconName: dto.iconName
-            )
-            lookup[dto.id] = topic
-            return topic
-        }
-
-        for dto in bank.questions {
-            guard let topic = lookup[dto.topicId],
-                  let difficulty = Difficulty(rawValue: dto.difficulty) else {
-                continue
-            }
-            topic.questions.append(
-                Question(
+    /// The bundled bank as plain values, validated. The seeder upserts these.
+    static func loadBank(from bundle: Bundle = resourceBundle) throws -> QuestionBank {
+        let file = try decode(from: bundle)
+        return QuestionBank(
+            topics: file.topics.map {
+                TopicSeed(id: $0.id, title: $0.title, summary: $0.summary, iconName: $0.iconName)
+            },
+            questions: file.questions.compactMap { dto in
+                // decode(from:) already rejected unknown difficulties.
+                guard let difficulty = Difficulty(rawValue: dto.difficulty) else { return nil }
+                return QuestionSeed(
                     id: dto.id,
+                    topicId: dto.topicId,
                     prompt: dto.prompt,
                     options: dto.options,
                     correctOptionIndex: dto.correctOptionIndex,
                     explanation: dto.explanation,
-                    difficulty: difficulty,
-                    topic: topic
+                    difficulty: difficulty
                 )
-            )
-        }
-
-        return topics
+            }
+        )
     }
 
     private static func decode(from bundle: Bundle) throws -> QuestionBankFile {

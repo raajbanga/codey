@@ -16,7 +16,7 @@ struct QuizSummaryView: View {
 
                         Text(topicTitle)
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
+                            .foregroundStyle(CodeyColor.textSecondary)
 
                         Divider()
 
@@ -37,13 +37,13 @@ struct QuizSummaryView: View {
                     }
                 }
 
-                CodeyButton("Back to Topics", variant: .primary, size: .lg) {
+                CodeyButton("Back to Topics", fullWidth: true) {
                     dismiss()
                 }
             }
             .padding(CodeySpacing.md)
         }
-        .background(ThemeColor.canvas)
+        .background(CodeyColor.surface)
         .navigationTitle("Summary")
         .navigationBarBackButtonHidden(true)
     }
@@ -53,11 +53,11 @@ struct QuizSummaryView: View {
         HStack {
             Text(label)
                 .font(.codeySubheadline)
-                .foregroundStyle(ThemeColor.muted)
+                .foregroundStyle(CodeyColor.textSecondary)
             Spacer()
             Text(value)
                 .font(.codeyHeadline)
-                .foregroundStyle(ThemeColor.primary)
+                .foregroundStyle(CodeyColor.brand)
         }
     }
 }
