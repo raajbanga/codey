@@ -11,6 +11,17 @@ enum HomeLogic {
         }
     }
 
+    /// Every topic, pinned first (in pin order), then the rest by title.
+    static func orderedTopicIDs(all: [(id: String, title: String)], pinned: [String]) -> [String] {
+        let known = Set(all.map(\.id))
+        let pins = pinned.filter(known.contains)
+        let rest = all
+            .filter { !pins.contains($0.id) }
+            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+            .map(\.id)
+        return pins + rest
+    }
+
     /// O9: the suggested quiz is on the weakest topic, chosen from the
     /// pinned topics (all topics if none are pinned). An untried topic
     /// counts as weakest (0%); ties keep the given order.

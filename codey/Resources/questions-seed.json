@@ -24,6 +24,30 @@
       "title": "Databases",
       "summary": "Relational models, SQL, indexing, and transaction basics.",
       "iconName": "cylinder.split.1x2.fill"
+    },
+    {
+      "id": "topic-oop",
+      "title": "Object-Oriented Programming",
+      "summary": "Classes, objects, inheritance, polymorphism, and design principles.",
+      "iconName": "cube.transparent"
+    },
+    {
+      "id": "topic-networking",
+      "title": "Networking",
+      "summary": "How data moves: IP, TCP/UDP, HTTP, DNS, and TLS.",
+      "iconName": "network"
+    },
+    {
+      "id": "topic-swift",
+      "title": "Swift Basics",
+      "summary": "Optionals, value vs reference types, closures, protocols, and concurrency.",
+      "iconName": "swift"
+    },
+    {
+      "id": "topic-python",
+      "title": "Python Basics",
+      "summary": "Lists, dicts, comprehensions, functions, and Python's data model.",
+      "iconName": "chevron.left.forwardslash.chevron.right"
     }
   ],
   "questions": [
@@ -957,6 +981,798 @@
       "options": ["It caches the whole table in RAM", "The index contains every column the query needs, so the base table isn't read", "It removes the need for a WHERE clause", "It sorts results by primary key"],
       "correctOptionIndex": 1,
       "explanation": "When all the needed columns are in the index, the database answers from the index alone and skips the extra lookups into the table.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-oop-001",
+      "topicId": "topic-oop",
+      "prompt": "What is an object?",
+      "options": ["An instance of a class, with its own state", "A function that returns a class", "A file containing source code", "A kind of loop"],
+      "correctOptionIndex": 0,
+      "explanation": "A class is the blueprint; each object built from it holds its own values for the class's fields.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-002",
+      "topicId": "topic-oop",
+      "prompt": "What is encapsulation?",
+      "options": ["Running code in parallel", "Converting types automatically", "Copying objects on assignment", "Hiding internal state behind a public interface"],
+      "correctOptionIndex": 3,
+      "explanation": "Callers use methods instead of poking at fields directly, so the object can keep itself valid.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-003",
+      "topicId": "topic-oop",
+      "prompt": "What does inheritance let a class do?",
+      "options": ["Hide all of its methods", "Skip writing an initializer", "Reuse and extend another class's behavior", "Run faster"],
+      "correctOptionIndex": 2,
+      "explanation": "A subclass gets its superclass's properties and methods, and can add or override them.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-004",
+      "topicId": "topic-oop",
+      "prompt": "What is a constructor (initializer) for?",
+      "options": ["Printing an object", "Setting up a new object's initial state", "Deleting an object", "Comparing two objects"],
+      "correctOptionIndex": 1,
+      "explanation": "It runs when the object is created and gives every field a valid starting value.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-005",
+      "topicId": "topic-oop",
+      "prompt": "Inside a method, which keyword usually refers to the current object?",
+      "options": ["`self` / `this`", "`super`", "`static`", "`new`"],
+      "correctOptionIndex": 0,
+      "explanation": "Swift and Python use `self`; Java and C++ use `this`.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-006",
+      "topicId": "topic-oop",
+      "prompt": "What is a method?",
+      "options": ["A variable shared by every program", "A compiler setting", "A database table", "A function defined on a class or object"],
+      "correctOptionIndex": 3,
+      "explanation": "Methods are the behavior attached to a type, and they can read and change the object's state.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-007",
+      "topicId": "topic-oop",
+      "prompt": "If class `Dog` inherits from `Animal`, what is `Dog`?",
+      "options": ["An interface", "A module", "A subclass of Animal", "Animal's superclass"],
+      "correctOptionIndex": 2,
+      "explanation": "Dog is the subclass (child); Animal is the superclass (parent).",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-008",
+      "topicId": "topic-oop",
+      "prompt": "What does marking a member `private` mean?",
+      "options": ["It's thread-safe", "Only code inside its own type (or file, depending on the language) can use it", "Anyone can change it", "It's saved to disk"],
+      "correctOptionIndex": 1,
+      "explanation": "Access control is a tool for encapsulation: outside code can't depend on private details.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-oop-009",
+      "topicId": "topic-oop",
+      "prompt": "What is polymorphism?",
+      "options": ["The same call runs different code depending on the object's actual type", "Copying an object into several shapes", "Having many initializers", "Storing many objects in one array"],
+      "correctOptionIndex": 0,
+      "explanation": "For example, `shape.area()` runs Circle's or Square's version depending on what `shape` holds.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-010",
+      "topicId": "topic-oop",
+      "prompt": "Overriding vs overloading?",
+      "options": ["They're the same thing", "Overloading happens at runtime; overriding never does", "Overriding needs two unrelated classes", "Overriding replaces a superclass method in a subclass; overloading defines same-named methods with different parameters"],
+      "correctOptionIndex": 3,
+      "explanation": "Overrides are picked at runtime by the object's type; overloads are picked at compile time by the arguments.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-011",
+      "topicId": "topic-oop",
+      "prompt": "What is an abstract class?",
+      "options": ["A class with only static members", "A class defined inside a function", "A class you can't instantiate directly, which may leave methods for subclasses to implement", "A class with no methods"],
+      "correctOptionIndex": 2,
+      "explanation": "It captures shared structure while forcing subclasses to fill in the specifics.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-012",
+      "topicId": "topic-oop",
+      "prompt": "What does \"composition over inheritance\" suggest?",
+      "options": ["Share state through global variables", "Build behavior by holding other objects instead of deep subclass trees", "Never use classes", "Always inherit from a base class"],
+      "correctOptionIndex": 1,
+      "explanation": "A Car *has* an Engine rather than *being* one; parts can be swapped without changing a hierarchy.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-013",
+      "topicId": "topic-oop",
+      "prompt": "What is an interface (a protocol in Swift)?",
+      "options": ["A contract of methods and properties a type promises to provide", "A screen in the user interface", "A subclass with no parent", "A compiled binary"],
+      "correctOptionIndex": 0,
+      "explanation": "Different types can conform to the same interface and be used interchangeably.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-014",
+      "topicId": "topic-oop",
+      "prompt": "`animal` is declared as `Animal` but holds a `Dog`. Which `speak()` runs (dynamic dispatch)?",
+      "options": ["Animal's version, always", "Neither; it's a compile error", "Both, one after the other", "Dog's override"],
+      "correctOptionIndex": 3,
+      "explanation": "With dynamic dispatch the runtime type decides. (In C++ the method must be `virtual`.)",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-015",
+      "topicId": "topic-oop",
+      "prompt": "What is a static (type-level) member?",
+      "options": ["A member only subclasses can see", "A member stored in a database", "One copy shared by the type, not one per instance", "A member that can never change"],
+      "correctOptionIndex": 2,
+      "explanation": "For example a counter of how many instances were created, or a factory method.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-016",
+      "topicId": "topic-oop",
+      "prompt": "What does the Single Responsibility Principle say?",
+      "options": ["Each class can have only one instance", "A class should have one reason to change", "A class should have only one method", "A program should have only one class"],
+      "correctOptionIndex": 1,
+      "explanation": "Mixing unrelated jobs in one class means unrelated changes keep touching (and breaking) it.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-oop-017",
+      "topicId": "topic-oop",
+      "prompt": "What does the Liskov Substitution Principle require?",
+      "options": ["Subclasses must work anywhere the base class is expected without breaking correctness", "Every class needs a default initializer", "Prefer static methods to instance methods", "Classes should be substituted with structs"],
+      "correctOptionIndex": 0,
+      "explanation": "A subclass can't strengthen preconditions or weaken the guarantees callers rely on.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-oop-018",
+      "topicId": "topic-oop",
+      "prompt": "Why can a `Square` subclass of `Rectangle` violate Liskov substitution?",
+      "options": ["Squares have fewer methods", "Squares can't be drawn", "Rectangle must be abstract", "Code that sets width and height independently breaks the square's equal-sides rule"],
+      "correctOptionIndex": 3,
+      "explanation": "Code that is correct for any Rectangle (set width 2, height 5, expect area 10) fails for a Square.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-oop-019",
+      "topicId": "topic-oop",
+      "prompt": "What is the \"diamond problem\"?",
+      "options": ["A sorting bug", "An infinite loop between initializers", "Ambiguity when a class inherits the same member from two parents that share an ancestor", "A memory leak pattern"],
+      "correctOptionIndex": 2,
+      "explanation": "Languages answer it differently: C++ virtual inheritance, Python's MRO, or banning multiple class inheritance (Java, Swift).",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-oop-020",
+      "topicId": "topic-oop",
+      "prompt": "The Dependency Inversion Principle says high-level code should depend on…",
+      "options": ["The database schema", "Abstractions (interfaces), not concrete low-level classes", "Concrete low-level classes", "Global singletons"],
+      "correctOptionIndex": 1,
+      "explanation": "Then you can swap implementations (or test with fakes) without changing the high-level code.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-oop-021",
+      "topicId": "topic-oop",
+      "prompt": "What is the \"fragile base class\" problem?",
+      "options": ["Changing a base class can unexpectedly break many subclasses", "Base classes use too much memory", "Base classes can't have initializers", "Subclasses can't call super"],
+      "correctOptionIndex": 0,
+      "explanation": "Subclasses often depend on base-class internals, so deep hierarchies make changes risky.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-oop-022",
+      "topicId": "topic-oop",
+      "prompt": "The Open/Closed Principle says software should be…",
+      "options": ["Open source, not closed source", "Open to callers, closed to subclasses", "Opened once and closed after use", "Open for extension, closed for modification"],
+      "correctOptionIndex": 3,
+      "explanation": "Add behavior by adding new types (e.g. a new protocol conformance) instead of editing tested code.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-net-001",
+      "topicId": "topic-networking",
+      "prompt": "What does DNS do?",
+      "options": ["Assigns MAC addresses", "Compresses files", "Translates domain names into IP addresses", "Encrypts web traffic"],
+      "correctOptionIndex": 2,
+      "explanation": "Your device asks a resolver for `example.com`'s address before it can connect.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-002",
+      "topicId": "topic-networking",
+      "prompt": "Which protocol is the web built on?",
+      "options": ["SSH", "HTTP", "FTP", "SMTP"],
+      "correctOptionIndex": 1,
+      "explanation": "Browsers and APIs talk HTTP; HTTPS is HTTP over an encrypted TLS connection.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-003",
+      "topicId": "topic-networking",
+      "prompt": "What does HTTPS add over HTTP?",
+      "options": ["Encryption and server authentication via TLS", "Faster downloads", "Bigger pages", "Video support"],
+      "correctOptionIndex": 0,
+      "explanation": "TLS keeps traffic private and proves (via a certificate) that you reached the real server.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-004",
+      "topicId": "topic-networking",
+      "prompt": "What is an IP address?",
+      "options": ["A website's name", "A type of cable", "A password", "A numeric address that identifies a device on a network"],
+      "correctOptionIndex": 3,
+      "explanation": "IPv4 addresses look like 192.0.2.10; IPv6 addresses are longer, like 2001:db8::1.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-005",
+      "topicId": "topic-networking",
+      "prompt": "Which HTTP status code means \"Not Found\"?",
+      "options": ["301", "500", "404", "200"],
+      "correctOptionIndex": 2,
+      "explanation": "2xx = success, 3xx = redirect, 4xx = client error, 5xx = server error.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-006",
+      "topicId": "topic-networking",
+      "prompt": "What is a port number for?",
+      "options": ["Storing cookies", "Choosing which program on a host receives the traffic", "Measuring bandwidth", "Naming a Wi-Fi network"],
+      "correctOptionIndex": 1,
+      "explanation": "The IP address picks the machine; the port picks the service (443 HTTPS, 22 SSH).",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-007",
+      "topicId": "topic-networking",
+      "prompt": "Which HTTP method is meant for reading data without side effects?",
+      "options": ["GET", "POST", "DELETE", "PATCH"],
+      "correctOptionIndex": 0,
+      "explanation": "GET should only retrieve; POST, PUT, PATCH, and DELETE change things.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-008",
+      "topicId": "topic-networking",
+      "prompt": "What does a router do?",
+      "options": ["Stores web pages", "Translates languages", "Charges devices", "Forwards packets between networks"],
+      "correctOptionIndex": 3,
+      "explanation": "It reads each packet's destination IP and sends it one hop closer.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-net-009",
+      "topicId": "topic-networking",
+      "prompt": "What is the main difference between TCP and UDP?",
+      "options": ["TCP is only for video", "They're the same", "TCP is connection-based with reliable, ordered delivery; UDP sends independent packets with no guarantees", "UDP is always encrypted"],
+      "correctOptionIndex": 2,
+      "explanation": "TCP retransmits and reorders for you; UDP is lighter and leaves that to the application.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-010",
+      "topicId": "topic-networking",
+      "prompt": "What are the three steps of the TCP handshake?",
+      "options": ["DNS, ARP, DHCP", "SYN, SYN-ACK, ACK", "GET, POST, PUT", "HELLO, AUTH, BYE"],
+      "correctOptionIndex": 1,
+      "explanation": "Both sides agree on starting sequence numbers before any data flows.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-011",
+      "topicId": "topic-networking",
+      "prompt": "In the TCP/IP model, which layer does IP belong to?",
+      "options": ["Internet (network) layer", "Application layer", "Transport layer", "Link layer"],
+      "correctOptionIndex": 0,
+      "explanation": "Link (Ethernet/Wi-Fi) → Internet (IP) → Transport (TCP/UDP) → Application (HTTP, DNS).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-012",
+      "topicId": "topic-networking",
+      "prompt": "What does DHCP do?",
+      "options": ["Resolves domain names", "Encrypts packets", "Blocks malware", "Hands out IP addresses and network settings to devices automatically"],
+      "correctOptionIndex": 3,
+      "explanation": "When you join Wi-Fi, DHCP gives you an address, gateway, and DNS servers.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-013",
+      "topicId": "topic-networking",
+      "prompt": "What does it mean that HTTP is stateless?",
+      "options": ["HTTP never fails", "HTTP has no headers", "Each request stands alone; the server doesn't remember earlier ones by default", "HTTP can't send data"],
+      "correctOptionIndex": 2,
+      "explanation": "Sessions are rebuilt on top with cookies or tokens sent on every request.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-014",
+      "topicId": "topic-networking",
+      "prompt": "Why do video calls often use UDP?",
+      "options": ["Browsers require it", "A late packet is useless, so waiting for retransmissions hurts more than a small loss", "UDP is more reliable", "UDP is encrypted by default"],
+      "correctOptionIndex": 1,
+      "explanation": "Real-time media prefers fresh data over complete data.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-015",
+      "topicId": "topic-networking",
+      "prompt": "What does NAT let a home network do?",
+      "options": ["Share one public IP address among many private devices", "Speed up DNS", "Encrypt Wi-Fi", "Give every device its own public IP"],
+      "correctOptionIndex": 0,
+      "explanation": "The router rewrites addresses and ports so replies reach the right device.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-016",
+      "topicId": "topic-networking",
+      "prompt": "What is latency?",
+      "options": ["How much data moves per second", "How many devices are connected", "How big each packet is", "How long data takes to get from source to destination"],
+      "correctOptionIndex": 3,
+      "explanation": "Latency is delay; bandwidth is capacity. A fat pipe can still be slow to respond.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-net-017",
+      "topicId": "topic-networking",
+      "prompt": "What does a TLS certificate prove?",
+      "options": ["The traffic is compressed", "The server is fast", "A trusted certificate authority vouches that the public key belongs to that domain", "The site has no bugs"],
+      "correctOptionIndex": 2,
+      "explanation": "Without it, an attacker in the middle could present their own key.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-net-018",
+      "topicId": "topic-networking",
+      "prompt": "What is head-of-line blocking in HTTP/1.1 over TCP?",
+      "options": ["Cookies blocking requests", "A slow or lost packet delays everything queued behind it on that connection", "Too many headers in one request", "A DNS cache failure"],
+      "correctOptionIndex": 1,
+      "explanation": "HTTP/2 multiplexes streams but still shares one TCP byte stream; HTTP/3 fixes this with QUIC.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-net-019",
+      "topicId": "topic-networking",
+      "prompt": "What does TCP congestion control do?",
+      "options": ["Adjusts the sending rate so the network isn't overwhelmed", "Encrypts packets", "Chooses routes", "Assigns port numbers"],
+      "correctOptionIndex": 0,
+      "explanation": "It grows the send window while things go well and backs off when packets are lost.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-net-020",
+      "topicId": "topic-networking",
+      "prompt": "Why is HTTP/3 built on QUIC over UDP?",
+      "options": ["Because UDP is reliable", "To remove encryption", "To support only IPv4", "To avoid TCP head-of-line blocking and set up encrypted connections faster"],
+      "correctOptionIndex": 3,
+      "explanation": "QUIC does reliability per stream in user space and merges the transport and TLS handshakes.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-net-021",
+      "topicId": "topic-networking",
+      "prompt": "What does it mean that an HTTP method is idempotent?",
+      "options": ["It's always cached", "It returns no body", "Sending the same request again has the same effect as sending it once", "It never fails"],
+      "correctOptionIndex": 2,
+      "explanation": "GET, PUT, and DELETE are idempotent; POST is not, so blind retries can duplicate work.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-net-022",
+      "topicId": "topic-networking",
+      "prompt": "What does the bandwidth-delay product estimate?",
+      "options": ["The packet loss rate", "How much data is in flight on a link (bandwidth × round-trip time)", "The number of hops", "DNS lookup time"],
+      "correctOptionIndex": 1,
+      "explanation": "TCP's window must be at least this big to keep a fast, long link busy.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-swift-001",
+      "topicId": "topic-swift",
+      "prompt": "`let` vs `var` in Swift?",
+      "options": ["`let` declares a constant; `var` declares a variable that can change", "They're the same", "`var` is only for strings", "`let` is only for functions"],
+      "correctOptionIndex": 0,
+      "explanation": "Prefer `let`; the compiler warns when a `var` is never changed.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-002",
+      "topicId": "topic-swift",
+      "prompt": "What is `String?`?",
+      "options": ["A string that's always empty", "A deprecated type", "A string that can't contain characters", "An optional: either a String or `nil`"],
+      "correctOptionIndex": 3,
+      "explanation": "Optionals make \"no value\" explicit, so you must handle it before using the value.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-003",
+      "topicId": "topic-swift",
+      "prompt": "What does `if let name = maybeName { … }` do?",
+      "options": ["Declares a global", "Loops over a string", "Runs the body with the unwrapped value only if the optional isn't nil", "Crashes if the optional is nil"],
+      "correctOptionIndex": 2,
+      "explanation": "Swift 5.7+ also allows the shorthand `if let maybeName { … }`.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-004",
+      "topicId": "topic-swift",
+      "prompt": "What does `??` do?",
+      "options": ["Creates an array", "Supplies a default when an optional is nil", "Compares two optionals by identity", "Force-unwraps"],
+      "correctOptionIndex": 1,
+      "explanation": "`name ?? \"Guest\"` gives the name if present, otherwise \"Guest\".",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-005",
+      "topicId": "topic-swift",
+      "prompt": "Which Swift collection stores key–value pairs?",
+      "options": ["Dictionary", "Array", "Set", "Tuple"],
+      "correctOptionIndex": 0,
+      "explanation": "`[String: Int]` maps String keys to Int values.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-006",
+      "topicId": "topic-swift",
+      "prompt": "What is `\"\\(x)\"` called?",
+      "options": ["A regular expression", "Pattern matching", "Optional chaining", "String interpolation"],
+      "correctOptionIndex": 3,
+      "explanation": "It inserts `x`'s description into the string.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-007",
+      "topicId": "topic-swift",
+      "prompt": "Which values does `for i in 0..<3` visit?",
+      "options": ["1, 2, 3", "Only 3", "0, 1, 2", "0, 1, 2, 3"],
+      "correctOptionIndex": 2,
+      "explanation": "`..<` is a half-open range; `0...3` would include 3.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-008",
+      "topicId": "topic-swift",
+      "prompt": "How do you declare a Swift function that returns an Int?",
+      "options": ["`fn f() Int`", "`func f() -> Int`", "`function f(): Int`", "`def f() -> Int`"],
+      "correctOptionIndex": 1,
+      "explanation": "`->` introduces the return type.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-swift-009",
+      "topicId": "topic-swift",
+      "prompt": "Struct vs class in Swift?",
+      "options": ["Structs are value types (copied); classes are reference types (shared)", "Classes are copied; structs are shared", "Structs can't have methods", "Classes can't have properties"],
+      "correctOptionIndex": 0,
+      "explanation": "Assigning a struct makes an independent copy; assigning a class makes another reference to the same object.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-010",
+      "topicId": "topic-swift",
+      "prompt": "Why must some struct methods be marked `mutating`?",
+      "options": ["They become async", "They become static", "They can be overridden", "They change the struct's own properties"],
+      "correctOptionIndex": 3,
+      "explanation": "Struct methods can't modify `self` unless marked `mutating`, and you can't call them on a `let` constant.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-011",
+      "topicId": "topic-swift",
+      "prompt": "What is a closure?",
+      "options": ["A finished program", "A closed file handle", "A block of code that can capture values from the scope around it", "A class that can't be subclassed"],
+      "correctOptionIndex": 2,
+      "explanation": "`{ $0 * 2 }` passed to `map` is a closure.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-012",
+      "topicId": "topic-swift",
+      "prompt": "How does `guard let` differ from `if let`?",
+      "options": ["`guard let` ignores nil", "The unwrapped value stays in scope after the guard, and the `else` must exit", "There's no difference", "`guard let` loops"],
+      "correctOptionIndex": 1,
+      "explanation": "It keeps the happy path unindented: check early, exit early.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-013",
+      "topicId": "topic-swift",
+      "prompt": "What does `map` do on an array?",
+      "options": ["Returns a new array with each element transformed", "Sorts the array", "Removes duplicates", "Finds the maximum"],
+      "correctOptionIndex": 0,
+      "explanation": "`[1, 2, 3].map { $0 * 10 }` gives `[10, 20, 30]`.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-014",
+      "topicId": "topic-swift",
+      "prompt": "What is a protocol in Swift?",
+      "options": ["Only a network protocol", "A kind of subclass", "A file format", "A set of requirements that types can conform to"],
+      "correctOptionIndex": 3,
+      "explanation": "Structs, classes, and enums can all conform, which enables protocol-oriented design.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-015",
+      "topicId": "topic-swift",
+      "prompt": "What happens when you force-unwrap (`x!`) a nil optional?",
+      "options": ["It returns an empty string", "The line is skipped", "The app crashes at runtime", "It returns 0"],
+      "correctOptionIndex": 2,
+      "explanation": "Use `if let`, `guard let`, or `??` unless nil really is impossible.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-016",
+      "topicId": "topic-swift",
+      "prompt": "What does `defer` do?",
+      "options": ["Skips a loop iteration", "Runs its block when the current scope exits", "Waits one second", "Runs on a background thread"],
+      "correctOptionIndex": 1,
+      "explanation": "Handy for cleanup that must happen on every exit path, including throws.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-swift-017",
+      "topicId": "topic-swift",
+      "prompt": "What is a retain cycle?",
+      "options": ["Two objects hold strong references to each other, so ARC never frees either", "An infinite loop", "A recursive function", "A kind of optional"],
+      "correctOptionIndex": 0,
+      "explanation": "Common with closures stored on an object that capture `self` strongly.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-swift-018",
+      "topicId": "topic-swift",
+      "prompt": "How does `[weak self]` in a closure help?",
+      "options": ["It makes the closure faster", "It makes `self` permanently optional everywhere", "It runs the closure on the main thread", "The closure doesn't keep `self` alive, which breaks retain cycles"],
+      "correctOptionIndex": 3,
+      "explanation": "Inside the closure `self` becomes optional and is nil once the object is freed.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-swift-019",
+      "topicId": "topic-swift",
+      "prompt": "What does copy-on-write mean for Swift arrays?",
+      "options": ["Arrays can't be copied", "Writes go to disk", "Copies share storage until one is mutated; only then is the buffer copied", "Every assignment copies immediately"],
+      "correctOptionIndex": 2,
+      "explanation": "Value semantics without paying for a copy on every assignment.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-swift-020",
+      "topicId": "topic-swift",
+      "prompt": "What does `@escaping` on a closure parameter mean?",
+      "options": ["The closure is optional", "The closure may be called after the function returns", "The closure can throw", "The closure runs on another thread"],
+      "correctOptionIndex": 1,
+      "explanation": "Completion handlers are escaping; `map`'s closure is not.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-swift-021",
+      "topicId": "topic-swift",
+      "prompt": "What does a return type of `some View` (an opaque type) mean?",
+      "options": ["One specific concrete type conforming to View, hidden from callers", "Any type at all, changing at runtime", "An optional View", "A protocol with no requirements"],
+      "correctOptionIndex": 0,
+      "explanation": "The compiler knows the real type (fast, type-safe); callers only see \"some View\".",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-swift-022",
+      "topicId": "topic-swift",
+      "prompt": "What does actor isolation guarantee in Swift concurrency?",
+      "options": ["Code runs faster", "Everything runs on the main thread", "Classes become structs", "Only one task at a time touches the actor's mutable state"],
+      "correctOptionIndex": 3,
+      "explanation": "Outside callers must `await`, and the compiler rejects unsynchronized access.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-py-001",
+      "topicId": "topic-python",
+      "prompt": "What does `len([1, 2, 3])` return?",
+      "options": ["4", "An error", "3", "2"],
+      "correctOptionIndex": 2,
+      "explanation": "`len` counts the items in a sequence or collection.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-002",
+      "topicId": "topic-python",
+      "prompt": "Which of these types is immutable?",
+      "options": ["set", "tuple", "list", "dict"],
+      "correctOptionIndex": 1,
+      "explanation": "Tuples can't be changed after creation, so they can be dict keys.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-003",
+      "topicId": "topic-python",
+      "prompt": "How do you start a comment in Python?",
+      "options": ["`#`", "`//`", "`--`", "`/*`"],
+      "correctOptionIndex": 0,
+      "explanation": "Everything after `#` on that line is ignored.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-004",
+      "topicId": "topic-python",
+      "prompt": "Which values does `range(3)` produce?",
+      "options": ["1, 2, 3", "0, 1, 2, 3", "Just 3", "0, 1, 2"],
+      "correctOptionIndex": 3,
+      "explanation": "The stop value is excluded, just like slicing.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-005",
+      "topicId": "topic-python",
+      "prompt": "What does a dict map?",
+      "options": ["Values to types", "Files to folders", "Keys to values", "Indexes to keys"],
+      "correctOptionIndex": 2,
+      "explanation": "`{\"ana\": 31}` maps the key \"ana\" to the value 31.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-006",
+      "topicId": "topic-python",
+      "prompt": "What does `def` do?",
+      "options": ["Imports a module", "Defines a function", "Deletes a variable", "Defines a class"],
+      "correctOptionIndex": 1,
+      "explanation": "`def greet(name): ...` creates a function object called `greet`.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-007",
+      "topicId": "topic-python",
+      "prompt": "What is `\"a\" * 3`?",
+      "options": ["`'aaa'`", "An error", "`'a3'`", "`3`"],
+      "correctOptionIndex": 0,
+      "explanation": "Multiplying a sequence by an int repeats it.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-008",
+      "topicId": "topic-python",
+      "prompt": "What does `x in items` check?",
+      "options": ["The type of `x`", "The length of `items`", "Whether `x` and `items` are the same object", "Whether `x` is one of the items"],
+      "correctOptionIndex": 3,
+      "explanation": "Membership: O(n) for a list, O(1) on average for a set or dict.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-py-009",
+      "topicId": "topic-python",
+      "prompt": "What is `[x * x for x in range(4) if x % 2 == 0]`?",
+      "options": ["`[4]`", "`[0, 2]`", "`[0, 4]`", "`[0, 1, 4, 9]`"],
+      "correctOptionIndex": 2,
+      "explanation": "Only 0 and 2 pass the filter; squared they give 0 and 4.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-010",
+      "topicId": "topic-python",
+      "prompt": "`is` vs `==`?",
+      "options": ["`is` compares types", "`is` checks identity (same object); `==` checks equal values", "They're the same", "`==` checks identity"],
+      "correctOptionIndex": 1,
+      "explanation": "Use `is` for `None` checks; use `==` for comparing values.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-011",
+      "topicId": "topic-python",
+      "prompt": "What does `*args` collect in a function definition?",
+      "options": ["Extra positional arguments, as a tuple", "Keyword arguments, as a dict", "Only the first argument", "Global variables"],
+      "correctOptionIndex": 0,
+      "explanation": "`**kwargs` is the keyword-argument counterpart (a dict).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-012",
+      "topicId": "topic-python",
+      "prompt": "What does `items[-1]` return for a non-empty list?",
+      "options": ["The first element", "An error", "None", "The last element"],
+      "correctOptionIndex": 3,
+      "explanation": "Negative indexes count from the end.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-013",
+      "topicId": "topic-python",
+      "prompt": "What does `with open(path) as f:` guarantee?",
+      "options": ["The file is created", "The file is encrypted", "The file is closed when the block exits, even after an error", "The file is read-only"],
+      "correctOptionIndex": 2,
+      "explanation": "`with` uses the context-manager protocol (`__enter__` / `__exit__`).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-014",
+      "topicId": "topic-python",
+      "prompt": "What is a generator (a function that uses `yield`)?",
+      "options": ["A compiler", "A function that produces values lazily, one at a time", "A function that runs in parallel", "A way to create classes"],
+      "correctOptionIndex": 1,
+      "explanation": "Generators keep their state between values and use little memory.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-015",
+      "topicId": "topic-python",
+      "prompt": "What does `x = [1, 2]; y = x; y.append(3); print(x)` print?",
+      "options": ["`[1, 2, 3]`", "`[1, 2]`", "`[3]`", "An error"],
+      "correctOptionIndex": 0,
+      "explanation": "`y = x` makes a second name for the same list, not a copy.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-016",
+      "topicId": "topic-python",
+      "prompt": "What does `d.get(key, default)` do when the key is missing?",
+      "options": ["Raises KeyError", "Inserts the key", "Returns the first value", "Returns `default` instead of raising KeyError"],
+      "correctOptionIndex": 3,
+      "explanation": "`d[key]` would raise; `.get` returns the default (None if you don't give one).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-py-017",
+      "topicId": "topic-python",
+      "prompt": "`def f(items=[]): items.append(1); return items`. What does calling `f()` twice return the second time?",
+      "options": ["An error", "`[]`", "`[1, 1]`: the default list is created once and shared", "`[1]`"],
+      "correctOptionIndex": 2,
+      "explanation": "Defaults are evaluated once, when `def` runs. Use `items=None` and create the list inside.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-py-018",
+      "topicId": "topic-python",
+      "prompt": "What does CPython's GIL mean for threads?",
+      "options": ["Threads can't share memory", "Only one thread runs Python bytecode at a time, so CPU-bound threads don't run in parallel", "Threads are not allowed", "Threads run on the GPU"],
+      "correctOptionIndex": 1,
+      "explanation": "Threads still help with I/O waits; use multiprocessing for CPU-bound parallelism.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-py-019",
+      "topicId": "topic-python",
+      "prompt": "What does a decorator do?",
+      "options": ["Wraps a function to add behavior without changing its code", "Formats strings", "Declares types", "Creates a class"],
+      "correctOptionIndex": 0,
+      "explanation": "`@cache` and `@property` are built-in examples.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-py-020",
+      "topicId": "topic-python",
+      "prompt": "What is the average time complexity of `x in some_set`?",
+      "options": ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+      "correctOptionIndex": 3,
+      "explanation": "Sets are hash tables; a list membership test is O(n).",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-py-021",
+      "topicId": "topic-python",
+      "prompt": "`__new__` vs `__init__`?",
+      "options": ["`__init__` creates it; `__new__` deletes it", "`__new__` only works for strings", "`__new__` creates the instance; `__init__` initializes it", "They're the same"],
+      "correctOptionIndex": 2,
+      "explanation": "You rarely need `__new__`, except for things like immutable types or singletons.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-py-022",
+      "topicId": "topic-python",
+      "prompt": "What does `[f() for f in [lambda: i for i in range(3)]]` give?",
+      "options": ["An error", "`[2, 2, 2]`", "`[0, 1, 2]`", "`[0, 0, 0]`"],
+      "correctOptionIndex": 1,
+      "explanation": "Each lambda looks up `i` when called, after the loop has finished at 2 (late binding).",
       "difficulty": "hard"
     }
   ]
