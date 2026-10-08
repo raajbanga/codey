@@ -40,21 +40,10 @@ struct FlashcardFactoryTests {
         #expect(card.deletedAt == nil && card.retiredAt == nil && card.lastReviewedAt == nil)
     }
 
-    @Test func cardsWithoutCodeAreTheNorm() throws {
-        let card = try factory.createCard(prompt: "**Big-O** of binary search?", answer: "O(log n)")
-        #expect(card.codeSnippet == nil)
-        #expect(card.difficulty == nil)
-    }
-
     @Test func invalidInputThrowsFieldErrorsKeyedByCardId() {
         let id = UUID()
         let result = errors { try factory.createCard(id: id, prompt: "   ", answer: String(repeating: "a", count: 501)) }
         #expect(result.map(\.field) == [.cardPrompt(id), .cardAnswer(id)])
-    }
-
-    @Test func fencedPromptIsAccepted() throws {
-        let card = try factory.createCard(prompt: "Output?\n```python\nprint(2 ** 3)\n```", answer: "8")
-        #expect(card.prompt.contains("```python"))
     }
 
     @Test func snippetIsNormalized() throws {

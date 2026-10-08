@@ -77,7 +77,7 @@ struct HomeView: View {
     // MARK: Up next
 
     private var upNext: HomeLogic.UpNext {
-        let deckByID = Dictionary(decks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let deckByID = decks.keyed(by: \.id)
         let resumable = snapshots.first { snapshot in
             deckByID[snapshot.deckId] != nil && snapshot.position < snapshot.cardIDs.count
         }
@@ -116,7 +116,7 @@ struct HomeView: View {
                 UpNextCard(
                     eyebrow: "Suggested quiz",
                     title: topic.title,
-                    detail: accuracyByTopic[topicID].map { "Your weakest topic · \(percent($0)) accuracy" } ?? "You haven't quizzed this topic yet",
+                    detail: accuracyByTopic[topicID].map { "Your weakest topic · \($0.percentText) accuracy" } ?? "You haven't quizzed this topic yet",
                     systemImage: "questionmark.bubble.fill"
                 ) { router.quizSetupTopic = topic }
             }
@@ -130,7 +130,7 @@ struct HomeView: View {
     /// Every topic, pinned first.
     private var orderedTopics: [Topic] {
         let ids = HomeLogic.orderedTopicIDs(all: topics.map { ($0.id, $0.title) }, pinned: pinned)
-        let byID = Dictionary(topics.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let byID = topics.keyed(by: \.id)
         return ids.compactMap { byID[$0] }
     }
 
@@ -175,12 +175,9 @@ struct HomeView: View {
     // MARK: Data
 
     private var accuracyByTopic: [String: Double] {
-        let window = GatingConfig.standard.accuracyWindow
-        var result: [String: Double] = [:]
-        for (topicID, rows) in Dictionary(grouping: records, by: \.topicId) {
-            result[topicID] = QuizProgressStore.accuracy(of: rows, window: window)
+        Dictionary(grouping: records, by: \.topicId).compactMapValues {
+            QuizProgressStore.accuracy(of: $0, window: GatingConfig.standard.accuracyWindow)
         }
-        return result
     }
 
     /// No quiz answers and no studied cards yet.
@@ -199,10 +196,6 @@ struct HomeView: View {
 
     private func deck(_ id: UUID) -> FlashcardDeck? {
         decks.first { $0.id == id }
-    }
-
-    private func percent(_ value: Double) -> String {
-        "\(Int((value * 100).rounded()))%"
     }
 
     // MARK: Sign-in nudge
@@ -321,11 +314,7 @@ private struct UpNextCard: View {
                                 .foregroundStyle(CodeyColor.brand)
                         }
                     } else {
-                        Image(systemName: systemImage)
-                            .font(.codeyTitle)
-                            .foregroundStyle(CodeyColor.brand)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.md))
+                        IconTile(systemName: systemImage, size: iconSize)
                     }
                 }
                 .frame(width: iconSize, height: iconSize)
@@ -384,12 +373,7 @@ private struct TopicCard: View {
         CodeyCard {
             VStack(alignment: .leading, spacing: CodeySpacing.md) {
                 HStack(alignment: .top, spacing: CodeySpacing.md) {
-                    Image(systemName: topic.iconName)
-                        .font(.codeyTitle)
-                        .foregroundStyle(CodeyColor.brand)
-                        .frame(width: iconSize, height: iconSize)
-                        .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.md))
-                        .accessibilityHidden(true)
+                    IconTile(systemName: topic.iconName, size: iconSize)
                     VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                         HStack(spacing: CodeySpacing.xs) {
                             Text(topic.title)
@@ -482,8 +466,8 @@ private struct TopicCard: View {
 
     private var statsLine: String {
         var parts: [String] = []
-        if !decks.isEmpty { parts.append("\(Int((masteryRate * 100).rounded()))% mastered") }
-        parts.append(accuracy.map { "\(Int(($0 * 100).rounded()))% accuracy" } ?? "No quizzes yet")
+        if !decks.isEmpty { parts.append("\(masteryRate.percentText) mastered") }
+        parts.append(accuracy.map { "\($0.percentText) accuracy" } ?? "No quizzes yet")
         return parts.joined(separator: " · ")
     }
 }

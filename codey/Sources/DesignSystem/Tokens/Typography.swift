@@ -13,6 +13,4 @@ extension Font {
     /// XP, levels, counters. Pair with .contentTransition(.numericText()).
     static let codeyNumeric = Font.system(.title, design: .rounded, weight: .bold).monospacedDigit()
     static let codeyNumericSmall = Font.system(.headline, design: .rounded, weight: .semibold).monospacedDigit()
-    /// SF Mono for code.
-    static let codeyCode = Font.system(.callout, design: .monospaced)
 }

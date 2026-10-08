@@ -179,7 +179,7 @@ final class SleepRecorder {
 /// One "device": its own store, plus a facade wired to shared mocks.
 @MainActor
 struct SyncHarness {
-    static let alice = AppUser(id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!, email: "a@example.com", displayName: "Alice")
+    nonisolated static let alice = AppUser(id: UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!, email: "a@example.com", displayName: "Alice")
 
     let context: ModelContext
     let facade: BackendFacade

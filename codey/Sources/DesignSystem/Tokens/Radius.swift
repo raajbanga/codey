@@ -6,7 +6,7 @@ import SwiftUI
 ///   single-line buttons, the tab pill).
 /// - Anything that can wrap uses RoundedRectangle(md, .continuous).
 /// - Nested surfaces are concentric: inner radius = outer radius − padding
-///   (use `concentric(outer:inset:)` or ConcentricRectangle/.containerShape).
+///   (use ConcentricRectangle / .containerShape).
 /// - Cards use lg; full-screen sheets keep the system corners.
 enum CodeyRadius {
     static let xs: CGFloat = 6
@@ -14,13 +14,6 @@ enum CodeyRadius {
     static let md: CGFloat = 14
     static let lg: CGFloat = 20
     static let xl: CGFloat = 28
-
-    /// Radius for a surface inset by `inset` inside one with radius `outer`,
-    /// so both curves share a center. Never below `xs` (tiny radii look
-    /// like mistakes), unless the outer radius itself is smaller.
-    static func concentric(outer: CGFloat, inset: CGFloat) -> CGFloat {
-        min(outer, max(outer - inset, xs))
-    }
 }
 
 extension Shape where Self == RoundedRectangle {

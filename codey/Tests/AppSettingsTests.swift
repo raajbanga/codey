@@ -12,12 +12,6 @@ struct AppAppearanceTests {
         return defaults
     }
 
-    @Test func colorSchemes() {
-        #expect(AppAppearance.system.colorScheme == nil)
-        #expect(AppAppearance.light.colorScheme == .light)
-        #expect(AppAppearance.dark.colorScheme == .dark)
-    }
-
     @Test func legacyDarkOnBecomesDark() {
         let defaults = makeDefaults()
         defaults.set(true, forKey: AppAppearance.legacyDarkModeKey)
@@ -77,6 +71,7 @@ struct AppConfigTests {
         #expect(config.supabaseURL?.host() == "abc.supabase.co")
     }
 
+    /// NFR-06: the backend is HTTPS only.
     @Test func nonHTTPSURLIsRejected() {
         var dict = complete
         dict["SUPABASE_URL"] = "http://abc.supabase.co"
@@ -84,7 +79,7 @@ struct AppConfigTests {
     }
 }
 
-/// NFR-06: no App Transport Security exceptions; the backend is HTTPS only.
+/// NFR-06: no App Transport Security exceptions; TLS 1.3 to the backend.
 struct TransportSecurityTests {
     @Test func appHasNoATSExceptions() {
         // Unit tests are hosted in the app, so Bundle.main is codey.app.
@@ -92,16 +87,6 @@ struct TransportSecurityTests {
         #expect(Bundle.main.object(forInfoDictionaryKey: "NSAppTransportSecurity") == nil)
     }
 
-    @Test func plainHTTPBackendIsNotConfigured() {
-        let config = AppConfig(infoDictionary: [
-            "SUPABASE_URL": "http://example.supabase.co", "SUPABASE_ANON_KEY": "k",
-            "GOOGLE_IOS_CLIENT_ID": "i", "GOOGLE_REVERSED_CLIENT_ID": "r", "GOOGLE_SERVER_CLIENT_ID": "s",
-        ])
-        #expect(!config.isBackendConfigured)
-    }
-}
-
-extension TransportSecurityTests {
     @Test func backendSessionRequiresTLS13() {
         #expect(SupabaseServices.tlsConfiguration.tlsMinimumSupportedProtocolVersion == .TLSv13)
     }

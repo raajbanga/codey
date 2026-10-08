@@ -7,6 +7,18 @@ enum CodeyChipVariant: Equatable {
     case success
     case warning
     case danger
+
+    /// Text/icon color; also the tint for anything themed by this variant.
+    var color: Color {
+        switch self {
+        case .neutral: CodeyColor.textSecondary
+        case .brand: CodeyColor.brand
+        case .tier(let tier): tier.style.color
+        case .success: CodeyColor.success
+        case .warning: CodeyColor.warning
+        case .danger: CodeyColor.danger
+        }
+    }
 }
 
 /// Single-line pill for status, tier, and counts. Capsule is allowed here
@@ -40,7 +52,7 @@ struct CodeyChip: View {
                 .minimumScaleFactor(0.8)
         }
         .font(.codeyCaption.weight(.semibold))
-        .foregroundStyle(foreground)
+        .foregroundStyle(variant.color)
         .padding(.horizontal, CodeySpacing.sm + CodeySpacing.xxs)
         .padding(.vertical, CodeySpacing.xs)
         .background(background, in: Capsule())
@@ -48,22 +60,11 @@ struct CodeyChip: View {
         .accessibilityLabel(accessibilityText)
     }
 
-    private var foreground: Color {
-        switch variant {
-        case .neutral: CodeyColor.textSecondary
-        case .brand: CodeyColor.brand
-        case .tier(let tier): tier.style.color
-        case .success: CodeyColor.success
-        case .warning: CodeyColor.warning
-        case .danger: CodeyColor.danger
-        }
-    }
-
     private var background: Color {
         switch variant {
         case .neutral: CodeyColor.fillNeutral
         case .brand: CodeyColor.brandSoft
-        default: CodeyColor.softFill(foreground, for: colorScheme)
+        default: CodeyColor.softFill(variant.color, for: colorScheme)
         }
     }
 

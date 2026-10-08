@@ -4,19 +4,17 @@ import SwiftUI
 /// control layer only). Children can use ConcentricRectangle /
 /// .containerShape-relative shapes to nest with matching corners.
 struct CodeyCard<Content: View>: View {
-    var padding: CGFloat = CodeySpacing.md
     var tint: Color?
     @ViewBuilder let content: Content
 
-    init(padding: CGFloat = CodeySpacing.md, tint: Color? = nil, @ViewBuilder content: () -> Content) {
-        self.padding = padding
+    init(tint: Color? = nil, @ViewBuilder content: () -> Content) {
         self.tint = tint
         self.content = content()
     }
 
     var body: some View {
         content
-            .padding(padding)
+            .padding(CodeySpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
             .overlay {

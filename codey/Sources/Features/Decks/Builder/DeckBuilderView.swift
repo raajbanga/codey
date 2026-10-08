@@ -35,11 +35,7 @@ struct DeckBuilderView: View {
                 DeckHeaderEditor(viewModel: viewModel, topics: topics, titleFocused: $titleFocused)
                     .padding(.horizontal, CodeySpacing.md)
 
-                if let message = viewModel.error(for: .deckHasNoCards) {
-                    Label(message, systemImage: "exclamationmark.circle.fill")
-                        .font(.codeyCaption)
-                        .foregroundStyle(CodeyColor.danger)
-                }
+                FieldErrorLabel(message: viewModel.error(for: .deckHasNoCards))
 
                 CardPagerView(viewModel: viewModel, page: $page, focusRequest: $focusRequest)
                     .frame(maxHeight: .infinity)

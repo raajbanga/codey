@@ -13,14 +13,13 @@ enum CodeyButtonKind {
     case destructive
 }
 
-/// Thin wrapper over the native button styles: it only adds haptics, a
-/// loading state, and the Capsule shape. Labels are single-line (the
+/// Thin wrapper over the native button styles: it only adds haptics and the
+/// Capsule shape. Labels are single-line (the
 /// Capsule rule, D19); long text scales down rather than wrapping.
 struct CodeyButton: View {
     let title: String
     var systemImage: String?
     var kind: CodeyButtonKind = .primary
-    var isLoading = false
     var fullWidth = false
     let action: () -> Void
 
@@ -30,14 +29,12 @@ struct CodeyButton: View {
         _ title: String,
         systemImage: String? = nil,
         kind: CodeyButtonKind = .primary,
-        isLoading: Bool = false,
         fullWidth: Bool = false,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.systemImage = systemImage
         self.kind = kind
-        self.isLoading = isLoading
         self.fullWidth = fullWidth
         self.action = action
     }
@@ -48,9 +45,7 @@ struct CodeyButton: View {
             action()
         } label: {
             HStack(spacing: CodeySpacing.sm) {
-                if isLoading {
-                    ProgressView()
-                } else if let systemImage {
+                if let systemImage {
                     Image(systemName: systemImage)
                 }
                 Text(title)
@@ -63,9 +58,7 @@ struct CodeyButton: View {
         .modifier(KindStyle(kind: kind))
         .buttonBorderShape(.capsule)
         .controlSize(.large)
-        .disabled(isLoading)
         .sensoryFeedback(kind == .destructive ? .warning : .impact(weight: .light), trigger: taps)
-        .accessibilityValue(isLoading ? "Loading" : "")
     }
 
     private struct KindStyle: ViewModifier {

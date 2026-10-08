@@ -25,11 +25,9 @@ struct DeckLibraryView: View {
     @State private var deckToDelete: FlashcardDeck?
     @State private var actionError: String?
 
-    private var topicsByID: [String: Topic] {
-        Dictionary(topics.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-    }
-
     @Environment(BackendFacade.self) private var backend
+
+    private var topicsByID: [String: Topic] { topics.keyed(by: \.id) }
 
     var body: some View {
         ScrollView {
@@ -108,19 +106,15 @@ struct DeckLibraryView: View {
         }
         .confirmationDialog(
             "Delete \"\(deckToDelete?.title ?? "")\"?",
-            isPresented: Binding(get: { deckToDelete != nil }, set: { if !$0 { deckToDelete = nil } }),
+            isPresented: $deckToDelete.isPresent(),
             titleVisibility: .visible,
             presenting: deckToDelete
         ) { deck in
-            Button("Delete Deck", role: .destructive) { perform { try backend.deleteDeck(deck) } }
+            Button("Delete Deck", role: .destructive) { $actionError.attempt { try backend.deleteDeck(deck) } }
         } message: { deck in
             Text("All \(deck.cardCount) cards will be deleted. This can't be undone.")
         }
-        .alert("Something Went Wrong", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(actionError ?? "")
-        }
+        .errorAlert($actionError)
     }
 
     // MARK: Sections
@@ -158,9 +152,9 @@ struct DeckLibraryView: View {
                 Text(reason)
             }
         } else if deck.isHidden {
-            Button("Restore", systemImage: "eye") { perform { try backend.setHidden(false, deck: deck) } }
+            Button("Restore", systemImage: "eye") { $actionError.attempt { try backend.setHidden(false, deck: deck) } }
         } else {
-            Button("Hide", systemImage: "eye.slash") { perform { try backend.setHidden(true, deck: deck) } }
+            Button("Hide", systemImage: "eye.slash") { $actionError.attempt { try backend.setHidden(true, deck: deck) } }
         }
     }
 
@@ -194,14 +188,6 @@ struct DeckLibraryView: View {
 
     private var hasHiddenStarters: Bool {
         decks.contains { $0.origin == .starter && $0.isHidden }
-    }
-
-    private func perform(_ action: () throws -> Void) {
-        do {
-            try action()
-        } catch {
-            actionError = error.localizedDescription
-        }
     }
 }
 

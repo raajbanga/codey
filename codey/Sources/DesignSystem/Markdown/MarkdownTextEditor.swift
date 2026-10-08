@@ -15,8 +15,6 @@ struct MarkdownTextEditor: View {
     @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
 
-    private var count: Int { ModelValidator.measuredLength(text) }
-
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
             TextEditor(text: $text, selection: $selection)
@@ -26,11 +24,7 @@ struct MarkdownTextEditor: View {
                 .frame(minHeight: 96)
                 .padding(CodeySpacing.sm)
                 .background(CodeyColor.fillNeutral, in: .codey(CodeyRadius.sm))
-                .overlay {
-                    if errorMessage != nil {
-                        RoundedRectangle.codey(CodeyRadius.sm).strokeBorder(CodeyColor.danger, lineWidth: 1.5)
-                    }
-                }
+                .errorBorder(errorMessage != nil, radius: CodeyRadius.sm)
                 .accessibilityLabel(title)
                 .onChange(of: focusRequested.wrappedValue, initial: true) { _, requested in
                     guard requested else { return }
@@ -52,17 +46,10 @@ struct MarkdownTextEditor: View {
                     .accessibilityLabel(format.accessibilityLabel)
                 }
                 Spacer()
-                Text("\(count)/\(limit)")
-                    .font(.codeyCaption.monospacedDigit())
-                    .foregroundStyle(count > limit ? CodeyColor.danger : CodeyColor.textSecondary)
-                    .accessibilityLabel("\(count) of \(limit) characters")
+                LimitCounter(count: ModelValidator.measuredLength(text), limit: limit)
             }
 
-            if let errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.circle.fill")
-                    .font(.codeyCaption)
-                    .foregroundStyle(CodeyColor.danger)
-            }
+            FieldErrorLabel(message: errorMessage)
         }
     }
 

@@ -13,6 +13,11 @@ enum SyncEntity: String, Codable, CaseIterable, Sendable {
 enum SyncOperationKind: String, Codable, CaseIterable, Sendable {
     case upsert
     case delete
+
+    /// The operation that pushes a row's current state: a tombstone is a delete.
+    init(deletedAt: Date?) {
+        self = deletedAt == nil ? .upsert : .delete
+    }
 }
 
 extension CodeySchemaV6 {

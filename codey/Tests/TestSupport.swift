@@ -43,18 +43,12 @@ enum TestSupport {
         origin: DeckOrigin = .user,
         prompts: [String] = ["Q1"]
     ) throws -> FlashcardDeck {
-        let deck = FlashcardDeck(title: title, topicId: "topic-data-structures", origin: origin)
-        context.insert(deck)
-        let factory = FlashcardFactory()
-        for (index, prompt) in prompts.enumerated() {
-            let card = try factory.createCard(prompt: prompt, answer: "A", sortIndex: index)
-            context.insert(card)
-            card.deck = deck
-        }
-        return deck
+        try insert(context, FlashcardDeck(title: title, topicId: "topic-data-structures", origin: origin),
+                   cards: prompts.map { ($0, nil) })
     }
 
-    /// Inserts a deck with one card per tier entry (nil = untagged), in order.
+    /// Inserts a saved, LocallyPersisted deck with one card per tier entry
+    /// (nil = untagged), in order.
     @discardableResult
     static func insertTieredDeck(
         _ context: ModelContext,
@@ -63,14 +57,19 @@ enum TestSupport {
         tiers: [Difficulty?]
     ) throws -> FlashcardDeck {
         let deck = FlashcardDeck(title: title, topicId: "topic-data-structures", origin: origin, syncState: .locallyPersisted)
+        try insert(context, deck, cards: tiers.enumerated().map { ("Q\($0.offset)", $0.element) })
+        try context.save()
+        return deck
+    }
+
+    @discardableResult
+    private static func insert(_ context: ModelContext, _ deck: FlashcardDeck, cards: [(prompt: String, tier: Difficulty?)]) throws -> FlashcardDeck {
         context.insert(deck)
-        let factory = FlashcardFactory()
-        for (index, tier) in tiers.enumerated() {
-            let card = try factory.createCard(prompt: "Q\(index)", answer: "A\(index)", difficulty: tier, sortIndex: index)
+        for (index, seed) in cards.enumerated() {
+            let card = try FlashcardFactory().createCard(prompt: seed.prompt, answer: "A", difficulty: seed.tier, sortIndex: index)
             context.insert(card)
             card.deck = deck
         }
-        try context.save()
         return deck
     }
 

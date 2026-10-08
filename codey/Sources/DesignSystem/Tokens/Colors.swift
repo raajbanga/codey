@@ -38,31 +38,13 @@ enum CodeyColor {
         static let hard = Color("TierHard")
     }
 
-    /// Shared by Textual (display) and Runestone (editor), so code looks the
-    /// same in the builder and in study.
-    enum Syntax {
-        static let background = Color("CodeBackground")
-        static let plain = Color("SyntaxPlain")
-        static let keyword = Color("SyntaxKeyword")
-        static let type = Color("SyntaxType")
-        static let string = Color("SyntaxString")
-        static let number = Color("SyntaxNumber")
-        static let comment = Color("SyntaxComment")
-        static let function = Color("SyntaxFunction")
-        static let attribute = Color("SyntaxAttribute")
-    }
+    /// Code-block background, shared by Textual (display) and Runestone
+    /// (editor). Syntax colors are SyntaxRole.color.
+    static let codeBackground = Color("CodeBackground")
 
     /// Tinted background for a status/tier color behind its own text: 12% in
     /// light, 16% in dark (the opacities scripts/palette checks at 4.5:1).
     static func softFill(_ color: Color, for scheme: ColorScheme) -> Color {
         color.opacity(scheme == .dark ? 0.16 : 0.12)
     }
-
-    /// Every asset-catalog color name, for the "all tokens resolve" test.
-    static let assetNames = [
-        "Brand", "BrandFill", "BrandSoft", "Success", "Warning", "Danger",
-        "TierEasy", "TierMedium", "TierHard", "CodeBackground",
-        "SyntaxPlain", "SyntaxKeyword", "SyntaxType", "SyntaxString",
-        "SyntaxNumber", "SyntaxComment", "SyntaxFunction", "SyntaxAttribute",
-    ]
 }

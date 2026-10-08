@@ -83,3 +83,6 @@ backups/
 ### Supabase CLI local state ###
 supabase/.branches
 supabase/.temp
+
+### Python ###
+__pycache__/

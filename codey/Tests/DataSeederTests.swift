@@ -17,7 +17,7 @@ struct DataSeederTests {
     @Test func seedsEmptyStoreWithFreshProfile() throws {
         let context = try TestSupport.inMemoryContext()
 
-        DataSeeder.seedIfNeeded(context: context)
+        try DataSeeder.seed(context: context, bank: QuestionBankLoader.loadBank())
 
         let topics = try context.fetch(FetchDescriptor<Topic>())
         #expect(topics.count == QuestionBankLoader.expectedTopicCount)
