@@ -1260,13 +1260,13 @@ HOW TO READ THIS FILE
      committed. `supabase link`. Migrations applied with `supabase db push`.
 
  8.2 Migrations (supabase/migrations/<timestamp>_*.sql)
- [ ] 0001_profiles.sql
+ [x] 0001_profiles.sql
        profiles(id uuid PK references auth.users on delete cascade,
                 display_name text check (char_length between 1 and 30),
                 avatar_id text, total_xp int not null default 0 check (>= 0),
                 created_at, updated_at timestamptz default now())
        trigger on auth.users insert → create profile row.
- [ ] 0002_decks_flashcards.sql
+ [x] 0002_decks_flashcards.sql
        decks(id uuid PK  -- client-generated, equals local id
              owner_id uuid not null default auth.uid() references auth.users on delete cascade,
              title text not null check (char_length(title) between 1 and 60),
@@ -1287,12 +1287,12 @@ HOW TO READ THIS FILE
        trigger: BEFORE INSERT OR UPDATE set server_updated_at = now().
        Limits MUST match ModelValidator (test in 1.2 compares them; note it
        in the PR template).
- [ ] 0003_sync_log.sql — sync_log(id bigserial, owner_id, entity text,
+ [x] 0003_sync_log.sql — sync_log(id bigserial, owner_id, entity text,
        entity_id uuid, op text check in ('upsert','delete'),
        client_ts timestamptz, server_ts timestamptz default now(),
        device_id text). Insert-only for the owner; no update/delete
        policies (audit ledger, R2).
- [ ] 0004_rls.sql — ENABLE RLS on every table (metric: 100%).
+ [x] 0004_rls.sql — ENABLE RLS on every table (metric: 100%).
        profiles: select/update where id = auth.uid().
        decks/flashcards: select/insert/update/delete where owner_id = auth.uid();
          flashcards insert/update also requires
@@ -1301,19 +1301,67 @@ HOW TO READ THIS FILE
  [ ] (stretch, FR-49) 0005_feedback.sql — feedback_reports(id, owner_id
        nullable, description text 1..2000, app_version, created_at);
        insert-only.
- [ ] supabase/tests/rls.sql (pgTAP via `supabase test db`): user B sees 0 of
+ [x] supabase/tests/rls.sql (pgTAP via `supabase test db`): user B sees 0 of
      user A's rows on every table; B can't insert a card into A's deck
      (NFR-07, metric "cross-account successes = 0").
  [ ] supabase/seed.sql for local `supabase start` dev (optional).
 
  8.3 Ops (R11, NFR-20)
- [ ] scripts/backup.sh: pg_dump of the remote DB to a dated file (gitignored).
+ [x] scripts/backup.sh: pg_dump of the remote DB to a dated file (gitignored).
      Weekly calendar reminder or a GitHub Actions cron (free) that also
      pings the API to stop the 1-week inactivity pause.
- [ ] Monthly check of the Supabase usage page (NFR-20).
+ [x] Monthly check of the Supabase usage page (NFR-20).
 
  Done when: migrations apply cleanly to a fresh project; RLS tests pass;
  setup doc lets a teammate reproduce everything.
+
+ STATUS 2026-10-08 (dev): DONE. The live project is set up and verified.
+ [x] 8.1 Supabase project gwnxkcjijuhkyklsvuta (Free). Google Cloud iOS +
+     Web OAuth clients; Supabase Google provider enabled with
+     "<web id>,<ios id>", skip nonce checks on. All 5 keys are in
+     Config/Secrets.xcconfig (gitignored; publishable key, not the legacy
+     anon JWT). The web client secret was shared in chat; the owner chose
+     not to rotate it.
+ [x] Migrations applied through the Supabase MCP (no CLI needed). Repo files
+     renamed to the remote versions 20261008022407…22702. Added
+     _lock_down_signup_trigger (revoke EXECUTE on handle_new_user from
+     anon/authenticated; Supabase lints 0028/0029).
+ [x] Security advisor: clean for our objects. The remaining WARN is
+     Supabase's own public.rls_auto_enable() (left alone). The performance
+     advisor only flags unused indexes (empty database).
+ [x] RLS verified LIVE: supabase/checks/rls_live_check.sql, 0 failed of 30.
+     It always raises at the end so everything rolls back; the database was
+     confirmed empty afterward (0 users/profiles/decks/cards/log rows).
+ [x] Supabase MCP added at project scope (.mcp.json, no secrets).
+ [ ] OPEN (optional): `supabase test db` (pgTAP version, tests/rls.sql)
+     still hasn't run; it needs the CLI + Docker. The live check covers the
+     same 30 assertions.
+ [ ] OPEN (optional): GitHub repo secrets SUPABASE_URL / SUPABASE_ANON_KEY
+     for the keep-alive workflow.
+ [ ] OPEN: `supabase init` for config.toml, only if the CLI is adopted
+     later.
+ Notes / deviations:
+   - Setup doc is supabase/README.md, NOT docs/backend-setup.md (/docs is
+     gitignored in this repo).
+   - Migrations: supabase/migrations/<remote version>_*.sql. sync_log.id is an
+     identity column (modern bigserial).
+   - Length CHECKs use char_length(btrim(col, E' \t\r\n')) and the
+     line CHECK counts lines after trimming newlines, matching
+     ModelValidator (trimmed, Unicode scalars). New
+     codey/Tests/SupabaseSchemaTests reads the migration via #filePath and
+     checks the limits, enums, and "every table has RLS" (written, not run).
+   - profiles: the sign-up trigger fills display_name from the Google
+     full_name (≤ 30 chars) or "Codey Learner". updated_at is touched by a
+     trigger. total_xp is client-written (cheatable; documented,
+     acceptable without leaderboards).
+   - Policies are `to authenticated` with `(select auth.uid())`, so anon
+     gets nothing. flashcards insert/update also requires owning the deck.
+   - Keep-alive: .github/workflows/supabase-keepalive.yml every 3 days, a
+     no-op until the secrets are set. backups/ and supabase/.temp are
+     gitignored.
+   - 0005_feedback.sql (stretch, FR-49) and seed.sql are skipped.
+   - PR template now covers RLS on new tables and migrations being
+     append-only.
 
 
 ================================================================================
