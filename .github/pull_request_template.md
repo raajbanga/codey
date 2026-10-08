@@ -5,7 +5,7 @@
 ## Checklist
 
 - [ ] `tuist generate` is clean and tests pass
-- [ ] No secrets in source: `git diff --cached | grep -nE 'SUPABASE_ANON_KEY|service_role|apps\.googleusercontent\.com|eyJ[A-Za-z0-9_-]{10,}'` finds nothing, and `Config/Secrets.xcconfig` is not staged
+- [ ] No secrets in source: `scripts/check-secrets.sh` passes (`--history` before merging to main), and `Config/Secrets.xcconfig` is not staged (R10)
 - [ ] No tokens, emails, or user IDs logged at `.public` privacy (R10)
 - [ ] `scripts/check-imports.sh` passes: Supabase/GoogleSignIn are imported only under `Services/Backend/Supabase/` (R7)
 - [ ] Validation limits changed? `ModelValidator`, `flashcard.schema.json`, and the SQL CHECKs in `supabase/migrations` still match (SupabaseSchemaTests)
