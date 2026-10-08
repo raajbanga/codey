@@ -51,20 +51,14 @@ struct QuizSummaryView: View {
     }
 
     private var tiles: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: CodeySpacing.sm) { tileContent }
-            VStack(spacing: CodeySpacing.sm) { tileContent }
-        }
-    }
-
-    @ViewBuilder
-    private var tileContent: some View {
-        if !viewModel.isPractice {
-            StatTile(value: viewModel.xpEarned, label: "XP earned", suffix: " XP", systemImage: "star.fill")
-        }
-        StatTile(value: viewModel.bestStreak, label: "Best streak", systemImage: "flame.fill", tint: CodeyColor.warning)
-        if !viewModel.isPractice {
-            StatTile(value: viewModel.newlyRetired, label: "Newly retired", systemImage: "checkmark.seal.fill", tint: CodeyColor.success)
+        StatTileRow {
+            if !viewModel.isPractice {
+                StatTile(value: viewModel.xpEarned, label: "XP earned", suffix: " XP", systemImage: "star.fill")
+            }
+            StatTile(value: viewModel.bestStreak, label: "Best streak", systemImage: "flame.fill", tint: CodeyColor.warning)
+            if !viewModel.isPractice {
+                StatTile(value: viewModel.newlyRetired, label: "Newly retired", systemImage: "checkmark.seal.fill", tint: CodeyColor.success)
+            }
         }
     }
 
@@ -77,17 +71,7 @@ struct QuizSummaryView: View {
                     .foregroundStyle(CodeyColor.brand)
             }
         }
-        ForEach(viewModel.unlockedTiers, id: \.self) { tier in
-            CodeyCard(tint: tier.style.color) {
-                Label {
-                    Text("Tier unlocked: \(tier.style.label)")
-                        .font(.codeyHeadline)
-                } icon: {
-                    Image(systemName: tier.style.symbol)
-                        .foregroundStyle(tier.style.color)
-                }
-            }
-        }
+        ForEach(viewModel.unlockedTiers, id: \.self) { TierUnlockedBanner(tier: $0) }
     }
 
     private var buttons: some View {

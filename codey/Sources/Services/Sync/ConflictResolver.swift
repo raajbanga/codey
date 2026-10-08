@@ -22,7 +22,7 @@ struct ConflictResolver {
     }
 
     func merge(_ deck: FlashcardDeck, with remote: RemoteDeckSnapshot) throws -> Outcome {
-        if Self.isLater(Self.changeTime(remote.deck), than: Self.changeTime(deck)) {
+        if Self.isLater(Self.changeTime(remote.deck.updatedAt, remote.deck.deletedAt), than: Self.changeTime(deck.updatedAt, deck.deletedAt)) {
             deck.title = remote.deck.title
             deck.topicId = remote.deck.topicId
             deck.deletedAt = remote.deck.deletedAt
@@ -30,12 +30,12 @@ struct ConflictResolver {
         deck.serverUpdatedAt = remote.deck.serverUpdatedAt ?? deck.serverUpdatedAt
 
         var outcome = Outcome(cardsToPush: [], cardsTakenFromRemote: [])
-        var local = Dictionary(deck.cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var local = deck.cards.keyed(by: \.id)
         for remoteCard in remote.cards {
             guard let id = remoteCard.card.id else { continue }
             if let card = local.removeValue(forKey: id) {
-                let remoteTime = Self.changeTime(remoteCard.card)
-                let localTime = Self.changeTime(card)
+                let remoteTime = Self.changeTime(remoteCard.card.updatedAt, remoteCard.card.deletedAt)
+                let localTime = Self.changeTime(card.updatedAt, card.deletedAt)
                 if Self.isLater(remoteTime, than: localTime) {
                     try factory.applyRemote(remoteCard.card, to: card)
                     outcome.cardsTakenFromRemote.append(id)
@@ -68,20 +68,8 @@ struct ConflictResolver {
     }
 
     /// When a row last changed: its edit time, or its delete time if later.
-    static func changeTime(_ deck: FlashcardDeck) -> Date {
-        max(deck.updatedAt, deck.deletedAt ?? .distantPast)
-    }
-
-    static func changeTime(_ deck: DeckPayload) -> Date {
-        max(deck.updatedAt, deck.deletedAt ?? .distantPast)
-    }
-
-    static func changeTime(_ card: Flashcard) -> Date {
-        max(card.updatedAt, card.deletedAt ?? .distantPast)
-    }
-
-    static func changeTime(_ card: FlashcardPayload) -> Date {
-        max(card.updatedAt ?? .distantPast, card.deletedAt ?? .distantPast)
+    static func changeTime(_ updatedAt: Date?, _ deletedAt: Date?) -> Date {
+        max(updatedAt ?? .distantPast, deletedAt ?? .distantPast)
     }
 }
 
@@ -107,7 +95,7 @@ struct RemoteChangeApplier {
                 if let local = deck.serverUpdatedAt, let incoming = remote.serverUpdatedAt,
                    !ConflictResolver.isLater(incoming, than: local) { continue }
                 if remote.deletedAt != nil {
-                    store.delete(deck)
+                    context.delete(deck)
                 } else {
                     deck.title = remote.title
                     deck.topicId = remote.topicId
@@ -130,7 +118,7 @@ struct RemoteChangeApplier {
                 deck.updatedAt = remote.updatedAt
                 deck.serverUpdatedAt = remote.serverUpdatedAt
                 deck.lastSyncedAt = now()
-                store.insert(deck)
+                context.insert(deck)
                 touched += 1
             }
         }
@@ -147,7 +135,8 @@ struct RemoteChangeApplier {
             if let card = try store.fetchCard(id: id) {
                 if remote.card.deletedAt != nil {
                     context.delete(card)
-                } else if abs(ConflictResolver.changeTime(remote.card).timeIntervalSince(ConflictResolver.changeTime(card))) > 0.001 {
+                } else if abs(ConflictResolver.changeTime(remote.card.updatedAt, remote.card.deletedAt)
+                    .timeIntervalSince(ConflictResolver.changeTime(card.updatedAt, card.deletedAt))) > 0.001 {
                     try factory.applyRemote(remote.card, to: card)
                 }
             } else if remote.card.deletedAt == nil {

@@ -5,11 +5,11 @@ struct SyncCursorStore {
     var defaults: UserDefaults = .standard
 
     func cursor(for userID: UUID) -> Date? {
-        defaults.object(forKey: key(userID)) as? Date
+        defaults.object(forKey: "codey.sync.pullCursor.\(userID.uuidString)") as? Date
     }
 
     func setCursor(_ date: Date?, for userID: UUID) {
-        defaults.set(date, forKey: key(userID))
+        defaults.set(date, forKey: "codey.sync.pullCursor.\(userID.uuidString)")
     }
 
     func lastSyncedAt(for userID: UUID) -> Date? {
@@ -19,6 +19,4 @@ struct SyncCursorStore {
     func setLastSyncedAt(_ date: Date?, for userID: UUID) {
         defaults.set(date, forKey: "codey.sync.lastSyncedAt.\(userID.uuidString)")
     }
-
-    private func key(_ userID: UUID) -> String { "codey.sync.pullCursor.\(userID.uuidString)" }
 }

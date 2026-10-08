@@ -1,5 +1,17 @@
 import SwiftUI
 
+/// Stat tiles side by side, stacked when they don't fit (large text).
+struct StatTileRow<Tiles: View>: View {
+    @ViewBuilder let tiles: Tiles
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: CodeySpacing.sm) { tiles }
+            VStack(spacing: CodeySpacing.sm) { tiles }
+        }
+    }
+}
+
 /// A big rounded number that rolls when it changes, plus a label.
 struct StatTile: View {
     let value: Int

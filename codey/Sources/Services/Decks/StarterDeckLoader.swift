@@ -71,7 +71,7 @@ enum StarterDeckLoader {
     static let expectedDeckCount = 12
     private static let fileName = "starter-decks"
 
-    static func loadBundle(from bundle: Bundle = QuestionBankLoader.resourceBundle) throws -> StarterDeckFile {
+    static func loadBundle(from bundle: Bundle = .main) throws -> StarterDeckFile {
         guard let url = bundle.url(forResource: fileName, withExtension: "json") else {
             throw StarterDeckLoaderError.fileNotFound
         }
@@ -102,11 +102,9 @@ enum StarterDeckLoader {
 
         let knownTopics = Set(try context.fetch(FetchDescriptor<Topic>()).map(\.id))
         let starterRaw = DeckOrigin.starter.rawValue
-        let existing = Dictionary(
-            try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.originRaw == starterRaw }))
-                .compactMap { deck in deck.starterKey.map { ($0, deck) } },
-            uniquingKeysWith: { first, _ in first }
-        )
+        let existing = try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.originRaw == starterRaw }))
+            .filter { $0.starterKey != nil }
+            .keyed { $0.starterKey ?? "" }
 
         var report = DataSeeder.Report()
         for seed in file.decks {
@@ -157,7 +155,7 @@ enum StarterDeckLoader {
         factory: FlashcardFactory,
         report: inout DataSeeder.Report
     ) {
-        let existing = Dictionary(deck.cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let existing = deck.cards.keyed(by: \.id)
         var kept = Set<UUID>()
 
         for (index, seed) in seeds.enumerated() {

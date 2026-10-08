@@ -15,7 +15,6 @@ struct DeckDetailView: View {
     @State private var actionError: String?
     @State private var expandedCardID: UUID?
     @Environment(Router.self) private var router
-
     @Environment(BackendFacade.self) private var backend
 
     var body: some View {
@@ -29,13 +28,9 @@ struct DeckDetailView: View {
                                 .foregroundStyle(CodeyColor.textSecondary)
                         }
                         Spacer()
-                        if deck.origin == .starter {
-                            CodeyChip("Starter", systemImage: "sparkles", variant: .brand)
-                        } else {
-                            SyncStatusLabel(state: deck.syncState)
-                        }
+                        DeckStatusChip(deck: deck)
                     }
-                    ProgressBar(value: deck.masteryRate, label: "\(deck.cardCount) cards · \(Int((deck.masteryRate * 100).rounded()))% mastered")
+                    ProgressBar(value: deck.masteryRate, label: "\(deck.cardCount.counted("card")) · \(deck.masteryRate.percentText) mastered")
                 }
                 .padding(.vertical, CodeySpacing.xs)
             }
@@ -73,7 +68,7 @@ struct DeckDetailView: View {
             } else {
                 ToolbarItem(placement: .primaryAction) {
                     Button(deck.isHidden ? "Restore" : "Hide", systemImage: deck.isHidden ? "eye" : "eye.slash") {
-                        perform { try backend.setHidden(!deck.isHidden, deck: deck) }
+                        $actionError.attempt { try backend.setHidden(!deck.isHidden, deck: deck) }
                     }
                 }
             }
@@ -93,9 +88,7 @@ struct DeckDetailView: View {
                 dismiss()
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(400))
-                    do {
-                        try backend.deleteDeck(deck)
-                    } catch {
+                    do { try backend.deleteDeck(deck) } catch {
                         Logger.persistence.error("Deleting deck failed: \(String(describing: error))")
                     }
                 }
@@ -104,19 +97,7 @@ struct DeckDetailView: View {
         } message: {
             Text("All \(deck.cardCount) cards will be deleted. This can't be undone.")
         }
-        .alert("Something Went Wrong", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(actionError ?? "")
-        }
-    }
-
-    private func perform(_ action: () throws -> Void) {
-        do {
-            try action()
-        } catch {
-            actionError = error.localizedDescription
-        }
+        .errorAlert($actionError)
     }
 }
 
@@ -130,8 +111,8 @@ private struct CardRow: View {
                 if let difficulty = card.difficulty {
                     CodeyChip(tier: difficulty)
                 }
-                if card.codeSnippet != nil {
-                    CodeyChip(card.codeSnippet?.language.displayName ?? "", systemImage: "chevron.left.forwardslash.chevron.right")
+                if let snippet = card.codeSnippet {
+                    CodeyChip(snippet.language.displayName, systemImage: "chevron.left.forwardslash.chevron.right")
                 }
                 if card.isMastered {
                     CodeyChip("Mastered", systemImage: "checkmark.seal.fill", variant: .success)

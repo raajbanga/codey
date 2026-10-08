@@ -96,10 +96,6 @@ final class SyncEngine {
         }
     }
 
-    var canSync: Bool {
-        remote != nil && currentUserID() != nil && reachability.isReachable
-    }
-
     /// Runs a full cycle now. Returns false if it couldn't run or failed.
     @discardableResult
     func syncNow() async -> Bool {
@@ -159,10 +155,7 @@ final class SyncEngine {
                 waiting.insert(deck.id)
                 continue
             }
-            if deck.syncState == .synced {
-                deck.edit()
-                deck.save()
-            }
+            if deck.syncState == .synced { deck.editAndSave() }
             decks.append(deck)
         }
         for operation in operations where operation.entity == .card {
@@ -192,16 +185,14 @@ final class SyncEngine {
 
             // Done with exactly the operations we sent; anything enqueued
             // while we were waiting stays queued.
-            let sent = Set(operationIDs)
-            try queue.markDone(try context.fetch(FetchDescriptor<SyncOperation>()).filter { sent.contains($0.id) })
+            try queue.markDone(try queue.operations(ids: operationIDs))
             for deck in decks {
                 deck.receive(.ack(serverUpdatedAt: versions[deck.id] ?? now()))
                 if deck.deletedAt != nil {
                     // Fig. 7 final state: the delete reached the server.
-                    store.delete(deck)
+                    context.delete(deck)
                 } else if queue.hasPending(.deck, id: deck.id) {
-                    deck.edit()
-                    deck.save()
+                    deck.editAndSave()
                 }
             }
             try context.save()
@@ -209,11 +200,7 @@ final class SyncEngine {
             for deck in decks where deck.syncState == .syncing || deck.syncState == .conflict {
                 if deck.syncState == .conflict { deck.resolve() } else { deck.receive(.networkFailure) }
             }
-            let sent = Set(operationIDs)
-            try? queue.markFailed(
-                (try? context.fetch(FetchDescriptor<SyncOperation>()))?.filter { sent.contains($0.id) } ?? [],
-                error: String(describing: error)
-            )
+            try? queue.markFailed((try? queue.operations(ids: operationIDs)) ?? [], error: String(describing: error))
             throw error
         }
     }
@@ -249,9 +236,7 @@ final class SyncEngine {
     }
 
     private func appendLog(operationIDs: [UUID], remote: any RemoteDeckStore) async {
-        let sent = Set(operationIDs)
-        let entries = ((try? context.fetch(FetchDescriptor<SyncOperation>())) ?? [])
-            .filter { sent.contains($0.id) }
+        let entries = ((try? queue.operations(ids: operationIDs)) ?? [])
             .map { SyncLogEntry(entity: $0.entity, entityId: $0.entityId, op: $0.op, clientTimestamp: $0.enqueuedAt, deviceId: deviceID) }
         guard !entries.isEmpty else { return }
         do {

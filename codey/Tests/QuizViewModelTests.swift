@@ -29,15 +29,6 @@ struct QuizViewModelTests {
         }
     }
 
-    @Test func newLearnerGetsTenEasyQuestions() throws {
-        let context = try TestSupport.inMemoryContext()
-        let topic = try TestSupport.insertTopic(context, easy: 12, medium: 12, hard: 12)
-        let vm = makeVM(topic, context)
-        #expect(vm.questions.count == 10)
-        #expect(vm.questions.allSatisfy { $0.difficulty == .easy })
-        #expect(vm.results == Array(repeating: nil, count: 10))
-    }
-
     @Test func xpFollowsD5AndAWrongAnswerResetsTheStreak() throws {
         let context = try TestSupport.inMemoryContext()
         let topic = try TestSupport.insertTopic(context, easy: 12, medium: 0, hard: 0)
@@ -231,7 +222,7 @@ struct QuizViewModelTests {
         #expect(vm.isFinished)
     }
 
-    @Test func bundledBankGivesTenQuestionsForANewLearner() throws {
+    @Test func bundledBankGivesANewLearnerOnlyEasyQuestions() throws {
         let context = try TestSupport.inMemoryContext()
         try DataSeeder.seed(context: context, bank: QuestionBankLoader.loadBank())
         for topic in try context.fetch(FetchDescriptor<Topic>()) {

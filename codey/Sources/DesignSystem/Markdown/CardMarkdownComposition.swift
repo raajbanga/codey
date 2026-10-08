@@ -7,7 +7,8 @@ enum CardMarkdownComposition {
     static func compose(markdown: String, snippet: CodeSnippet?) -> String {
         guard let snippet else { return markdown }
         let fence = fence(for: snippet.source)
-        let block = "\(fence)\(snippet.language.prismKey)\n\(snippet.source)\n\(fence)"
+        // The raw value is also the Prism grammar name (Prism says "cpp", not "c++").
+        let block = "\(fence)\(snippet.language.rawValue)\n\(snippet.source)\n\(fence)"
         let text = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty ? block : "\(text)\n\n\(block)"
     }
@@ -30,17 +31,6 @@ enum CardMarkdownComposition {
 }
 
 extension CodeLanguage {
-    /// Grammar name in Textual's bundled Prism (Prism uses "cpp", not "c++").
-    /// All four are in Textual 0.5.0's prism-bundle.js.
-    var prismKey: String {
-        switch self {
-        case .swift: "swift"
-        case .python: "python"
-        case .java: "java"
-        case .cpp: "cpp"
-        }
-    }
-
     init?(fenceHint: String?) {
         guard let hint = fenceHint?.lowercased() else { return nil }
         switch hint {

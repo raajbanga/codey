@@ -39,10 +39,12 @@ enum ModelContainerFactory {
         }
     }
 
+    /// A seeded in-memory store for SwiftUI previews.
     @MainActor
     static func makePreview() -> ModelContainer {
         let container = try! make(inMemory: true)
-        DataSeeder.seedIfNeeded(context: container.mainContext)
+        try! DataSeeder.seed(context: container.mainContext, bank: QuestionBankLoader.loadBank())
+        try! StarterDeckLoader.seed(context: container.mainContext)
         return container
     }
 
