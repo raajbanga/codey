@@ -28,7 +28,11 @@ enum ModelContainerFactory {
                 at: url.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            return try ModelContainer(for: schema, migrationPlan: CodeyMigrationPlan.self, configurations: config)
+            applyFileProtection(storeURL: url)
+            let container = try ModelContainer(for: schema, migrationPlan: CodeyMigrationPlan.self, configurations: config)
+            // SQLite creates the -wal/-shm files on open; protect those too.
+            applyFileProtection(storeURL: url)
+            return container
         } catch {
             Logger.persistence.error("Opening the store failed: \(String(describing: error))")
             throw error
@@ -40,6 +44,32 @@ enum ModelContainerFactory {
         let container = try! make(inMemory: true)
         DataSeeder.seedIfNeeded(context: container.mainContext)
         return container
+    }
+
+    /// NFR-04 (O6): encrypted while the device is locked. .completeUnlessOpen
+    /// rather than .complete, so a sync still writing just after the device
+    /// locks keeps its open SQLite handles; new files can't be created until
+    /// unlock.
+    static let fileProtection = FileProtectionType.completeUnlessOpen
+
+    /// Sets the protection class on the store's folder (new files inherit it)
+    /// and on the store, -wal, and -shm files that already exist. Returns the
+    /// paths it protected. (The Simulator accepts the attribute but doesn't
+    /// store it; only a device reports it back.)
+    @discardableResult
+    static func applyFileProtection(storeURL url: URL) -> [String] {
+        let manager = FileManager.default
+        let paths = [url.deletingLastPathComponent().path, url.path, url.path + "-wal", url.path + "-shm"]
+        var protected: [String] = []
+        for path in paths where manager.fileExists(atPath: path) {
+            do {
+                try manager.setAttributes([.protectionKey: fileProtection], ofItemAtPath: path)
+                protected.append(path)
+            } catch {
+                Logger.persistence.error("Setting file protection failed: \(String(describing: error))")
+            }
+        }
+        return protected
     }
 
     /// Where SwiftData keeps a named store by default.

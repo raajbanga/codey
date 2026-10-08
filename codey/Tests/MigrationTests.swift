@@ -179,3 +179,30 @@ struct MigrationTests {
         #expect(!FileManager.default.fileExists(atPath: url.path + "-wal"))
     }
 }
+
+/// NFR-04: the on-disk store is file-protected (O6: completeUnlessOpen).
+@MainActor
+struct StoreFileProtectionTests {
+    @Test func storeFolderAndFilesAreProtected() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let context = try TestSupport.context(storeURL: url)
+        context.insert(UserProfile(username: "p"))
+        try context.save()
+        #expect(ModelContainerFactory.fileProtection == .completeUnlessOpen)
+
+        // Setting the class succeeds for the folder, the store, and its WAL.
+        let protected = ModelContainerFactory.applyFileProtection(storeURL: url)
+        #expect(protected.contains(url.deletingLastPathComponent().path))
+        #expect(protected.contains(url.path))
+
+        #if targetEnvironment(simulator)
+        // The Simulator has no Data Protection and reports nil; a device run
+        // checks the attribute itself.
+        #else
+        for path in protected {
+            let protection = try FileManager.default.attributesOfItem(atPath: path)[.protectionKey] as? FileProtectionType
+            #expect(protection == ModelContainerFactory.fileProtection, "\(path)")
+        }
+        #endif
+    }
+}
