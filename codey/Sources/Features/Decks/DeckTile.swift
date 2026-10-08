@@ -10,18 +10,9 @@ struct DeckTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
             HStack(alignment: .top) {
-                Image(systemName: topic?.iconName ?? "rectangle.stack")
-                    .font(.codeyHeadline)
-                    .foregroundStyle(CodeyColor.brand)
-                    .frame(width: iconSize, height: iconSize)
-                    .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.sm))
-                    .accessibilityHidden(true)
+                IconTile(systemName: topic?.iconName ?? "rectangle.stack", size: iconSize, font: .codeyHeadline, radius: CodeyRadius.sm)
                 Spacer(minLength: CodeySpacing.xs)
-                if deck.origin == .starter {
-                    CodeyChip("Starter", systemImage: "sparkles", variant: .brand)
-                } else {
-                    SyncStatusLabel(state: deck.syncState)
-                }
+                DeckStatusChip(deck: deck)
             }
 
             Text(deck.title)
@@ -38,7 +29,7 @@ struct DeckTile: View {
 
             Spacer(minLength: 0)
 
-            ProgressBar(value: deck.masteryRate, label: "Mastery \(Int((deck.masteryRate * 100).rounded()))%")
+            ProgressBar(value: deck.masteryRate, label: "Mastery \(deck.masteryRate.percentText)")
         }
         .padding(CodeySpacing.md)
         .frame(maxWidth: .infinity, minHeight: 168, alignment: .topLeading)
@@ -50,9 +41,7 @@ struct DeckTile: View {
     }
 
     private var subtitle: String {
-        let count = deck.cardCount
-        let cards = count == 1 ? "1 card" : "\(count) cards"
-        guard let topic else { return cards }
-        return "\(cards) · \(topic.title)"
+        let cards = deck.cardCount.counted("card")
+        return topic.map { "\(cards) · \($0.title)" } ?? cards
     }
 }

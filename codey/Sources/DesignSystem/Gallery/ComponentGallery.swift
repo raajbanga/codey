@@ -69,7 +69,7 @@ struct ComponentGallery: View {
             CodeyButton("Start Quiz", systemImage: "play.fill", fullWidth: true) {}
             HStack {
                 CodeyButton("Secondary", kind: .secondary) {}
-                CodeyButton("Saving", kind: .primary, isLoading: true) {}
+                CodeyButton("Primary") {}
             }
             HStack {
                 CodeyButton("Glass", kind: .glassPrimary) {}

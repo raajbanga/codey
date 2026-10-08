@@ -70,33 +70,15 @@ struct StudySummaryView: View {
         let endPercent = Int((summary.endMasteryRate * 100).rounded())
         let deltaPoints = Int((summary.masteryDelta * 100).rounded())
         let delta = deltaPoints > 0 ? "+\(deltaPoints)" : "\(deltaPoints)"
-
-        return ViewThatFits(in: .horizontal) {
-            HStack(spacing: CodeySpacing.sm) { statTiles(endPercent: endPercent, delta: delta) }
-            VStack(spacing: CodeySpacing.sm) { statTiles(endPercent: endPercent, delta: delta) }
+        return StatTileRow {
+            StatTile(value: summary.reviewed, label: "Cards reviewed", systemImage: "rectangle.on.rectangle")
+            StatTile(value: summary.newlyMastered, label: "Newly mastered", systemImage: "checkmark.seal.fill", tint: CodeyColor.success)
+            StatTile(value: endPercent, label: "Deck mastery · \(delta) pts", suffix: "%", systemImage: "chart.line.uptrend.xyaxis")
         }
     }
 
-    @ViewBuilder
-    private func statTiles(endPercent: Int, delta: String) -> some View {
-        StatTile(value: summary.reviewed, label: "Cards reviewed", systemImage: "rectangle.on.rectangle")
-        StatTile(value: summary.newlyMastered, label: "Newly mastered", systemImage: "checkmark.seal.fill", tint: CodeyColor.success)
-        StatTile(value: endPercent, label: "Deck mastery · \(delta) pts", suffix: "%", systemImage: "chart.line.uptrend.xyaxis")
-    }
-
-    @ViewBuilder
     private var unlockBanners: some View {
-        ForEach(summary.unlockedTiers, id: \.self) { tier in
-            CodeyCard(tint: tier.style.color) {
-                Label {
-                    Text("Tier unlocked: \(tier.style.label)")
-                        .font(.codeyHeadline)
-                } icon: {
-                    Image(systemName: tier.style.symbol)
-                        .foregroundStyle(tier.style.color)
-                }
-            }
-        }
+        ForEach(summary.unlockedTiers, id: \.self) { TierUnlockedBanner(tier: $0) }
     }
 
     private var buttons: some View {
@@ -115,11 +97,11 @@ struct StudySummaryView: View {
         guard deck.origin == .starter else {
             return "This deck has no cards to study."
         }
-        let level = (try? modelContext.fetch(FetchDescriptor<UserProfile>()).first)
+        let profile: UserProfile? = try? modelContext.first()
         let locked = TierGate.availability(
             tallies: TierGate.tallies(for: deck),
-            xp: level?.totalXP,
-            level: level?.level ?? 1
+            xp: profile?.totalXP,
+            level: profile?.level ?? 1
         ).first { !$0.isUnlocked }
         if let locked, let reason = locked.lockReason {
             return "You've mastered every card you've unlocked. \(locked.difficulty.style.label) is next: \(reason)."

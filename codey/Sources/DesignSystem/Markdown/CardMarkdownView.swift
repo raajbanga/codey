@@ -25,7 +25,7 @@ struct CardMarkdownView: View {
 
     private static let highlighterTheme = StructuredText.HighlighterTheme(
         foregroundColor: DynamicColor(SyntaxRole.plain.color),
-        backgroundColor: DynamicColor(CodeyColor.Syntax.background),
+        backgroundColor: DynamicColor(CodeyColor.codeBackground),
         tokenProperties: Dictionary(
             uniqueKeysWithValues: SyntaxRole.prismTokens.map { token, role in
                 (StructuredText.HighlighterTheme.TokenType(rawValue: token), AnyTextProperty(.foregroundColor(DynamicColor(role.color))))
@@ -55,7 +55,7 @@ private struct CodeyCodeBlockStyle: StructuredText.CodeBlockStyle {
                     .padding(.top, CodeySpacing.xs)
             }
         }
-        .background(CodeyColor.Syntax.background, in: .codey(CodeyRadius.md))
+        .background(CodeyColor.codeBackground, in: .codey(CodeyRadius.md))
         .textual.blockSpacing(.init(top: CodeySpacing.xs, bottom: CodeySpacing.md))
     }
 }

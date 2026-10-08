@@ -23,6 +23,23 @@ struct TierChipRow: View {
     }
 }
 
+/// "Tier unlocked: Medium" banner on the study and quiz summaries.
+struct TierUnlockedBanner: View {
+    let tier: Difficulty
+
+    var body: some View {
+        CodeyCard(tint: tier.style.color) {
+            Label {
+                Text("Tier unlocked: \(tier.style.label)")
+                    .font(.codeyHeadline)
+            } icon: {
+                Image(systemName: tier.style.symbol)
+                    .foregroundStyle(tier.style.color)
+            }
+        }
+    }
+}
+
 private struct TierChip: View {
     let tier: TierAvailability
     @State private var showReason = false

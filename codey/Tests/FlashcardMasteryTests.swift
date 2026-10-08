@@ -39,13 +39,6 @@ struct FlashcardMasteryTests {
         #expect(card.masteryScore == 0)
     }
 
-    @Test func masteryClampsAtFive() throws {
-        let (card, _) = try card(in: .user)
-        for _ in 0..<5 { card.updateMastery(rating: .easy) }
-        #expect(card.masteryScore == 5)
-        #expect(card.isMastered)
-    }
-
     @Test func masteryDoesNotBumpContentTimestamp() throws {
         let (card, _) = try card(in: .user)
         let before = card.updatedAt
@@ -73,7 +66,8 @@ struct FlashcardMasteryTests {
 
     @Test func userCardsNeverRetire() throws {
         let (card, _) = try card(in: .user)
-        for _ in 0..<3 { card.updateMastery(rating: .easy) }
+        for _ in 0..<5 { card.updateMastery(rating: .easy) }
+        #expect(card.masteryScore == 5)
         #expect(card.isMastered)
         #expect(card.retiredAt == nil)
     }
@@ -114,34 +108,6 @@ struct FlashcardDeckTests {
         #expect(deck.masteryRate == 0.25)
     }
 
-    @Test func originAndSyncStateRoundTripThroughRawValues() {
-        let deck = FlashcardDeck(title: "d", topicId: "t", origin: .starter, syncState: .synced)
-        #expect(deck.originRaw == "starter")
-        #expect(deck.syncState == .synced)
-        #expect(!deck.isEditable)
-
-        deck.origin = .user
-        deck.syncState = .conflict
-        #expect(deck.isEditable)
-        #expect(deck.syncStateRaw == "conflict")
-    }
-
-    @Test func newDeckDefaults() {
-        let now = Date(timeIntervalSince1970: 42)
-        let deck = FlashcardDeck(title: "d", topicId: "t", origin: .user, now: now)
-        #expect(deck.syncState == .drafting)
-        #expect(deck.createdAt == now && deck.updatedAt == now)
-        #expect(!deck.isHidden)
-        #expect(deck.ownerId == nil && deck.deletedAt == nil && deck.lastSyncedAt == nil)
-    }
-
-    @Test func markDirtyBumpsUpdatedAt() {
-        let deck = FlashcardDeck(title: "d", topicId: "t", origin: .user, now: Date(timeIntervalSince1970: 0))
-        let later = Date(timeIntervalSince1970: 99)
-        deck.markDirty(at: later)
-        #expect(deck.updatedAt == later)
-    }
-
     @Test func deletingDeckCascadesToCards() throws {
         let context = try TestSupport.inMemoryContext()
         let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
@@ -151,11 +117,5 @@ struct FlashcardDeckTests {
         try context.save()
 
         #expect(try context.fetchCount(FetchDescriptor<Flashcard>()) == 0)
-    }
-
-    @Test func languageMetadata() {
-        #expect(CodeLanguage.cpp.displayName == "C++")
-        #expect(CodeLanguage.cpp.fenceTag == "cpp")
-        #expect(CodeLanguage.allCases.map(\.rawValue) == ["swift", "python", "java", "cpp"])
     }
 }

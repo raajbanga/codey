@@ -207,30 +207,20 @@ final class StudySessionViewModel {
     // MARK: Persistence
 
     private func writeSnapshot(at timestamp: Date) throws {
-        if let snapshot = try StudyProgressSnapshot.fetch(deckId: deck.id, context: context) {
-            snapshot.cardIDs = queue.cardIDs
-            snapshot.position = queue.position
-            snapshot.requeuedIDs = Array(queue.requeued)
-            snapshot.tierFilterRaw = tierFilter?.rawValue
-            snapshot.reviewedCount = reviewedCount
-            snapshot.newlyMasteredIDs = newlyMasteredIDs
-            snapshot.startMasteryRate = startMasteryRate
-            snapshot.startUnlockedTiersRaw = startUnlockedTiers.map(\.rawValue)
-            snapshot.updatedAt = timestamp
-        } else {
-            context.insert(StudyProgressSnapshot(
-                deckId: deck.id,
-                cardIDs: queue.cardIDs,
-                position: queue.position,
-                requeuedIDs: Array(queue.requeued),
-                tierFilterRaw: tierFilter?.rawValue,
-                reviewedCount: reviewedCount,
-                newlyMasteredIDs: newlyMasteredIDs,
-                startMasteryRate: startMasteryRate,
-                startUnlockedTiersRaw: startUnlockedTiers.map(\.rawValue),
-                updatedAt: timestamp
-            ))
-        }
+        let snapshot = try StudyProgressSnapshot.fetch(deckId: deck.id, context: context) ?? {
+            let new = StudyProgressSnapshot(deckId: deck.id)
+            context.insert(new)
+            return new
+        }()
+        snapshot.cardIDs = queue.cardIDs
+        snapshot.position = queue.position
+        snapshot.requeuedIDs = Array(queue.requeued)
+        snapshot.tierFilterRaw = tierFilter?.rawValue
+        snapshot.reviewedCount = reviewedCount
+        snapshot.newlyMasteredIDs = newlyMasteredIDs
+        snapshot.startMasteryRate = startMasteryRate
+        snapshot.startUnlockedTiersRaw = startUnlockedTiers.map(\.rawValue)
+        snapshot.updatedAt = timestamp
     }
 
     private func deleteSnapshot() {
@@ -253,11 +243,11 @@ final class StudySessionViewModel {
     }
 
     private func refreshCardIndex() {
-        cardsByID = Dictionary(deck.activeCards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        cardsByID = deck.activeCards.keyed(by: \.id)
     }
 
     private var currentLevel: Int {
-        let profile = try? context.fetch(FetchDescriptor<UserProfile>()).first
+        let profile: UserProfile? = try? context.first()
         return profile?.level ?? 1
     }
 }

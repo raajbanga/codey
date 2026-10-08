@@ -18,8 +18,8 @@ struct CardPagerView: View {
 
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 0) {
-                    ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
-                        CardPageEditor(card: binding(for: card.id), number: index + 1, viewModel: viewModel, focusRequest: $focusRequest)
+                    ForEach(cards) { card in
+                        CardPageEditor(card: binding(for: card.id), viewModel: viewModel, focusRequest: $focusRequest)
                             .padding(.horizontal, CodeySpacing.md)
                             .containerRelativeFrame(.horizontal)
                             .id(PagerPage.card(card.id))

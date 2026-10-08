@@ -98,10 +98,6 @@ final class DeckViewModel {
         draft.cards.insert(card, at: min(max(index, 0), draft.cards.count))
     }
 
-    func moveCards(from source: IndexSet, to destination: Int) {
-        draft.cards.move(fromOffsets: source, toOffset: destination)
-    }
-
     /// Moves `cardID` to where `targetID` is (drag-and-drop in the strip).
     func moveCard(_ cardID: UUID, onto targetID: UUID) {
         guard cardID != targetID,
@@ -125,11 +121,7 @@ final class DeckViewModel {
             cards: draft.cards.map(\.validationFields),
             knownTopicIds: knownTopicIds
         )
-        var map: [ValidationField: String] = [:]
-        for error in errors where map[error.field] == nil {
-            map[error.field] = error.message
-        }
-        fieldErrors = map
+        fieldErrors = errors.keyed(by: \.field).mapValues(\.message)
         return errors
     }
 
@@ -172,11 +164,6 @@ final class DeckViewModel {
         persist()
     }
 
-    /// FR-12.
-    func deleteDeck(_ deck: FlashcardDeck) throws {
-        try backend.deleteDeck(deck)
-    }
-
     private func persist() -> FlashcardDeck? {
         hasAttemptedSave = true
         liveValidationTask?.cancel()
@@ -190,7 +177,7 @@ final class DeckViewModel {
             uiState = .savedSuccess
             return deck
         } catch DeckBackendError.invalid(let errors) {
-            fieldErrors = Dictionary(errors.map { ($0.field, $0.message) }, uniquingKeysWith: { first, _ in first })
+            fieldErrors = errors.keyed(by: \.field).mapValues(\.message)
             uiState = .failed("Fix the highlighted fields.")
         } catch {
             uiState = .failed(error.localizedDescription)

@@ -155,6 +155,13 @@ extension FlashcardDeck {
         setState(currentState.onEdit(self))
     }
 
+    /// Edit → save in one step: re-marks a (Synced) deck as having local
+    /// changes to push.
+    func editAndSave() {
+        edit()
+        save()
+    }
+
     func push() {
         guard origin == .user else { return }
         setState(currentState.onPush(self))

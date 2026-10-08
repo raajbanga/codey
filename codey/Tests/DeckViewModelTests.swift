@@ -208,7 +208,7 @@ struct DeckViewModelTests {
 
         vm.moveCard(a, onto: b)
         #expect(vm.draft.cards.map(\.id) == [b, a])
-        vm.moveCards(from: [1], to: 0)
+        vm.moveCard(a, onto: b)
         #expect(vm.draft.cards.map(\.id) == [a, b])
 
         let copy = try #require(vm.duplicateCard(cardID: b))
@@ -223,47 +223,6 @@ struct DeckViewModelTests {
         #expect(vm.draft.cards[0].snippet == SnippetDraft())
         vm.toggleSnippet(cardID: id)
         #expect(vm.draft.cards[0].snippet == nil)
-    }
-
-    @Test(arguments: [DeckSyncStateKind.syncing, .conflict, .drafting])
-    func deleteBlockedWhileBusy(state: DeckSyncStateKind) throws {
-        let context = try makeContext()
-        let vm = makeVM(context)
-        fillValidDeck(vm)
-        let deck = try #require(vm.save())
-        deck.syncState = state
-
-        #expect(!deck.canDelete)
-        #expect(throws: DeckBackendError.self) { try vm.deleteDeck(deck) }
-        #expect(try decks(context).count == 1)
-    }
-
-    @Test func deleteLocalDeckRemovesIt() throws {
-        let context = try makeContext()
-        let vm = makeVM(context)
-        fillValidDeck(vm)
-        let deck = try #require(vm.save())
-
-        try vm.deleteDeck(deck)
-
-        #expect(try decks(context).isEmpty)
-        #expect(try context.fetchCount(FetchDescriptor<Flashcard>()) == 0)
-    }
-
-    @Test func deleteSyncedDeckTombstonesIt() throws {
-        let context = try makeContext()
-        let vm = makeVM(context)
-        fillValidDeck(vm)
-        let deck = try #require(vm.save())
-        deck.lastSyncedAt = .now
-        deck.syncState = .synced
-
-        try vm.deleteDeck(deck)
-
-        #expect(deck.deletedAt != nil)
-        #expect(deck.cards.allSatisfy { $0.deletedAt != nil })
-        let live = try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.deletedAt == nil }))
-        #expect(live.isEmpty)
     }
 
     @Test func starterDecksCannotBeEditedOrDeletedButCanBeHidden() throws {
