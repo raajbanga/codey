@@ -1,0 +1,147 @@
+# Codey backend setup (Supabase + Google sign-in)
+
+Stage 8 of `todo.txt`. The database schema lives **in this folder** and is the
+source of truth (D6). Everything here is free-tier. Follow the steps in order;
+a teammate should be able to reproduce the whole backend from this page.
+
+> The app works fully **without** any of this (local-only mode, R11). Sign-in
+> and sync turn on only when every key in `Config/Secrets.xcconfig` is set.
+
+## What's in this folder
+
+| Path | What it is |
+| --- | --- |
+| `migrations/20261008022407_profiles.sql` | `profiles` + trigger that creates one per new auth user |
+| `migrations/20261008022417_decks_flashcards.sql` | `decks`, `flashcards`, CHECKs that mirror `ModelValidator`, the `server_updated_at` pull cursor |
+| `migrations/20261008022422_sync_log.sql` | append-only push ledger (R2) |
+| `migrations/20261008022429_rls.sql` | Row Level Security on every table + owner-only policies (NFR-07) |
+| `migrations/20261008022702_lock_down_signup_trigger.sql` | revokes API access to the sign-up trigger function (Supabase security lint) |
+| `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
+| `checks/rls_live_check.sql` | the same 30 checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
+
+Rules: never edit a migration that has been pushed, add a new file instead.
+File versions must equal the remote migration versions (`list_migrations` in
+the Supabase MCP, or `supabase migration list`).
+If you change a limit, change `ModelValidator`, `flashcard.schema.json`, and a
+new migration together (`SupabaseSchemaTests` and `FlashcardSchemaFileTests`
+fail otherwise).
+
+## 1. Supabase project (manual, once)
+
+1. Sign in at <https://supabase.com/dashboard> and create a project on the
+   **Free** plan, in the region closest to the class (e.g. `us-east-1`).
+   Save the database password in the team password manager.
+2. Project Settings → **API**: copy the **Project URL** and the **anon public**
+   key into the password manager.
+   **Never** copy the `service_role` key anywhere near the app or this repo.
+
+## 2. Google Cloud OAuth (manual, once)
+
+1. <https://console.cloud.google.com> → new project "Codey".
+2. **OAuth consent screen**: External, publishing status **Testing**. Add the
+   3 developers and the client as **test users** (Testing allows up to 100).
+3. **Credentials → Create OAuth client ID → iOS**:
+   bundle ID `edu.wku.cs360.codey` (from `Project.swift`, todo 0.2).
+   Note the **client ID** and the **reversed client ID** (iOS URL scheme).
+4. **Credentials → Create OAuth client ID → Web application**: no redirect URIs
+   are needed for native ID-token sign-in. Note its **client ID** and
+   **client secret**; Supabase uses them to verify Google ID tokens.
+
+## 3. Turn on Google in Supabase Auth
+
+Authentication → Sign In / Providers → **Google**:
+
+- Enable it. Paste the **Web** client ID and secret.
+- Add the **iOS** client ID under *Authorized Client IDs* (Supabase accepts
+  ID tokens issued to any listed client).
+- *Skip nonce check*: the native flow (GoogleSignIn-iOS →
+  `supabase.auth.signInWithIdToken`) historically needed this **on**. Check the
+  current Supabase "Login with Google → iOS" docs when you do this and follow
+  them. Record what you chose here: `__________`.
+
+## 4. App secrets
+
+Copy `Config/Secrets.example.xcconfig` to `Config/Secrets.xcconfig`
+(gitignored) and fill in:
+
+| Key | Value |
+| --- | --- |
+| `SUPABASE_URL` | Project URL, `https://<ref>.supabase.co` (in xcconfig write `https:/$()/<ref>.supabase.co`, since `//` starts a comment) |
+| `SUPABASE_ANON_KEY` | anon public key |
+| `GOOGLE_IOS_CLIENT_ID` | iOS client ID |
+| `GOOGLE_REVERSED_CLIENT_ID` | reversed iOS client ID |
+| `GOOGLE_SERVER_CLIENT_ID` | **Web** client ID |
+
+Then `tuist generate`. `AppConfig.isBackendConfigured` becomes true only when
+all five are set.
+
+## 5. Supabase CLI: link and push the schema
+
+```sh
+brew install supabase/tap/supabase
+cd <repo root>
+supabase init          # creates supabase/config.toml; keep the existing migrations/ and tests/
+supabase login
+supabase link --project-ref <ref>      # <ref> is the id in your project URL
+supabase db push                       # applies migrations/*.sql in order
+```
+
+Commit the generated `supabase/config.toml`. (`.branches`/`.temp` are gitignored.)
+
+## 6. Run the RLS tests
+
+`supabase test db` runs `tests/*.sql` (pgTAP) against the **local** stack,
+which needs Docker (OrbStack or Docker Desktop) running:
+
+```sh
+supabase start        # first run downloads the images
+supabase db reset     # applies migrations to the local database
+supabase test db      # expect: All tests successful, 30 tests
+supabase stop
+```
+
+The tests create two users and check: sign-up creates profiles; RLS is on for
+100% of tables; user B sees 0 of A's decks/cards/log rows and can't insert,
+update, or delete them; `anon` sees nothing; sync_log is append-only;
+`server_updated_at` is set by the server; and the length/line/language CHECKs
+match the app's validator.
+
+## Current state (2026-10-08)
+
+Project `<project-ref>`. Migrations applied via the Supabase MCP (the
+file names above equal the remote versions). Security advisor: clean for our
+objects; the only warning left is Supabase's own `public.rls_auto_enable()`.
+`checks/rls_live_check.sql`: **0 failed of 30**, and the database was verified
+empty afterward. Google provider: enabled with the Web + iOS client IDs, skip
+nonce checks on.
+
+With the MCP you don't need steps 5–6: apply new migrations with
+`apply_migration`, then rename the repo file to the version `list_migrations`
+reports, and re-run `checks/rls_live_check.sql`.
+
+## 7. Ops (R11, NFR-20)
+
+- **Backups**: `SUPABASE_DB_URL='<session pooler URI>' scripts/backup.sh` writes
+  `backups/codey-<timestamp>.sql` (gitignored). Needs `pg_dump`
+  (`brew install libpq && brew link --force libpq`). Do it weekly; keep the
+  last few dumps outside the repo, e.g. in the team drive.
+- **Keep-alive**: free projects pause after 7 days idle.
+  `.github/workflows/supabase-keepalive.yml` pings the API every 3 days once
+  the repo secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set (GitHub →
+  Settings → Secrets and variables → Actions). It does nothing without them.
+- **Usage**: check the Supabase *Usage* page monthly (database size, egress,
+  MAU) against the free-tier limits, and note it in the Sprint metrics table.
+
+## Design notes
+
+- Ids are generated on the client and equal the local SwiftData ids, so an
+  upsert is idempotent.
+- `created_at`/`updated_at` are **client** times (used for last-writer-wins and
+  the additive merge, FR-47). `server_updated_at` is set by a trigger on every
+  write and is the pull cursor (`where server_updated_at > lastPull`).
+- Deletes are tombstones (`deleted_at`) so other devices can pull them.
+- `profiles.total_xp` is written by the client (merged as `max(local, remote)`
+  except an explicit reset), so a determined user could inflate their own XP.
+  Acceptable for a class project with no leaderboards. Documented, not enforced.
+- Starter decks, quiz progress, mastery, and tier unlocks never leave the
+  device (D10).
