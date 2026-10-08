@@ -2,7 +2,6 @@ import SwiftData
 import SwiftUI
 
 enum AppTab: Hashable {
-    case practice
     case topics
     case decks
     case analytics
@@ -10,26 +9,10 @@ enum AppTab: Hashable {
 }
 
 struct MainTabView: View {
-    @State private var selectedTab: AppTab = .practice
+    @State private var selectedTab: AppTab = .decks
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack {
-                PracticeHomeView(selectedTab: $selectedTab)
-            }
-            .tabItem {
-                Label("Practice", systemImage: "square.stack.fill")
-            }
-            .tag(AppTab.practice)
-
-            NavigationStack {
-                TopicListView()
-            }
-            .tabItem {
-                Label("Topics", systemImage: "folder.fill")
-            }
-            .tag(AppTab.topics)
-
             NavigationStack {
                 DeckLibraryView()
             }
@@ -37,6 +20,14 @@ struct MainTabView: View {
                 Label("Decks", systemImage: "rectangle.stack.fill")
             }
             .tag(AppTab.decks)
+
+            NavigationStack {
+                TopicListView()
+            }
+            .tabItem {
+                Label("Quiz", systemImage: "questionmark.bubble.fill")
+            }
+            .tag(AppTab.topics)
 
             NavigationStack {
                 AnalyticsDashboardView()
