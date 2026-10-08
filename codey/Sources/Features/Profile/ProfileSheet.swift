@@ -7,6 +7,7 @@ import os
 struct ProfileSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(BackendFacade.self) private var backend
     @AppStorage(AppAppearance.storageKey) private var appearance: AppAppearance = .system
     @AppStorage(OnboardingView.completedKey) private var hasCompletedOnboarding = false
 
@@ -17,6 +18,7 @@ struct ProfileSheet: View {
 
     @State private var confirmReset = false
     @State private var confirmErase = false
+    @State private var confirmSignOut = false
     @State private var actionError: String?
 
     private var profile: UserProfile? { profiles.first }
@@ -44,7 +46,10 @@ struct ProfileSheet: View {
         }
         .confirmationDialog("Reset progress?", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("Reset Progress", role: .destructive) {
-                perform { try LocalDataReset.resetProgress(context: modelContext) }
+                perform {
+                    try LocalDataReset.resetProgress(context: modelContext)
+                    backend.didResetProgress()
+                }
             }
         } message: {
             Text("XP, streak, card mastery, quiz progress, and tier unlocks go back to zero. Your decks stay. This can't be undone.")
@@ -57,6 +62,16 @@ struct ProfileSheet: View {
             }
         } message: {
             Text("Your decks, progress, and profile will be deleted from this device. This can't be undone.")
+        }
+        .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+            Button("Remove Decks from This Device", role: .destructive) {
+                Task { await backend.signOut(removingLocalDecks: true) }
+            }
+            Button("Keep Decks on This Device") {
+                Task { await backend.signOut(removingLocalDecks: false) }
+            }
+        } message: {
+            Text(signOutMessage)
         }
         .alert("Something Went Wrong", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
             Button("OK", role: .cancel) {}
@@ -81,7 +96,7 @@ struct ProfileSheet: View {
                     Text("Level \(LevelCalculator.level(forXP: xp)) · \(xp.formatted()) XP")
                         .font(.codeySubheadline)
                         .foregroundStyle(CodeyColor.textSecondary)
-                    Text("Guest · data stays on this device")
+                    Text(accountStatus)
                         .font(.codeyCaption)
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
@@ -91,21 +106,83 @@ struct ProfileSheet: View {
         }
     }
 
+    private var accountStatus: String {
+        guard let user = backend.currentUser else { return "Guest · data stays on this device" }
+        return "Signed in as \(user.email ?? user.displayName ?? "Google user")"
+    }
+
+    @ViewBuilder
     private var accountSection: some View {
-        Section {
-            Button {
-                // Stage 9: BackendFacade.signInWithGoogle()
-            } label: {
-                Label("Sign in with Google", systemImage: "person.badge.key")
+        if let user = backend.currentUser {
+            Section {
+                LabeledContent("Account", value: user.email ?? user.displayName ?? "Google")
+                LabeledContent("Last synced") {
+                    if let date = backend.lastSyncedAt {
+                        Text(date, format: .relative(presentation: .named))
+                    } else {
+                        Text("Not yet")
+                    }
+                }
+                LabeledContent("Pending changes", value: backend.pendingCount.formatted())
+                Button {
+                    Task { await backend.syncPending() }
+                } label: {
+                    HStack {
+                        Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                        Spacer()
+                        if backend.engine.isSyncing {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(backend.engine.isSyncing)
+                .accessibilityIdentifier("profile.syncNow")
+                Button("Sign Out", role: .destructive) { confirmSignOut = true }
+                    .accessibilityIdentifier("profile.signOut")
+            } header: {
+                Text("Account")
+            } footer: {
+                if let error = backend.engine.lastError {
+                    Text("Last sync failed: \(error) Codey will retry automatically.")
+                } else {
+                    Text("Your decks, display name, and XP sync across devices.")
+                }
             }
-            .disabled(true)
-        } header: {
-            Text("Account")
-        } footer: {
-            Text(AppConfig.current.isBackendConfigured
-                 ? "Sign-in and cloud sync are coming in a later update."
-                 : "Cloud sync isn't set up in this build. Everything is saved on this device.")
+        } else {
+            Section {
+                Button {
+                    Task { await backend.signInWithGoogle() }
+                } label: {
+                    HStack {
+                        Label("Sign in with Google", systemImage: "person.badge.key")
+                        Spacer()
+                        if backend.authState == .signingIn {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(!backend.isSignInAvailable || backend.authState == .signingIn)
+                .accessibilityIdentifier("profile.signIn")
+            } header: {
+                Text("Account")
+            } footer: {
+                if case .error(let message) = backend.authState {
+                    Text(message)
+                } else {
+                    Text(backend.isSignInAvailable
+                         ? "Sign in to back up your decks and XP and sync them across devices. Codey works fully without an account."
+                         : "Cloud sync isn't set up in this build. Everything is saved on this device.")
+                }
+            }
         }
+    }
+
+    private var signOutMessage: String {
+        let pending = backend.unsyncedChangeCount
+        let warning = pending > 0
+            ? "\(pending) change\(pending == 1 ? "" : "s") haven't synced yet and will be lost if you remove your decks. "
+            : ""
+        return warning + "Removing them keeps another account from uploading them. They're safe in your account and come back when you sign in again."
     }
 
     private var appearanceSection: some View {
@@ -148,7 +225,7 @@ struct ProfileSheet: View {
                             .foregroundStyle(CodeyColor.textSecondary)
                         Spacer()
                         Button("Restore") {
-                            perform { try LocalOnlyBackend(context: modelContext).setHidden(false, deck: deck) }
+                            perform { try backend.setHidden(false, deck: deck) }
                         }
                         .buttonStyle(.borderless)
                         .tint(CodeyColor.brand)
@@ -168,10 +245,13 @@ struct ProfileSheet: View {
         Section {
             Button("Reset Progress", role: .destructive) { confirmReset = true }
             Button("Erase All Local Data", role: .destructive) { confirmErase = true }
+                .disabled(backend.currentUser != nil)
         } header: {
             Text("Data")
         } footer: {
-            Text("Reset progress keeps your decks. Erase deletes everything on this device.")
+            Text(backend.currentUser == nil
+                 ? "Reset progress keeps your decks. Erase deletes everything on this device."
+                 : "Reset progress keeps your decks. To erase everything on this device, sign out first.")
         }
     }
 
@@ -227,6 +307,20 @@ private struct AcknowledgementsView: View {
         ("TreeSitterLanguages", "Syntax grammars · Simon B. Støvring · MIT"),
         ("Tree-sitter", "Parsing library · MIT"),
         ("Prism", "Syntax highlighting (bundled in Textual) · MIT"),
+        ("Supabase Swift", "Auth and sync · Supabase · MIT"),
+        ("swift-clocks", "via Supabase · Point-Free · MIT"),
+        ("xctest-dynamic-overlay", "via Supabase · Point-Free · MIT"),
+        ("swift-crypto", "via Supabase · Apple · Apache 2.0"),
+        ("swift-asn1", "via Supabase · Apple · Apache 2.0"),
+        ("swift-http-types", "via Supabase · Apple · Apache 2.0"),
+        ("Google Sign-In", "Sign in with Google · Google · Apache 2.0"),
+        ("AppAuth", "via Google Sign-In · OpenID Foundation · Apache 2.0"),
+        ("GTMAppAuth", "via Google Sign-In · Google · Apache 2.0"),
+        ("GTMSessionFetcher", "via Google Sign-In · Google · Apache 2.0"),
+        ("GoogleUtilities", "via Google Sign-In · Google · Apache 2.0"),
+        ("App Check", "via Google Sign-In · Google · Apache 2.0"),
+        ("Interop for Google SDKs", "via Google Sign-In · Google · Apache 2.0"),
+        ("Promises", "via Google Sign-In · Google · Apache 2.0"),
     ]
 
     var body: some View {
@@ -244,6 +338,8 @@ private struct AcknowledgementsView: View {
 }
 
 #Preview {
+    let container = ModelContainerFactory.makePreview()
     ProfileSheet()
-        .modelContainer(ModelContainerFactory.makePreview())
+        .modelContainer(container)
+        .environment(BackendFacade.localOnly(context: container.mainContext))
 }

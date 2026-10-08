@@ -1,7 +1,7 @@
 import Foundation
 
-/// What the deck UI needs from storage. LocalOnlyBackend implements it now;
-/// the BackendFacade (Stage 9) adopts it, so DeckViewModel doesn't change.
+/// What the deck builder needs from storage. BackendFacade implements it;
+/// DeckViewModel depends only on this protocol.
 @MainActor
 protocol DeckBackend {
     /// Persists the draft locally FIRST (FR-44). Creates the deck when

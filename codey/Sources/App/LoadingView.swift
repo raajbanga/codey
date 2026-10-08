@@ -6,6 +6,7 @@ struct LoadingView: View {
     @State private var progress: Double = 0
     @State private var errorMessage: String?
     @State private var container: ModelContainer?
+    @State private var backend: BackendFacade?
     @State private var showResetConfirmation = false
 
     /// Keeps the launch screen up at least this long so it doesn't flash.
@@ -13,9 +14,10 @@ struct LoadingView: View {
 
     var body: some View {
         Group {
-            if let container {
+            if let container, let backend {
                 ContentView()
                     .modelContainer(container)
+                    .environment(backend)
             } else {
                 loadingContent
             }
@@ -122,6 +124,11 @@ struct LoadingView: View {
                 try await Task.sleep(for: minimumDuration - elapsed)
             }
 
+            let facade = AppLaunchOptions.usesInMemoryStore
+                ? BackendFacade.localOnly(context: bootContainer.mainContext)
+                : BackendFacade.live(context: bootContainer.mainContext)
+            facade.start()
+            backend = facade
             container = bootContainer
         } catch {
             Logger.persistence.error("Boot failed: \(String(describing: error))")

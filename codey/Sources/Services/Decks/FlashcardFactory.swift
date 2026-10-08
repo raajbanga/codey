@@ -111,6 +111,33 @@ struct FlashcardFactory {
         return true
     }
 
+    /// Sync path: overwrites a card's content with a pulled or merged remote
+    /// version, keeping the remote timestamps and tombstone. Mastery is local
+    /// progress (D10), so it's untouched. Same validation as creation.
+    func applyRemote(_ payload: FlashcardPayload, to card: Flashcard) throws {
+        let input = applyDefaults(payload)
+        let errors = validator.validateCard(ModelValidator.CardFields(
+            id: card.id,
+            prompt: input.prompt,
+            answer: input.answer,
+            codeLanguage: input.codeLanguage,
+            codeSource: input.codeSource
+        ))
+        guard errors.isEmpty else { throw FactoryError.invalid(errors) }
+
+        var snippet: CodeSnippet?
+        if let raw = input.codeLanguage, let language = CodeLanguage(rawValue: raw), let source = input.codeSource {
+            snippet = CodeSnippet(language: language, source: source)
+        }
+        card.prompt = input.prompt
+        card.answer = input.answer
+        card.codeSnippet = snippet
+        card.difficulty = input.difficulty
+        card.sortIndex = input.sortIndex
+        card.updatedAt = input.updatedAt ?? card.updatedAt
+        card.deletedAt = input.deletedAt
+    }
+
     private func applyDefaults(_ payload: FlashcardPayload) -> FlashcardPayload {
         var result = payload
         let timestamp = now()
