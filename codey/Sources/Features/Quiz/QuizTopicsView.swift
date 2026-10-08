@@ -3,7 +3,8 @@ import SwiftUI
 
 /// Quiz tab root (replaces TopicListView): one card per topic with its tier
 /// locks, accuracy over the last 50 answers (FR-36), and retired count.
-/// Tap → QuizSetupView sheet → quiz as a full-screen cover.
+/// Tap → QuizSetupView sheet → quiz as a full-screen cover (both owned by
+/// the Router at the root).
 struct QuizTopicsView: View {
     @Query(sort: \Topic.title) private var topics: [Topic]
     @Query private var progressRows: [QuestionProgress]
@@ -11,10 +12,7 @@ struct QuizTopicsView: View {
     @Query private var records: [QuizAnswerRecord]
     @Query private var profiles: [UserProfile]
 
-    @State private var setupTopic: Topic?
-    @State private var pendingQuiz: QuizRequest?
-    @State private var quiz: QuizRequest?
-    @Environment(\.modelContext) private var modelContext
+    @Environment(Router.self) private var router
 
     var body: some View {
         ScrollView {
@@ -29,7 +27,7 @@ struct QuizTopicsView: View {
                 LazyVStack(spacing: CodeySpacing.md) {
                     ForEach(topics) { topic in
                         Button {
-                            setupTopic = topic
+                            router.quizSetupTopic = topic
                         } label: {
                             QuizTopicRow(stats: stats(for: topic))
                         }
@@ -42,21 +40,6 @@ struct QuizTopicsView: View {
         }
         .background(CodeyColor.surface)
         .navigationTitle("Quiz")
-        .sheet(item: $setupTopic, onDismiss: {
-            // Present the quiz only after the sheet is gone.
-            if let pendingQuiz {
-                quiz = pendingQuiz
-                self.pendingQuiz = nil
-            }
-        }) { topic in
-            QuizSetupView(topic: topic) { mode in
-                pendingQuiz = QuizRequest(topic: topic, mode: mode)
-                setupTopic = nil
-            }
-        }
-        .fullScreenCover(item: $quiz) { request in
-            QuizModeView(request: request, context: modelContext)
-        }
     }
 
     private func stats(for topic: Topic) -> QuizTopicStats {
@@ -142,5 +125,6 @@ private struct QuizTopicRow: View {
     NavigationStack {
         QuizTopicsView()
     }
+    .environment(Router())
     .modelContainer(ModelContainerFactory.makePreview())
 }

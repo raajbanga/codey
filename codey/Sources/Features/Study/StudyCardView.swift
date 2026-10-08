@@ -94,14 +94,6 @@ private struct CardFace: View {
                     .scrollBounceBehavior(.basedOnSize)
                     .scrollIndicators(.visible)
             }
-
-            if isFront {
-                Text("Tap to flip")
-                    .font(.codeyCaption)
-                    .foregroundStyle(CodeyColor.textSecondary)
-                    .frame(maxWidth: .infinity)
-                    .accessibilityHidden(true)
-            }
         }
         .padding(CodeySpacing.lg)
         .frame(maxWidth: .infinity, minHeight: 260, alignment: .topLeading)

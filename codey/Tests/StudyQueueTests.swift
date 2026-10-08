@@ -78,8 +78,9 @@ struct SwipeRatingTests {
         (CGSize(width: 150, height: 10), CardRating?.some(.good)),
         (CGSize(width: -150, height: 10), .some(.again)),
         (CGSize(width: 20, height: -150), .some(.easy)),
+        (CGSize(width: 10, height: 150), .some(.hard)),
         (CGSize(width: 50, height: -30), nil),
-        (CGSize(width: 0, height: 150), nil),
+        (CGSize(width: 150, height: -160), .some(.easy)),
     ])
     func swipeDirections(translation: CGSize, expected: CardRating?) {
         #expect(CardRating.forSwipe(translation, threshold: 110) == expected)

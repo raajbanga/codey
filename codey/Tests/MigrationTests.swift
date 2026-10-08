@@ -116,6 +116,28 @@ struct MigrationTests {
         #expect(try context.fetchCount(FetchDescriptor<QuizAnswerRecord>()) == 1)
     }
 
+    /// Stage 7: a V4 store opens as V5; the profile keeps its XP and gets
+    /// an empty pin list.
+    @Test func v4StoreMigratesToCurrentWithPinnedTopics() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV4.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            context.insert(CodeySchemaV1.UserProfile(username: "Learner", totalXP: 1_234))
+            context.insert(QuizAnswerRecord(questionId: "q", topicId: "t", correct: true, answeredAt: .now))
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
+        #expect(profile.totalXP == 1_234)
+        #expect(profile.pinnedTopicIds.isEmpty)
+        profile.pinnedTopicIds = ["topic-databases"]
+        try context.save()
+        #expect(try context.fetchCount(FetchDescriptor<QuizAnswerRecord>()) == 1)
+    }
+
     @Test func decksPersistAcrossReopen() throws {
         let url = try TestSupport.temporaryStoreURL()
         let deckId: UUID

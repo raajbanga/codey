@@ -59,9 +59,27 @@ extension CardRating {
         }
     }
 
-    /// Swipe shortcut direction on a revealed card (D14). Hard has none.
+    /// Swipe direction for this rating on a revealed card (D14, swipe-only).
+    var swipeSymbol: String {
+        switch self {
+        case .again: "arrow.left"
+        case .hard: "arrow.down"
+        case .good: "arrow.right"
+        case .easy: "arrow.up"
+        }
+    }
+
+    /// Order of the gesture hint under the card: ← Again ↓ Hard ↑ Easy → Good.
+    static let swipeHintOrder: [CardRating] = [.again, .hard, .easy, .good]
+
+    /// The rating a drag maps to once past `threshold`: ← Again, → Good,
+    /// ↑ Easy, ↓ Hard. The dominant axis wins.
     static func forSwipe(_ translation: CGSize, threshold: CGFloat) -> CardRating? {
-        if translation.height < -threshold, abs(translation.height) > abs(translation.width) { return .easy }
+        if abs(translation.height) > abs(translation.width) {
+            if translation.height < -threshold { return .easy }
+            if translation.height > threshold { return .hard }
+            return nil
+        }
         if translation.width > threshold { return .good }
         if translation.width < -threshold { return .again }
         return nil

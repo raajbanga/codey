@@ -1,6 +1,6 @@
 import XCTest
 
-/// Stage 5: study a starter deck (flip, rate), leave, and resume.
+/// Stage 5: study a starter deck (tap to flip, swipe to rate), leave, and resume.
 final class StudySessionUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -26,19 +26,20 @@ final class StudySessionUITests: XCTestCase {
 
         // New learner: only the 4 Easy cards are unlocked (D9).
         XCTAssertTrue(app.staticTexts["1 / 4"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["study.rate.good"].exists, "ratings appear only after reveal (FR-16)")
+        let card = app.descendants(matching: .any)["study.card"].firstMatch
 
-        app.buttons["study.reveal"].tap()
-        let good = app.buttons["study.rate.good"]
-        XCTAssertTrue(good.waitForExistence(timeout: 3))
-        good.tap()
+        // Swiping before the reveal does nothing (FR-16).
+        card.swipeRight()
+        XCTAssertTrue(app.staticTexts["1 / 4"].exists)
+
+        // Tap to flip, swipe right = Good.
+        card.tap()
+        card.swipeRight()
         XCTAssertTrue(app.staticTexts["2 / 4"].waitForExistence(timeout: 3))
 
-        // Tap the card itself to flip, then rate Again (re-queued once).
-        app.descendants(matching: .any)["study.card"].firstMatch.tap()
-        let again = app.buttons["study.rate.again"]
-        XCTAssertTrue(again.waitForExistence(timeout: 3))
-        again.tap()
+        // Flip, swipe left = Again (re-queued once).
+        card.tap()
+        card.swipeLeft()
         XCTAssertTrue(app.staticTexts["3 / 5"].waitForExistence(timeout: 3))
 
         app.buttons["study.close"].tap()
