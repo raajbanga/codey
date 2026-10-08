@@ -4,20 +4,29 @@ import Testing
 struct QuestionBankLoaderTests {
 
     @Test func loadsExpectedBankFromBundle() throws {
-        let topics = try QuestionBankLoader.loadTopics()
-        #expect(topics.count == QuestionBankLoader.expectedTopicCount)
-        #expect(topics.reduce(0) { $0 + $1.questions.count } == QuestionBankLoader.expectedQuestionCount)
+        let bank = try QuestionBankLoader.loadBank()
+        #expect(bank.topics.count == QuestionBankLoader.expectedTopicCount)
+        #expect(bank.questions.count == QuestionBankLoader.expectedQuestionCount)
+        #expect(Set(bank.topics.map(\.id)).count == bank.topics.count)
     }
 
-    @Test func everyQuestionHasValidTopic() throws {
-        let topics = try QuestionBankLoader.loadTopics()
-        for topic in topics {
-            #expect(!topic.id.isEmpty)
-            #expect(!topic.questions.isEmpty)
-            for question in topic.questions {
-                #expect(question.topic?.id == topic.id)
-                #expect(question.options.count == 4)
-            }
+    /// B12 / Stage 6.5: enough per tier that retirement and the 70/30 mix work.
+    @Test func everyTopicHasEnoughQuestionsPerTier() throws {
+        let bank = try QuestionBankLoader.loadBank()
+        for topic in bank.topics {
+            let questions = bank.questions.filter { $0.topicId == topic.id }
+            #expect(questions.filter { $0.difficulty == .easy }.count >= 8, "\(topic.id) Easy")
+            #expect(questions.filter { $0.difficulty == .medium }.count >= 8, "\(topic.id) Medium")
+            #expect(questions.filter { $0.difficulty == .hard }.count >= 6, "\(topic.id) Hard")
+        }
+    }
+
+    @Test func questionIDsAreUniqueAndOptionsAreFourDistinctChoices() throws {
+        let bank = try QuestionBankLoader.loadBank()
+        #expect(Set(bank.questions.map(\.id)).count == bank.questions.count)
+        for question in bank.questions {
+            #expect(question.options.count == 4, "\(question.id)")
+            #expect(Set(question.options).count == 4, "\(question.id) has duplicate options")
         }
     }
 }

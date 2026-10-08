@@ -4,6 +4,9 @@
 .AppleDouble
 .LSOverride
 
+#Docs
+/docs
+
 # Icon must end with two
 Icon
 
@@ -68,3 +71,18 @@ Derived/
 
 ### Tuist managed dependencies ###
 Tuist/.build
+# sourcekit-lsp build server (machine-specific)
+buildServer.json
+
+### Secrets ###
+Config/Secrets.xcconfig
+
+### Database backups (scripts/backup.sh) ###
+backups/
+
+### Supabase CLI local state ###
+supabase/.branches
+supabase/.temp
+
+### Python ###
+__pycache__/
