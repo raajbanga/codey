@@ -34,6 +34,13 @@ struct HomeLogicTests {
         #expect(HomeLogic.upNext(resumable: nil, isNewLearner: false, starterDeckID: nil, weakestTopicID: nil) == .none)
     }
 
+    @Test func everyTopicShowsWithPinnedFirst() {
+        let all = [("a", "Algorithms"), ("d", "Databases"), ("o", "OS"), ("s", "Data Structures")]
+        let ids = HomeLogic.orderedTopicIDs(all: all.map { (id: $0.0, title: $0.1) }, pinned: ["o", "a", "gone"])
+        #expect(ids == ["o", "a", "s", "d"])
+        #expect(HomeLogic.orderedTopicIDs(all: all.map { (id: $0.0, title: $0.1) }, pinned: []) == ["a", "s", "d", "o"])
+    }
+
     @Test func weakestTopicPrefersUntriedThenLowestAccuracy() {
         #expect(HomeLogic.weakestTopicID(candidates: ["a", "b", "c"], accuracy: ["a": 0.9, "b": 0.4, "c": 0.6]) == "b")
         #expect(HomeLogic.weakestTopicID(candidates: ["a", "b"], accuracy: ["a": 0.2]) == "b", "untried = 0%")
