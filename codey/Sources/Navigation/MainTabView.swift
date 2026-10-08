@@ -22,7 +22,7 @@ struct MainTabView: View {
             .tag(AppTab.decks)
 
             NavigationStack {
-                TopicListView()
+                QuizTopicsView()
             }
             .tabItem {
                 Label("Quiz", systemImage: "questionmark.bubble.fill")

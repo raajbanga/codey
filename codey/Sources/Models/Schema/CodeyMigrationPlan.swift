@@ -5,11 +5,11 @@ import SwiftData
 /// typealiases below. Never edit a schema that has shipped.
 enum CodeyMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [CodeySchemaV1.self, CodeySchemaV2.self, CodeySchemaV3.self]
+        [CodeySchemaV1.self, CodeySchemaV2.self, CodeySchemaV3.self, CodeySchemaV4.self]
     }
 
     static var stages: [MigrationStage] {
-        [v1ToV2, v2ToV3]
+        [v1ToV2, v2ToV3, v3ToV4]
     }
 
     /// Additive only (new deck/card entities), so lightweight is enough.
@@ -23,9 +23,15 @@ enum CodeyMigrationPlan: SchemaMigrationPlan {
         fromVersion: CodeySchemaV2.self,
         toVersion: CodeySchemaV3.self
     )
+
+    /// Additive only (quiz progress models).
+    static let v3ToV4 = MigrationStage.lightweight(
+        fromVersion: CodeySchemaV3.self,
+        toVersion: CodeySchemaV4.self
+    )
 }
 
-typealias CodeySchemaCurrent = CodeySchemaV3
+typealias CodeySchemaCurrent = CodeySchemaV4
 
 // The rest of the app always uses these names, never the versioned ones.
 typealias UserProfile = CodeySchemaV1.UserProfile
@@ -35,3 +41,6 @@ typealias FlashcardDeck = CodeySchemaV2.FlashcardDeck
 typealias Flashcard = CodeySchemaV2.Flashcard
 typealias StudyProgressSnapshot = CodeySchemaV3.StudyProgressSnapshot
 typealias DailyActivity = CodeySchemaV3.DailyActivity
+typealias QuestionProgress = CodeySchemaV4.QuestionProgress
+typealias TopicProgress = CodeySchemaV4.TopicProgress
+typealias QuizAnswerRecord = CodeySchemaV4.QuizAnswerRecord
