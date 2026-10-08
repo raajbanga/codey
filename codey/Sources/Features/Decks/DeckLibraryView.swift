@@ -17,6 +17,7 @@ struct DeckLibraryView: View {
     )
     private var decks: [FlashcardDeck]
     @Query(sort: \Topic.title) private var topics: [Topic]
+    @Query private var profiles: [UserProfile]
 
     @State private var filter: Filter = .all
     @State private var searchText = ""
@@ -24,8 +25,6 @@ struct DeckLibraryView: View {
     @State private var builder: BuilderRequest?
     @State private var deckToDelete: FlashcardDeck?
     @State private var actionError: String?
-    @State private var studyRequest: StudyRequest?
-    @Query private var snapshots: [StudyProgressSnapshot]
 
     private var topicsByID: [String: Topic] {
         Dictionary(topics.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -96,9 +95,6 @@ struct DeckLibraryView: View {
                 DeckDetailView(deck: deck, topic: topicsByID[deck.topicId])
             }
         }
-        .fullScreenCover(item: $studyRequest) { request in
-            StudySessionView(request: request, context: modelContext)
-        }
         .sheet(item: $builder) { request in
             DeckBuilderView(
                 viewModel: DeckViewModel(
@@ -153,10 +149,6 @@ struct DeckLibraryView: View {
 
     @ViewBuilder
     private func menu(for deck: FlashcardDeck) -> some View {
-        Button(hasSnapshot(deck) ? "Continue Studying" : "Study", systemImage: "play.fill") {
-            studyRequest = StudyRequest(deck: deck, start: hasSnapshot(deck) ? .resume : .fresh(tierFilter: nil))
-        }
-        .disabled(deck.cardCount == 0)
         if deck.isEditable {
             Button("Edit", systemImage: "pencil") { builder = .edit(deck) }
             Button("Delete", systemImage: "trash", role: .destructive) { deckToDelete = deck }
@@ -189,15 +181,18 @@ struct DeckLibraryView: View {
     private var starterDecks: [FlashcardDeck] {
         visibleDecks
             .filter { $0.origin == .starter && (showHiddenStarters || !$0.isHidden) }
-            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+            .sorted { lhs, rhs in
+                // Pinned topics' starter decks first (onboarding, D16), in pin order.
+                let pins = profiles.first?.pinnedTopicIds ?? []
+                let l = pins.firstIndex(of: lhs.topicId) ?? Int.max
+                let r = pins.firstIndex(of: rhs.topicId) ?? Int.max
+                if l != r { return l < r }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
     }
 
     private var hasHiddenStarters: Bool {
         decks.contains { $0.origin == .starter && $0.isHidden }
-    }
-
-    private func hasSnapshot(_ deck: FlashcardDeck) -> Bool {
-        snapshots.contains { $0.deckId == deck.id }
     }
 
     private func perform(_ action: () throws -> Void) {
@@ -235,5 +230,6 @@ enum BuilderRequest: Identifiable {
     NavigationStack {
         DeckLibraryView()
     }
+    .environment(Router())
     .modelContainer(ModelContainerFactory.makePreview())
 }

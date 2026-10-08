@@ -14,7 +14,10 @@ struct StudyRequest: Identifiable, Equatable {
 ///
 ///     ✕        ━━━━━━━━━──────  3 / 12
 ///     ╭ card (tap / Space to flip) ╮
-///     (Again) (Hard) (Good) (Easy)     ← after reveal; swipes ← → ↑
+///      ← Again  ↓ Hard  ↑ Easy  Good →   ← swipe to rate (hint only)
+///
+/// Rating is swipe-only (D14 revised): no floating buttons. Keyboard 1–4
+/// and VoiceOver actions on the card cover non-gesture use.
 struct StudySessionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -50,7 +53,7 @@ struct StudySessionView: View {
         .padding(.horizontal, CodeySpacing.md)
         .padding(.bottom, CodeySpacing.sm)
         .background(CodeyColor.surface.ignoresSafeArea())
-        .background { flipShortcut }
+        .background { keyboardShortcuts }
         .sensoryFeedback(trigger: feedbackEvent) { _, new in new?.rating.feedback }
     }
 
@@ -150,39 +153,37 @@ struct StudySessionView: View {
 
     // MARK: Controls
 
+    /// Caption under the card: how to flip, then how to rate.
     private var controls: some View {
         ZStack {
             if viewModel.hasRevealedCurrent {
-                RatingBar(isEnabled: !isCommitting) { commit($0) }
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                SwipeHint()
+                    .transition(.opacity)
             } else {
-                Button {
-                    flip()
-                } label: {
-                    Text("Show Answer")
-                        .font(.codeyHeadline)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.glassProminent)
-                .tint(CodeyColor.brandFill)
-                .buttonBorderShape(.capsule)
-                .controlSize(.large)
-                .accessibilityIdentifier("study.reveal")
-                .transition(.opacity)
+                Text("Tap the card to see the answer")
+                    .font(.codeyCaption)
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .transition(.opacity)
             }
         }
-        .frame(minHeight: 64)
+        .frame(minHeight: 44)
         .codeyAnimation(CodeyMotion.snappy, value: viewModel.hasRevealedCurrent)
+        .accessibilityHidden(true) // the card's own actions cover VoiceOver
     }
 
-    /// Space on a hardware keyboard flips the card (FR-16).
-    private var flipShortcut: some View {
-        Button("Flip card") { flip() }
-            .keyboardShortcut(.space, modifiers: [])
-            .opacity(0)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
+    /// Hardware keyboard: Space flips (FR-16); 1–4 rate after reveal.
+    private var keyboardShortcuts: some View {
+        ZStack {
+            Button("Flip card") { flip() }
+                .keyboardShortcut(.space, modifiers: [])
+            ForEach(CardRating.allCases, id: \.self) { rating in
+                Button(rating.title) { commit(rating) }
+                    .keyboardShortcut(rating.keyEquivalent, modifiers: [])
+            }
+        }
+        .opacity(0)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     // MARK: Actions
@@ -238,38 +239,27 @@ struct StudySessionView: View {
     }
 }
 
-/// The four glass rating buttons with their mastery-delta hints (FR-17, D14).
-private struct RatingBar: View {
-    let isEnabled: Bool
-    let rate: (CardRating) -> Void
-
+/// "← Again  ↓ Hard  ↑ Easy  Good →" in each rating's color (symbol + word,
+/// never color alone).
+private struct SwipeHint: View {
     var body: some View {
-        GlassEffectContainer(spacing: CodeySpacing.sm) {
-            HStack(spacing: CodeySpacing.sm) {
-                ForEach(CardRating.allCases, id: \.self) { rating in
-                    Button {
-                        rate(rating)
-                    } label: {
-                        VStack(spacing: CodeySpacing.xxs) {
-                            Text(rating.title)
-                                .font(.codeyHeadline)
-                            Text(rating.deltaHint)
-                                .font(.codeyCaption.monospacedDigit())
-                        }
-                        .foregroundStyle(rating.tint)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                    }
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.roundedRectangle(radius: CodeyRadius.md))
-                    .keyboardShortcut(rating.keyEquivalent, modifiers: [])
-                    .accessibilityLabel(rating.title)
-                    .accessibilityHint(rating.accessibilityHint)
-                    .accessibilityIdentifier("study.rate.\(rating.rawValue)")
-                }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: CodeySpacing.md) { items }
+            Grid(horizontalSpacing: CodeySpacing.md, verticalSpacing: CodeySpacing.xs) {
+                GridRow { item(.again); item(.good) }
+                GridRow { item(.hard); item(.easy) }
             }
         }
-        .disabled(!isEnabled)
+        .font(.codeyCaption.weight(.semibold))
+    }
+
+    private var items: some View {
+        ForEach(CardRating.swipeHintOrder, id: \.self) { item($0) }
+    }
+
+    private func item(_ rating: CardRating) -> some View {
+        Label(rating.title, systemImage: rating.swipeSymbol)
+            .foregroundStyle(rating.tint)
+            .lineLimit(1)
     }
 }

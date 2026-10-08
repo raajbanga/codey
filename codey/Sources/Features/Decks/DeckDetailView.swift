@@ -15,7 +15,7 @@ struct DeckDetailView: View {
     @State private var confirmDelete = false
     @State private var actionError: String?
     @State private var expandedCardID: UUID?
-    @State private var studyRequest: StudyRequest?
+    @Environment(Router.self) private var router
 
     private var backend: LocalOnlyBackend { LocalOnlyBackend(context: modelContext) }
 
@@ -42,7 +42,7 @@ struct DeckDetailView: View {
             }
 
             StudyLauncherSection(deck: deck) { start in
-                studyRequest = StudyRequest(deck: deck, start: start)
+                router.study = StudyRequest(deck: deck, start: start)
             }
 
             Section("Cards") {
@@ -77,9 +77,6 @@ struct DeckDetailView: View {
                     }
                 }
             }
-        }
-        .fullScreenCover(item: $studyRequest) { request in
-            StudySessionView(request: request, context: modelContext)
         }
         .sheet(isPresented: $isEditing) {
             DeckBuilderView(
