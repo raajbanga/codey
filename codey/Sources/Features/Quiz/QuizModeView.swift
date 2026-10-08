@@ -31,7 +31,7 @@ struct QuizModeView: View {
                 ProgressView()
             }
         }
-        .background(ThemeColor.canvas)
+        .background(CodeyColor.surface)
         .navigationTitle("Quiz")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -50,11 +50,11 @@ struct QuizModeView: View {
     private var xpHeader: some View {
         VStack(spacing: 2) {
             Text("\(profile?.totalXP ?? 0) XP")
-                .font(.subheadline.weight(.semibold))
+                .font(.codeySubheadline.weight(.semibold))
             if let session, session.sessionXPEarned > 0 {
                 Text("+\(session.sessionXPEarned) this session")
-                    .font(.caption2)
-                    .foregroundStyle(ThemeColor.success)
+                    .font(.codeyCaption)
+                    .foregroundStyle(CodeyColor.success)
             }
         }
     }
@@ -64,25 +64,27 @@ struct QuizModeView: View {
         ScrollView {
             VStack(spacing: CodeySpacing.md) {
                 HStack {
-                    CodeyBadge(
+                    CodeyChip(
                         "Question \(currentIndex + 1)/\(questions.count)",
                         variant: .neutral
                     )
                     if session.answerStreak > 0 {
-                        CodeyBadge("\(session.answerStreak) streak", variant: .success)
+                        CodeyChip("\(session.answerStreak) streak", variant: .success)
                     }
                     Spacer()
                 }
 
                 CodeyCard {
-                    Text(question.prompt)
-                        .font(.codeyHeadline)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                        CodeyChip(tier: question.difficulty)
+                        CardMarkdownView(markdown: question.prompt)
+                    }
                 }
 
                 VStack(spacing: CodeySpacing.sm) {
                     ForEach(Array(question.options.enumerated()), id: \.offset) { index, option in
-                        QuizOptionRow(
+                        AnswerOptionRow(
+                            index: index,
                             title: option,
                             state: optionState(for: index, question: question),
                             isLocked: hasAnswered
@@ -96,14 +98,13 @@ struct QuizModeView: View {
                     CodeyCard {
                         Text(question.explanation)
                             .font(.codeySubheadline)
-                            .foregroundStyle(ThemeColor.muted)
+                            .foregroundStyle(CodeyColor.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
                     CodeyButton(
                         currentIndex + 1 < questions.count ? "Next" : "See Results",
-                        variant: .primary,
-                        size: .lg
+                        fullWidth: true
                     ) {
                         advance()
                     }
@@ -113,11 +114,11 @@ struct QuizModeView: View {
         }
     }
 
-    private func optionState(for index: Int, question: Question) -> QuizOptionState {
+    private func optionState(for index: Int, question: Question) -> AnswerOptionState {
         guard hasAnswered, let selected = selectedOptionIndex else { return .idle }
 
         if index == selected {
-            return index == question.correctOptionIndex ? .selectedCorrect : .selectedIncorrect
+            return index == question.correctOptionIndex ? .selectedCorrect : .selectedWrong
         }
 
         if index == question.correctOptionIndex, selected != question.correctOptionIndex {
