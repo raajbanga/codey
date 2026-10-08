@@ -68,7 +68,7 @@ enum StarterDeckLoaderError: Error, LocalizedError, Equatable {
 /// - Starter decks are origin = .starter, never editable, never pushed.
 enum StarterDeckLoader {
     static let expectedSchemaVersion = 1
-    static let expectedDeckCount = 4
+    static let expectedDeckCount = 12
     private static let fileName = "starter-decks"
 
     static func loadBundle(from bundle: Bundle = QuestionBankLoader.resourceBundle) throws -> StarterDeckFile {

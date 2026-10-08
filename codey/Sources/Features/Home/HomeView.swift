@@ -7,8 +7,11 @@ import SwiftUI
 ///     Codey Learner
 ///     ╭ ◔ Lv 4   1,840 XP · 160 to Lv 5  🔥 3 ╮   ← LevelCard
 ///     ╭ Up next: ▶ Continue Swift Closures 7/12 ╮   ← one action
-///     Your topics
-///     ◆ Data Structures                 78%  ›   ← → quiz setup
+///     Topics (all; pinned first)
+///     ╭ ◆ Data Structures                    ╮
+///     │   42% mastered · 78% accuracy         │
+///     │ [▷ Practice]          [? Quiz]        │  ← deck (menu if several) / quiz setup
+///     ╰───────────────────────────────────────╯
 ///
 /// Everything else lives in its tab (Decks, Quiz); Home doesn't duplicate it.
 struct HomeView: View {
@@ -81,7 +84,7 @@ struct HomeView: View {
             resumable: resumable.map { ($0.deckId, $0.displayPosition, $0.cardIDs.count) },
             isNewLearner: isNewLearner,
             starterDeckID: suggestedStarterDeck?.id,
-            weakestTopicID: HomeLogic.weakestTopicID(candidates: yourTopics.map(\.id), accuracy: accuracyByTopic)
+            weakestTopicID: HomeLogic.weakestTopicID(candidates: quizCandidates, accuracy: accuracyByTopic)
         )
     }
 
@@ -121,33 +124,51 @@ struct HomeView: View {
         }
     }
 
-    // MARK: Your topics
+    // MARK: Topics
 
-    /// Pinned topics (pin order), or every topic if none are pinned.
-    private var yourTopics: [Topic] {
+    /// Every topic, pinned first.
+    private var orderedTopics: [Topic] {
+        let ids = HomeLogic.orderedTopicIDs(all: topics.map { ($0.id, $0.title) }, pinned: pinned)
         let byID = Dictionary(topics.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let pinnedTopics = pinned.compactMap { byID[$0] }
-        return pinnedTopics.isEmpty ? topics : pinnedTopics
+        return ids.compactMap { byID[$0] }
+    }
+
+    /// The suggested quiz picks from pinned topics, or all if none are pinned.
+    private var quizCandidates: [String] {
+        let known = Set(topics.map(\.id))
+        let pins = pinned.filter(known.contains)
+        return pins.isEmpty ? topics.map(\.id) : pins
     }
 
     private var topicsSection: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            Text("Your topics")
+            Text("Topics")
                 .font(.codeyTitle)
                 .accessibilityAddTraits(.isHeader)
-            VStack(spacing: 0) {
-                ForEach(Array(yourTopics.enumerated()), id: \.element.id) { index, topic in
-                    if index > 0 { Divider().padding(.leading, CodeySpacing.xxl) }
-                    Button {
-                        router.quizSetupTopic = topic
-                    } label: {
-                        TopicRow(topic: topic, accuracy: accuracyByTopic[topic.id])
-                    }
-                    .buttonStyle(.plain)
-                }
+            ForEach(orderedTopics) { topic in
+                TopicCard(
+                    topic: topic,
+                    isPinned: pinned.contains(topic.id),
+                    decks: decks(for: topic),
+                    snapshotDeckIDs: Set(snapshots.map(\.deckId)),
+                    accuracy: accuracyByTopic[topic.id],
+                    practice: { deck, resume in
+                        router.study = StudyRequest(deck: deck, start: resume ? .resume : .fresh(tierFilter: nil))
+                    },
+                    quiz: { router.quizSetupTopic = topic }
+                )
             }
-            .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
         }
+    }
+
+    /// The topic's visible decks: starter decks first, then the user's, by title.
+    private func decks(for topic: Topic) -> [FlashcardDeck] {
+        decks
+            .filter { $0.topicId == topic.id && !$0.isHidden && $0.cardCount > 0 }
+            .sorted { lhs, rhs in
+                if lhs.origin != rhs.origin { return lhs.origin == .starter }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
     }
 
     // MARK: Data
@@ -344,36 +365,125 @@ private struct UpNextCard: View {
     }
 }
 
-/// Compact topic row: symbol, title, accuracy, chevron.
-private struct TopicRow: View {
+/// One topic on Home: icon, title, mastery + accuracy, and the two ways to
+/// practice it: Practice (flashcards) and Quiz.
+private struct TopicCard: View {
     let topic: Topic
+    let isPinned: Bool
+    let decks: [FlashcardDeck]
+    let snapshotDeckIDs: Set<UUID>
     let accuracy: Double?
+    /// (deck, resume?)
+    let practice: (FlashcardDeck, Bool) -> Void
+    let quiz: () -> Void
+
+    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 52
 
     var body: some View {
-        HStack(spacing: CodeySpacing.md) {
-            Image(systemName: topic.iconName)
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.brand)
-                .frame(width: 28)
-                .accessibilityHidden(true)
-            Text(topic.title)
-                .font(.codeyBody)
-                .foregroundStyle(CodeyColor.textPrimary)
-            Spacer(minLength: CodeySpacing.xs)
-            Text(accuracy.map { "\(Int(($0 * 100).rounded()))%" } ?? "–")
-                .font(.codeyNumericSmall)
-                .foregroundStyle(accuracy == nil ? CodeyColor.textSecondary : CodeyColor.textPrimary)
-            Image(systemName: "chevron.right")
-                .font(.codeyCaption.weight(.semibold))
-                .foregroundStyle(CodeyColor.textSecondary)
-                .accessibilityHidden(true)
+        CodeyCard {
+            VStack(alignment: .leading, spacing: CodeySpacing.md) {
+                HStack(alignment: .top, spacing: CodeySpacing.md) {
+                    Image(systemName: topic.iconName)
+                        .font(.codeyTitle)
+                        .foregroundStyle(CodeyColor.brand)
+                        .frame(width: iconSize, height: iconSize)
+                        .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.md))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                        HStack(spacing: CodeySpacing.xs) {
+                            Text(topic.title)
+                                .font(.codeyTitle)
+                                .foregroundStyle(CodeyColor.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if isPinned {
+                                Image(systemName: "pin.fill")
+                                    .font(.codeyCaption)
+                                    .foregroundStyle(CodeyColor.textSecondary)
+                                    .accessibilityLabel("Pinned")
+                            }
+                        }
+                        Text(statsLine)
+                            .font(.codeySubheadline)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                if !decks.isEmpty {
+                    ProgressBar(value: masteryRate)
+                        .accessibilityLabel("Flashcard mastery")
+                }
+                HStack(spacing: CodeySpacing.sm) {
+                    practiceButton
+                    CodeyButton("Quiz", systemImage: "questionmark.bubble.fill", fullWidth: true, action: quiz)
+                        .accessibilityIdentifier("home.topic.\(topic.title).quiz")
+                }
+            }
         }
-        .padding(.horizontal, CodeySpacing.md)
-        .padding(.vertical, CodeySpacing.sm + CodeySpacing.xs)
-        .contentShape(.rect)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(topic.title), \(accuracy.map { "\(Int(($0 * 100).rounded())) percent accuracy" } ?? "no answers yet")")
-        .accessibilityHint("Opens quiz setup")
+        .accessibilityElement(children: .contain)
+    }
+
+    /// One deck → a button. Several → a menu of decks. None → disabled.
+    @ViewBuilder
+    private var practiceButton: some View {
+        if decks.count > 1 {
+            Menu {
+                ForEach(decks) { deck in
+                    Button {
+                        practice(deck, snapshotDeckIDs.contains(deck.id))
+                    } label: {
+                        Label(
+                            snapshotDeckIDs.contains(deck.id) ? "\(deck.title) (continue)" : deck.title,
+                            systemImage: deck.origin == .starter ? "sparkles" : "rectangle.stack"
+                        )
+                    }
+                }
+            } label: {
+                practiceLabel
+            }
+            .modifier(PracticeStyle())
+            .accessibilityHint("Choose a deck to study")
+            .accessibilityIdentifier("home.topic.\(topic.title).practice")
+        } else {
+            Button {
+                if let deck = decks.first { practice(deck, snapshotDeckIDs.contains(deck.id)) }
+            } label: {
+                practiceLabel
+            }
+            .modifier(PracticeStyle())
+            .disabled(decks.isEmpty)
+            .accessibilityIdentifier("home.topic.\(topic.title).practice")
+        }
+    }
+
+    private var practiceLabel: some View {
+        Label("Practice", systemImage: "rectangle.on.rectangle.angled")
+            .fontWeight(.semibold)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: .infinity)
+    }
+
+    private struct PracticeStyle: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
+                .tint(CodeyColor.brand)
+        }
+    }
+
+    private var masteryRate: Double {
+        let cards = decks.flatMap(\.activeCards)
+        guard !cards.isEmpty else { return 0 }
+        return Double(cards.filter(\.isMastered).count) / Double(cards.count)
+    }
+
+    private var statsLine: String {
+        var parts: [String] = []
+        if !decks.isEmpty { parts.append("\(Int((masteryRate * 100).rounded()))% mastered") }
+        parts.append(accuracy.map { "\(Int(($0 * 100).rounded()))% accuracy" } ?? "No quizzes yet")
+        return parts.joined(separator: " · ")
     }
 }
 

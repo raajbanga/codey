@@ -1021,7 +1021,8 @@ HOW TO READ THIS FILE
      ≥ 6 Hard (~22+/topic, ~90 total). Update expectedQuestionCount and
      the tests. Bump the seed content version (non-destructive upsert from
      Stage 0).
- [ ] Optional: add an OOP topic (B13 / FR-21). Needs a 5th starter deck too.
+ [x] Optional: add an OOP topic (B13 / FR-21). Done in the Stage 7 QoL pass,
+     along with Networking, Swift Basics, and Python Basics.
 
  6.6 Tests (TC-22 … TC-31)
  [x] XPPolicy table tests (all tiers × streak 1…8, cap).
@@ -1174,6 +1175,24 @@ HOW TO READ THIS FILE
  tests, and UI tests all COMPILE with no warnings; guardrails 7/7.
  [x] QoL pass (D8 r3): Home simplified; accessory removed; duplicate
      entry points removed; Router owns all study/quiz presentations.
+ [x] QoL pass 2 (2026-10-07):
+     - Home lists ALL topics again, pinned first. Showing only pinned
+       topics had hidden the rest.
+     - Topics are bigger cards: icon, title, "% mastered · % accuracy", a
+       mastery bar, and two buttons. Practice studies the topic's deck
+       (a menu when the topic has several; marks any deck with a session
+       to continue). Quiz opens the setup sheet.
+     - Content: 4 new topics (OOP, Networking, Swift Basics, Python
+       Basics), 22 questions each (8/8/6) → 8 topics, 176 questions.
+       8 new starter decks: a starter deck per new topic, plus a 2nd deck
+       for each original topic (Trees & Graphs, Sorting & Searching,
+       Concurrency, SQL Queries) → 12 decks, 144 cards. All 41 new code
+       snippets (Python/Swift/C++) were EXECUTED and match their answers.
+       The SQL deck uses Python sqlite3 snippets. New quiz answers are
+       spread evenly over A–D. Both JSON diffs are additions only.
+     - expectedTopicCount 8, expectedQuestionCount 176, expectedDeckCount
+       12. StarterDeckLoaderTests no longer hard-code 4.
+     - Resolves B13/O7 (OOP topic added).
  [ ] OPEN: new unit tests NOT RUN: HomeLogicTests (incl. upNextPriority),
      RouterTests, V4→V5 migration. (The Stage 6 tests are also still not run.)
  [ ] OPEN: app icon (7.5). Needs Icon Composer (design tool), so ES/RB
@@ -1551,7 +1570,7 @@ HOW TO READ THIS FILE
  O5 Snippet shown on the prompt side by default. Is per-card placement
     needed?
  O6 FileProtection .complete vs .completeUnlessOpen (Stage 10).
- O7 Add an OOP topic now or later (B13).
+ O7 [RESOLVED] OOP topic added (plus Networking, Swift, Python).
  O8 Final SF Symbols for tiers/tabs and the exact indigo hex (ES; must pass
     4.5:1).
  O9 Quiz hub tile "Start": a mixed quiz on the weakest pinned topic (default)
