@@ -9,7 +9,7 @@ Tokens and components for every screen. Screens use these. They never use raw
 | Folder | What |
 |---|---|
 | `Tokens/` | `CodeyColor`, `CodeyRadius`, `CodeySpacing`, type (`Font.codey*`), `CodeyMotion`, `TierStyle`, `SyntaxRole` |
-| `Components/` | `CodeyCard`, `CodeyButton`, `CodeyChip`, `AnswerOptionRow`, `ProgressBar`, `ProgressRing`, `StatTile`, `TierChipRow`, `EmptyStateView`, `CelebrationOverlay`, `XPGainLabel` |
+| `Components/` | `CodeyCard`, `CodeyButton`, `CodeyChip`, `AnswerOptionRow`, `ProgressBar`, `ProgressRing`, `StatTile` + `StatTileRow`, `TierChipRow` + `TierUnlockedBanner`, `EmptyStateView`, `CelebrationOverlay`, `XPGainLabel`, `IconTile`, `CloseButton`, `AppGlyph`, and `FormFeedback` (`FieldErrorLabel`, `LimitCounter`, `.errorBorder`, `.errorAlert` + `Binding.attempt`) |
 | `Markdown/` | `CardMarkdownView` (the **only** `import Textual`), `CardMarkdownComposition`, `MarkdownTextEditor`, `MarkdownFormatting` |
 | `CodeEditor/` | `CodeEditorView` + `CodeyRunestoneTheme` (the **only** Runestone/TreeSitter imports) |
 | `Gallery/` | `ComponentGallery` previews: light, dark, AX3, XS |
@@ -17,7 +17,7 @@ Tokens and components for every screen. Screens use these. They never use raw
 ## Rules
 
 - **Glass is for the control layer only**: toolbars, floating CTAs (`CodeyButton(kind: .glassPrimary)`), and overlays. Content cards are solid `surfaceRaised`.
-- **Corners (D19)**: use `Capsule` only for single-line, fixed-height controls (`CodeyChip`, `ProgressBar`, single-line `CodeyButton`). Anything that can wrap uses `.codey(CodeyRadius.md)`. Cards use `lg`. Nested surfaces use `CodeyRadius.concentric(outer:inset:)` or container-relative shapes.
+- **Corners (D19)**: use `Capsule` only for single-line, fixed-height controls (`CodeyChip`, `ProgressBar`, single-line `CodeyButton`). Anything that can wrap uses `.codey(CodeyRadius.md)`. Cards use `lg`. Nested surfaces use `ConcentricRectangle` or container-relative shapes (`.containerShape`).
 - **Color is never the only signal**: tiers carry a symbol and a label (`TierStyle`), and answer states carry an icon and a VoiceOver value.
 - **Motion**: use `.codeyAnimation` / `withCodeyAnimation`. Under Reduce Motion both fall back to a short crossfade. Particles only for level-ups and tier unlocks.
 - **Haptics**: use `.sensoryFeedback`, not UIKit feedback generators.
