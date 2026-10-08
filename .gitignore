@@ -76,3 +76,10 @@ buildServer.json
 
 ### Secrets ###
 Config/Secrets.xcconfig
+
+### Database backups (scripts/backup.sh) ###
+backups/
+
+### Supabase CLI local state ###
+supabase/.branches
+supabase/.temp

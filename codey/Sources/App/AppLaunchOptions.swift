@@ -7,4 +7,10 @@ enum AppLaunchOptions {
     static var usesInMemoryStore: Bool {
         ProcessInfo.processInfo.arguments.contains("-UITestInMemoryStore")
     }
+
+    /// UI tests skip onboarding (they always use the in-memory store), or
+    /// pass `-SkipOnboarding` explicitly.
+    static var skipsOnboarding: Bool {
+        usesInMemoryStore || ProcessInfo.processInfo.arguments.contains("-SkipOnboarding")
+    }
 }

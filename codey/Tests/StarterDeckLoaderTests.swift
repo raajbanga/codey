@@ -17,14 +17,14 @@ struct StarterDeckLoaderTests {
         try context.fetch(FetchDescriptor<FlashcardDeck>()).filter { $0.origin == .starter }
     }
 
-    // MARK: Content (4 decks, ≥12 cards, all tiers, code coverage)
+    // MARK: Content (12 decks, ≥12 cards, all tiers, code coverage)
 
     @Test func bundleDecodesWithExpectedShape() throws {
         let file = try StarterDeckLoader.loadBundle()
         #expect(file.schemaVersion == 1)
         #expect(file.decks.count == StarterDeckLoader.expectedDeckCount)
         let topics = Set(try QuestionBankLoader.loadBank().topics.map(\.id))
-        #expect(Set(file.decks.map(\.topicId)) == topics, "one deck per topic")
+        #expect(Set(file.decks.map(\.topicId)) == topics, "every topic has a starter deck")
     }
 
     @Test func everyDeckHasEnoughCardsInEveryTier() throws {
@@ -71,14 +71,14 @@ struct StarterDeckLoaderTests {
 
     // MARK: Loading
 
-    @Test func freshInstallGetsFourStarterDecks() throws {
+    @Test func freshInstallGetsEveryStarterDeck() throws {
         let context = try seededContext()
 
         let report = try StarterDeckLoader.seed(context: context)
 
         let decks = try starterDecks(context)
-        #expect(decks.count == 4)
-        #expect(report.inserted == 4 + decks.reduce(0) { $0 + $1.cardCount })
+        #expect(decks.count == StarterDeckLoader.expectedDeckCount)
+        #expect(report.inserted == decks.count + decks.reduce(0) { $0 + $1.cardCount })
         for deck in decks {
             #expect(deck.id == StableID.uuid(deck.starterKey ?? ""))
             #expect(!deck.isEditable)
@@ -98,7 +98,7 @@ struct StarterDeckLoaderTests {
         let second = try StarterDeckLoader.seed(context: context)
 
         #expect(second == DataSeeder.Report())
-        #expect(try starterDecks(context).count == 4)
+        #expect(try starterDecks(context).count == StarterDeckLoader.expectedDeckCount)
         #expect(try context.fetchCount(FetchDescriptor<Flashcard>()) == cardCount)
     }
 
@@ -149,7 +149,7 @@ struct StarterDeckLoaderTests {
         try StarterDeckLoader.seed(context: context, file: StarterDeckFile(schemaVersion: 1, decks: decks))
 
         let keys = Set(try starterDecks(context).compactMap(\.starterKey))
-        #expect(keys == ["starter-ds", "starter-algo", "starter-os", "starter-new"])
+        #expect(keys == Set(file.decks.dropLast().map(\.starterKey)).union(["starter-new"]))
         let droppedID = StableID.uuid(droppedCard.id)
         #expect(try context.fetch(FetchDescriptor<Flashcard>()).allSatisfy { $0.id != droppedID })
         #expect(userDeck.cardCount == 1)
@@ -164,7 +164,7 @@ struct StarterDeckLoaderTests {
         let report = try StarterDeckLoader.seed(context: context, file: StarterDeckFile(schemaVersion: 1, decks: [file.decks[0]]))
 
         #expect(report == DataSeeder.Report())
-        #expect(try starterDecks(context).count == 4)
+        #expect(try starterDecks(context).count == StarterDeckLoader.expectedDeckCount)
     }
 
     @Test func starterCardsRetireAtMasteryFive() throws {

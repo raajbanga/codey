@@ -10,8 +10,8 @@ import PackageDescription
     )
 #endif
 
-// Third-party UI dependencies (D1; NFR-15 as amended). Pinned EXACT: Textual is
-// pre-1.0, and both are wrapped in single files (CardMarkdownView,
+// Third-party dependencies (D1; NFR-15 as amended), all pinned EXACT. Textual is
+// pre-1.0; Textual and Runestone are wrapped in single files (CardMarkdownView,
 // CodeEditorView) so a swap to the 2.3 fallbacks stays local. See R12.
 let package = Package(
     name: "codey",
@@ -23,5 +23,16 @@ let package = Package(
         // Tree-sitter grammars for Runestone; only the Swift/Python/Java/C++
         // products are linked.
         .package(url: "https://github.com/simonbs/TreeSitterLanguages", exact: "0.1.10"),
+        // Backend (Stage 9): auth + PostgREST sync. Only imported under
+        // Services/Backend/Supabase/ (scripts/check-imports.sh).
+        .package(url: "https://github.com/supabase/supabase-swift", exact: "2.55.3"),
+        // Google sign-in. 10.0.0 is the first release that supports Xcode 27.
+        .package(url: "https://github.com/google/GoogleSignIn-iOS", exact: "10.0.0"),
+        // Transitive pins for supabase-swift. xctest-dynamic-overlay 1.13 became
+        // a shim over swift-issue-reporting with a same-named product, which
+        // Tuist resolves into a self-cycle ("circular dependency
+        // _IssueReporting"). These are the last versions without the shim.
+        .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", exact: "1.11.0"),
+        .package(url: "https://github.com/pointfreeco/swift-clocks", exact: "1.0.6"),
     ]
 )

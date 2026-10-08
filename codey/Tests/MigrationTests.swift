@@ -24,7 +24,7 @@ struct MigrationTests {
     }
 
     private func expectV1DataSurvives(at url: URL) throws {
-        let container = try ModelContainerFactory.make(url: url)
+        let container = TestSupport.retain(try ModelContainerFactory.make(url: url))
         let context = ModelContext(container)
 
         let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
@@ -61,11 +61,88 @@ struct MigrationTests {
         try expectV1DataSurvives(at: url)
     }
 
+    /// Stage 5: a V2 store (decks + cards) opens as V3 with study progress.
+    @Test func v2StoreMigratesToCurrentWithStudyProgress() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let deckId: UUID
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV2.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
+            for _ in 0..<2 { deck.activeCards[0].updateMastery(rating: .easy) }
+            deckId = deck.id
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let deck = try #require(try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.id == deckId })).first)
+        #expect(deck.cardCount == 2)
+        #expect(deck.activeCards[0].masteryScore == 4)
+
+        let vm = StudySessionViewModel(deck: deck, start: .fresh(tierFilter: nil), context: context)
+        vm.toggleReveal()
+        vm.rate(.good)
+        #expect(try StudyProgressSnapshot.fetch(deckId: deckId, context: context) != nil)
+        #expect(try context.fetchCount(FetchDescriptor<DailyActivity>()) == 1)
+    }
+
+    /// Stage 6: a V3 store opens as V4 and keeps study progress.
+    @Test func v3StoreMigratesToCurrentWithQuizProgress() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let deckId: UUID
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV3.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
+            deckId = deck.id
+            context.insert(StudyProgressSnapshot(
+                deckId: deck.id, cardIDs: deck.activeCards.map(\.id), position: 1, requeuedIDs: [],
+                tierFilterRaw: nil, reviewedCount: 1, newlyMasteredIDs: [], startMasteryRate: 0,
+                startUnlockedTiersRaw: ["easy"], updatedAt: .now
+            ))
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        #expect(try StudyProgressSnapshot.fetch(deckId: deckId, context: context)?.position == 1)
+        let topic = try TestSupport.insertTopic(context, easy: 1, medium: 0, hard: 0)
+        _ = try QuizProgressStore(context: context).recordAnswer(
+            question: try #require(topic.questions.first), correct: true, level: 1, at: .now
+        )
+        try context.save()
+        #expect(try context.fetchCount(FetchDescriptor<QuestionProgress>()) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<QuizAnswerRecord>()) == 1)
+    }
+
+    /// Stage 7: a V4 store opens as V5; the profile keeps its XP and gets
+    /// an empty pin list.
+    @Test func v4StoreMigratesToCurrentWithPinnedTopics() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV4.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            context.insert(CodeySchemaV1.UserProfile(username: "Learner", totalXP: 1_234))
+            context.insert(QuizAnswerRecord(questionId: "q", topicId: "t", correct: true, answeredAt: .now))
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
+        #expect(profile.totalXP == 1_234)
+        #expect(profile.pinnedTopicIds.isEmpty)
+        profile.pinnedTopicIds = ["topic-databases"]
+        try context.save()
+        #expect(try context.fetchCount(FetchDescriptor<QuizAnswerRecord>()) == 1)
+    }
+
     @Test func decksPersistAcrossReopen() throws {
         let url = try TestSupport.temporaryStoreURL()
         let deckId: UUID
         do {
-            let context = ModelContext(try ModelContainerFactory.make(url: url))
+            let context = try TestSupport.context(storeURL: url)
             let deck = try TestSupport.insertDeck(context, prompts: ["a"])
             let card = try FlashcardFactory().createCard(
                 prompt: "b", answer: "B",
@@ -78,7 +155,7 @@ struct MigrationTests {
             try context.save()
         }
 
-        let context = ModelContext(try ModelContainerFactory.make(url: url))
+        let context = try TestSupport.context(storeURL: url)
         let deck = try #require(try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.id == deckId })).first)
         #expect(deck.cardCount == 2)
         let card = try #require(deck.activeCards.last)
@@ -90,7 +167,7 @@ struct MigrationTests {
     @Test func destroyStoreRemovesFiles() throws {
         let url = try TestSupport.temporaryStoreURL()
         do {
-            let context = ModelContext(try ModelContainerFactory.make(url: url))
+            let context = try TestSupport.context(storeURL: url)
             context.insert(UserProfile(username: "x"))
             try context.save()
         }

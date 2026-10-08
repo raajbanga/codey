@@ -6,15 +6,18 @@ struct LoadingView: View {
     @State private var progress: Double = 0
     @State private var errorMessage: String?
     @State private var container: ModelContainer?
+    @State private var backend: BackendFacade?
     @State private var showResetConfirmation = false
 
-    private let stepDelay: Duration = .milliseconds(200)
+    /// Keeps the launch screen up at least this long so it doesn't flash.
+    private let minimumDuration: Duration = .milliseconds(400)
 
     var body: some View {
         Group {
-            if let container {
+            if let container, let backend {
                 ContentView()
                     .modelContainer(container)
+                    .environment(backend)
             } else {
                 loadingContent
             }
@@ -26,13 +29,11 @@ struct LoadingView: View {
 
     private var loadingContent: some View {
         VStack(spacing: CodeySpacing.lg) {
-            Image(systemName: "terminal.fill")
-                .font(.codeyDisplay)
-                .imageScale(.large)
-                .foregroundStyle(CodeyColor.brand)
-
+            Spacer()
+            AppGlyph(size: 88)
             Text("Codey")
-                .font(.codeyHeadline)
+                .font(.codeyDisplay)
+                .foregroundStyle(CodeyColor.textPrimary)
 
             if let errorMessage {
                 Text(errorMessage)
@@ -51,12 +52,22 @@ struct LoadingView: View {
                 }
                 .padding(.horizontal, CodeySpacing.xl)
             } else {
-                ProgressBar(value: progress, label: "Loading…")
-                    .padding(.horizontal, CodeySpacing.xl)
+                ProgressBar(value: progress)
+                    .frame(maxWidth: 180)
+                    .accessibilityLabel("Loading")
             }
+            Spacer()
+            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(CodeyColor.surface)
+        .background {
+            LinearGradient(
+                colors: [CodeyColor.brandSoft, CodeyColor.surface],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        }
         .confirmationDialog(
             "Reset local data?",
             isPresented: $showResetConfirmation,
@@ -90,13 +101,13 @@ struct LoadingView: View {
     private func runBootSequence() async {
         guard container == nil, errorMessage == nil else { return }
 
+        let started = ContinuousClock.now
         do {
             let bootContainer = try ModelContainerFactory.make(inMemory: AppLaunchOptions.usesInMemoryStore)
             progress = 0.25
 
             let bank = try QuestionBankLoader.loadBank()
             progress = 0.50
-            try await Task.sleep(for: stepDelay)
 
             try DataSeeder.seed(context: bootContainer.mainContext, bank: bank)
             progress = 0.75
@@ -108,8 +119,16 @@ struct LoadingView: View {
                 Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
             }
             progress = 1.0
-            try await Task.sleep(for: stepDelay)
+            let elapsed = ContinuousClock.now - started
+            if elapsed < minimumDuration {
+                try await Task.sleep(for: minimumDuration - elapsed)
+            }
 
+            let facade = AppLaunchOptions.usesInMemoryStore
+                ? BackendFacade.localOnly(context: bootContainer.mainContext)
+                : BackendFacade.live(context: bootContainer.mainContext)
+            facade.start()
+            backend = facade
             container = bootContainer
         } catch {
             Logger.persistence.error("Boot failed: \(String(describing: error))")
