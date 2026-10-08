@@ -62,5 +62,17 @@ let project = Project(
             ],
             dependencies: [.target(name: "codey")]
         ),
+        .target(
+            name: "codeyUITests",
+            destinations: [.iPhone],
+            product: .uiTests,
+            bundleId: "\(appBundleId).uitests",
+            deploymentTargets: .iOS("26.0"),
+            infoPlist: .default,
+            buildableFolders: [
+                "codey/UITests"
+            ],
+            dependencies: [.target(name: "codey")]
+        ),
     ]
 )

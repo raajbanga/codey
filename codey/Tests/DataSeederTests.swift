@@ -191,8 +191,11 @@ struct LocalDataResetTests {
 
         try LocalDataReset.eraseAllLocalData(context: context, bank: bank)
 
-        #expect(try context.fetchCount(FetchDescriptor<FlashcardDeck>()) == 0)
-        #expect(try context.fetchCount(FetchDescriptor<Flashcard>()) == 0)
+        // User decks are gone; starter decks come back fresh.
+        let decks = try context.fetch(FetchDescriptor<FlashcardDeck>())
+        #expect(decks.allSatisfy { $0.origin == .starter })
+        #expect(decks.count == StarterDeckLoader.expectedDeckCount)
+        #expect(decks.flatMap(\.cards).allSatisfy { $0.masteryScore == 0 })
         let profiles = try context.fetch(FetchDescriptor<UserProfile>())
         #expect(profiles.count == 1)
         #expect(profiles.first?.totalXP == 0)

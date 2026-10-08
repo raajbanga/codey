@@ -74,6 +74,43 @@ struct FlashcardFactory {
         )
     }
 
+    /// Edits an existing card through the same normalize + validate path as
+    /// creation, so edited content obeys the same rules. Bumps updatedAt only
+    /// if something actually changed. Returns whether it did.
+    @discardableResult
+    func updateCard(
+        _ card: Flashcard,
+        prompt: String,
+        answer: String,
+        code: CodeSnippet?,
+        difficulty: Difficulty?,
+        sortIndex: Int
+    ) throws -> Bool {
+        let prompt = Self.normalizeText(prompt)
+        let answer = Self.normalizeText(answer)
+        let code = code.map { CodeSnippet(language: $0.language, source: Self.normalizeSnippetSource($0.source)) }
+
+        let errors = validator.validateCard(ModelValidator.CardFields(
+            id: card.id,
+            prompt: prompt,
+            answer: answer,
+            codeLanguage: code?.language.rawValue,
+            codeSource: code?.source
+        ))
+        guard errors.isEmpty else { throw FactoryError.invalid(errors) }
+
+        let changed = card.prompt != prompt || card.answer != answer || card.codeSnippet != code
+            || card.difficulty != difficulty || card.sortIndex != sortIndex
+        guard changed else { return false }
+        card.prompt = prompt
+        card.answer = answer
+        card.codeSnippet = code
+        card.difficulty = difficulty
+        card.sortIndex = sortIndex
+        card.updatedAt = now()
+        return true
+    }
+
     private func applyDefaults(_ payload: FlashcardPayload) -> FlashcardPayload {
         var result = payload
         let timestamp = now()

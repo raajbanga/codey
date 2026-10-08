@@ -4,6 +4,7 @@ import SwiftUI
 enum AppTab: Hashable {
     case practice
     case topics
+    case decks
     case analytics
     case settings
 }
@@ -28,6 +29,14 @@ struct MainTabView: View {
                 Label("Topics", systemImage: "folder.fill")
             }
             .tag(AppTab.topics)
+
+            NavigationStack {
+                DeckLibraryView()
+            }
+            .tabItem {
+                Label("Decks", systemImage: "rectangle.stack.fill")
+            }
+            .tag(AppTab.decks)
 
             NavigationStack {
                 AnalyticsDashboardView()

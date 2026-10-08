@@ -91,7 +91,7 @@ struct LoadingView: View {
         guard container == nil, errorMessage == nil else { return }
 
         do {
-            let bootContainer = try ModelContainerFactory.make()
+            let bootContainer = try ModelContainerFactory.make(inMemory: AppLaunchOptions.usesInMemoryStore)
             progress = 0.25
 
             let bank = try QuestionBankLoader.loadBank()
@@ -99,6 +99,14 @@ struct LoadingView: View {
             try await Task.sleep(for: stepDelay)
 
             try DataSeeder.seed(context: bootContainer.mainContext, bank: bank)
+            progress = 0.75
+
+            do {
+                try StarterDeckLoader.seed(context: bootContainer.mainContext)
+            } catch {
+                // Starter decks are optional content: log, don't block boot.
+                Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
+            }
             progress = 1.0
             try await Task.sleep(for: stepDelay)
 
