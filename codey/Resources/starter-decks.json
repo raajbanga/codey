@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 1,
+  "decks": [
+    {
+      "starterKey": "starter-ds",
+      "topicId": "topic-data-structures",
+      "title": "Data Structures Essentials",
+      "cards": [
+        {
+          "id": "sc-ds-001",
+          "difficulty": "easy",
+          "prompt": "What is the time complexity of reading `arr[i]` from an array?",
+          "answer": "**O(1)**. The element's address is computed directly from the array's base address and the index, so no searching is needed."
+        },
+        {
+          "id": "sc-ds-002",
+          "difficulty": "easy",
+          "prompt": "In what order does a **stack** remove elements?",
+          "answer": "**LIFO** (last in, first out). `push` adds to the top and `pop` removes from the top."
+        },
+        {
+          "id": "sc-ds-003",
+          "difficulty": "easy",
+          "prompt": "In what order does a **queue** remove elements?",
+          "answer": "**FIFO** (first in, first out). You enqueue at the back and dequeue from the front."
+        },
+        {
+          "id": "sc-ds-004",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`4 3`. `removeLast()` pops the element that was just appended, leaving three items.",
+          "code": {
+            "language": "swift",
+            "source": "var stack = [1, 2, 3]\nstack.append(4)\nlet top = stack.removeLast()\nprint(top, stack.count)"
+          }
+        },
+        {
+          "id": "sc-ds-005",
+          "difficulty": "medium",
+          "prompt": "What are the **average** and **worst-case** costs of a hash table lookup?",
+          "answer": "Average **O(1)**. Worst case **O(n)**, when many keys collide in the same bucket."
+        },
+        {
+          "id": "sc-ds-006",
+          "difficulty": "medium",
+          "prompt": "What does this print, and why use `deque` instead of a list here?",
+          "answer": "`[2, 3, 4]`. `deque.popleft()` is **O(1)**, while `list.pop(0)` is O(n) because every remaining element shifts left.",
+          "code": {
+            "language": "python",
+            "source": "from collections import deque\n\nq = deque([1, 2, 3])\nq.append(4)\nq.popleft()\nprint(list(q))"
+          }
+        },
+        {
+          "id": "sc-ds-007",
+          "difficulty": "medium",
+          "prompt": "Why is inserting at the head of a **singly linked list** O(1)?",
+          "answer": "You only create a node and point it at the old head. No elements move, unlike inserting at index 0 of an array."
+        },
+        {
+          "id": "sc-ds-008",
+          "difficulty": "medium",
+          "prompt": "What property defines a **binary search tree**?",
+          "answer": "For every node, keys in the left subtree are smaller and keys in the right subtree are larger. An in-order traversal therefore visits keys in sorted order."
+        },
+        {
+          "id": "sc-ds-009",
+          "difficulty": "hard",
+          "prompt": "Why can a binary search tree degrade to O(n) search, and how do balanced trees prevent it?",
+          "answer": "Inserting keys in sorted order builds a chain of height n. **AVL** and **red-black** trees rebalance with rotations so the height stays O(log n)."
+        },
+        {
+          "id": "sc-ds-010",
+          "difficulty": "hard",
+          "prompt": "What does this print? What data structure backs `PriorityQueue`?",
+          "answer": "`1 3`. It's a **binary min-heap**: `poll()` removes the minimum in O(log n), and `peek()` reads the new minimum in O(1).",
+          "code": {
+            "language": "java",
+            "source": "PriorityQueue<Integer> pq = new PriorityQueue<>();\npq.add(5);\npq.add(1);\npq.add(3);\nSystem.out.println(pq.poll() + \" \" + pq.peek());"
+          }
+        },
+        {
+          "id": "sc-ds-011",
+          "difficulty": "hard",
+          "prompt": "What is the amortized cost of appending to a dynamic array, and why?",
+          "answer": "**O(1) amortized**. When the array is full, its capacity doubles and all n items are copied, which costs O(n). Doublings are rare enough that n appends cost O(n) in total."
+        },
+        {
+          "id": "sc-ds-012",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`203`. `counts[\"z\"]` *inserts* a default `0` for the missing key, so the size becomes 3. Use `find` or `contains` to look up a key without inserting it.",
+          "code": {
+            "language": "cpp",
+            "source": "std::unordered_map<std::string, int> counts;\nfor (const auto& w : {\"a\", \"b\", \"a\"}) {\n    counts[w]++;\n}\nstd::cout << counts[\"a\"] << counts[\"z\"] << counts.size();"
+          }
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-algo",
+      "topicId": "topic-algorithms",
+      "title": "Algorithms Essentials",
+      "cards": [
+        {
+          "id": "sc-algo-001",
+          "difficulty": "easy",
+          "prompt": "What precondition does **binary search** need?",
+          "answer": "The input must be **sorted**. Each step compares the target with the middle element and discards half of the range."
+        },
+        {
+          "id": "sc-algo-002",
+          "difficulty": "easy",
+          "prompt": "What is the time complexity of binary search?",
+          "answer": "**O(log n)**, because the search range halves at every step."
+        },
+        {
+          "id": "sc-algo-003",
+          "difficulty": "easy",
+          "prompt": "What does this print, and what is the base case?",
+          "answer": "`24`. The base case is `n == 0`, which returns `1`. Without it, the recursion would never stop.",
+          "code": {
+            "language": "python",
+            "source": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n - 1)\n\nprint(factorial(4))"
+          }
+        },
+        {
+          "id": "sc-algo-004",
+          "difficulty": "easy",
+          "prompt": "What makes a sort **stable**?",
+          "answer": "It keeps equal elements in their original relative order. Merge sort is stable; a typical in-place quicksort is not."
+        },
+        {
+          "id": "sc-algo-005",
+          "difficulty": "medium",
+          "prompt": "What are merge sort's time and extra-space costs?",
+          "answer": "**O(n log n)** time in every case, plus **O(n)** extra space for merging."
+        },
+        {
+          "id": "sc-algo-006",
+          "difficulty": "medium",
+          "prompt": "Why is quicksort's worst case O(n²)?",
+          "answer": "Bad pivots, such as always picking the smallest element of sorted input, split n items into 0 and n − 1. That gives n levels of O(n) work. Random or median-of-three pivots make this unlikely."
+        },
+        {
+          "id": "sc-algo-007",
+          "difficulty": "medium",
+          "prompt": "What does `fib(6)` return, and why is this faster than naive recursion?",
+          "answer": "`8` (0, 1, 1, 2, 3, 5, **8**). It runs in O(n) time with O(1) space. Naive recursive `fib` recomputes the same subproblems and takes exponential time.",
+          "code": {
+            "language": "java",
+            "source": "static int fib(int n) {\n    int a = 0, b = 1;\n    for (int i = 0; i < n; i++) {\n        int next = a + b;\n        a = b;\n        b = next;\n    }\n    return a;\n}"
+          }
+        },
+        {
+          "id": "sc-algo-008",
+          "difficulty": "medium",
+          "prompt": "What is **divide and conquer**?",
+          "answer": "Split a problem into smaller subproblems, solve them recursively, then **combine** the results. Merge sort and binary search both work this way."
+        },
+        {
+          "id": "sc-algo-009",
+          "difficulty": "hard",
+          "prompt": "When does **dynamic programming** apply?",
+          "answer": "When a problem has **overlapping subproblems** and **optimal substructure**. Store each subproblem's answer (memoization or a table) so it's computed only once."
+        },
+        {
+          "id": "sc-algo-010",
+          "difficulty": "hard",
+          "prompt": "Why compute `mid` as `lo + (hi - lo) / 2` instead of `(lo + hi) / 2`?",
+          "answer": "`lo + hi` can **overflow** when the indices are large. `lo + (hi - lo) / 2` gives the same midpoint without ever exceeding `hi`.",
+          "code": {
+            "language": "swift",
+            "source": "func search(_ a: [Int], _ target: Int) -> Int? {\n    var lo = 0, hi = a.count - 1\n    while lo <= hi {\n        let mid = lo + (hi - lo) / 2\n        if a[mid] == target { return mid }\n        if a[mid] < target { lo = mid + 1 } else { hi = mid - 1 }\n    }\n    return nil\n}"
+          }
+        },
+        {
+          "id": "sc-algo-011",
+          "difficulty": "hard",
+          "prompt": "Why can't a comparison sort beat O(n log n) in the worst case?",
+          "answer": "There are n! possible orderings, and each comparison has only 2 outcomes. A decision tree that tells them all apart needs height ≥ log₂(n!), which is Ω(n log n)."
+        },
+        {
+          "id": "sc-algo-012",
+          "difficulty": "hard",
+          "prompt": "What does this print?",
+          "answer": "`4 at 2`. After sorting, `v` is `1 2 4 5`. `lower_bound` returns the first element **not less than** 3, which is `4` at index 2, in O(log n).",
+          "code": {
+            "language": "cpp",
+            "source": "std::vector<int> v = {5, 1, 4, 2};\nstd::sort(v.begin(), v.end());\nauto it = std::lower_bound(v.begin(), v.end(), 3);\nstd::cout << *it << \" at \" << (it - v.begin());"
+          }
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-os",
+      "topicId": "topic-os-basics",
+      "title": "OS Basics Essentials",
+      "cards": [
+        {
+          "id": "sc-os-001",
+          "difficulty": "easy",
+          "prompt": "What's the difference between a **process** and a **thread**?",
+          "answer": "A process has its own address space. Threads run *inside* a process and share its memory."
+        },
+        {
+          "id": "sc-os-002",
+          "difficulty": "easy",
+          "prompt": "What is a **context switch**?",
+          "answer": "The OS saves the running task's state (registers, program counter) and restores another task's state, so the CPU can switch between them."
+        },
+        {
+          "id": "sc-os-003",
+          "difficulty": "easy",
+          "prompt": "What is **virtual memory**?",
+          "answer": "Each process sees its own private address space. The OS and the MMU map those virtual pages to physical frames, or to disk."
+        },
+        {
+          "id": "sc-os-004",
+          "difficulty": "easy",
+          "prompt": "What does `t.join()` do here?",
+          "answer": "It **blocks** the calling thread until `t` finishes, so the program waits for `work` to print before it continues.",
+          "code": {
+            "language": "python",
+            "source": "import threading\n\ndef work(name):\n    print(f\"hello from {name}\")\n\nt = threading.Thread(target=work, args=(\"worker\",))\nt.start()\nt.join()"
+          }
+        },
+        {
+          "id": "sc-os-005",
+          "difficulty": "medium",
+          "prompt": "What is a **race condition**?",
+          "answer": "A bug where the result depends on how threads are timed while they access shared data. For example, two threads running `count += 1` at the same time can lose an update."
+        },
+        {
+          "id": "sc-os-006",
+          "difficulty": "medium",
+          "prompt": "Two threads each run `add()`. What does `lock_guard` guarantee?",
+          "answer": "Only one thread increments `count` at a time, and the mutex unlocks automatically when `lock` goes out of scope. The final `count` is always `2000`.",
+          "code": {
+            "language": "cpp",
+            "source": "std::mutex m;\nint count = 0;\n\nvoid add() {\n    for (int i = 0; i < 1000; ++i) {\n        std::lock_guard<std::mutex> lock(m);\n        ++count;\n    }\n}"
+          }
+        },
+        {
+          "id": "sc-os-007",
+          "difficulty": "medium",
+          "prompt": "What is a **page fault**?",
+          "answer": "An access to a virtual page that isn't in physical memory right now. The OS loads the page (for example, from disk), updates the page table, and retries the instruction."
+        },
+        {
+          "id": "sc-os-008",
+          "difficulty": "medium",
+          "prompt": "What are the four conditions for **deadlock**?",
+          "answer": "Mutual exclusion, hold and wait, no preemption, and circular wait. Breaking any one of them prevents deadlock."
+        },
+        {
+          "id": "sc-os-009",
+          "difficulty": "hard",
+          "prompt": "How does **round-robin** scheduling work, and what does the time quantum trade off?",
+          "answer": "Each ready task runs for a fixed time slice, then moves to the back of the queue. A shorter quantum improves responsiveness but adds more context-switch overhead."
+        },
+        {
+          "id": "sc-os-010",
+          "difficulty": "hard",
+          "prompt": "Why isn't `count++` safe without `synchronized`?",
+          "answer": "`count++` is a **read–modify–write**. Two threads can read the same value and both write back value + 1, so one increment is lost. `synchronized` lets only one thread run the method at a time.",
+          "code": {
+            "language": "java",
+            "source": "class Counter {\n    private int count = 0;\n\n    synchronized void increment() {\n        count++;\n    }\n\n    synchronized int get() {\n        return count;\n    }\n}"
+          }
+        },
+        {
+          "id": "sc-os-011",
+          "difficulty": "hard",
+          "prompt": "What is **thrashing**?",
+          "answer": "When running processes need more pages than fit in RAM, the system spends most of its time handling page faults and swapping instead of doing useful work."
+        },
+        {
+          "id": "sc-os-012",
+          "difficulty": "hard",
+          "prompt": "What does this print, and what role does the serial `queue` play?",
+          "answer": "`100`. `concurrentPerform` runs iterations in parallel. Sending every `total += 1` through the serial queue makes the updates happen one at a time, so there's no data race.",
+          "code": {
+            "language": "swift",
+            "source": "let queue = DispatchQueue(label: \"counter\")\nvar total = 0\n\nDispatchQueue.concurrentPerform(iterations: 100) { _ in\n    queue.sync { total += 1 }\n}\nprint(total)"
+          }
+        }
+      ]
+    },
+    {
+      "starterKey": "starter-db",
+      "topicId": "topic-databases",
+      "title": "Databases Essentials",
+      "cards": [
+        {
+          "id": "sc-db-001",
+          "difficulty": "easy",
+          "prompt": "What is a **primary key**?",
+          "answer": "A column, or set of columns, that uniquely identifies each row. It can't be `NULL` and can't repeat."
+        },
+        {
+          "id": "sc-db-002",
+          "difficulty": "easy",
+          "prompt": "What is a **foreign key**?",
+          "answer": "A column that references another table's primary key. It enforces that the referenced row exists (referential integrity)."
+        },
+        {
+          "id": "sc-db-003",
+          "difficulty": "easy",
+          "prompt": "What does this print?",
+          "answer": "`1`. One row was inserted. `fetchone()` returns the tuple `(1,)`, and `[0]` takes the count from it.",
+          "code": {
+            "language": "python",
+            "source": "import sqlite3\n\ndb = sqlite3.connect(\":memory:\")\ndb.execute(\"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)\")\ndb.execute(\"INSERT INTO users (name) VALUES (?)\", (\"Ada\",))\nprint(db.execute(\"SELECT COUNT(*) FROM users\").fetchone()[0])"
+          }
+        },
+        {
+          "id": "sc-db-004",
+          "difficulty": "easy",
+          "prompt": "What does **ACID** stand for?",
+          "answer": "**Atomicity, Consistency, Isolation, Durability**: the guarantees a database transaction gives."
+        },
+        {
+          "id": "sc-db-005",
+          "difficulty": "medium",
+          "prompt": "What's the difference between `WHERE` and `HAVING`?",
+          "answer": "`WHERE` filters **rows** before grouping. `HAVING` filters **groups** after `GROUP BY`, so it can use aggregates like `COUNT(*)`."
+        },
+        {
+          "id": "sc-db-006",
+          "difficulty": "medium",
+          "prompt": "What does an **index** speed up, and what does it cost?",
+          "answer": "Lookups, joins, and sorts on the indexed columns: a B-tree index finds rows in O(log n) instead of scanning the whole table. The cost is extra storage and slower `INSERT`, `UPDATE`, and `DELETE`, because the index must be updated too."
+        },
+        {
+          "id": "sc-db-007",
+          "difficulty": "medium",
+          "prompt": "Why use a `PreparedStatement` with `?` instead of building the SQL string yourself?",
+          "answer": "The parameters are sent separately from the SQL text, which prevents **SQL injection**. The database can also reuse the query plan.",
+          "code": {
+            "language": "java",
+            "source": "String sql = \"SELECT name FROM users WHERE id = ?\";\ntry (PreparedStatement ps = conn.prepareStatement(sql)) {\n    ps.setInt(1, userId);\n    try (ResultSet rs = ps.executeQuery()) {\n        if (rs.next()) {\n            System.out.println(rs.getString(\"name\"));\n        }\n    }\n}"
+          }
+        },
+        {
+          "id": "sc-db-008",
+          "difficulty": "medium",
+          "prompt": "What's the difference between `INNER JOIN` and `LEFT JOIN`?",
+          "answer": "`INNER JOIN` keeps only rows that have a match in both tables. `LEFT JOIN` keeps **every** row from the left table and fills in `NULL` where the right table has no match."
+        },
+        {
+          "id": "sc-db-009",
+          "difficulty": "hard",
+          "prompt": "Summarize **1NF**, **2NF**, and **3NF**.",
+          "answer": "- **1NF**: atomic values, no repeating groups.\n- **2NF**: no non-key column depends on only part of a composite key.\n- **3NF**: no non-key column depends on another non-key column."
+        },
+        {
+          "id": "sc-db-010",
+          "difficulty": "hard",
+          "prompt": "What does this print, and which ACID property does it show?",
+          "answer": "`100`. `with db:` wraps the block in a transaction. The exception triggers a **rollback**, so the debit never happens. That's **atomicity**.",
+          "code": {
+            "language": "python",
+            "source": "import sqlite3\n\ndb = sqlite3.connect(\":memory:\")\ndb.execute(\"CREATE TABLE acct (id INTEGER PRIMARY KEY, bal INTEGER)\")\ndb.executemany(\"INSERT INTO acct VALUES (?, ?)\", [(1, 100), (2, 0)])\ndb.commit()\n\ntry:\n    with db:\n        db.execute(\"UPDATE acct SET bal = bal - 50 WHERE id = 1\")\n        raise RuntimeError(\"crash mid-transfer\")\nexcept RuntimeError:\n    pass\n\nprint(db.execute(\"SELECT bal FROM acct WHERE id = 1\").fetchone()[0])"
+          }
+        },
+        {
+          "id": "sc-db-011",
+          "difficulty": "hard",
+          "prompt": "What anomaly does the `READ COMMITTED` isolation level still allow?",
+          "answer": "**Non-repeatable reads**: reading the same row twice in one transaction can return different values if another transaction commits in between. It does prevent dirty reads."
+        },
+        {
+          "id": "sc-db-012",
+          "difficulty": "hard",
+          "prompt": "How is `byEmail` like a database index?",
+          "answer": "It's a separate structure keyed by the lookup column. Finding a row drops from a full scan (**O(n)**) to O(1) here (O(log n) for a B-tree index). The cost is extra memory, and the index must be kept up to date on every write.",
+          "code": {
+            "language": "swift",
+            "source": "struct User { let id: Int; let email: String }\nlet users = (1...100_000).map { User(id: $0, email: \"u\\($0)@x.io\") }\n\n// Without an index: scan every row.\nlet slow = users.first { $0.email == \"u99999@x.io\" }\n\n// With an \"index\": a hash map from email to row.\nlet byEmail = Dictionary(uniqueKeysWithValues: users.map { ($0.email, $0) })\nlet fast = byEmail[\"u99999@x.io\"]"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -20,7 +20,7 @@ enum LocalDataReset {
     }
 
     /// Deletes everything local (profile, decks, cards, quiz content), then
-    /// re-seeds bundled content and a fresh profile. The auth session is not
+    /// re-seeds bundled content (quiz bank + starter decks) and a fresh profile. The auth session is not
     /// touched; once sign-in exists (Stage 9) the UI must require sign-out
     /// first.
     static func eraseAllLocalData(context: ModelContext, bank: QuestionBank) throws {
@@ -32,6 +32,7 @@ enum LocalDataReset {
         try context.save()
 
         try DataSeeder.seed(context: context, bank: bank)
+        try StarterDeckLoader.seed(context: context)
         Logger.settings.notice("All local data erased by user")
     }
 

@@ -32,10 +32,12 @@ enum DataSeeder {
     /// UserDefaults key the old destructive seeder used. Removed on seed.
     private static let legacySeedVersionKey = "codey.seedVersion"
 
-    /// Loads the bundled bank and seeds; logs instead of throwing (previews).
+    /// Loads the bundled bank + starter decks and seeds; logs instead of
+    /// throwing (previews, tests).
     static func seedIfNeeded(context: ModelContext) {
         do {
             try seed(context: context, bank: QuestionBankLoader.loadBank())
+            try StarterDeckLoader.seed(context: context)
         } catch {
             Logger.seeding.error("Seed failed: \(String(describing: error))")
         }
