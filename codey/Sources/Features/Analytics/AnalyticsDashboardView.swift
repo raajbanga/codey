@@ -6,10 +6,7 @@ struct AnalyticsDashboardView: View {
 
     private var profile: UserProfile? { profiles.first }
 
-    private var xpProgress: Double {
-        guard let profile else { return 0 }
-        return Double(profile.totalXP % 500) / 500.0
-    }
+    private var totalXP: Int { profile?.totalXP ?? 0 }
 
     var body: some View {
         ScrollView {
@@ -20,9 +17,9 @@ struct AnalyticsDashboardView: View {
 
                     HStack(spacing: CodeySpacing.lg) {
                         statBlock(
-                            value: "\(profile?.totalXP ?? 0)",
+                            value: "\(totalXP)",
                             label: "Total XP",
-                            badge: "Level \(max((profile?.totalXP ?? 0) / 500 + 1, 1))"
+                            badge: "Level \(LevelCalculator.level(forXP: totalXP))"
                         )
                         statBlock(
                             value: "\(profile?.currentStreak ?? 0)",
@@ -31,15 +28,15 @@ struct AnalyticsDashboardView: View {
                         )
                     }
 
-                    CodeyProgress(
-                        value: xpProgress,
-                        label: "XP to next level (\(profile?.totalXP ?? 0) / \(((profile?.totalXP ?? 0) / 500 + 1) * 500) XP)"
+                    ProgressBar(
+                        value: LevelCalculator.progressFraction(totalXP),
+                        label: "XP to next level (\(totalXP) / \(LevelCalculator.xpForNextLevel(totalXP)) XP)"
                     )
                 }
             }
             .padding(CodeySpacing.md)
         }
-        .background(ThemeColor.canvas)
+        .background(CodeyColor.surface)
         .navigationTitle("Analytics")
     }
 
@@ -47,12 +44,12 @@ struct AnalyticsDashboardView: View {
     private func statBlock(value: String, label: String, badge: String) -> some View {
         VStack(alignment: .leading, spacing: CodeySpacing.xs) {
             Text(value)
-                .font(.title2.weight(.bold))
-                .foregroundStyle(ThemeColor.primary)
+                .font(.codeyNumeric)
+                .foregroundStyle(CodeyColor.brand)
             Text(label)
-                .font(.caption)
-                .foregroundStyle(ThemeColor.muted)
-            CodeyBadge(badge, variant: .neutral)
+                .font(.codeyCaption)
+                .foregroundStyle(CodeyColor.textSecondary)
+            CodeyChip(badge, variant: .neutral)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

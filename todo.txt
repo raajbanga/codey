@@ -1,0 +1,1370 @@
+================================================================================
+ CODEY — IMPLEMENTATION PRD / TODO
+ Covers: everything Sprint 2 documentation promises + level gating (FR-22–31)
+ Source of truth: docs/Sprint2_Documentation.tex (+ Activity4_1 … 6_1 PDFs)
+ Written: 2026-10-07   Branching: feature/* -> dev -> main (per doc §4.2)
+================================================================================
+
+HOW TO READ THIS FILE
+  - Stages are ordered by dependency. Finish a stage's "Done when" before
+    starting the next unless marked [parallel].
+  - [ ] = todo, [x] = done, [~] = in progress.  Each task cites FR/NFR/risk IDs.
+  - Owner tags follow the doc's roles: (AB) backend/systems, (ES) UI/UX & QA,
+    (RB) PM/docs. Adjust freely.
+  - "DECIDED" lines record choices agreed on 2026-10-07. Don't re-litigate
+    them without updating this file and the .tex.
+
+
+--------------------------------------------------------------------------------
+ DECISIONS (agreed 2026-10-07)
+--------------------------------------------------------------------------------
+ D1  [REVISED 2026-10-07 r2] Code tooling is THIRD-PARTY:
+       - Textual (gonzalezreal/textual, successor to MarkdownUI) renders ALL
+         card text as markdown; code blocks highlighted with its bundled
+         Prism.js (swift, python, java, cpp).
+       - Runestone (simonbs/Runestone) + TreeSitterLanguages is the code
+         EDITOR in the deck builder (line numbers, auto-indent, bracket
+         pairs, no autocorrect or smart quotes).
+     NFR-15 and Table 3 (services) in the .tex get amended to list them.
+     Supersedes the hand-rolled tokenizer plan.
+ D2  [REVISED r2] Card model is HYBRID:
+       - prompt/answer are BLOCK markdown (lists, bold, inline `code`,
+         short tables; fences are allowed and render, but aren't
+         encouraged).
+       - The main code example lives in the optional
+         Flashcard.codeSnippet: CodeSnippet? {language, source} (UML 0..1),
+         edited with Runestone and rendered by Textual as a fenced block.
+       - Most cards have no code; the builder shows a collapsed
+         "+ Add code" row.
+ D3  Question (multiple-choice quiz bank) and Flashcard/FlashcardDeck stay
+     SEPARATE models. Starter decks come from a NEW hand-authored
+     codey/Resources/starter-decks.json, loaded via FlashcardFactory.
+ D4  Sign-in is OPTIONAL. App is fully usable as a guest (local-first,
+     NFR-08). Google sign-in enables cloud sync.
+ D5  XP per correct quiz answer = tier base (Easy 10 / Medium 15 / Hard 20)
+     + streak bonus min(5 × (streak − 1), 25). Max 45 XP per answer.
+     (Replaces FR-30 "flat 10"; update the .tex.)
+ D6  No Supabase project exists yet. Build it from scratch; the schema lives
+     in-repo as SQL migrations (supabase/migrations) and is the source of truth.
+ D7  Scope = everything the Sprint 2 doc marks Implemented / In progress,
+     plus FR-22–31 (tiers, XP, levels). Could-haves are listed as stretch.
+ D8  [REVISED r2] Navigation = HOME HUB with a Liquid Glass tab bar:
+       - 3 tabs: Home | Decks | Quiz.
+         .tabBarMinimizeBehavior(.onScrollDown) shrinks the bar to a pill
+         on scroll.
+       - .tabViewBottomAccessory shows "▶ Continue studying <deck> n/N"
+         when a session is resumable.
+       - Settings = PROFILE SHEET opened from the avatar button at the top
+         right of Home: a native inset-grouped List.
+       - Study and Quiz run as .fullScreenCover "focus mode", so the tab
+         bar and accessory are hidden.
+       - PracticeHomeView, AnalyticsDashboardView, and the Settings tab
+         are removed.
+ D9  Tier gating applies to the QUIZ BANK and STARTER DECKS only.
+     - Quiz question retires after 3 consecutive correct answers (FR-23/24).
+     - Starter card retires when mastery reaches 5 (FR-18 "mastered").
+     - User decks may carry an optional tier tag but are never locked.
+ D10 Sync scope: user decks + cards (incl. snippets) + profile (display
+     name, avatar, total XP). Per-question progress / unlocks stay local.
+
+ --- UI redesign decisions (round 2, 2026-10-07) ---
+ D11 Minimum iOS 26 (NFR-03 amended from 17). Unlocks native Liquid Glass
+     (glassEffect, GlassEffectContainer, glass button styles), the new
+     Tab API, tab minimize and bottom accessory, ConcentricRectangle
+     corners. Dev/demo runtime is iOS 27 (the only Simulator runtime
+     installed).
+ D12 Visual direction: NATIVE + PLAYFUL ACCENTS.
+       - Apple-native structure: glass on the control layer only, SF
+         Symbols, system type, semantic colors.
+       - SF Rounded for headings and numbers.
+       - A tier color system: Easy / Medium / Hard (color + symbol, never
+         color alone).
+       - Celebratory moments.
+ D13 Brand color = ELECTRIC INDIGO (≈ #5B5BF7 light / #8C8CFF dark; tune
+     for 4.5:1 contrast on text use).
+ D14 Study UX = 3D FLIP + RATE BUTTONS + SWIPE SHORTCUTS.
+       - Tap to flip.
+       - 4 glass rating buttons (Again / Hard / Good / Easy), each with
+         a mastery-delta hint.
+       - Swipes: left = Again, right = Good, up = Easy.
+       - Distinct haptic per rating.
+ D15 Deck builder = CARD PAGER.
+       - Deck header (title, topic) on top.
+       - Horizontal pages of WYSIWYG card editors that look like the real
+         card, with a Front/Back toggle.
+       - A "+ New card" page at the end.
+       - A thumbnail strip for jumping, reordering, and deleting.
+ D16 Onboarding = 3 steps:
+       1. Welcome.
+       2. Pick topics (pins those topics and starter decks on Home).
+       3. Optional Google sign-in, with Skip.
+ D17 Delight level = MEDIUM.
+       - XP counters roll up (numericText).
+       - sensoryFeedback haptics on correct and wrong answers.
+       - Particle burst ONLY for level-ups and tier unlocks.
+       - SF Symbol bounce effects.
+       - All of it respects Reduce Motion.
+ D18 Extras in scope: new app icon (Icon Composer; light, dark, and tinted
+     variants, indigo). Widget, iPad, and mascot are NOT in scope (stretch).
+ D19 Corner bug fix (root cause found):
+       - Capsule() is used for multi-line content (QuizOptionRow,
+         CodeyButton, StudyModeLink, CodeyBadge). A capsule's radius is
+         half the height, so wrapped text becomes a lozenge.
+       - Cards use a fixed 14pt radius with no nesting rule.
+       - Fix: radius tokens plus concentric nesting. Capsules ONLY for
+         single-line, fixed-height controls.
+
+
+--------------------------------------------------------------------------------
+ CURRENT STATE AUDIT (verified in code + swift-lsp, 2026-10-07)
+--------------------------------------------------------------------------------
+ Doc vs code gap: the .tex marks FR-05–FR-11, FR-14, FR-16–FR-18, FR-44 as
+ "Implemented", but NONE of FlashcardDeck, Flashcard, CodeSnippet,
+ FlashcardFactory, ModelValidator, DeckViewModel, DeckBuilderView,
+ SwiftDataService, the rating UI, or mastery exist. The only content model
+ is Question (MCQ). Treat those FRs as NOT STARTED.
+
+ What exists:
+   Models: Question, Topic, UserProfile (SwiftData), QuizSession (@Observable)
+   Services: QuestionBankLoader (questions-seed.json, 4 topics / 48 Qs),
+             DataSeeder, ModelContainerFactory
+   UI: LoadingView -> MainTabView (Practice/Topics/Analytics/Settings),
+       FlashcardView (tap to flip), PracticeSwipeView (swipe, no rating),
+       QuizModeView/QuizOptionRow/QuizSummaryView, design system
+       (CodeyButton/Card/Badge/Progress, ThemeColor, CodeySpacing, fonts)
+   Tests (Swift Testing): DataSeederTests, QuestionBankLoaderTests,
+                          QuizSessionTests
+
+ Bugs / risks found (fix in Stage 0 unless noted):
+   B1 DATA LOSS: ModelContainerFactory.make() WIPES the store whenever the
+      container fails to open (e.g., any schema change). Harmless today,
+      but it would destroy user decks. Replace with VersionedSchema +
+      SchemaMigrationPlan.
+   B2 DATA LOSS: DataSeeder.seed() calls clearContent(), which deletes
+      UserProfile + all Questions/Topics whenever seedVersion bumps. It
+      would also wipe XP and progress. Seeding must become a non-destructive
+      upsert of bundled content only.
+   B3 Fake profile: the seeder inserts a profile with 1250 XP and a 7-day
+      streak. 1250 XP is already level 3, which would auto-satisfy the
+      Hard-tier gate (FR-26). Seed a fresh profile at 0 XP.
+   B4 Level math (totalXP / 500) is copy-pasted 3× in
+      AnalyticsDashboardView (lines 12, 26, 37). Centralize it.
+   B5 XP rule in QuizSession (10 + 5×(streak−1), uncapped) matches neither
+      FR-30 nor D5.
+   B6 The quiz uses ALL topic questions, shuffled. FR-19 says 10 questions.
+      The summary has no percentage (FR-20).
+   B7 Difficulty is never read outside Question.swift and
+      QuestionBankLoader (LSP findReferences). No tier logic exists.
+   B8 Dark mode toggle: .preferredColorScheme is attached to SettingsView
+      only. Tabs load lazily, so the setting doesn't apply until Settings is
+      visited. It's also a 2-state toggle, but NFR-11 says "follow the
+      system setting". Make it System/Light/Dark, applied at the root.
+   B9 No deployment target in Project.swift (NFR-03 says iOS 17; now
+      raised to iOS 26 per D11).
+      SWIFT_VERSION = 5.
+   B10 bundleId "dev.tuist.codey" is a template placeholder. Google OAuth
+      needs a stable bundle ID.
+   B11 QuizSession.recordAnswer swallows save errors (try?). Log them at
+      minimum.
+   B12 Hard tier is thin in the bank: DS has 1 Hard, DB has 2, Algo and OS
+      have 3. With retirement, pools drain fast and FR-27's 70/30 mix can't
+      be met. Content work in Stage 6.
+   B13 FR-21 mentions OOP, but the bank has DS/Algorithms/OS/Databases.
+      Either add OOP or change the FR text (Stage 12).
+   B14 Corners (D19): Capsule() wraps multi-line content in
+      QuizOptionRow:31/35, CodeyButton:54/58, TopicListView:92/95
+      (StudyModeLink), CodeyBadge:37. CodeyCard has a hard-coded radius of
+      14 (lines 15/17). StudyModeLink duplicates CodeyButton's styling.
+   B15 FlashcardView mirrors the back face via rotation3DEffect(180) on
+      both the inner and outer views. Fragile, and text becomes
+      unselectable. Rebuild it in Stage 5.
+
+
+================================================================================
+ STAGE 0 — FOUNDATION & HOUSEKEEPING                      (ES + AB, ~1–2 days)
+================================================================================
+ Goal: a safe base. No data-loss paths, correct build settings, central
+ level math.
+
+ [x] 0.1 Project.swift: deploymentTargets: .iOS("26.0") (D11; NFR-03
+         amended). destinations: [.iPhone] only (no iPad, D18). Keep
+         SWIFT_VERSION 5 for now; note Swift 6 strict concurrency as a
+         later chore.
+ [x] 0.2 Change bundleId to a stable reverse-DNS ID (e.g.
+         "edu.wku.cs360.codey"; team to confirm) for the app and tests
+         (B10). Must happen BEFORE creating the Google iOS OAuth client.
+ [x] 0.3 Config/secrets plumbing:
+         - Config/Base.xcconfig (committed) + Config/Secrets.xcconfig
+           (gitignored) + Config/Secrets.example.xcconfig (committed,
+           placeholders).
+         - Keys: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_IOS_CLIENT_ID,
+           GOOGLE_REVERSED_CLIENT_ID, GOOGLE_SERVER_CLIENT_ID.
+         - Wire into Info.plist via Project.swift infoPlist
+           .extendingDefault ("$(SUPABASE_URL)", etc.).
+         - App must build and run with EMPTY secrets: sign-in is disabled
+           and the app stays local-only (supports the R11 "local-only dev
+           mode").
+         - Add Secrets.xcconfig to .gitignore. Add a secret-scan item to
+           the PR checklist (metrics table: "secrets in source = 0").
+ [x] 0.4 Versioned SwiftData schema (B1):
+         - Models/Schema/CodeySchemaV1.swift (current models, frozen).
+         - CodeySchemaV2 is added in Stage 1. CodeyMigrationPlan.
+         - ModelContainerFactory: remove wipe-on-failure for the on-disk
+           store. On failure, surface the error in LoadingView (already
+           has errorMessage UI) with a "Reset local data" escape hatch that
+           requires confirmation.
+         - Keep the store name stable (drop the "_v\(n)" suffix trick, or
+           freeze it at _v1 and never bump it again).
+ [x] 0.5 Non-destructive seeding (B2, B3):
+         - Bundled content (Topics, Questions, later starter decks) is
+           upserted by stable id: insert if missing, update text if
+           changed, delete only bundled rows whose id was removed from the
+           JSON.
+         - Never touch UserProfile, progress, user decks, or the sync queue.
+         - First-launch profile: username "Codey Learner", totalXP 0,
+           currentStreak 0.
+         - Settings "Danger Zone" splits into two buttons:
+             "Reset progress" (XP, streak, question progress, mastery) and
+             "Erase all local data" (everything except the auth session;
+             requires sign-out first if signed in).
+ [x] 0.6 Services/Gamification/LevelCalculator.swift (FR-31):
+         level(xp) = xp / 500 + 1; xpIntoLevel; xpForNextLevel;
+         progressFraction. Replace the 3 inline copies (B4). Unit tests at
+         boundaries 0, 499, 500, 999, 1000.
+ [x] 0.7 Appearance (B8, NFR-11): enum AppAppearance { system, light, dark }
+         in @AppStorage("appearance"), applied in CodeyApp at the root
+         (on LoadingView/ContentView). ProfileSheet uses a segmented picker.
+         Remove the old "preferredDarkMode" key.
+ [x] 0.8 Logging: Logger(subsystem: bundleId, category: …) everywhere.
+         Never log tokens, emails, or ids at .public level (R10).
+ [x] 0.9 Tuist: enable code coverage for the codey scheme (NFR-16).
+         Confirm `tuist generate` is clean and tests pass.
+
+ Done when: app builds for iOS 26; tests pass; bumping a model doesn't wipe
+ data (verified by a migration test with an on-disk temp store); the fake
+ 1250 XP is gone.
+
+ STATUS 2026-10-07 (branch feature/stage-0-1): implemented. App builds clean
+ for iOS 26 (bundle edu.wku.cs360.codey, iPhone only, coverage on, empty
+ secrets → local-only). Works on device per RB.
+ [ ] OPEN: the CLI `xcodebuild test` run is reported failing and hasn't been
+     triaged yet. First CLI run showed the host app's boot failing on a
+     fresh simulator: an explicit store URL means SwiftData doesn't create
+     Application Support. Fixed (ModelContainerFactory creates the dir) but
+     not re-run. Re-run, triage, and only then call Stage 0 "done".
+ Notes / deviations:
+   - Models stay in Question/Topic/UserProfile.swift as `extension
+     CodeySchemaV1`. Typealiases in Schema/CodeyMigrationPlan.swift point the
+     app at the current versions. Store name frozen at "CodeyStore_v1".
+   - Seeding now runs on EVERY launch (idempotent; it writes only changed
+     fields). There's no seed-version gate anymore, so Stage 6.5 needs no
+     "bump". The old codey.seedVersion key is removed on launch.
+   - Existing installs keep whatever profile they had (incl. the old fake
+     1250 XP). Seeding never edits a profile; use "Reset progress".
+   - Reset/erase live in Services/LocalDataReset.swift. The Danger Zone is in
+     SettingsView until ProfileSheet (7.3).
+   - Legacy preferredDarkMode=true migrates to Dark; false → System.
+   - LevelCalculator also has xpToNextLevel (for "160 to Lv 5").
+   - AppConfig (App/AppConfig.swift) reads the Info.plist keys;
+     isBackendConfigured gates sign-in later. Secret scan is in
+     .github/pull_request_template.md.
+
+
+================================================================================
+ STAGE 1 — FLASHCARD DOMAIN MODEL, VALIDATOR, FACTORY           (AB, ~3 days)
+================================================================================
+ Implements: FR-05, FR-06, FR-07, FR-09, FR-14 (loader), FR-18 (logic),
+             Factory pattern (§9.2)
+
+ 1.1 Models  (Models/Decks/)
+ [x] CodeLanguage: String enum, Codable, CaseIterable:
+       swift, python, java, cpp. displayName ("C++"), fenceTag ("cpp").
+ [x] CodeSnippet: Codable, Hashable VALUE TYPE (struct), not an @Model.
+       language: CodeLanguage, source: String
+       (Rationale: composition 0..1 with no independent identity. Stored as a
+        SwiftData composite attribute. Maps to 2 nullable columns remotely.
+        Simpler sync than a third table.)
+ [x] DeckOrigin: String enum { starter, user }.
+ [x] DeckSyncStateKind: String enum { drafting, locallyPersisted, syncing,
+       synced, conflict }. Persisted raw value. See Stage 9 for behavior.
+ [x] @Model FlashcardDeck
+       id: UUID (@Attribute(.unique); client-generated; same id remotely)
+       title: String                     // 1–60 chars (FR-05)
+       topicId: String                   // must match a Topic.id (FR-05)
+       origin: DeckOrigin
+       starterKey: String?               // stable id from starter JSON
+       isHidden: Bool = false            // starter decks only (FR-15)
+       syncStateRaw: String              // DeckSyncStateKind
+       ownerId: UUID?                    // nil = guest/local; set on sign-in
+       createdAt, updatedAt: Date
+       lastSyncedAt: Date?               // doc: lastSyncedAt
+       serverUpdatedAt: Date?            // remote cursor for conflict check
+       deletedAt: Date?                  // tombstone until the delete syncs
+       @Relationship(deleteRule: .cascade, inverse: \Flashcard.deck)
+       cards: [Flashcard]
+       computed: activeCards (deletedAt == nil, sorted by sortIndex),
+                 cardCount (doc: getCardCount),
+                 masteryRate (doc: calculateMasteryRate = mastered/total),
+                 isEditable (origin == .user)
+       markDirty(): bumps updatedAt (doc: #markDirty)
+ [x] @Model Flashcard
+       id: UUID (unique)
+       prompt: String          // 1–500, inline markdown
+       answer: String          // 1–500, inline markdown
+       codeSnippet: CodeSnippet?        // OPTIONAL (D2)
+       difficulty: Difficulty?          // required for starter, optional for user
+       sortIndex: Int
+       masteryScore: Int = 0            // 0…5, private(set)
+       lastReviewedAt: Date?
+       retiredAt: Date?                 // starter cards: set when mastery hits 5 (D9)
+       createdAt, updatedAt: Date
+       deletedAt: Date?                 // tombstone (FR-13 + sync)
+       deck: FlashcardDeck?
+       updateMastery(rating: CardRating) (FR-18):
+           again → 0, hard → unchanged, good → +1, easy → +2, clamp at 5.
+           Reaching 5 sets retiredAt (starter cards only); dropping below 5
+           clears it.
+       resetMastery(), isMastered (score == 5),
+       toPayload() -> FlashcardPayload (for sync)
+ [x] CardRating enum { again, hard, good, easy } (FR-17).
+ [x] Add to CodeySchemaV2 + lightweight migration from V1. Register all
+     models in ModelContainerFactory.
+
+ 1.2 Validation  (Services/Decks/ModelValidator.swift)  (FR-09, FR-10)
+ [x] Limits (one place, static constants; mirrored in the SQL CHECKs in
+     Stage 7):
+       deck title 1–60, prompt 1–500, answer 1–500 (trimmed; markdown
+       characters count), snippet source 1–2000 chars and ≤ 80 lines,
+       language ∈ CodeLanguage, topicId ∈ known topics.
+       Fences inside prompt/answer are ALLOWED (D2 r2). They still count
+       toward the 500 limit. The builder shows a soft hint ("Tip: use
+       Add code for syntax-highlighted examples") but doesn't block.
+ [x] Return a ValidationResult = [FieldError] keyed by
+       enum Field { deckTitle, deckTopic, cardPrompt(cardId),
+       cardAnswer(cardId), snippetSource(cardId), snippetLanguage(cardId),
+       deckHasNoCards }. This lets the UI put errors inline next to each
+       field (FR-10).
+ [x] A deck needs ≥ 1 card to save (UC-01 "one or more prompt/answer pairs").
+ [x] "JSON card schema" (FR-09): add codey/Resources/Schemas/flashcard.schema.json
+     (JSON Schema draft 2020-12) documenting the payload. The validator
+     enforces the same rules in Swift. A unit test asserts the limits in the
+     schema file equal the Swift constants, so they can't drift.
+
+ 1.3 Factory  (Services/Decks/FlashcardFactory.swift)  (§9.2)
+ [x] struct FlashcardPayload: Codable — the one wire/bundle DTO:
+       id, prompt, answer, codeLanguage?, codeSource?, difficulty?,
+       sortIndex, masteryScore?, createdAt?, updatedAt?, deletedAt?
+     (Typed Codable DTO instead of the UML's "Dictionary". Same role,
+      type-safe. Note this in the .tex.)
+ [x] FlashcardFactory (owns private validator: ModelValidator)
+       createCard(prompt:answer:code:difficulty:) throws -> Flashcard
+       createCard(from payload: FlashcardPayload) throws -> Flashcard
+       private applyDefaults(_:) — trim prompt/answer; normalize CRLF→LF;
+         snippet: tabs→4 spaces, strip trailing whitespace per line,
+         trim leading/trailing blank lines; masteryScore 0; timestamps;
+         new UUID if missing.
+       Throws FactoryError.invalid([FieldError]).
+ [x] Enforce "no card outside the factory": Flashcard's init is fileprivate,
+     with the factory living in Flashcard+Factory.swift (verify the @Model
+     macro accepts a fileprivate init; if not, fall back to a doc comment
+     plus a review-checklist item).
+ [x] Tests: valid cards; each limit ±1; whitespace-only rejected; fenced
+     text accepted and counted toward 500; snippet normalization; payload
+     round-trip (toPayload → createCard(from:) is identity); mastery
+     transitions for all 4 ratings including the clamp at 5 and again→0.
+
+ Done when: models migrate cleanly from V1; factory and validator are fully
+ unit-tested; nothing constructs a Flashcard except the factory.
+
+ STATUS 2026-10-07: implemented with tests written (ModelValidatorTests,
+ FlashcardFactoryTests, FlashcardMasteryTests incl. deck tests,
+ FlashcardSchemaFileTests, MigrationTests). Same OPEN test-run caveat as Stage 0.
+ Notes / deviations:
+   - Factory guard: Flashcard.init takes a FlashcardFactory.Token whose
+     init is fileprivate to FlashcardFactory.swift. That's a COMPILE-TIME
+     guarantee, so no review-checklist item is needed. (A fileprivate init
+     alone would have forced the class and factory into one file.)
+   - FlashcardDeck stores originRaw (String) + computed `origin`, so
+     #Predicate can filter Mine/Starter in 3.2. Same for syncStateRaw.
+   - Field enum is named ValidationField; FieldError has a typed Reason +
+     message. ValidationResult = [FieldError].
+   - Lengths count Unicode scalars after trimming (= Postgres char_length
+     and JSON Schema maxLength). Use the same in the SQL CHECKs (Stage 8).
+   - A snippet needs both language and source (mirrors the SQL CHECK).
+     A missing or unknown language is an error on snippetLanguage(cardId).
+   - updateMastery doesn't bump updatedAt (mastery is progress, not
+     content; avoids sync churn). retiredAt keeps its first date while the
+     card stays at 5.
+   - Line limit is in the schema as the custom keyword "x-maxLines".
+   - FlashcardPayload.id is optional (the factory assigns one if missing).
+     difficulty is typed; codeLanguage stays a raw String so a bad value
+     becomes a field error instead of a decode failure.
+
+
+================================================================================
+ STAGE 2 — DESIGN SYSTEM v2 + CODE RENDERING/EDITING  [parallel w/ 1]  (ES, ~4–5 days)
+================================================================================
+ Implements: FR-08, UC-02, NFR-10/11/12; D1, D2, D11–D13, D17, D19.
+ Every later UI stage builds on these components. Do this before Stages 3/5/7.
+
+ 2.1 Tokens  (DesignSystem/Tokens/)
+ [x] Colors.swift → asset-catalog colors with light and dark variants
+     (no hard-coded hex in views):
+       brand (indigo, D13), brandSoft (≈12% tint for fills),
+       surface (grouped background), surfaceRaised (card),
+       separator, textPrimary, textSecondary,
+       success, warning, danger,
+       tier.easy (green), tier.medium (amber), tier.hard (red-purple),
+       syntax.* (see 2.4).
+     Every text/background pair is checked at ≥ 4.5:1 (NFR-12). Record
+     the pairs in a table in DesignSystem/README.md.
+ [x] Radius.swift (D19): xs 6, sm 10, md 14, lg 20, xl 28.
+     Rules:
+       - Capsule only for single-line, fixed-height controls (chips,
+         badges, single-line buttons, tab pill).
+       - Anything that can wrap uses RoundedRectangle(md, .continuous).
+       - Nested surfaces use ConcentricRectangle / .containerShape so inner
+         radius = outer radius − padding (no "too round" inner corners).
+       - Cards use lg; full-screen sheets get system corners.
+ [x] Spacing.swift: keep xs4/sm8/md16/lg24/xl32. Add xxs2 and xxl48.
+ [x] Typography.swift:
+       display (largeTitle, rounded, bold), title (title2, rounded,
+       semibold), headline, body, callout, caption — all Dynamic Type.
+       numeric style: rounded + monospacedDigit (XP, levels, counters).
+       code: SF Mono (.system(.callout, design: .monospaced)).
+ [x] Motion.swift: standard springs (snappy, bouncy, smooth), plus a helper
+     that swaps to opacity-only when accessibilityReduceMotion is on (D17).
+ [x] TierStyle: Difficulty → (color, SF Symbol, label). Easy
+     "leaf.fill", Medium "flame.fill", Hard "bolt.fill" (final symbols TBD
+     by ES). Color is never the only signal.
+
+ 2.2 Components  (DesignSystem/Components/)  — rebuild, delete the old ones
+ [x] CodeyCard → surfaceRaised + RoundedRectangle(lg), optional
+     .containerShape for concentric children, optional tint stroke. No
+     glass (glass is for the control layer only, per Apple guidance).
+ [x] Buttons: use native .buttonStyle(.glassProminent) (primary, brand
+     tint) and .glass (secondary) where they float over content. Use
+     .borderedProminent / .bordered with .buttonBorderShape(.capsule) for
+     single-line buttons in content. A CodeyButton wrapper only adds
+     haptics and a loading state. Delete StudyModeLink (B14).
+ [x] AnswerOptionRow (replaces QuizOptionRow): RoundedRectangle(md),
+     multi-line safe, leading letter badge (A/B/C/D), states idle /
+     selected-correct / selected-wrong / revealed-correct with icon +
+     color, sensoryFeedback on select.
+ [x] Chip/Badge: Capsule, single line, lineLimit(1) + minimumScaleFactor.
+     Variants: neutral, brand, tier(Difficulty), success, warning.
+ [x] ProgressRing (level ring, rounded caps) + ProgressBar (replaces
+     CodeyProgress, animated, accessibilityValue).
+ [x] StatTile (big rounded number via contentTransition(.numericText()),
+     label, optional symbol).
+ [x] TierChipRow: Easy ✓ / Medium ✓ / Hard 🔒 with lock reason in a
+     popover/tooltip.
+ [x] EmptyStateView (SF Symbol, title, message, action) for all empty
+     lists.
+ [x] CelebrationOverlay: particle burst (TimelineView + Canvas, no
+     assets) for level-up and tier-unlock ONLY (D17). Falls back to a
+     scale/opacity badge under Reduce Motion.
+ [x] XPGainLabel: "+25 XP" float-up plus a rolling total (numericText).
+ [x] Haptics: use SwiftUI .sensoryFeedback (.success / .error / .impact /
+     .selection) instead of UIImpactFeedbackGenerator calls in views.
+ [x] #Preview catalog: DesignSystem/Gallery/ComponentGallery.swift shows
+     every component in light and dark at several Dynamic Type sizes. ES
+     uses it for visual QA.
+
+ 2.3 Dependencies (add here, not Stage 9; D1 amends NFR-15)
+ [x] Tuist/Package.swift — pin EXACT versions, chosen at implementation
+     time:
+       gonzalezreal/textual  (pre-1.0 → pin exact; read its Package.swift
+                              and confirm the platform minimum ≤ iOS 26)
+       simonbs/Runestone     (still maintained: Xcode 26.4 fix landed
+                              2026-03; confirm it builds on Xcode 27)
+       simonbs/TreeSitterLanguages (only the Swift, Python, Java, C++
+                              products, to keep the binary small)
+     `tuist install && tuist generate`; add them to Project.swift deps.
+ [x] Fallback plan if either fails on Xcode 27 / iOS 26:
+       Textual → swift-markdown-ui (MarkdownUI, maintenance mode)
+       Runestone → a plain TextEditor with autocorrect, smart quotes, and
+       smart dashes off.
+     The wrappers in 2.4/2.5 keep this swap local.
+
+ 2.4 Rendering  (DesignSystem/Markdown/)
+ [x] CardMarkdownView(markdown:, snippet: CodeSnippet?): the ONE place card
+     content renders (builder preview, study, starter browsing).
+     Composes the text + "\n```<lang>\n<source>\n```" and renders it with
+     Textual's StructuredText. Only this file imports Textual (swap risk).
+ [x] Map CodeLanguage → Prism key: swift, python, java, cpp (Prism uses
+     "cpp", not "c++"). Verify those 4 are in Textual's bundled Prism
+     languages; if any is missing, re-bundle with Textual's script.
+ [x] Theme: one CodeyMarkdownStyle — body uses the Typography tokens;
+     inline code uses brandSoft fill + SF Mono; code blocks use
+     surface-inset bg, RoundedRectangle(md), language label + copy
+     button header, horizontal scroll (no wrapping); Prism token kinds
+     mapped to syntax.* colors.
+ [x] syntax.* palette (light/dark): keyword, type, string, number,
+     comment, function, attribute/preprocessor, plain. Shared by Textual
+     (display) and Runestone (editor) so code looks the same in builder and
+     study. ≥ 4.5:1 on the code background.
+ [ ] Perf: highlight caching if Textual doesn't cache; measure a 80-line
+     snippet in a study card (no visible hitch on iPhone SE).
+
+ 2.5 Editing  (DesignSystem/CodeEditor/)
+ [x] CodeEditorView: UIViewRepresentable around Runestone.TextView. Binds
+     text and language; switches TreeSitterLanguage on change. Line
+     numbers on; character pairs on; tabs as 4 spaces; autocorrect,
+     autocapitalization, smart quotes, and smart dashes off (verify
+     Runestone honors UITextInputTraits). Keyboard accessory row with
+     { } ( ) [ ] ; " ' < > = and a Tab key. Read-only mode for previews.
+     Only this file imports Runestone.
+ [x] Runestone Theme implementation backed by the same syntax.* colors
+     and SF Mono.
+ [x] Markdown text fields (prompt/answer): a TextEditor plus a formatting
+     toolbar (Bold, Italic, `Code`, List). It inserts markdown syntax
+     around the selection. Live preview through CardMarkdownView.
+
+ 2.6 Tests
+ [x] Unit: TierStyle mapping; Radius rule helpers; CodeLanguage→Prism key;
+     snippet → fenced-markdown composition (escapes ``` inside source by
+     using a longer fence).
+ [ ] Visual: gallery screenshots (light/dark × SE/16/16 Pro Max), checked
+     manually per PR touching DesignSystem/.
+
+ STATUS 2026-10-07 (branch feature/stage-0-1): implemented. Builds clean
+ (app + tests compile, no warnings in our sources).
+ scripts/check-design-tokens.sh passes 7/7 and catches planted violations.
+ Palette: 60/60 pairs ≥ 4.5:1.
+ [ ] OPEN, needs on-device/simulator eyes (not done by me):
+     - Gallery visual pass (light/dark × SE/16/16 Pro Max, AX3) per 2.6.
+     - CodeEditorView: confirm Runestone honors autocorrect/smart-quote-off,
+       the accessory row, and the dark-mode theme swap; all 4 languages.
+     - 80-line snippet perf in a study card (2.4 Perf).
+     - Stage 2 unit tests are written but NOT run (CLI test run still
+       needs triage, see Stage 0).
+ Notes / deviations:
+   - Pinned EXACT: textual 0.5.0, Runestone 0.5.2, TreeSitterLanguages
+     0.1.10 (tree-sitter 0.20.9 transitively). All compile on Xcode 27 /
+     iOS 26, so no fallback was needed. Textual also pulls in
+     swift-concurrency-extras + swiftui-math (credit them in About, 7.3).
+   - Prism: swift/python/java/cpp are all in Textual's bundled
+     prism-bundle.js, so no re-bundle is needed.
+   - D13 tuned for contrast: #5B5BF7 fails on grouped bg (4.39). brand =
+     #4F4FE8 light / #9A9AFF dark (text/tint). New brandFill (#4F4FE8 /
+     #5656F0) goes behind white labels: in dark mode, no single indigo
+     passes for both. Source of truth: scripts/palette/palette.py → run
+     gen_colors.py to rewrite the colorsets. Table in codey/DESIGN_SYSTEM.md
+     (moved out of Sources/ so it isn't bundled into the app).
+   - surface/surfaceRaised/separator/text use iOS semantic colors, not
+     asset colors (free Increase Contrast + grouped hierarchy). Brand,
+     status, tier, and syntax colors are in Assets.xcassets/Colors.
+   - Light-mode green/amber darkened (#1A7034, #965000) to pass inside
+     their own 12% tint fill.
+   - SyntaxRole (Tokens/) is the single map from Prism tokens AND
+     tree-sitter captures to the 8 syntax colors.
+   - Destructive buttons are .bordered (danger label on a soft fill): white
+     on dark-mode danger fails 4.5:1.
+   - Old components removed (CodeyBadge→CodeyChip, CodeyProgress→
+     ProgressBar, QuizOptionRow→AnswerOptionRow, StudyModeLink→native
+     NavigationLink + button style). Existing screens migrated; the quiz
+     prompt now renders via CardMarkdownView with a tier chip.
+   - MarkdownTextEditor uses TextEditor(text:selection:) (iOS 18+). The
+     formatting logic is the pure MarkdownFormatting, unit-tested.
+
+ Done when: no Capsule wraps multi-line content anywhere (grep);
+ every screen uses tokens (no raw Color(...)/cornerRadius literals in
+ Features/ — grep check in scripts/check-design-tokens.sh); code
+ renders and edits in all 4 languages in both appearances.
+
+
+================================================================================
+ STAGE 3 — DECK LIBRARY + DECK BUILDER UI ("flashcard factory" UI)  (ES, ~4 days)
+================================================================================
+ Implements: FR-05, FR-06, FR-07, FR-10, FR-11, FR-12, FR-13, FR-15, FR-48 (badge)
+ UC-01 / UC-02 / UC-03; sequence diagram Fig. 6.
+
+ 3.1 View model (ViewModels/DeckViewModel.swift)
+ [ ] @MainActor @Observable final class DeckViewModel (Observation framework
+     replaces the doc's @Published; same role).
+       state: DeckDraft (value type: title, topicId, [CardDraft])
+       CardDraft: id, prompt, answer, snippet: SnippetDraft?, difficulty?
+       fieldErrors: [Field: String]
+       uiState: idle | saving | savedSuccess | failed(String)
+       createDeck(title:topic:cardData:) — name matches doc/sequence diagram
+       updateDeck(_:), deleteCard(cardID:) (FR-13), deleteDeck(_:) (FR-12)
+       addCard(), moveCards(from:to:), toggleSnippet(cardID:)
+       Calls FlashcardFactory to build cards, then backend.saveDeck(...)
+       (BackendFacade from Stage 9; until then a LocalOnlyBackend
+       conforming to the same protocol, so the swap needs no VM change).
+ [ ] Validation runs on Save (and live, debounced, after the first failed
+     save), so the first keystroke doesn't flash errors.
+
+ 3.2 Deck library (Features/Decks/DeckLibraryView.swift)
+ [ ] Decks tab root. Large title "Decks" + .searchable (filter by title or
+     topic). Segmented filter: All / Mine / Starter.
+     Sections: "My Decks" (user) and "Starter Decks". @Query, sorted by
+     updatedAt desc / title.
+ [ ] DeckTile (2-column grid on larger phones, 1 column on SE): topic
+     symbol on a tinted tile, title, "12 cards", mastery ProgressBar,
+     sync status as an SF Symbol + label (FR-48):
+       Draft · Saved locally · Syncing (animated) · Synced · Conflict
+       (signed-out user decks always show "Saved locally").
+     Context menu: Study, Edit, Hide/Delete.
+ [ ] Toolbar "+" (glass) → DeckBuilderView as a full-height sheet (UC-01
+     step 1).
+ [ ] Starter decks: no edit/delete. Swipe or context menu "Hide". A "Show
+     hidden starter decks" toggle at the bottom of the list, with Restore
+     (FR-15).
+ [ ] User decks: tap → DeckDetailView (cards list, Study, Edit, Delete).
+ [ ] Delete deck: confirmation dialog (FR-12). Only allowed when the sync
+     state is locallyPersisted or synced (state diagram). Otherwise the
+     button is disabled with the reason shown.
+ [ ] Empty state: "Make your first deck" CTA.
+
+ 3.3 Builder = CARD PAGER (D15)
+     Files: Features/Decks/Builder/DeckBuilderView, DeckHeaderEditor,
+            CardPagerView, CardPageEditor, CardThumbnailStrip
+ [ ] Layout (top → bottom):
+
+       ┌ Cancel        New Deck          Save ┐  ← nav bar (Save = glassProminent)
+       │ [Title ______________ 12/60]         │  ← DeckHeaderEditor
+       │ [Topic: ◆ Data Structures ▾]         │
+       │ ╭──────────── card 2 of 5 ─────────╮ │  ← CardPagerView (TabView .page)
+       │ │ (Front | Back)   ◇ Medium ▾      │ │     card-shaped editor, lg radius
+       │ │ Prompt (markdown) ……… 84/500     │ │
+       │ │ [B][I][`][•]  formatting bar     │ │
+       │ │ ── + Add code ─────────────────  │ │  ← collapsed unless snippet
+       │ ╰──────────────────────────────────╯ │
+       │  ▢ ▣ ▢ ▢ ▢ [+]                       │  ← CardThumbnailStrip
+       └──────────────────────────────────────┘
+
+ [ ] DeckHeaderEditor: Title (counter n/60), Topic menu picker with topic
+     symbols (Topics from SwiftData). Inline errors (FR-10).
+ [ ] CardPagerView: horizontal paging; the last page is "+ New card" (tap
+     adds and moves to it). The page indicator shows the error count per
+     card (red dot) after a failed save.
+ [ ] CardPageEditor (looks like the real study card):
+       - Front/Back segmented toggle. Front = prompt (+ snippet if
+         placement front); Back = answer.
+       - Edit/Preview toggle: Preview renders via CardMarkdownView (2.4),
+         WYSIWYG.
+       - Markdown TextEditor + formatting bar (2.5), counter n/500.
+       - Optional tier menu (None / Easy / Medium / Hard) shown as a
+         TierStyle chip.
+       - "+ Add code" row → expands to: language menu
+         (Swift/Python/Java/C++) + CodeEditorView (Runestone, 2.5) +
+         counter n/80 lines + "Remove code".
+       - Inline error text under each failing field (FR-10).
+ [ ] CardThumbnailStrip: mini card per page (first line of the prompt +
+     code icon). Tap = jump. Long-press drag = reorder. Context menu
+     Duplicate / Delete (FR-13; delete has an undo toast).
+ [ ] Save Deck → VM.createDeck → on success: success haptic, dismiss, the
+     new deck tile animates into the library (Fig. 6 steps 8–9). On
+     validation failure: page to the first invalid card and focus the
+     field.
+ [ ] Cancel with unsaved changes → "Discard changes?" confirmation.
+ [ ] Edit existing deck (FR-11): same builder, prefilled. Opening it moves
+     the deck to Drafting (in memory, see 9.2).
+ [ ] Keyboard: toolbar "Done"; fields don't hide under the keyboard on
+     iPhone SE (NFR-10).
+ [ ] Accessibility labels on the code toggle, counters, errors.
+
+ 3.4 Tests
+ [ ] DeckViewModel: create valid deck → persisted with N cards; invalid →
+     fieldErrors populated, nothing persisted; edit; delete card; delete
+     deck blocked in syncing/conflict.
+ [ ] UI test (XCUITest): create a deck with 2 cards, one with a Python
+     snippet → appears in the library with the "Saved locally" badge.
+
+ Done when: a user can create, edit, and delete decks and cards with
+ optional code, see inline errors, and everything persists across launches.
+
+
+================================================================================
+ STAGE 4 — STARTER DECKS CONTENT + LOADER          [parallel w/ 3] (RB + AB, ~2 days)
+================================================================================
+ Implements: FR-14, FR-15 (data side), D3, D9 tagging
+
+ [ ] codey/Resources/starter-decks.json
+       { "schemaVersion": 1,
+         "decks": [ { "starterKey": "starter-ds", "topicId": "topic-data-structures",
+                      "title": "Data Structures Essentials",
+                      "cards": [ { "id": "sc-ds-001", "prompt": "...",
+                                   "answer": "...", "difficulty": "easy",
+                                   "code": { "language": "swift", "source": "..." } } ] } ] }
+       "code" is OPTIONAL per card.
+ [ ] Content: 1 deck per topic (4 decks), ≥ 12 cards each (≥ 4 Easy /
+     4 Medium / 4 Hard). At least 4 cards per deck have a code snippet,
+     and across all decks every CodeLanguage appears at least twice.
+     Prompts/answers use inline markdown where it helps.
+ [ ] StarterDeckLoader: decode, then each card goes through
+     FlashcardFactory.createCard(from:) (factory rule: "including starter
+     decks"). Upsert by starterKey/card id via the Stage 0 seeding rules.
+     Preserve the user's mastery/retiredAt/isHidden when text changes.
+     Starter decks are origin = .starter and never enter the sync queue.
+ [ ] Hook into the boot sequence (LoadingView progress steps).
+ [ ] Tests: file decodes; every card passes the validator; every deck has
+     all 3 tiers; ids unique; re-running the loader is idempotent and
+     keeps mastery.
+
+ Done when: fresh install shows 4 starter decks; re-launch doesn't
+ duplicate them; user progress on them survives a content update.
+
+
+================================================================================
+ STAGE 5 — STUDY MODE: FLIP, RATE, MASTERY                         (ES, ~3 days)
+================================================================================
+ Implements: FR-16, FR-17, FR-18, FR-29 (deck side), UC-04; D14, D17, B15
+
+ [ ] StudySessionView(deck:, tierFilter: Difficulty?) replaces
+     PracticeSwipeView. Presented as .fullScreenCover (focus mode, D8):
+     the tab bar is hidden; close (✕) top-left; progress top-center.
+
+         ✕        ━━━━━━━━━──────  3 / 12
+       ╭─────────────────────────────────╮
+       │ ◇ Medium                         │
+       │ What does `defer` do?            │   ← CardMarkdownView
+       │ ┌ swift ─────────────────── ⧉ ┐ │
+       │ │ func f() { defer {…} }       │ │
+       │ └──────────────────────────────┘ │
+       │            tap to flip           │
+       ╰─────────────────────────────────╯
+        (Again)  (Hard)  (Good)  (Easy)     ← GlassEffectContainer, after flip
+          ↺0      =      +1      +2         ← mastery-delta hint
+
+ [ ] StudyCardView (B15 rebuild): two separate faces in a ZStack. Each
+     face rotates on its own (front 0→90°, back −90→0°) with perspective,
+     so neither face is ever mirrored and text stays selectable. Card
+     height fits the content up to a max, then scrolls inside the card
+     for long code. Reduce Motion → crossfade instead of flip.
+ [ ] Answer hidden until tap (FR-16). Tap anywhere on the card, or press
+     Space on a hardware keyboard, flips it.
+ [ ] Rating (FR-17), shown only after reveal: 4 glass buttons in a
+     GlassEffectContainer.
+       Colors: Again danger, Hard warning, Good brand, Easy success.
+       Each shows the mastery-delta hint (↺0 / = / +1 / +2).
+       Swipe shortcuts on the revealed card: ← Again, → Good, ↑ Easy. The
+       card tilts while dragging, with a colored edge glow and label
+       ("Good") once past the threshold; release past it commits.
+       Distinct .sensoryFeedback per rating.
+       VoiceOver: rating buttons are the primary path; swipes are exposed
+       as accessibility actions.
+ [ ] Rating → card.updateMastery(rating) (FR-18), save. "Again" cards go
+     back into the end of the session queue once.
+ [ ] Reaching mastery 5: a "Mastered" chip pops on the card (symbol
+     bounce). For starter cards it also notes "retired".
+ [ ] Resumable session: persist StudyProgressSnapshot(deckId, queue,
+     index) so the Home bottom accessory can show "▶ Continue <deck>
+     n/N" (D8).
+ [ ] Summary screen: StatTiles (reviewed, newly mastered, deck mastery %
+     delta), "Study again" / "Done". CelebrationOverlay if this session
+     unlocked a tier.
+ [ ] Deck pool for STARTER decks: active cards = not retired, in unlocked
+     tiers (Stage 6 TierGate). Tier picker limited to unlocked tiers
+     (FR-29). User decks: all cards, with an optional tier filter if any
+     cards are tagged.
+ [ ] Each rating increments a DailyActivity counter (prep for FR-32;
+     cheap now).
+ [ ] Remove the old Topic → Practice entry (topics are quiz-only now; decks
+     own flashcards). Delete PracticeSwipeView/PracticeHomeView once
+     unused. FlashcardView is replaced by StudyCardView + CardMarkdownView.
+ [ ] Tests: StudySession queue logic (again requeue, finish condition),
+     mastery integration.
+
+ Done when: studying any deck updates mastery that persists; mastered
+ starter cards retire.
+
+
+================================================================================
+ STAGE 6 — XP, LEVELS, ADAPTIVE TIERS (LEVEL GATING)               (AB + ES, ~4 days)
+================================================================================
+ Implements: FR-19, FR-20, FR-22–FR-31, prep for FR-36 / FR-37. D5, D9.
+
+ 6.1 XP & levels
+ [ ] Services/Gamification/XPPolicy.swift (pure, unit-tested):
+       base(tier): easy 10, medium 15, hard 20
+       streakBonus(streak) = min(5 × (streak − 1), 25)   // streak ≥ 1
+       xpForCorrectAnswer(tier:, streakAfterIncrement:)
+     Replaces QuizSession.baseXP / streakBonusPerLevel (B5). Update
+     QuizSessionTests (expected values change: easy 10,15,20,25,30,35,35…).
+ [ ] Level-up detection: compare LevelCalculator.level before and after
+     the award. Show a level-up banner/toast in the quiz and summary.
+ [ ] Flashcard study awards NO XP (prevents farming; XP stays a quiz
+     reward). → open item O2.
+
+ 6.2 Progress models (local only, D10)
+ [ ] @Model QuestionProgress: questionId (unique), topicId, difficulty,
+       consecutiveCorrect, totalAttempts, totalCorrect, retiredAt: Date?,
+       isReview: Bool, lastAnsweredAt.
+ [ ] @Model TopicProgress: topicId (unique), unlockedTiers: [Difficulty]
+       (STICKY: once unlocked, never relocks, even when FR-28 reviews
+       return questions to the pool and the retired % drops), unlockedAt
+       dates.
+ [ ] @Model QuizAnswerRecord: questionId, topicId, correct, answeredAt.
+       Feeds FR-36 accuracy over the last 50 answers. Prune to the last 200
+       per topic.
+ [ ] Add to the schema version + migration.
+
+ 6.3 Rules (Services/Practice/TierGate.swift + QuestionPool.swift)
+ [ ] recordAnswer(question, correct) (FR-23/24/28):
+       correct   → consecutiveCorrect += 1;
+                   if isReview → retire again immediately (FR-28), isReview=false
+                   else if consecutiveCorrect ≥ 3 → retiredAt = now
+       incorrect → consecutiveCorrect = 0; if isReview → isReview=false,
+                   stays active (FR-28)
+ [ ] Review return (FR-28): a retired question with retiredAt + 7 days ≤
+     now becomes active with isReview = true. Computed at pool-build time;
+     no background job.
+ [ ] Unlocks (FR-25/26), evaluated after every answer and stored in
+     TopicProgress:
+       Medium: retired(Easy) ≥ ceil(0.70 × count(Easy))
+       Hard:   retired(Medium) ≥ ceil(0.70 × count(Medium)) AND level ≥ 3
+       An empty tier counts as complete. Thresholds live in one
+       GatingConfig struct (the doc says they'll be calibrated in Sprint 3).
+       Starter-deck cards use the same thresholds, with "retired" = mastery 5
+       (D9).
+ [ ] Quiz builder (FR-19, FR-27):
+       size 10 (or fewer if the pool is smaller; show "n questions
+       available").
+       active pool = unlocked tiers, not retired, or due for review.
+       highest = highest unlocked tier;
+       take ceil(0.7 × size) from highest, the rest from lower unlocked
+       tiers; if short, backfill from any unlocked active tier; only Easy
+       unlocked → all Easy.
+       FR-29 restricted mode: all questions from the chosen unlocked tier.
+       Deterministic when given a seeded RNG (for tests).
+ [ ] Pool exhausted → "Topic mastered!" state with "Review retired
+     questions" (practice only, no XP).
+
+ 6.4 Quiz UI updates
+ [ ] Quiz tab root (QuizTopicsView, replaces TopicListView): one row-card
+     per topic. Shows the topic symbol, a TierChipRow, accuracy, and
+     "x of y retired". Tap → QuizSetupView sheet (.presentationDetents
+     medium):
+       tier chips (Easy ✓, Medium ✓, Hard 🔒) with the lock reason
+       ("Retire 3 more Medium" / "Reach Level 3 · 420 XP to go"),
+       "Mixed (recommended)" vs a single-tier picker (FR-29), question
+       count, and a Start button (glassProminent) that opens the quiz as a
+       .fullScreenCover.
+ [ ] QuizModeView (focus mode):
+       - Top bar: ✕, segmented progress (10 ticks colored correct/wrong
+         as you go), streak chip with flame (shown at streak ≥ 2).
+       - Question card: tier chip and review badge; prompt rendered via
+         CardMarkdownView (questions can contain `code` too).
+       - AnswerOptionRows (2.2), multi-line safe (fixes B14).
+       - On answer: .sensoryFeedback(.success/.error); the correct row
+         pulses; an XPGainLabel "+25 XP" floats with a breakdown
+         ("Medium 15 + streak 10").
+       - Explanation slides up in a card, with a glass "Next" button
+         pinned at the bottom.
+ [ ] QuizSummaryView:
+       - Big percentage ring + "8/10 correct" (FR-20).
+       - StatTiles: XP earned (rolls up), best streak, newly retired.
+       - "Tier unlocked: Medium" and "Level 4!" banners with
+         CelebrationOverlay.
+       - Buttons: "Quiz again" / "Done".
+ [ ] Snapshot/preview states for locked/unlocked chips.
+
+ 6.5 Content (B12)
+ [ ] Expand questions-seed.json so every topic has ≥ 8 Easy, ≥ 8 Medium,
+     ≥ 6 Hard (~22+/topic, ~90 total). Update expectedQuestionCount and
+     the tests. Bump the seed content version (non-destructive upsert from
+     Stage 0).
+ [ ] Optional: add an OOP topic (B13 / FR-21). Needs a 5th starter deck too.
+
+ 6.6 Tests (TC-22 … TC-31)
+ [ ] XPPolicy table tests (all tiers × streak 1…8, cap).
+ [ ] Retire after 3; reset on wrong; review after 7 days (inject a Clock);
+     review retire-on-1; unlock thresholds incl. ceil and empty tier;
+     Hard needs level 3; sticky unlock; quiz mix 7/3; backfill; Easy-only;
+     restricted tier.
+
+ Done when: a new user starts with only Easy, unlocks Medium by play,
+ can't see Hard before level 3, and quizzes are 10 questions with % score.
+
+
+================================================================================
+ STAGE 7 — HOME HUB, GLASS TAB BAR, PROFILE SHEET, ONBOARDING, ICON (ES, ~4 days)
+================================================================================
+ Implements: D8, D12, D16, D17, D18, FR-37 (partial), NFR-10, NFR-11;
+ "taps to study ≤ 3" metric
+
+ 7.1 Shell (Navigation/RootView.swift, replaces MainTabView)
+ [ ] TabView using the Tab API:
+       Tab("Home", systemImage: "house.fill")
+       Tab("Decks", systemImage: "rectangle.stack.fill")
+       Tab("Quiz", systemImage: "questionmark.bubble.fill")
+       (symbols final per ES)
+     .tabBarMinimizeBehavior(.onScrollDown). Each tab has its own
+     NavigationStack; screens must be scrollable for minimize to kick in
+     (short lists won't collapse; that's expected).
+ [ ] .tabViewBottomAccessory: the ContinueStudyingAccessory
+     ("▶ Swift Closures · 7/12" + small ring) appears ONLY when a
+     resumable StudyProgressSnapshot exists (the accessory shows on every
+     tab, so it must be globally relevant). Handle the inline/expanded
+     placements (environment tabViewBottomAccessoryPlacement): compact
+     label when inline. Tap → resume the study fullScreenCover.
+ [ ] Focus mode: Study and Quiz are .fullScreenCover presentations, so the
+     tab bar and accessory never cover rating buttons or answers.
+ [ ] Deep-link enum AppRoute (home, deck(id), study(id), quiz(topic),
+     profile) owned by an @Observable Router. Ready for the widget (stretch)
+     and for sign-in callbacks.
+ [ ] Avatar button (top-right toolbar item on Home only) → ProfileSheet.
+
+ 7.2 HomeView (hub)  — scroll content; title area is custom, not a nav title
+         Good evening, Raaj                              (◎)
+         ╭───────────────────────────────────────────────╮
+         │  ◔ Lv 4      1,840 XP · 160 to Lv 5   🔥 3    │  ← LevelCard: ProgressRing
+         ╰───────────────────────────────────────────────╯
+         ╭─ Your Decks ───────────╮ ╭─ Quiz ──────────────╮
+         │ 6 decks · 2 due        │ │ Mixed · 10 Qs        │  ← HubTiles (2-up)
+         │ [+ New]                │ │ [Start ▶]            │
+         ╰────────────────────────╯ ╰──────────────────────╯
+         Topics                                      See all
+         ◆ Data Structures   ● ● ○   78%                    ← TierChipRow + accuracy
+         ◆ Algorithms        ● ○ 🔒  64%
+         ╭ Sign in to back up your decks   [Sign in] ✕ ╮     ← only if signed out
+ [ ] Greeting by time of day + display name (or "Codey Learner").
+ [ ] LevelCard: ProgressRing (LevelCalculator), XP total (numericText),
+     "n XP to Level N+1", streak chip (static currentStreak until stretch
+     FR-32–34).
+ [ ] HubTiles: Decks (count, "+ New" opens the builder sheet directly) and
+     Quiz (Start → a mixed quiz on the weakest pinned topic, or QuizSetup).
+ [ ] Topics section: pinned topics first (from onboarding), each with
+     TierChipRow + accuracy over the last 50 answers (FR-36,
+     QuizAnswerRecord). Tap → QuizSetupView.
+ [ ] Sign-in nudge card (dismissible, remembered) when signed out.
+ [ ] Empty/new-user state: friendly EmptyStateView prompts ("Start with a
+     starter deck").
+ [ ] Remove AnalyticsDashboardView, PracticeHomeView, SettingsView (moved),
+     TopicListView (→ QuizTopicsView), MainTabView.
+
+ 7.3 ProfileSheet (replaces the Settings tab)
+ [ ] .sheet with a NavigationStack + List(.insetGrouped) — native rows,
+     no custom cards:
+       Header: avatar, display name, Level / XP, account status
+         (Signed in as … / Guest).
+       Account: Sign in with Google | Sign out · Last synced · Sync now ·
+         Pending changes n.
+       Appearance: System / Light / Dark (Stage 0.7).
+       Study: pinned topics (multi-select), Hidden starter decks → restore
+         (FR-15).
+       Data: Reset progress · Erase all local data (Stage 0.5;
+         destructive role + confirmation).
+       About: version/build, acknowledgements (Textual, Runestone,
+         TreeSitterLanguages, Supabase, GoogleSignIn licenses, which NFR-15
+         requires us to credit), "Report a problem" (stretch FR-49).
+
+ 7.4 Onboarding (D16)  — Features/Onboarding/
+ [ ] Shown once (hasCompletedOnboarding in @AppStorage) after boot
+     seeding, as a fullScreenCover over RootView.
+       1. Welcome: app symbol/icon, "Learn CS with flashcards & quizzes",
+          3 feature bullets with SF Symbols, Continue.
+       2. Pick topics: grid of topic tiles (multi-select, ≥ 1). Saves
+          UserProfile.pinnedTopicIds (new field, schema bump) and pins
+          those starter decks to the top of Decks.
+       3. Sync: "Sign in with Google to back up & sync" (standard Google
+          button per Google branding guidelines) + "Skip for now". Uses
+          BackendFacade (works once Stage 9 lands; before that, Skip
+          only).
+     Page indicator, Back, works at large Dynamic Type, Reduce Motion
+     friendly.
+ [ ] Profile → "Replay onboarding" (debug builds only) for demos.
+
+ 7.5 Launch & app icon (D18)
+ [ ] LoadingView restyle: brand gradient background, app glyph, slim
+     ProgressBar. Skip the artificial 200 ms delays (keep a minimum of
+     ~400 ms total only to avoid flashing).
+ [ ] App icon in Icon Composer (.icon): indigo, a "terminal cursor / card
+     stack" glyph, light/dark/tinted (clear) variants. Replace
+     AppIcon.appiconset (verify that Tuist's buildableFolders picks up a
+     .icon file; if not, add it as an explicit resource).
+ [ ] Accent color asset = brand indigo (AccentColor.colorset).
+
+ 7.6 QA
+ [ ] Layout check on iPhone SE (3rd gen), iPhone 16, 16 Pro Max in
+     light/dark (NFR-10/11). Tab bar minimized and expanded; accessory on
+     and off; Dynamic Type up to AX3 on Home, Builder, Study, Quiz.
+
+ Done when: every flow is reachable from Home in ≤ 3 taps and no screen
+ clips on the 3 device sizes.
+
+
+================================================================================
+ STAGE 8 — SUPABASE PROJECT, SCHEMA, RLS (from scratch, D6)        (AB, ~2–3 days)
+================================================================================
+ Implements: NFR-05, NFR-06, NFR-07, NFR-13, NFR-20; R10, R11. Deployment
+ diagram (Fig. 13).
+
+ 8.1 Accounts & consoles (manual, document the steps in docs/backend-setup.md)
+ [ ] Supabase: create a Free-plan project (AWS region near users). Save the
+     URL + anon key to the team password manager → Secrets.xcconfig.
+     Never commit the service_role key.
+ [ ] Google Cloud: new project; OAuth consent screen in TESTING mode, add
+     the 3 devs + client as test users (≤ 100 limit);
+     create an iOS OAuth client (bundle ID from 0.2) → GOOGLE_IOS_CLIENT_ID +
+     reversed client ID URL scheme;
+     create a Web OAuth client → GOOGLE_SERVER_CLIENT_ID + secret (Supabase
+     uses this to verify ID tokens).
+ [ ] Supabase Auth → Providers → Google: enable, paste the Web client ID +
+     secret, add the iOS client ID to authorized client IDs. Enable
+     "Skip nonce check" if required for native iOS ID-token sign-in
+     (verify against current Supabase docs at implementation time).
+ [ ] Supabase CLI: `supabase init` in the repo root → supabase/ folder
+     committed. `supabase link`. Migrations applied with `supabase db push`.
+
+ 8.2 Migrations (supabase/migrations/<timestamp>_*.sql)
+ [ ] 0001_profiles.sql
+       profiles(id uuid PK references auth.users on delete cascade,
+                display_name text check (char_length between 1 and 30),
+                avatar_id text, total_xp int not null default 0 check (>= 0),
+                created_at, updated_at timestamptz default now())
+       trigger on auth.users insert → create profile row.
+ [ ] 0002_decks_flashcards.sql
+       decks(id uuid PK  -- client-generated, equals local id
+             owner_id uuid not null default auth.uid() references auth.users on delete cascade,
+             title text not null check (char_length(title) between 1 and 60),
+             topic_id text not null,
+             created_at timestamptz not null, updated_at timestamptz not null,  -- CLIENT time, used for LWW
+             deleted_at timestamptz,                                           -- tombstone
+             server_updated_at timestamptz not null default now())             -- trigger-set, pull cursor
+       flashcards(id uuid PK, deck_id uuid not null references decks on delete cascade,
+             owner_id uuid not null default auth.uid(),
+             prompt text check 1..500, answer text check 1..500,
+             code_language text check in ('swift','python','java','cpp'),
+             code_source text check (char_length(code_source) <= 2000),
+             check ((code_language is null) = (code_source is null)),
+             difficulty text check in ('easy','medium','hard'),
+             sort_index int not null default 0,
+             created_at, updated_at, deleted_at, server_updated_at (same semantics))
+       indexes: (owner_id, server_updated_at) on both tables; flashcards(deck_id).
+       trigger: BEFORE INSERT OR UPDATE set server_updated_at = now().
+       Limits MUST match ModelValidator (test in 1.2 compares them; note it
+       in the PR template).
+ [ ] 0003_sync_log.sql — sync_log(id bigserial, owner_id, entity text,
+       entity_id uuid, op text check in ('upsert','delete'),
+       client_ts timestamptz, server_ts timestamptz default now(),
+       device_id text). Insert-only for the owner; no update/delete
+       policies (audit ledger, R2).
+ [ ] 0004_rls.sql — ENABLE RLS on every table (metric: 100%).
+       profiles: select/update where id = auth.uid().
+       decks/flashcards: select/insert/update/delete where owner_id = auth.uid();
+         flashcards insert/update also requires
+         exists(select 1 from decks d where d.id = deck_id and d.owner_id = auth.uid()).
+       sync_log: insert/select where owner_id = auth.uid().
+ [ ] (stretch, FR-49) 0005_feedback.sql — feedback_reports(id, owner_id
+       nullable, description text 1..2000, app_version, created_at);
+       insert-only.
+ [ ] supabase/tests/rls.sql (pgTAP via `supabase test db`): user B sees 0 of
+     user A's rows on every table; B can't insert a card into A's deck
+     (NFR-07, metric "cross-account successes = 0").
+ [ ] supabase/seed.sql for local `supabase start` dev (optional).
+
+ 8.3 Ops (R11, NFR-20)
+ [ ] scripts/backup.sh: pg_dump of the remote DB to a dated file (gitignored).
+     Weekly calendar reminder or a GitHub Actions cron (free) that also
+     pings the API to stop the 1-week inactivity pause.
+ [ ] Monthly check of the Supabase usage page (NFR-20).
+
+ Done when: migrations apply cleanly to a fresh project; RLS tests pass;
+ setup doc lets a teammate reproduce everything.
+
+
+================================================================================
+ STAGE 9 — AUTH + BACKEND FACADE + SYNC STATE MACHINE + SYNC ENGINE
+                                                         (AB lead, ES tests, ~6–8 days)
+================================================================================
+ Implements: FR-01, FR-02, FR-03, FR-12 (remote), FR-44, FR-45, FR-46, FR-47,
+             FR-48, NFR-02, NFR-04, NFR-09; State (§9.3) + Façade (§9.4)
+             patterns; R2, R7, R8, R9, R10.
+
+ 9.1 Dependencies
+ [ ] Tuist/Package.swift: add supabase-swift (product "Supabase", or
+     just "Auth" + "PostgREST") and GoogleSignIn-iOS. Pin exact versions
+     (current stable at implementation time). `tuist install` and
+     `tuist generate`. Third-party packages are now exactly: Supabase,
+     GoogleSignIn-iOS, Textual, Runestone, TreeSitterLanguages (NFR-15
+     as amended).
+ [ ] Info.plist: GIDClientID, CFBundleURLTypes with the reversed client
+     ID, Supabase keys from xcconfig. No NSAppTransportSecurity exceptions
+     (NFR-06).
+ [ ] CodeyApp: .onOpenURL { GIDSignIn.sharedInstance.handle($0) }.
+
+ 9.2 State pattern  (Services/Sync/DeckSyncState.swift — ALL states in this one file, R9)
+ [ ] protocol DeckSyncState { var kind: DeckSyncStateKind { get };
+       var name: String { get }
+       func onSave(_ deck) -> DeckSyncState
+       func onEdit(_ deck) -> DeckSyncState
+       func onPush(_ deck) -> DeckSyncState
+       func onRemoteResponse(_ deck, _ result: RemoteResult) -> DeckSyncState
+       func onResolve(_ deck) -> DeckSyncState
+       func onDelete(_ deck) -> DeckSyncState? (nil = not allowed) }
+     5 conforming structs: DraftingState, LocallyPersistedState,
+     SyncingState, SyncedState, ConflictState.
+     FlashcardDeck (context) persists syncStateRaw and exposes
+     currentState { DeckSyncStateKind → struct }, plus save(), edit(),
+     push(), resolve(), delete(), setState(_:).
+     (Streamlining: SwiftData can't store a protocol existential, so we
+      persist the enum raw value and rebuild the state object. The pattern
+      is intact and the .tex should get a one-line note.)
+ [ ] Transition table = Fig. 7, exactly:
+       (new) ──New Deck──▶ Drafting
+       Drafting ──save, invalid──▶ Drafting (errors shown)
+       Drafting ──save, valid──▶ LocallyPersisted (markDirty; enqueue upsert)
+       LocallyPersisted ──edit──▶ Drafting
+       LocallyPersisted ──push (online & signed in)──▶ Syncing
+       Syncing ──push──▶ Syncing (no-op, already pushing)
+       Syncing ──network drop/timeout──▶ LocallyPersisted (retry later)
+       Syncing ──200 ACK──▶ Synced (lastSyncedAt = now)
+       Syncing ──timestamp mismatch──▶ ConflictDetected
+       ConflictDetected ──resolve (additive merge, markDirty)──▶ LocallyPersisted
+       Synced ──edit──▶ Drafting
+       LocallyPersisted | Synced ──delete──▶ (final) tombstone + enqueue delete
+       Drafting | Syncing | ConflictDetected ──delete──▶ not allowed
+       Starter decks: edit/delete not allowed, never pushed.
+     Any other call is a no-op that returns self and logs at .debug.
+ [ ] Crash recovery on launch: Syncing → LocallyPersisted; Drafting →
+     LocallyPersisted if it was persisted before (Drafting is otherwise an
+     in-editor state only; a killed app must not strand a deck).
+ [ ] Tests: one @Test per transition arrow above plus each disallowed
+     operation (R9: "every transition has a test").
+
+ 9.3 Sync queue  (FR-45)
+ [ ] @Model SyncOperation: id, entity (deck|card|profile), entityId,
+     op (upsert|delete), enqueuedAt, attempts, lastError, ownerId.
+     Coalescing: a new upsert replaces a pending upsert for the same entity;
+     a delete replaces any pending upsert; an upsert after delete is
+     impossible (the tombstone blocks edits).
+ [ ] ISyncQueue protocol: enqueue, peekBatch(limit:), markDone, markFailed.
+ [ ] Queueing happens even when signed out (guest). The queue drains after
+     sign-in.
+
+ 9.4 Subsystems behind protocols (testable with mocks, R7)
+ [ ] AuthProviding — SupabaseAuthProvider:
+       signIn(presenting: UIViewController) async throws -> AppUser
+         GIDSignIn.signIn(withPresenting:) → idToken + accessToken →
+         supabase.auth.signInWithIdToken(credentials: .init(provider: .google,
+           idToken:, accessToken:))
+       signOut() async — supabase.auth.signOut() + GIDSignIn.signOut()
+       currentUserID() -> UUID?, authStateStream
+       Session storage: supabase-swift's default Keychain storage (FR-02).
+       Verify the item is in the Keychain and NOT in UserDefaults. Set the
+       accessibility to afterFirstUnlockThisDeviceOnly if configurable.
+       Sign-out removes it (FR-03); add a test.
+ [ ] RemoteDeckStore — SupabaseDataClient: upsertDecks([DeckPayload]),
+       upsertCards([FlashcardPayload]) (one batched request each, NFR-02),
+       fetchChanges(since: Date) -> (decks, cards), upsertProfile,
+       fetchProfile, appendSyncLog.
+ [ ] LocalDeckStore — SwiftDataService (doc name): insert, fetchDecks,
+       delete, fetch(id:).
+ [ ] Reachability — NetworkMonitor (NWPathMonitor): isReachable, AsyncStream
+       of changes.
+ [ ] Only files under Services/Backend/Supabase/ may `import Supabase` or
+     `import GoogleSignIn`. Add scripts/check-imports.sh to the PR
+     checklist (R7 trigger).
+
+ 9.5 BackendFacade  (Services/Backend/BackendFacade.swift; ≤ 300 lines or split, R8)
+ [ ] @MainActor @Observable. Public API (all the UI ever sees):
+       authState: signedOut | signingIn | signedIn(AppUser) | error(String)
+       signInWithGoogle() async, signOut() async
+       saveDeck(_ draft) throws -> FlashcardDeck   // local FIRST (FR-44), then notifyPendingSync
+       deleteDeck(_ deck) throws, deleteCard(_ card) throws
+       fetchDecks() -> [FlashcardDeck]
+       syncPending() async
+       syncStatus(for deck) -> DeckSyncStateKind
+ [ ] LocalOnlyBackend from Stage 3 is deleted. DeckViewModel takes
+     BackendFacade (or a protocol it conforms to, for VM tests).
+
+ 9.6 SyncEngine  (FR-46, FR-47, NFR-09)
+ [ ] Triggers: after saveDeck (debounced 2 s), reachability restored,
+     app didBecomeActive, sign-in completed, manual pull-to-refresh in the
+     library. Guarantees a sync within 30 s of reconnect (NFR-09).
+ [ ] Push: drain the queue in batches (decks then cards), set Syncing →
+     Synced/LocallyPersisted, append to sync_log. Exponential backoff
+     (2, 4, 8 … max 300 s) on failure.
+ [ ] Pull: fetchChanges(since: lastPullCursor) using server_updated_at.
+     New remote cards come through FlashcardFactory.createCard(from:)
+     (factory rule for sync). Remote tombstones delete locally.
+ [ ] Conflict detection (Syncing → ConflictDetected): the remote deck's
+     server_updated_at > local.serverUpdatedAt (someone else changed it
+     since our last sync) AND the local deck is dirty.
+ [ ] Additive merge (FR-47, ConflictState.onResolve):
+       cards = union by id;
+       card in both & both edited → later updatedAt wins;
+       delete vs edit → later timestamp wins (tombstone deletedAt vs
+       updatedAt);
+       deck title/topic → later updatedAt wins;
+       result marked dirty → LocallyPersisted → re-push.
+     Known limit: relies on device clocks; acceptable for a class project.
+     Documented.
+ [ ] Profile sync (D10): total_xp merge = max(local, remote) (XP only
+     goes up, except via "Reset progress", which writes 0 explicitly);
+     display_name/avatar = last write wins.
+ [ ] First sign-in on a device: claim guest decks (ownerId = user),
+     enqueue upserts, then pull remote decks.
+ [ ] Sign-out (FR-03): confirmation "Keep decks on this device / Remove
+     them". Default = remove this account's synced decks; unsynced changes
+     trigger a warning. This stops account B from uploading account A's
+     decks. → open item O3.
+ [ ] UI: library badges driven by syncStateRaw (FR-48). Settings Account
+     card shows signed-in email/name, Sign out, last sync time, a "Sync
+     now" button, and the pending count.
+
+ 9.7 Tests
+ [ ] Unit (mocks, no network): queue coalescing; push success → Synced;
+     push timeout → LocallyPersisted + backoff; conflict → merge cases
+     (add/add, edit/edit, delete/edit both orders); offline save never
+     touches the network (FR-44); reconnect triggers a sync.
+ [ ] Integration (opt-in, runs only if SUPABASE_TEST_URL + 2 test-account
+     credentials are set in the env):
+       100-card deck push ≤ 5 s on Wi-Fi (NFR-02),
+       account B reads 0 of account A's rows (NFR-07),
+       offline edits → reconnect → local and remote card counts equal,
+       no duplicates (NFR-09).
+
+ Done when: sign in with Google works on Simulator; decks made offline sync
+ after reconnect; two simulators signed into the same account converge
+ after concurrent edits; the badges reflect each state.
+
+
+================================================================================
+ STAGE 10 — SECURITY, QUALITY & METRICS                    (ES + AB, ~2 days)
+================================================================================
+ [ ] NFR-04: set FileProtectionType on the SwiftData store directory
+     (Application Support/…). Note the trade-off: `.complete` blocks
+     background sync while the device is locked. Doc says complete; use
+     `.completeUnlessOpen` if background sync is needed and update the .tex.
+     Verify the attributes in a test.
+ [ ] NFR-06: confirm no ATS exceptions; Proxyman capture shows TLS 1.3 to
+     *.supabase.co.
+ [ ] NFR-10/11: layout checks on the 3 device profiles × light/dark for
+     Home, Library, Builder (with an open snippet), Study, Quiz,
+     QuizSetup, Summary, ProfileSheet, Onboarding. No snapshot library (NFR-15). Use
+     XCUITest screenshots attached to test results and review them
+     manually, or an ImageRenderer-based pixel compare we write ourselves.
+ [ ] NFR-12: Accessibility Inspector audit, both modes; especially the
+     syntax colors and badges.
+ [ ] NFR-16: coverage ≥ 70% on Models + ViewModels + Services (Xcode report).
+ [ ] Metrics plan (NFR-17–19): record Sprint 3 baselines in the table:
+     cold-launch dashboard time, 100-card sync time, peak memory in study,
+     library scroll hitches, RLS %, cross-account successes, non-TLS1.3
+     requests, secrets found, layout pass %, a11y issues, taps-to-study.
+ [ ] Security PR checklist (R10): no tokens in logs, RLS on new tables, no
+     Supabase imports outside the facade, secrets not committed.
+
+
+================================================================================
+ STAGE 11 — STRETCH / COULD-HAVE (only after Stages 0–10)
+================================================================================
+ [ ] FR-04 display name (1–30) + avatar from a predefined SF Symbol set;
+     synced via profiles.
+ [ ] FR-32–34 daily goal (20 answers + ratings per local calendar day) and
+     a real streak (DailyActivity model already started in Stage 5);
+     replaces the static currentStreak.
+ [ ] FR-35 badges: first deck, 7-day streak, 1000 XP.
+ [ ] FR-38 weekly study plan: the 3 lowest-accuracy topics on Home.
+ [ ] FR-49 "Report a UI/UX issue" form in ProfileSheet → feedback_reports.
+ [ ] snippetPlacement front/back per card.
+ [ ] Swift 6 language mode + strict concurrency.
+ [ ] WidgetKit widget: level ring + "Study" deep link (AppRoute). Needs an
+     app-group container for SwiftData or a small shared snapshot.
+ [ ] iPad: NavigationSplitView sidebar layout (Tab API sidebarAdaptable).
+ [ ] Mascot "Codey" for empty states and celebrations.
+ [ ] Sound effects (opt-in toggle) for correct answers and level-ups.
+ (Out of this PRD: code-completion FR-39–41, leaderboards/challenges
+  FR-42–43.)
+
+
+================================================================================
+ STAGE 12 — DOCUMENTATION RECONCILIATION                         (RB, ongoing)
+================================================================================
+ The .tex is ahead of the code and differs from the decisions above. Update
+ it for the Sprint 3 document:
+ [ ] Status column: FR-05–11, 14, 16–18, 44 → "In progress"/"Implemented"
+     only as they actually land (DoD = tests pass + PR merged).
+ [ ] FR-30 → tier base + capped streak bonus (D5). FR-31 unchanged.
+ [ ] FR-08 → "rendered with Textual (Prism.js) and edited with Runestone
+     (Tree-sitter)"; prompt/answer support markdown (D1/D2 r2).
+ [ ] NFR-03 → minimum iOS 26 (D11); hardware table → Simulator iOS 26/27.
+ [ ] NFR-15 + Table 3 (services) → add Textual, Runestone,
+     TreeSitterLanguages (MIT-licensed, $0). Credit them in the About
+     section.
+ [ ] Risk register: add R12 "UI dependency abandonment / Xcode
+     incompatibility (Textual pre-1.0, Runestone)". Mitigation: exact
+     pins, single-file wrappers (CardMarkdownView, CodeEditorView),
+     fallbacks listed in 2.3. Trigger: fails to build on a new Xcode for
+     > 2 days.
+ [ ] Add the UI/UX design section: tokens, glass usage, navigation model,
+     screen mockups (from 3.3 / 5 / 7.2), and the onboarding flow. Update
+     the use case diagram with Onboard / Manage Profile.
+ [ ] FR-09 → "JSON card schema" = flashcard.schema.json + FlashcardPayload.
+ [ ] FR-14 → starter-decks.json, one deck per topic, tier-tagged.
+ [ ] FR-24/§2.2 → starter cards retire at mastery 5; unlocks are sticky.
+ [ ] FR-19 → "up to 10" (the pool may be smaller).
+ [ ] FR-21 → match the actual topics (or add OOP, B13).
+ [ ] Class diagrams: CodeSnippet as a value type; FlashcardPayload instead
+     of Dictionary; DeckViewModel uses @Observable; DeckSyncState rebuilt
+     from a persisted kind; Drafting is in-editor plus crash recovery.
+ [ ] Navigation/UI: Home hub with a 3-tab glass bar + profile sheet (D8 r2).
+ [ ] Metric "taps to start a study session ≤ 3": now 1 (accessory) or 2
+     (Decks → tile → Study).
+ [ ] Gantt for Sprint 3 from the stage estimates above (× 1.9 realism
+     factor, doc §4.4).
+ [ ] Traceability: map each TC-xx to the actual test names.
+
+
+--------------------------------------------------------------------------------
+ OPEN ITEMS (default chosen; confirm or change)
+--------------------------------------------------------------------------------
+ O1 Bundle ID value (default "edu.wku.cs360.codey").
+ O2 Should flashcard study earn any XP? (default: no; XP is quiz-only)
+ O3 Sign-out data handling (default: prompt; remove this account's synced
+    decks).
+ O4 Snippet limits 2000 chars / 80 lines (doc has no number). Add to FR-07.
+ O5 Snippet shown on the prompt side by default. Is per-card placement
+    needed?
+ O6 FileProtection .complete vs .completeUnlessOpen (Stage 10).
+ O7 Add an OOP topic now or later (B13).
+ O8 Final SF Symbols for tiers/tabs and the exact indigo hex (ES; must pass
+    4.5:1).
+ O9 Quiz hub tile "Start": a mixed quiz on the weakest pinned topic (default)
+    vs. always opening QuizSetup.
+ O10 Textual/Runestone versions pinned at implementation. If either breaks
+    on Xcode 27, use the 2.3 fallback and log it under R12.
+
+
+--------------------------------------------------------------------------------
+ SUGGESTED FILE LAYOUT AFTER THIS PRD
+--------------------------------------------------------------------------------
+ codey/Sources/
+   App/            CodeyApp, LoadingView, AppAppearance
+   Navigation/     RootView (Tab API), Router/AppRoute, ContinueStudyingAccessory
+   Models/         Question, Topic, UserProfile, QuizSession
+     Decks/        FlashcardDeck, Flashcard(+Factory), CodeSnippet,
+                   CodeLanguage, CardRating, DeckOrigin
+     Progress/     QuestionProgress, TopicProgress, QuizAnswerRecord,
+                   DailyActivity
+     Sync/         SyncOperation, DeckSyncStateKind
+     Schema/       CodeySchemaV1, CodeySchemaV2…, CodeyMigrationPlan
+   ViewModels/     DeckViewModel, StudySessionViewModel, QuizViewModel
+   Services/
+     Decks/        ModelValidator, FlashcardPayload, StarterDeckLoader
+     Gamification/ LevelCalculator, XPPolicy
+     Practice/     TierGate, QuestionPool, GatingConfig
+     Sync/         DeckSyncState (all 5 states), SyncEngine, SyncQueue,
+                   ConflictResolver
+     Backend/      BackendFacade, protocols, SwiftDataService, NetworkMonitor
+       Supabase/   SupabaseAuthProvider, SupabaseDataClient   ← only Supabase imports
+     (existing)    QuestionBankLoader, DataSeeder, ModelContainerFactory
+   DesignSystem/
+     Tokens/       Colors, Radius, Spacing, Typography, Motion, TierStyle
+     Components/   CodeyCard, CodeyButton, AnswerOptionRow, Chip, ProgressRing,
+                   ProgressBar, StatTile, TierChipRow, EmptyStateView,
+                   CelebrationOverlay, XPGainLabel
+     Markdown/     CardMarkdownView, CodeyMarkdownStyle   ← only Textual import
+     CodeEditor/   CodeEditorView, CodeyRunestoneTheme   ← only Runestone import
+     Gallery/      ComponentGallery (#Previews)
+   Features/
+     Home/ Decks/(Builder/) Study/ Quiz/ Profile/ Onboarding/
+ codey/Resources/  questions-seed.json, starter-decks.json,
+                   Schemas/flashcard.schema.json
+ Config/           Base.xcconfig, Secrets.example.xcconfig (Secrets.xcconfig gitignored)
+ supabase/         config.toml, migrations/*.sql, tests/rls.sql
+ scripts/          backup.sh, check-imports.sh, check-design-tokens.sh

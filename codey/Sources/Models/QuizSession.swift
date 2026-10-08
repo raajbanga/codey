@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import os
 
 @Observable
 final class QuizSession {
@@ -30,7 +31,11 @@ final class QuizSession {
             let xpAwarded = Self.xpForCorrectAnswer(streakAfterIncrement: answerStreak)
             profile.totalXP += xpAwarded
             sessionXPEarned += xpAwarded
-            try? context.save()
+            do {
+                try context.save()
+            } catch {
+                Logger.quiz.error("Saving XP failed: \(String(describing: error))")
+            }
             return xpAwarded
         } else {
             answerStreak = 0
