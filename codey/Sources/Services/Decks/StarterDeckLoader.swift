@@ -80,7 +80,7 @@ enum StarterDeckLoader {
             throw StarterDeckLoaderError.unsupportedSchemaVersion(file.schemaVersion)
         }
         var seen = Set<String>()
-        for key in file.decks.map(\.starterKey) + file.decks.flatMap { $0.cards.map(\.id) } {
+        for key in file.decks.map(\.starterKey) + file.decks.flatMap({ $0.cards.map(\.id) }) {
             guard seen.insert(key).inserted else { throw StarterDeckLoaderError.duplicateKey(key) }
         }
         return file

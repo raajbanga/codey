@@ -27,7 +27,7 @@ struct TopicListView: View {
             }
         }
         .background(CodeyColor.surface)
-        .navigationTitle("Topics")
+        .navigationTitle("Quiz")
     }
 }
 
@@ -53,23 +53,13 @@ private struct TopicCard: View {
                     }
                 }
 
-                HStack(spacing: CodeySpacing.sm) {
-                    NavigationLink {
-                        PracticeSwipeView(topic: topic)
-                    } label: {
-                        Text("Practice").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(CodeyColor.brand)
-
-                    NavigationLink {
-                        QuizModeView(topic: topic)
-                    } label: {
-                        Text("Quiz").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(CodeyColor.brandFill)
+                NavigationLink {
+                    QuizModeView(topic: topic)
+                } label: {
+                    Text("Start Quiz").frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(CodeyColor.brandFill)
                 .fontWeight(.semibold)
                 .lineLimit(1)
                 .buttonBorderShape(.capsule)

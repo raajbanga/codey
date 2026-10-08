@@ -4,8 +4,9 @@ import os
 
 /// The two "Danger Zone" actions (Stage 0.5).
 enum LocalDataReset {
-    /// Zeroes XP and streak and clears card mastery. Content, decks, and the
-    /// profile's identity stay. (Quiz question progress joins in Stage 6.)
+    /// Zeroes XP and streak, clears card mastery, saved study sessions, and
+    /// daily activity. Content, decks, and the profile's identity stay.
+    /// (Quiz question progress joins in Stage 6.)
     static func resetProgress(context: ModelContext) throws {
         let profile = DataSeeder.ensureProfile(context: context)
         profile.totalXP = 0
@@ -15,6 +16,8 @@ enum LocalDataReset {
         for card in try context.fetch(FetchDescriptor<Flashcard>()) {
             card.resetMastery()
         }
+        try deleteAll(StudyProgressSnapshot.self, context: context)
+        try deleteAll(DailyActivity.self, context: context)
         try context.save()
         Logger.settings.notice("Progress reset by user")
     }
@@ -26,6 +29,8 @@ enum LocalDataReset {
     static func eraseAllLocalData(context: ModelContext, bank: QuestionBank) throws {
         try deleteAll(FlashcardDeck.self, context: context)
         try deleteAll(Flashcard.self, context: context)
+        try deleteAll(StudyProgressSnapshot.self, context: context)
+        try deleteAll(DailyActivity.self, context: context)
         try deleteAll(UserProfile.self, context: context)
         try deleteAll(Question.self, context: context)
         try deleteAll(Topic.self, context: context)
