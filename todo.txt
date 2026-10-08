@@ -1336,8 +1336,10 @@ HOW TO READ THIS FILE
  [ ] OPEN (optional): `supabase test db` (pgTAP version, tests/rls.sql)
      still hasn't run; it needs the CLI + Docker. The live check covers the
      same 30 assertions.
- [ ] OPEN (optional): GitHub repo secrets SUPABASE_URL / SUPABASE_ANON_KEY
-     for the keep-alive workflow.
+ [x] Keep-alive: repo secrets SUPABASE_URL / SUPABASE_ANON_KEY set with
+     gh (2026-10-08). The same request returns HTTP 200 [] when run locally.
+     NOTE: GitHub runs scheduled workflows only from the DEFAULT branch
+     (main), so the 3-day ping starts once dev is merged into main.
  [ ] OPEN: `supabase init` for config.toml, only if the CLI is adopted
      later.
  Notes / deviations:

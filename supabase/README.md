@@ -129,6 +129,8 @@ reports, and re-run `checks/rls_live_check.sql`.
   `.github/workflows/supabase-keepalive.yml` pings the API every 3 days once
   the repo secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set (GitHub →
   Settings → Secrets and variables → Actions). It does nothing without them.
+  Both are set (2026-10-08). GitHub only runs scheduled workflows from the
+  default branch, so the ping starts once this workflow is on `main`.
 - **Usage**: check the Supabase *Usage* page monthly (database size, egress,
   MAU) against the free-tier limits, and note it in the Sprint metrics table.
 
