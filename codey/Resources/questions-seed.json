@@ -598,6 +598,366 @@
       "correctOptionIndex": 1,
       "explanation": "Document stores fit evolving schemas and nested data; relational DBs excel at structured relationships and complex joins.",
       "difficulty": "hard"
+    },
+    {
+      "id": "q-ds-013",
+      "topicId": "topic-data-structures",
+      "prompt": "What does a hash map store?",
+      "options": ["Only sorted values", "Key–value pairs", "Only unique integers", "A fixed-size queue"],
+      "correctOptionIndex": 1,
+      "explanation": "A hash map associates each key with a value and uses the key's hash to find its bucket.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-014",
+      "topicId": "topic-data-structures",
+      "prompt": "In a binary tree, what is a *leaf* node?",
+      "options": ["The root node", "A node with exactly one child", "A node with no children", "Any node at depth 1"],
+      "correctOptionIndex": 2,
+      "explanation": "A leaf has no children. The root is the only node with no parent.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-015",
+      "topicId": "topic-data-structures",
+      "prompt": "Which operation adds an element to the top of a stack?",
+      "options": ["push", "enqueue", "poll", "shift"],
+      "correctOptionIndex": 0,
+      "explanation": "`push` adds to the top of a stack and `pop` removes from the top. `enqueue` is the queue equivalent.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-ds-016",
+      "topicId": "topic-data-structures",
+      "prompt": "What is the time complexity of building a binary heap from *n* unsorted elements with bottom-up heapify?",
+      "options": ["O(n log n)", "O(log n)", "O(n²)", "O(n)"],
+      "correctOptionIndex": 3,
+      "explanation": "Bottom-up heapify is O(n): most nodes sit near the bottom and sift down only a few levels, so the total work sums to a linear bound.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-017",
+      "topicId": "topic-data-structures",
+      "prompt": "Which structure gives O(1) average-time insert, delete, AND lookup by key?",
+      "options": ["Sorted array", "Hash table", "Singly linked list", "Binary heap"],
+      "correctOptionIndex": 1,
+      "explanation": "Hash tables give average O(1) for all three. A sorted array needs O(n) to insert, a linked list O(n) to look up, and a heap only finds the min/max fast.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-ds-018",
+      "topicId": "topic-data-structures",
+      "prompt": "Why can an unbalanced binary search tree degrade to O(n) search?",
+      "options": ["Its keys are hashed", "Inserting sorted keys can make it a linked-list-shaped chain", "Every node stores the whole subtree", "Search always visits both children"],
+      "correctOptionIndex": 1,
+      "explanation": "Inserting keys in sorted order puts each new key on the same side, so the tree's height becomes n. Self-balancing trees (AVL, red-black) keep the height O(log n).",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-ds-019",
+      "topicId": "topic-data-structures",
+      "prompt": "What is the amortized cost of `append` on a dynamic array that doubles its capacity when full?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "correctOptionIndex": 0,
+      "explanation": "An occasional resize copies n elements, but doubling means resizes are rare. Spread over all appends, the cost is O(1) each.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-ds-020",
+      "topicId": "topic-data-structures",
+      "prompt": "A trie is especially efficient for which task?",
+      "options": ["Finding the median of a stream", "Shortest paths in weighted graphs", "Prefix lookups such as autocomplete", "Range-sum queries on an array"],
+      "correctOptionIndex": 2,
+      "explanation": "A trie shares common prefixes, so finding all keys with a prefix costs O(length of prefix) plus the size of the output.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-ds-021",
+      "topicId": "topic-data-structures",
+      "prompt": "Which pair of structures is the classic way to build an LRU cache with O(1) get and put?",
+      "options": ["Two stacks", "A min-heap and an array", "A binary search tree and a queue", "A hash map and a doubly linked list"],
+      "correctOptionIndex": 3,
+      "explanation": "The hash map finds a node in O(1). The doubly linked list moves it to the front, or evicts the tail, in O(1).",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-ds-022",
+      "topicId": "topic-data-structures",
+      "prompt": "In a hash table using open addressing, what problem does a high load factor cause?",
+      "options": ["Keys lose their ordering", "Long probe sequences, so slower operations", "Collisions become impossible", "The table must become a tree"],
+      "correctOptionIndex": 1,
+      "explanation": "As the table fills, colliding keys form clusters and probes get longer. Tables resize when the load factor passes a threshold, often about 0.7.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-algo-013",
+      "topicId": "topic-algorithms",
+      "prompt": "What is the worst-case time complexity of linear search?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "correctOptionIndex": 2,
+      "explanation": "Linear search may have to check every element before finding the target, or before concluding it's absent.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-014",
+      "topicId": "topic-algorithms",
+      "prompt": "Which algorithm repeatedly swaps adjacent elements that are out of order?",
+      "options": ["Bubble sort", "Merge sort", "Binary search", "Heap sort"],
+      "correctOptionIndex": 0,
+      "explanation": "Bubble sort makes passes that swap adjacent out-of-order pairs, so the largest values 'bubble' to the end.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-015",
+      "topicId": "topic-algorithms",
+      "prompt": "What does Big-O notation describe?",
+      "options": ["The exact running time in seconds", "The amount of RAM installed", "The number of lines of code", "An upper bound on how cost grows with input size"],
+      "correctOptionIndex": 3,
+      "explanation": "Big-O gives an asymptotic upper bound on growth. It ignores constants and hardware.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-016",
+      "topicId": "topic-algorithms",
+      "prompt": "Which traversal goes as deep as possible along a branch before backtracking?",
+      "options": ["Breadth-first search", "Depth-first search", "Level-order traversal", "Dijkstra's algorithm"],
+      "correctOptionIndex": 1,
+      "explanation": "DFS follows one path to its end, then backtracks. It's usually done with recursion or an explicit stack.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-algo-017",
+      "topicId": "topic-algorithms",
+      "prompt": "What is *memoization*?",
+      "options": ["Sorting results before returning them", "Storing the results of subproblems so they aren't recomputed", "Splitting input into halves", "Running loops in parallel"],
+      "correctOptionIndex": 1,
+      "explanation": "Memoization caches function results by input. It's the top-down form of dynamic programming.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-018",
+      "topicId": "topic-algorithms",
+      "prompt": "Without memoization, what is the time complexity of naive recursive Fibonacci?",
+      "options": ["O(n)", "O(n log n)", "Exponential (about O(2ⁿ))", "O(log n)"],
+      "correctOptionIndex": 2,
+      "explanation": "Each call branches into two and recomputes the same subproblems, so the work grows exponentially. Memoization makes it O(n).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-019",
+      "topicId": "topic-algorithms",
+      "prompt": "Topological sort applies to which kind of graph?",
+      "options": ["Directed acyclic graphs", "Any undirected graph", "Graphs with negative cycles", "Complete graphs only"],
+      "correctOptionIndex": 0,
+      "explanation": "A topological order exists only if the directed graph has no cycles: each edge u→v needs u before v.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-algo-020",
+      "topicId": "topic-algorithms",
+      "prompt": "Why can Dijkstra's algorithm give wrong answers with negative edge weights?",
+      "options": ["It needs an adjacency matrix", "It only works on trees", "It runs in exponential time on them", "It finalizes a vertex's distance early, assuming paths only get longer"],
+      "correctOptionIndex": 3,
+      "explanation": "Dijkstra greedily settles the closest unsettled vertex. A later negative edge could make a shorter path to it. Bellman-Ford handles negative weights.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-algo-021",
+      "topicId": "topic-algorithms",
+      "prompt": "What is the lower bound for comparison-based sorting in the worst case?",
+      "options": ["Ω(n log n)", "Ω(n)", "Ω(log n)", "Ω(n²)"],
+      "correctOptionIndex": 0,
+      "explanation": "A comparison sort must tell apart n! orderings, and a decision tree with n! leaves has height Ω(log n!) = Ω(n log n).",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-algo-022",
+      "topicId": "topic-algorithms",
+      "prompt": "The 0/1 knapsack DP over n items with capacity W runs in O(nW). Why is that called *pseudo-polynomial*?",
+      "options": ["It uses randomness", "W is a number, so the time is exponential in the bits needed to write W", "It only works for small n", "It needs O(2ⁿ) memory"],
+      "correctOptionIndex": 1,
+      "explanation": "The running time is polynomial in W's value but exponential in its bit length, which is the true input size.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-os-013",
+      "topicId": "topic-os-basics",
+      "prompt": "What is the main job of an operating system?",
+      "options": ["Compile source code", "Manage hardware resources and give programs services", "Design user interfaces", "Store web pages"],
+      "correctOptionIndex": 1,
+      "explanation": "The OS manages the CPU, memory, storage, and devices, and gives programs abstractions like processes and files.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-014",
+      "topicId": "topic-os-basics",
+      "prompt": "What is a *process*?",
+      "options": ["A program in execution, with its own address space", "A file on disk", "A CPU core", "A network packet"],
+      "correctOptionIndex": 0,
+      "explanation": "A process is a running instance of a program: code plus its own memory, registers, and OS resources.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-015",
+      "topicId": "topic-os-basics",
+      "prompt": "Which memory is fastest for the CPU to access?",
+      "options": ["Main memory (RAM)", "SSD", "Hard disk", "CPU registers"],
+      "correctOptionIndex": 3,
+      "explanation": "Registers sit inside the CPU. Then come the caches (L1/L2/L3), then RAM, then storage.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-016",
+      "topicId": "topic-os-basics",
+      "prompt": "What is the role of a *device driver*?",
+      "options": ["Schedule threads", "Encrypt files", "Let the OS talk to a specific piece of hardware", "Compile kernel modules"],
+      "correctOptionIndex": 2,
+      "explanation": "A driver translates generic OS requests into commands for one specific device.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-os-017",
+      "topicId": "topic-os-basics",
+      "prompt": "What is a *race condition*?",
+      "options": ["Two threads compete for the fastest CPU", "The result depends on the unpredictable timing of concurrent accesses to shared data", "A deadlock between two processes", "A process using too much memory"],
+      "correctOptionIndex": 1,
+      "explanation": "If unsynchronized threads read and write shared state, the result depends on how they interleave. Locks or atomics prevent it.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-018",
+      "topicId": "topic-os-basics",
+      "prompt": "What does a TLB (translation lookaside buffer) cache?",
+      "options": ["Disk blocks", "Recent virtual-to-physical address translations", "Open file descriptors", "Network routes"],
+      "correctOptionIndex": 1,
+      "explanation": "The TLB caches page-table entries, so most address translations skip walking the page table in memory.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-019",
+      "topicId": "topic-os-basics",
+      "prompt": "What happens on a *page fault*?",
+      "options": ["The CPU halts permanently", "The file system is corrupted", "The OS loads the missing page from disk (or reports an invalid access)", "The process is always terminated"],
+      "correctOptionIndex": 2,
+      "explanation": "The hardware traps to the OS, which loads the page and resumes the process. If the address was invalid, it raises an error such as a segfault.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-os-020",
+      "topicId": "topic-os-basics",
+      "prompt": "Always acquiring locks in one global order (*resource ordering*) prevents deadlock by breaking which Coffman condition?",
+      "options": ["Mutual exclusion", "Hold and wait", "No preemption", "Circular wait"],
+      "correctOptionIndex": 3,
+      "explanation": "If every thread takes locks in the same global order, a cycle of threads waiting on each other can't form.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-os-021",
+      "topicId": "topic-os-basics",
+      "prompt": "What is *priority inversion*?",
+      "options": ["A high-priority task waits on a lock held by a low-priority task that is itself preempted by medium-priority tasks", "The scheduler reverses all priorities each tick", "Low-priority tasks always run first", "A task lowers its own priority to save power"],
+      "correctOptionIndex": 0,
+      "explanation": "Medium-priority work keeps the lock holder off the CPU, so the high-priority task stalls. Priority inheritance is the usual fix.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-os-022",
+      "topicId": "topic-os-basics",
+      "prompt": "Why does copy-on-write make `fork()` cheap?",
+      "options": ["It skips creating a new process", "Parent and child share pages until one writes, and only then is that page copied", "It copies memory to disk instead of RAM", "It runs the child in kernel mode"],
+      "correctOptionIndex": 1,
+      "explanation": "Pages start shared and read-only. A write triggers a fault that copies just that page, so pages that are never written are never copied.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-db-013",
+      "topicId": "topic-databases",
+      "prompt": "Which SQL statement reads data from a table?",
+      "options": ["INSERT", "UPDATE", "SELECT", "DELETE"],
+      "correctOptionIndex": 2,
+      "explanation": "`SELECT` queries rows. INSERT, UPDATE, and DELETE change data.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-014",
+      "topicId": "topic-databases",
+      "prompt": "What does `NULL` mean in SQL?",
+      "options": ["Zero", "An empty string", "A missing or unknown value", "False"],
+      "correctOptionIndex": 2,
+      "explanation": "NULL marks an unknown or missing value. Compare with `IS NULL`, because `= NULL` is never true.",
+      "difficulty": "easy"
+    },
+    {
+      "id": "q-db-015",
+      "topicId": "topic-databases",
+      "prompt": "Which clause filters groups *after* aggregation?",
+      "options": ["WHERE", "HAVING", "ORDER BY", "LIMIT"],
+      "correctOptionIndex": 1,
+      "explanation": "WHERE filters rows before GROUP BY. HAVING filters the grouped results, e.g. `HAVING COUNT(*) > 5`.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-016",
+      "topicId": "topic-databases",
+      "prompt": "What does a LEFT JOIN return?",
+      "options": ["All rows from the left table, plus matching right rows (NULLs where there's no match)", "Only matching rows from both tables", "All rows from both tables", "Only rows with no match"],
+      "correctOptionIndex": 0,
+      "explanation": "A LEFT JOIN keeps every left row. Right-side columns are NULL where nothing matches.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-017",
+      "topicId": "topic-databases",
+      "prompt": "What is a *composite* primary key?",
+      "options": ["A key made of two or more columns", "A key that auto-increments", "A key stored in another table", "A key with a UNIQUE index only"],
+      "correctOptionIndex": 0,
+      "explanation": "A composite key uses the combination of several columns to identify a row, e.g. (student_id, course_id).",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-018",
+      "topicId": "topic-databases",
+      "prompt": "Which isolation anomaly is a *non-repeatable read*?",
+      "options": ["Reading uncommitted data", "Reading the same row twice in one transaction and getting different values", "Two transactions both waiting on each other", "Losing a committed write after a crash"],
+      "correctOptionIndex": 1,
+      "explanation": "Another transaction committed an update between your two reads of the same row. REPEATABLE READ or higher prevents it.",
+      "difficulty": "medium"
+    },
+    {
+      "id": "q-db-019",
+      "topicId": "topic-databases",
+      "prompt": "Why might adding many indexes to a table slow down the application?",
+      "options": ["Indexes make SELECT slower", "Indexes disable transactions", "Every INSERT/UPDATE/DELETE must also update each index", "Indexes delete old rows"],
+      "correctOptionIndex": 2,
+      "explanation": "Indexes speed up reads, but each write has to maintain every index, which costs time and storage.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-db-020",
+      "topicId": "topic-databases",
+      "prompt": "What is a *phantom read*?",
+      "options": ["A re-run range query returns new rows inserted by another committed transaction", "Reading a row deleted by a crash", "A query that never returns", "Reading data from a backup"],
+      "correctOptionIndex": 0,
+      "explanation": "The rows matching a predicate changed between your two runs of the same query. SERIALIZABLE isolation prevents it.",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-db-021",
+      "topicId": "topic-databases",
+      "prompt": "What does the CAP theorem say a distributed data store can't guarantee all at once during a network partition?",
+      "options": ["Speed, size, and security", "Atomicity, isolation, and durability", "Caching, auditing, and paging", "Consistency and availability together"],
+      "correctOptionIndex": 3,
+      "explanation": "During a partition, a system must choose between consistency (every read sees the latest write) and availability (every request gets a response).",
+      "difficulty": "hard"
+    },
+    {
+      "id": "q-db-022",
+      "topicId": "topic-databases",
+      "prompt": "Why does a covering index speed up a query?",
+      "options": ["It caches the whole table in RAM", "The index contains every column the query needs, so the base table isn't read", "It removes the need for a WHERE clause", "It sorts results by primary key"],
+      "correctOptionIndex": 1,
+      "explanation": "When all the needed columns are in the index, the database answers from the index alone and skips the extra lookups into the table.",
+      "difficulty": "hard"
     }
   ]
 }

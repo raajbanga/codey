@@ -87,6 +87,35 @@ struct MigrationTests {
         #expect(try context.fetchCount(FetchDescriptor<DailyActivity>()) == 1)
     }
 
+    /// Stage 6: a V3 store opens as V4 and keeps study progress.
+    @Test func v3StoreMigratesToCurrentWithQuizProgress() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let deckId: UUID
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV3.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
+            deckId = deck.id
+            context.insert(StudyProgressSnapshot(
+                deckId: deck.id, cardIDs: deck.activeCards.map(\.id), position: 1, requeuedIDs: [],
+                tierFilterRaw: nil, reviewedCount: 1, newlyMasteredIDs: [], startMasteryRate: 0,
+                startUnlockedTiersRaw: ["easy"], updatedAt: .now
+            ))
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        #expect(try StudyProgressSnapshot.fetch(deckId: deckId, context: context)?.position == 1)
+        let topic = try TestSupport.insertTopic(context, easy: 1, medium: 0, hard: 0)
+        _ = try QuizProgressStore(context: context).recordAnswer(
+            question: try #require(topic.questions.first), correct: true, level: 1, at: .now
+        )
+        try context.save()
+        #expect(try context.fetchCount(FetchDescriptor<QuestionProgress>()) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<QuizAnswerRecord>()) == 1)
+    }
+
     @Test func decksPersistAcrossReopen() throws {
         let url = try TestSupport.temporaryStoreURL()
         let deckId: UUID

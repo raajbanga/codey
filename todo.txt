@@ -910,41 +910,41 @@ HOW TO READ THIS FILE
  don't duplicate. DailyActivity.quizAnswers exists; increment it per answer.
 
  6.1 XP & levels
- [ ] Services/Gamification/XPPolicy.swift (pure, unit-tested):
+ [x] Services/Gamification/XPPolicy.swift (pure, unit-tested):
        base(tier): easy 10, medium 15, hard 20
        streakBonus(streak) = min(5 × (streak − 1), 25)   // streak ≥ 1
        xpForCorrectAnswer(tier:, streakAfterIncrement:)
      Replaces QuizSession.baseXP / streakBonusPerLevel (B5). Update
      QuizSessionTests (expected values change: easy 10,15,20,25,30,35,35…).
- [ ] Level-up detection: compare LevelCalculator.level before and after
+ [x] Level-up detection: compare LevelCalculator.level before and after
      the award. Show a level-up banner/toast in the quiz and summary.
- [ ] Flashcard study awards NO XP (prevents farming; XP stays a quiz
+ [x] Flashcard study awards NO XP (prevents farming; XP stays a quiz
      reward). → open item O2.
 
  6.2 Progress models (local only, D10)
- [ ] @Model QuestionProgress: questionId (unique), topicId, difficulty,
+ [x] @Model QuestionProgress: questionId (unique), topicId, difficulty,
        consecutiveCorrect, totalAttempts, totalCorrect, retiredAt: Date?,
        isReview: Bool, lastAnsweredAt.
- [ ] @Model TopicProgress: topicId (unique), unlockedTiers: [Difficulty]
+ [x] @Model TopicProgress: topicId (unique), unlockedTiers: [Difficulty]
        (STICKY: once unlocked, never relocks, even when FR-28 reviews
        return questions to the pool and the retired % drops), unlockedAt
        dates.
- [ ] @Model QuizAnswerRecord: questionId, topicId, correct, answeredAt.
+ [x] @Model QuizAnswerRecord: questionId, topicId, correct, answeredAt.
        Feeds FR-36 accuracy over the last 50 answers. Prune to the last 200
        per topic.
- [ ] Add to the schema version + migration.
+ [x] Add to the schema version + migration.
 
  6.3 Rules (Services/Practice/TierGate.swift + QuestionPool.swift)
- [ ] recordAnswer(question, correct) (FR-23/24/28):
+ [x] recordAnswer(question, correct) (FR-23/24/28):
        correct   → consecutiveCorrect += 1;
                    if isReview → retire again immediately (FR-28), isReview=false
                    else if consecutiveCorrect ≥ 3 → retiredAt = now
        incorrect → consecutiveCorrect = 0; if isReview → isReview=false,
                    stays active (FR-28)
- [ ] Review return (FR-28): a retired question with retiredAt + 7 days ≤
+ [x] Review return (FR-28): a retired question with retiredAt + 7 days ≤
      now becomes active with isReview = true. Computed at pool-build time;
      no background job.
- [ ] Unlocks (FR-25/26), evaluated after every answer and stored in
+ [x] Unlocks (FR-25/26), evaluated after every answer and stored in
      TopicProgress:
        Medium: retired(Easy) ≥ ceil(0.70 × count(Easy))
        Hard:   retired(Medium) ≥ ceil(0.70 × count(Medium)) AND level ≥ 3
@@ -952,7 +952,7 @@ HOW TO READ THIS FILE
        GatingConfig struct (the doc says they'll be calibrated in Sprint 3).
        Starter-deck cards use the same thresholds, with "retired" = mastery 5
        (D9).
- [ ] Quiz builder (FR-19, FR-27):
+ [x] Quiz builder (FR-19, FR-27):
        size 10 (or fewer if the pool is smaller; show "n questions
        available").
        active pool = unlocked tiers, not retired, or due for review.
@@ -962,11 +962,11 @@ HOW TO READ THIS FILE
        unlocked → all Easy.
        FR-29 restricted mode: all questions from the chosen unlocked tier.
        Deterministic when given a seeded RNG (for tests).
- [ ] Pool exhausted → "Topic mastered!" state with "Review retired
+ [x] Pool exhausted → "Topic mastered!" state with "Review retired
      questions" (practice only, no XP).
 
  6.4 Quiz UI updates
- [ ] Quiz tab root (QuizTopicsView, replaces TopicListView): one row-card
+ [x] Quiz tab root (QuizTopicsView, replaces TopicListView): one row-card
      per topic. Shows the topic symbol, a TierChipRow, accuracy, and
      "x of y retired". Tap → QuizSetupView sheet (.presentationDetents
      medium):
@@ -975,7 +975,7 @@ HOW TO READ THIS FILE
        "Mixed (recommended)" vs a single-tier picker (FR-29), question
        count, and a Start button (glassProminent) that opens the quiz as a
        .fullScreenCover.
- [ ] QuizModeView (focus mode):
+ [x] QuizModeView (focus mode):
        - Top bar: ✕, segmented progress (10 ticks colored correct/wrong
          as you go), streak chip with flame (shown at streak ≥ 2).
        - Question card: tier chip and review badge; prompt rendered via
@@ -986,30 +986,58 @@ HOW TO READ THIS FILE
          ("Medium 15 + streak 10").
        - Explanation slides up in a card, with a glass "Next" button
          pinned at the bottom.
- [ ] QuizSummaryView:
+ [x] QuizSummaryView:
        - Big percentage ring + "8/10 correct" (FR-20).
        - StatTiles: XP earned (rolls up), best streak, newly retired.
        - "Tier unlocked: Medium" and "Level 4!" banners with
          CelebrationOverlay.
        - Buttons: "Quiz again" / "Done".
- [ ] Snapshot/preview states for locked/unlocked chips.
+ [x] Snapshot/preview states for locked/unlocked chips.
 
  6.5 Content (B12)
- [ ] Expand questions-seed.json so every topic has ≥ 8 Easy, ≥ 8 Medium,
+ [x] Expand questions-seed.json so every topic has ≥ 8 Easy, ≥ 8 Medium,
      ≥ 6 Hard (~22+/topic, ~90 total). Update expectedQuestionCount and
      the tests. Bump the seed content version (non-destructive upsert from
      Stage 0).
  [ ] Optional: add an OOP topic (B13 / FR-21). Needs a 5th starter deck too.
 
  6.6 Tests (TC-22 … TC-31)
- [ ] XPPolicy table tests (all tiers × streak 1…8, cap).
- [ ] Retire after 3; reset on wrong; review after 7 days (inject a Clock);
+ [x] XPPolicy table tests (all tiers × streak 1…8, cap).
+ [x] Retire after 3; reset on wrong; review after 7 days (inject a Clock);
      review retire-on-1; unlock thresholds incl. ceil and empty tier;
      Hard needs level 3; sticky unlock; quiz mix 7/3; backfill; Easy-only;
      restricted tier.
 
  Done when: a new user starts with only Easy, unlocks Medium by play,
  can't see Hard before level 3, and quizzes are 10 questions with % score.
+
+ STATUS 2026-10-07 (dev): implemented. The app target builds clean.
+ [ ] OPEN: Stage 6 unit tests are written but NOT RUN: XPPolicyTests,
+     QuestionProgressTests, QuestionPoolTests, QuizViewModelTests,
+     V3→V4 migration, bank-coverage tests, extended Tier/Reset tests.
+     Last compile error fixed (#expect + key path) but not re-verified.
+     Run codeyTests only (⌘6 → right-click codeyTests → Run, or
+     -only-testing:codeyTests) and fix any failures.
+ [ ] OPEN: manual UI pass of QuizTopics → Setup sheet → focus-mode quiz →
+     summary. Check: setup sheet → fullScreenCover hand-off, level-up
+     toast, celebration, segmented ticks, Dynamic Type.
+ [ ] Optional OOP topic (B13) not done.
+ Notes / deviations:
+   - QuizSession replaced by ViewModels/QuizViewModel (+ QuizSessionTests
+     removed). TopicListView replaced by Features/Quiz/QuizTopicsView.
+   - Schema V4 (lightweight from V3). TopicProgress stores
+     mediumUnlockedAt/hardUnlockedAt dates instead of an array (sticky).
+   - Services/Practice/QuizProgressStore does the fetch/apply/insert work.
+     The rules are pure: QuestionProgress.record/returnForReviewIfDue,
+     TierGate (+ alreadyUnlocked), QuestionPool, and SeededGenerator
+     (SplitMix64) for deterministic tests.
+   - Review practice (pool exhausted) = QuizMode.review: no XP, no progress,
+     no history. Counts toward DailyActivity.quizAnswers like every answer.
+   - Starter-deck unlocks stay live-computed (not in TopicProgress).
+   - Content: +40 questions → 88 (8 Easy / 8 Medium / 6 Hard per topic).
+     The JSON diff is additions only. Correct answers are spread across A–D.
+   - Reset progress / Erase all also clear QuestionProgress, TopicProgress,
+     and QuizAnswerRecord.
 
 
 ================================================================================
