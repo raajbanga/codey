@@ -21,14 +21,12 @@ struct QuizProgressStore {
     // MARK: Reads
 
     func progressByQuestion(topicId: String) throws -> [String: QuestionProgress] {
-        let rows = try context.fetch(FetchDescriptor<QuestionProgress>(predicate: #Predicate { $0.topicId == topicId }))
-        return Dictionary(rows.map { ($0.questionId, $0) }, uniquingKeysWith: { first, _ in first })
+        try context.fetch(FetchDescriptor<QuestionProgress>(predicate: #Predicate { $0.topicId == topicId }))
+            .keyed(by: \.questionId)
     }
 
     func topicProgress(topicId: String) throws -> TopicProgress? {
-        var descriptor = FetchDescriptor<TopicProgress>(predicate: #Predicate { $0.topicId == topicId })
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
+        try context.first(#Predicate<TopicProgress> { $0.topicId == topicId })
     }
 
     /// Sticky ∪ currently earned tiers.
@@ -73,7 +71,7 @@ struct QuizProgressStore {
             config: config,
             using: &generator
         )
-        let byID = Dictionary(topic.questions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let byID = topic.questions.keyed(by: \.id)
         return ids.compactMap { byID[$0] }
     }
 
@@ -86,26 +84,15 @@ struct QuizProgressStore {
         guard let topic = question.topic else { return AnswerResult(retired: false, unlocked: []) }
 
         var progress = try progressByQuestion(topicId: topic.id)
-        let row: QuestionProgress
-        if let existing = progress[question.id] {
-            row = existing
-        } else {
-            row = QuestionProgress(questionId: question.id, topicId: topic.id, difficulty: question.difficulty)
-            context.insert(row)
-            progress[question.id] = row
-        }
+        let row = progress[question.id]
+            ?? insert(QuestionProgress(questionId: question.id, topicId: topic.id, difficulty: question.difficulty))
+        progress[question.id] = row
         let retired = row.record(correct: correct, at: date, config: config)
 
         context.insert(QuizAnswerRecord(questionId: question.id, topicId: topic.id, correct: correct, answeredAt: date))
         try pruneHistory(topicId: topic.id)
 
-        let sticky: TopicProgress
-        if let existing = try topicProgress(topicId: topic.id) {
-            sticky = existing
-        } else {
-            sticky = TopicProgress(topicId: topic.id)
-            context.insert(sticky)
-        }
+        let sticky = try topicProgress(topicId: topic.id) ?? insert(TopicProgress(topicId: topic.id))
         let earned = TierGate.unlockedTiers(
             tallies: Self.tallies(questions: topic.questions, progress: progress),
             level: level,
@@ -117,6 +104,11 @@ struct QuizProgressStore {
             Logger.quiz.info("Unlocked tiers: \(unlocked.map(\.rawValue).joined(separator: ","), privacy: .public)")
         }
         return AnswerResult(retired: retired, unlocked: unlocked)
+    }
+
+    private func insert<T: PersistentModel>(_ model: T) -> T {
+        context.insert(model)
+        return model
     }
 
     /// Keeps the newest `answerHistoryCap` records for the topic.
@@ -158,11 +150,8 @@ struct QuizProgressStore {
             .sorted { $0.id < $1.id } // stable input → deterministic output for a seed
             .map { question in
                 let row = progress[question.id]
-                var active = row?.isRetired != true
-                if !active, let now, let retiredAt = row?.retiredAt {
-                    active = now >= retiredAt.addingTimeInterval(TimeInterval(config.reviewAfterDays) * 86_400)
-                }
-                return PoolCandidate(id: question.id, difficulty: question.difficulty, isActive: active)
+                let dueForReview = now.map { row?.isDueForReview(now: $0, config: config) == true } ?? false
+                return PoolCandidate(id: question.id, difficulty: question.difficulty, isActive: row?.isRetired != true || dueForReview)
             }
     }
 

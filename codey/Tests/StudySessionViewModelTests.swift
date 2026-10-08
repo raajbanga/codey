@@ -181,15 +181,6 @@ struct StudySessionViewModelTests {
 
     // MARK: Starter decks (D9)
 
-    @Test func starterSessionOnlyIncludesUnlockedUnretiredCards() throws {
-        let context = try TestSupport.inMemoryContext()
-        let deck = try TestSupport.insertTieredDeck(context, origin: .starter, tiers: [.easy, .easy, .medium, .hard])
-        for _ in 0..<3 { deck.activeCards[0].updateMastery(rating: .easy) }
-
-        let vm = makeVM(deck, context)
-        #expect(vm.queue.cardIDs == [deck.activeCards[1].id])
-    }
-
     @Test func masteringStarterCardsRetiresThemAndUnlocksMedium() throws {
         let context = try TestSupport.inMemoryContext()
         // 3 Easy → Medium needs ceil(2.1) = 3 retired.

@@ -56,17 +56,8 @@ struct QuizModeView: View {
 
     private var topBar: some View {
         HStack(spacing: CodeySpacing.sm) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.codeyHeadline)
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .accessibilityLabel("Close quiz")
-            .accessibilityIdentifier("quiz.close")
+            CloseButton(label: "Close quiz") { dismiss() }
+                .accessibilityIdentifier("quiz.close")
 
             if !viewModel.isFinished, !viewModel.questions.isEmpty {
                 SegmentedQuizProgress(results: viewModel.results, current: viewModel.index)

@@ -44,27 +44,13 @@ struct FlashcardFactory {
     /// defaults; a given id, mastery, and timestamps are kept.
     func createCard(from payload: FlashcardPayload) throws -> Flashcard {
         let input = applyDefaults(payload)
-
-        let errors = validator.validateCard(ModelValidator.CardFields(
-            id: input.id ?? UUID(),
-            prompt: input.prompt,
-            answer: input.answer,
-            codeLanguage: input.codeLanguage,
-            codeSource: input.codeSource
-        ))
-        guard errors.isEmpty else { throw FactoryError.invalid(errors) }
-
-        var snippet: CodeSnippet?
-        if let raw = input.codeLanguage, let language = CodeLanguage(rawValue: raw), let source = input.codeSource {
-            snippet = CodeSnippet(language: language, source: source)
-        }
-
+        let id = input.id ?? UUID()
         return Flashcard(
             Token(),
-            id: input.id ?? UUID(),
+            id: id,
             prompt: input.prompt,
             answer: input.answer,
-            codeSnippet: snippet,
+            codeSnippet: try validatedSnippet(input, id: id),
             difficulty: input.difficulty,
             sortIndex: input.sortIndex,
             masteryScore: input.masteryScore ?? 0,
@@ -86,24 +72,16 @@ struct FlashcardFactory {
         difficulty: Difficulty?,
         sortIndex: Int
     ) throws -> Bool {
-        let prompt = Self.normalizeText(prompt)
-        let answer = Self.normalizeText(answer)
-        let code = code.map { CodeSnippet(language: $0.language, source: Self.normalizeSnippetSource($0.source)) }
-
-        let errors = validator.validateCard(ModelValidator.CardFields(
-            id: card.id,
-            prompt: prompt,
-            answer: answer,
-            codeLanguage: code?.language.rawValue,
-            codeSource: code?.source
+        let input = applyDefaults(FlashcardPayload(
+            prompt: prompt, answer: answer, codeLanguage: code?.language.rawValue, codeSource: code?.source
         ))
-        guard errors.isEmpty else { throw FactoryError.invalid(errors) }
+        let code = try validatedSnippet(input, id: card.id)
 
-        let changed = card.prompt != prompt || card.answer != answer || card.codeSnippet != code
+        let changed = card.prompt != input.prompt || card.answer != input.answer || card.codeSnippet != code
             || card.difficulty != difficulty || card.sortIndex != sortIndex
         guard changed else { return false }
-        card.prompt = prompt
-        card.answer = answer
+        card.prompt = input.prompt
+        card.answer = input.answer
         card.codeSnippet = code
         card.difficulty = difficulty
         card.sortIndex = sortIndex
@@ -116,26 +94,30 @@ struct FlashcardFactory {
     /// progress (D10), so it's untouched. Same validation as creation.
     func applyRemote(_ payload: FlashcardPayload, to card: Flashcard) throws {
         let input = applyDefaults(payload)
+        card.codeSnippet = try validatedSnippet(input, id: card.id)
+        card.prompt = input.prompt
+        card.answer = input.answer
+        card.difficulty = input.difficulty
+        card.sortIndex = input.sortIndex
+        card.updatedAt = input.updatedAt ?? card.updatedAt
+        card.deletedAt = input.deletedAt
+    }
+
+    /// Throws FactoryError.invalid for bad content; returns the snippet the
+    /// (normalized) payload describes.
+    private func validatedSnippet(_ input: FlashcardPayload, id: UUID) throws -> CodeSnippet? {
         let errors = validator.validateCard(ModelValidator.CardFields(
-            id: card.id,
+            id: id,
             prompt: input.prompt,
             answer: input.answer,
             codeLanguage: input.codeLanguage,
             codeSource: input.codeSource
         ))
         guard errors.isEmpty else { throw FactoryError.invalid(errors) }
-
-        var snippet: CodeSnippet?
-        if let raw = input.codeLanguage, let language = CodeLanguage(rawValue: raw), let source = input.codeSource {
-            snippet = CodeSnippet(language: language, source: source)
+        guard let raw = input.codeLanguage, let language = CodeLanguage(rawValue: raw), let source = input.codeSource else {
+            return nil
         }
-        card.prompt = input.prompt
-        card.answer = input.answer
-        card.codeSnippet = snippet
-        card.difficulty = input.difficulty
-        card.sortIndex = input.sortIndex
-        card.updatedAt = input.updatedAt ?? card.updatedAt
-        card.deletedAt = input.deletedAt
+        return CodeSnippet(language: language, source: source)
     }
 
     private func applyDefaults(_ payload: FlashcardPayload) -> FlashcardPayload {

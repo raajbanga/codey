@@ -15,7 +15,4 @@ enum CodeLanguage: String, Codable, CaseIterable, Identifiable {
         case .cpp: "C++"
         }
     }
-
-    /// Info string for a fenced markdown block (also the Prism grammar key).
-    var fenceTag: String { rawValue }
 }

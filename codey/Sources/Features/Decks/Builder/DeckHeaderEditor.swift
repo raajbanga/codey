@@ -6,9 +6,6 @@ struct DeckHeaderEditor: View {
     let topics: [Topic]
     var titleFocused: FocusState<Bool>.Binding
 
-    private var titleCount: Int { ModelValidator.measuredLength(viewModel.draft.title) }
-    private var titleLimit: Int { ModelValidator.Limits.deckTitle.upperBound }
-
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
             HStack(spacing: CodeySpacing.sm) {
@@ -17,19 +14,15 @@ struct DeckHeaderEditor: View {
                     .focused(titleFocused)
                     .submitLabel(.done)
                     .accessibilityIdentifier("builder.title")
-                Text("\(titleCount)/\(titleLimit)")
-                    .font(.codeyCaption.monospacedDigit())
-                    .foregroundStyle(titleCount > titleLimit ? CodeyColor.danger : CodeyColor.textSecondary)
-                    .accessibilityLabel("\(titleCount) of \(titleLimit) characters")
+                LimitCounter(
+                    count: ModelValidator.measuredLength(viewModel.draft.title),
+                    limit: ModelValidator.Limits.deckTitle.upperBound
+                )
             }
             .padding(CodeySpacing.sm + CodeySpacing.xs)
             .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.md))
-            .overlay {
-                if viewModel.error(for: .deckTitle) != nil {
-                    RoundedRectangle.codey(CodeyRadius.md).strokeBorder(CodeyColor.danger, lineWidth: 1.5)
-                }
-            }
-            fieldError(.deckTitle)
+            .errorBorder(viewModel.error(for: .deckTitle) != nil, radius: CodeyRadius.md)
+            FieldErrorLabel(message: viewModel.error(for: .deckTitle))
 
             Picker(selection: $viewModel.draft.topicId) {
                 ForEach(topics) { topic in
@@ -41,16 +34,7 @@ struct DeckHeaderEditor: View {
             .pickerStyle(.menu)
             .tint(CodeyColor.brand)
             .accessibilityIdentifier("builder.topic")
-            fieldError(.deckTopic)
-        }
-    }
-
-    @ViewBuilder
-    private func fieldError(_ field: ValidationField) -> some View {
-        if let message = viewModel.error(for: field) {
-            Label(message, systemImage: "exclamationmark.circle.fill")
-                .font(.codeyCaption)
-                .foregroundStyle(CodeyColor.danger)
+            FieldErrorLabel(message: viewModel.error(for: .deckTopic))
         }
     }
 }

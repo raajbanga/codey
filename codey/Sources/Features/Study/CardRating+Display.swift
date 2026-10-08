@@ -11,16 +11,6 @@ extension CardRating {
         }
     }
 
-    /// Mastery-delta hint under the title: ↺0 / = / +1 / +2.
-    var deltaHint: String {
-        switch self {
-        case .again: "↺0"
-        case .hard: "="
-        case .good: "+1"
-        case .easy: "+2"
-        }
-    }
-
     var accessibilityHint: String {
         switch self {
         case .again: "Resets mastery to 0 and shows this card again later"
@@ -30,14 +20,16 @@ extension CardRating {
         }
     }
 
-    var tint: Color {
+    var chipVariant: CodeyChipVariant {
         switch self {
-        case .again: CodeyColor.danger
-        case .hard: CodeyColor.warning
-        case .good: CodeyColor.brand
-        case .easy: CodeyColor.success
+        case .again: .danger
+        case .hard: .warning
+        case .good: .brand
+        case .easy: .success
         }
     }
+
+    var tint: Color { chipVariant.color }
 
     /// A distinct haptic per rating.
     var feedback: SensoryFeedback {

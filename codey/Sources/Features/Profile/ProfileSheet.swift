@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import os
 
 /// Profile + settings (replaces the Settings tab, 7.3). A native
 /// inset-grouped List opened from the avatar on Home.
@@ -46,7 +45,7 @@ struct ProfileSheet: View {
         }
         .confirmationDialog("Reset progress?", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("Reset Progress", role: .destructive) {
-                perform {
+                $actionError.attempt {
                     try LocalDataReset.resetProgress(context: modelContext)
                     backend.didResetProgress()
                 }
@@ -56,7 +55,7 @@ struct ProfileSheet: View {
         }
         .confirmationDialog("Erase all local data?", isPresented: $confirmErase, titleVisibility: .visible) {
             Button("Erase Everything", role: .destructive) {
-                perform {
+                $actionError.attempt {
                     try LocalDataReset.eraseAllLocalData(context: modelContext, bank: QuestionBankLoader.loadBank())
                 }
             }
@@ -73,11 +72,7 @@ struct ProfileSheet: View {
         } message: {
             Text(signOutMessage)
         }
-        .alert("Something Went Wrong", isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(actionError ?? "")
-        }
+        .errorAlert($actionError)
     }
 
     // MARK: Sections
@@ -180,7 +175,7 @@ struct ProfileSheet: View {
     private var signOutMessage: String {
         let pending = backend.unsyncedChangeCount
         let warning = pending > 0
-            ? "\(pending) change\(pending == 1 ? "" : "s") haven't synced yet and will be lost if you remove your decks. "
+            ? "\(pending.counted("change")) haven't synced yet and will be lost if you remove your decks. "
             : ""
         return warning + "Removing them keeps another account from uploading them. They're safe in your account and come back when you sign in again."
     }
@@ -218,26 +213,22 @@ struct ProfileSheet: View {
                 .accessibilityValue(pinned ? "Pinned" : "Not pinned")
                 .accessibilityHint("Pinned topics show first on Home and in Decks")
             }
-            if !hiddenDecks.isEmpty {
-                ForEach(hiddenDecks) { deck in
-                    HStack {
-                        Label(deck.title, systemImage: "eye.slash")
-                            .foregroundStyle(CodeyColor.textSecondary)
-                        Spacer()
-                        Button("Restore") {
-                            perform { try backend.setHidden(false, deck: deck) }
-                        }
-                        .buttonStyle(.borderless)
-                        .tint(CodeyColor.brand)
+            ForEach(hiddenDecks) { deck in
+                HStack {
+                    Label(deck.title, systemImage: "eye.slash")
+                        .foregroundStyle(CodeyColor.textSecondary)
+                    Spacer()
+                    Button("Restore") {
+                        $actionError.attempt { try backend.setHidden(false, deck: deck) }
                     }
+                    .buttonStyle(.borderless)
+                    .tint(CodeyColor.brand)
                 }
             }
         } header: {
             Text("Study")
         } footer: {
-            Text(hiddenDecks.isEmpty
-                 ? "Pinned topics show first on Home and in Decks."
-                 : "Pinned topics show first on Home and in Decks. Hidden starter decks are listed above.")
+            Text("Pinned topics show first on Home and in Decks." + (hiddenDecks.isEmpty ? "" : " Hidden starter decks are listed above."))
         }
     }
 
@@ -277,16 +268,7 @@ struct ProfileSheet: View {
         } else {
             profile.pinnedTopicIds.append(topicId)
         }
-        perform { try modelContext.save() }
-    }
-
-    private func perform(_ action: () throws -> Void) {
-        do {
-            try action()
-        } catch {
-            Logger.settings.error("Profile action failed: \(String(describing: error))")
-            actionError = error.localizedDescription
-        }
+        $actionError.attempt { try modelContext.save() }
     }
 
     private static var versionString: String {
