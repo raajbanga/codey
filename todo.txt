@@ -1594,28 +1594,83 @@ HOW TO READ THIS FILE
 ================================================================================
  STAGE 10 — SECURITY, QUALITY & METRICS                    (ES + AB, ~2 days)
 ================================================================================
- [ ] NFR-04: set FileProtectionType on the SwiftData store directory
+ [x] NFR-04: set FileProtectionType on the SwiftData store directory
      (Application Support/…). Note the trade-off: `.complete` blocks
      background sync while the device is locked. Doc says complete; use
      `.completeUnlessOpen` if background sync is needed and update the .tex.
      Verify the attributes in a test.
- [ ] NFR-06: confirm no ATS exceptions; Proxyman capture shows TLS 1.3 to
+ [x] NFR-06: confirm no ATS exceptions; Proxyman capture shows TLS 1.3 to
      *.supabase.co.
  [ ] NFR-10/11: layout checks on the 3 device profiles × light/dark for
      Home, Library, Builder (with an open snippet), Study, Quiz,
      QuizSetup, Summary, ProfileSheet, Onboarding. No snapshot library (NFR-15). Use
      XCUITest screenshots attached to test results and review them
      manually, or an ImageRenderer-based pixel compare we write ourselves.
- [ ] NFR-12: Accessibility Inspector audit, both modes; especially the
+ [~] NFR-12: Accessibility Inspector audit, both modes; especially the
      syntax colors and badges.
- [ ] NFR-16: coverage ≥ 70% on Models + ViewModels + Services (Xcode report).
- [ ] Metrics plan (NFR-17–19): record Sprint 3 baselines in the table:
+ [x] NFR-16: coverage ≥ 70% on Models + ViewModels + Services (Xcode report).
+ [~] Metrics plan (NFR-17–19): record Sprint 3 baselines in the table:
      cold-launch dashboard time, 100-card sync time, peak memory in study,
      library scroll hitches, RLS %, cross-account successes, non-TLS1.3
      requests, secrets found, layout pass %, a11y issues, taps-to-study.
- [ ] Security PR checklist (R10): no tokens in logs, RLS on new tables, no
+ [x] Security PR checklist (R10): no tokens in logs, RLS on new tables, no
      Supabase imports outside the facade, secrets not committed.
 
+ STATUS 2026-10-07 (dev): automatable parts done. 302/302 unit tests PASS
+ on CLI.
+ [x] NFR-04 (resolves O6): .completeUnlessOpen on the store folder (new
+     files inherit it) and on the store/-wal/-shm, set before and after the
+     container opens (ModelContainerFactory.applyFileProtection). Why not
+     .complete: a debounced or in-flight sync can write in the seconds after
+     the device locks, and .complete would make those SQLite writes fail.
+     Data is still encrypted at rest while locked. Update NFR-04 in the
+     .tex. Test: StoreFileProtectionTests. The Simulator has no Data
+     Protection and reports the attribute as nil, so the attribute check runs
+     only on a device; on the Simulator the test checks that setting it
+     succeeds.
+ [x] NFR-06: TransportSecurityTests check that the built app's Info.plist has
+     no NSAppTransportSecurity key and that http:// backends are refused.
+     The Supabase client's URLSession now requires TLS 1.3
+     (SupabaseServices.tlsConfiguration), because the server also accepts
+     TLS 1.2 when a client asks for it. openssl to the project host
+     negotiates TLSv1.3 / TLS_AES_256_GCM_SHA384. Proxyman not used (not
+     installed); the client minimum makes it moot for our traffic.
+     GoogleSignIn's own requests use Apple's defaults (TLS 1.2+).
+ [x] NFR-16: 88.2% line coverage on Models + ViewModels + Services
+     (Models 95.6%, ViewModels 92.6%, Services 86.3%), from xccov on the
+     CLI run. New SupabaseDataClientTests (URLProtocol stub) check the exact
+     PostgREST requests (upsert merge header, explicit nulls, no
+     mastery/owner/server columns sent, gt cursor filter, in() filter,
+     decoding, errors throw) → 0% → 79.5% on that file.
+ [x] R10: scripts/check-secrets.sh (tracked files + the real Secrets values;
+     --history scans every commit). Negative-tested with a planted key.
+     check-imports.sh (R7). Logging audit: every `privacy: .public` value is
+     a starter key or an enum name; no tokens/emails/ids. PR template
+     updated.
+ [~] NFR-12: ContrastTests check every text/background pair at ≥ 4.5:1
+     against the SHIPPED asset-catalog + system colors in light and dark
+     (Brand/status/tier on raised, grouped, and own soft fill; white on
+     BrandFill; all syntax roles on CodeBackground). All pass. STILL OPEN
+     (manual): an Accessibility Inspector audit on Simulator or device.
+ [ ] OPEN (manual): NFR-10/11 layout pass on SE / 16 / 16 Pro Max × light/dark
+     (same as 7.6). The UI-test runner can't launch on this Mac (Stage 0), and
+     ImageRenderer can't draw List/ScrollView/TextEditor/Runestone, so a
+     self-written pixel compare would miss most screens.
+
+ Metrics baselines (Sprint 3, recorded 2026-10-07)
+   RLS-enabled tables ................ 100% (4/4; live check 30/30)
+   Cross-account successes ........... 0 (live RLS check; NFR-07 integration
+                                         test written, opt-in)
+   Non-TLS1.3 requests (backend) ..... 0 by construction (client min TLS 1.3)
+   Secrets found in source ........... 0 (check-secrets.sh --history)
+   Supabase imports outside facade ... 0 (check-imports.sh)
+   Unit tests / coverage ............. 302 pass / 88.2%
+   Contrast pairs < 4.5:1 ............ 0 (ContrastTests)
+   Taps to study ..................... 1 (Home "Up next") / 2 (Decks → tile → Study)
+   100-card sync push ................ 2 data requests (+1 version check, +1 log);
+                                       wall-clock time needs the opt-in test
+   TODO (device/Instruments, manual): cold-launch-to-Home time, peak memory
+     in Study, library scroll hitches, layout pass %, a11y-issue count.
 
 ================================================================================
  STAGE 11 — STRETCH / COULD-HAVE (only after Stages 0–10)
@@ -1687,7 +1742,7 @@ HOW TO READ THIS FILE
  O4 Snippet limits 2000 chars / 80 lines (doc has no number). Add to FR-07.
  O5 Snippet shown on the prompt side by default. Is per-card placement
     needed?
- O6 FileProtection .complete vs .completeUnlessOpen (Stage 10).
+ O6 [RESOLVED Stage 10] FileProtection: .completeUnlessOpen (see NFR-04 note).
  O7 [RESOLVED] OOP topic added (plus Networking, Swift, Python).
  O8 Final SF Symbols for tiers/tabs and the exact indigo hex (ES; must pass
     4.5:1).
