@@ -83,3 +83,26 @@ struct AppConfigTests {
         #expect(!AppConfig(infoDictionary: dict).isBackendConfigured)
     }
 }
+
+/// NFR-06: no App Transport Security exceptions; the backend is HTTPS only.
+struct TransportSecurityTests {
+    @Test func appHasNoATSExceptions() {
+        // Unit tests are hosted in the app, so Bundle.main is codey.app.
+        #expect(Bundle.main.bundleIdentifier == "edu.wku.cs360.codey")
+        #expect(Bundle.main.object(forInfoDictionaryKey: "NSAppTransportSecurity") == nil)
+    }
+
+    @Test func plainHTTPBackendIsNotConfigured() {
+        let config = AppConfig(infoDictionary: [
+            "SUPABASE_URL": "http://example.supabase.co", "SUPABASE_ANON_KEY": "k",
+            "GOOGLE_IOS_CLIENT_ID": "i", "GOOGLE_REVERSED_CLIENT_ID": "r", "GOOGLE_SERVER_CLIENT_ID": "s",
+        ])
+        #expect(!config.isBackendConfigured)
+    }
+}
+
+extension TransportSecurityTests {
+    @Test func backendSessionRequiresTLS13() {
+        #expect(SupabaseServices.tlsConfiguration.tlsMinimumSupportedProtocolVersion == .TLSv13)
+    }
+}
