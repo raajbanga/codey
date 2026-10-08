@@ -73,4 +73,30 @@ enum TestSupport {
         try context.save()
         return deck
     }
+
+    /// Inserts a quiz topic with the given number of questions per tier.
+    /// Every question's correct answer is option 0. Ids: "<topic>-e1", "-m1", "-h1"…
+    @discardableResult
+    static func insertTopic(
+        _ context: ModelContext,
+        id: String = "topic-test",
+        easy: Int,
+        medium: Int,
+        hard: Int
+    ) throws -> Topic {
+        let topic = Topic(id: id, title: "Test Topic", summary: "s", iconName: "star")
+        context.insert(topic)
+        for (tier, count, tag) in [(Difficulty.easy, easy, "e"), (.medium, medium, "m"), (.hard, hard, "h")] {
+            for n in 0..<count {
+                let question = Question(
+                    id: "\(id)-\(tag)\(n + 1)", prompt: "Q", options: ["right", "w1", "w2", "w3"],
+                    correctOptionIndex: 0, explanation: "e", difficulty: tier
+                )
+                context.insert(question)
+                question.topic = topic
+            }
+        }
+        try context.save()
+        return topic
+    }
 }

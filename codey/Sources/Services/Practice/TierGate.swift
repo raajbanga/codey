@@ -8,9 +8,9 @@ struct TierTally: Equatable {
 
 /// Which difficulty tiers are open (FR-25/26/29).
 ///
-/// Stage 5 uses it for STARTER decks, where "retired" = mastery 5 (D9). The
-/// quiz bank (Stage 6) reuses the same rules with its own tallies and adds
-/// sticky unlocks (TopicProgress).
+/// Starter decks use it with "retired" = mastery 5 (D9), computed live. The
+/// quiz bank uses it with "retired" = 3 correct in a row, plus sticky
+/// unlocks from TopicProgress (`alreadyUnlocked`).
 enum TierGate {
     /// - Easy is always open.
     /// - Medium: retired(Easy) ≥ ceil(fraction × total(Easy)).
@@ -20,17 +20,23 @@ enum TierGate {
     static func unlockedTiers(
         tallies: [Difficulty: TierTally],
         level: Int,
+        alreadyUnlocked: Set<Difficulty> = [],
         config: GatingConfig = .standard
     ) -> Set<Difficulty> {
-        Set(availability(tallies: tallies, xp: nil, level: level, config: config).filter(\.isUnlocked).map(\.difficulty))
+        Set(
+            availability(tallies: tallies, xp: nil, level: level, alreadyUnlocked: alreadyUnlocked, config: config)
+                .filter(\.isUnlocked).map(\.difficulty)
+        )
     }
 
     /// Lock state for each tier plus a human-readable reason for locked ones.
     /// `xp` adds "· 420 XP to go" to the level reason when known.
+    /// `alreadyUnlocked` tiers stay open no matter what (sticky unlocks).
     static func availability(
         tallies: [Difficulty: TierTally],
         xp: Int?,
         level: Int,
+        alreadyUnlocked: Set<Difficulty> = [],
         config: GatingConfig = .standard,
         noun: String = "cards",
         verb: String = "Master"
@@ -39,16 +45,16 @@ enum TierGate {
         let medium = tallies[.medium] ?? TierTally()
 
         let easyShort = shortfall(easy, fraction: config.mediumUnlockFraction)
-        let mediumOpen = easyShort == 0
+        let mediumOpen = alreadyUnlocked.contains(.medium) || easyShort == 0
         let mediumShort = shortfall(medium, fraction: config.hardUnlockFraction)
         let levelOK = level >= config.hardMinimumLevel
-        let hardOpen = mediumOpen && mediumShort == 0 && levelOK
+        let hardOpen = alreadyUnlocked.contains(.hard) || (mediumOpen && mediumShort == 0 && levelOK)
 
         var hardReasons: [String] = []
         if !mediumOpen {
             hardReasons.append("Unlock Medium first")
         } else if mediumShort > 0 {
-            hardReasons.append("\(verb) \(mediumShort) more Medium \(noun)")
+            hardReasons.append("\(verb) \(mediumShort) more Medium \(plural(noun, mediumShort))")
         }
         if !levelOK {
             var reason = "Reach Level \(config.hardMinimumLevel)"
@@ -64,7 +70,7 @@ enum TierGate {
             TierAvailability(
                 difficulty: .medium,
                 isUnlocked: mediumOpen,
-                lockReason: mediumOpen ? nil : "\(verb) \(easyShort) more Easy \(noun)"
+                lockReason: mediumOpen ? nil : "\(verb) \(easyShort) more Easy \(plural(noun, easyShort))"
             ),
             TierAvailability(
                 difficulty: .hard,
@@ -72,6 +78,11 @@ enum TierGate {
                 lockReason: hardOpen ? nil : hardReasons.joined(separator: " · ")
             ),
         ]
+    }
+
+    /// "cards" → "card" for a count of 1.
+    private static func plural(_ noun: String, _ count: Int) -> String {
+        count == 1 && noun.hasSuffix("s") ? String(noun.dropLast()) : noun
     }
 
     /// Retired items still needed: ceil(fraction × total) − retired, ≥ 0.

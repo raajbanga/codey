@@ -54,6 +54,17 @@ struct TierGateTests {
         #expect(later[2].lockReason == "Master 2 more Medium cards")
     }
 
+    @Test func stickyUnlocksStayOpenWhenRetiredCountsDrop() {
+        let dropped = tallies(easy: (4, 0), medium: (4, 0))
+        #expect(TierGate.unlockedTiers(tallies: dropped, level: 1, alreadyUnlocked: [.medium]) == [.easy, .medium])
+        #expect(TierGate.unlockedTiers(tallies: dropped, level: 1, alreadyUnlocked: [.medium, .hard]) == Set(Difficulty.allCases))
+    }
+
+    @Test func quizWordingAndSingular() {
+        let tiers = TierGate.availability(tallies: tallies(easy: (4, 2), medium: (4, 0)), xp: 0, level: 1, noun: "questions", verb: "Retire")
+        #expect(tiers[1].lockReason == "Retire 1 more Easy question")
+    }
+
     @MainActor
     @Test func starterTalliesCountRetiredCardsAndUserDecksAreNeverLocked() throws {
         let context = try TestSupport.inMemoryContext()
