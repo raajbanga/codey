@@ -2034,4 +2034,4 @@ HOW TO READ THIS FILE
                    Schemas/flashcard.schema.json
  Config/           Base.xcconfig, Secrets.example.xcconfig (Secrets.xcconfig gitignored)
  supabase/         config.toml, migrations/*.sql, tests/rls.sql
- scripts/          backup.sh, check-imports.sh, check-design-tokens.sh
+ scripts/          backup.sh, check-imports.sh, check-design-tokens.sh .
