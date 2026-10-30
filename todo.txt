@@ -253,6 +253,21 @@ HOW TO READ THIS FILE
  [ ] New screenshots for the doc → docs/figures/ (home, decks, builder,
      study, quiz, profile, leaderboard; light + dark for home).
 
+ A.6 Study-session UX simplification   [DEFERRED — after S3-B..D, user call]
+     Problem (user testing 2026-10-30): the session mixes two hidden
+     counts. "x / 4" is cards in this session, but mastery is a separate,
+     invisible 0–5 score per card (Again→0, Hard +0, Good +1, Easy +2).
+     So all-Easy gives "0 newly mastered, 0%", a card only retires on its
+     3rd Easy, and "Again" silently grows the total (2/4 → 3/5). It reads
+     as broken.
+     Options to decide later:
+       - Fewer ratings (e.g. Again / Got it), or show the per-card mastery
+         dots on the card so the score is visible.
+       - Drop the requeue, or say "Repeating this card" when it happens.
+       - Summary: count cards that moved up, not only newly mastered.
+     Likely removes code (rating mapping, requeue, mastered-chip delay).
+     Fixed already: bar now matches the counter (StudyQueue.progress).
+
 
 ================================================================================
  S3-B — STREAKS, DAILY GOAL, BADGES (FR-32–35) + TECH DEBT   P1 (AB + ES, ~1 day)
