@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Animated linear progress (replaces CodeyProgress). Fixed 8pt height, so a
-/// Capsule is fine here.
+/// Animated linear progress (replaces CodeyProgress). A thin 4pt line since
+/// Sprint 3 (S9); fixed height, so a Capsule is fine here.
 struct ProgressBar: View {
     let value: Double
     var label: String?
@@ -24,12 +24,12 @@ struct ProgressBar: View {
             }
             Capsule()
                 .fill(CodeyColor.fillNeutral)
-                .frame(height: 8)
+                .frame(height: 4)
                 .overlay(alignment: .leading) {
                     GeometryReader { proxy in
                         Capsule()
                             .fill(tint)
-                            .frame(width: max(proxy.size.width * shown, shown > 0 ? 8 : 0))
+                            .frame(width: max(proxy.size.width * shown, shown > 0 ? 4 : 0))
                     }
                 }
                 .clipShape(Capsule())

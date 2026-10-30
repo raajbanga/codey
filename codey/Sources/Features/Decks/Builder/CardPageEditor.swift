@@ -88,11 +88,11 @@ struct CardPageEditor: View {
                 withAnimation(CodeyMotion.snappy) { isPreviewing.toggle() }
             } label: {
                 Image(systemName: isPreviewing ? "pencil" : "eye")
-                    .frame(minWidth: 32, minHeight: 32)
+                    .foregroundStyle(CodeyColor.brand)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(.rect)
             }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
-            .tint(CodeyColor.brand)
+            .buttonStyle(.plain)
             .accessibilityLabel(isPreviewing ? "Edit card" : "Preview card")
         }
     }
@@ -166,7 +166,10 @@ struct CardPageEditor: View {
                         withAnimation(CodeyMotion.snappy) { viewModel.toggleSnippet(cardID: card.id) }
                     }
                     .labelStyle(.iconOnly)
-                    .tint(CodeyColor.danger)
+                    // The destructive role tints system red; use the muted
+                    // palette danger instead (S9).
+                    .foregroundStyle(CodeyColor.danger)
+                    .frame(minWidth: 44, minHeight: 44)
                 }
 
                 CodeEditorView(text: snippetBinding(\.source, default: ""), language: snippet.language)

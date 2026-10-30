@@ -76,11 +76,11 @@ struct QuizSummaryView: View {
 
     private var buttons: some View {
         VStack(spacing: CodeySpacing.sm) {
-            CodeyButton("Quiz Again", systemImage: "arrow.clockwise", kind: .glassSecondary, fullWidth: true) {
+            CodeyButton("Quiz Again", systemImage: "arrow.clockwise", kind: .secondary, fullWidth: true) {
                 withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.restart() }
             }
             .accessibilityIdentifier("quiz.again")
-            CodeyButton("Done", kind: .glassPrimary, fullWidth: true, action: done)
+            CodeyButton("Done", kind: .primary, fullWidth: true, action: done)
                 .accessibilityIdentifier("quiz.done")
         }
         .padding(.horizontal, CodeySpacing.md)

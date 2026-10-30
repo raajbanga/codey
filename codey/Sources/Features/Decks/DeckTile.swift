@@ -23,7 +23,7 @@ struct DeckTile: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(subtitle)
-                .font(.codeyCaption)
+                .font(.codeySubheadline)
                 .foregroundStyle(CodeyColor.textSecondary)
                 .lineLimit(1)
 
@@ -33,7 +33,7 @@ struct DeckTile: View {
         }
         .padding(CodeySpacing.md)
         .frame(maxWidth: .infinity, minHeight: 168, alignment: .topLeading)
-        .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
+        .codeyNote()
         .opacity(deck.isHidden ? 0.6 : 1)
         .contentShape(.rect(cornerRadius: CodeyRadius.lg))
         .accessibilityElement(children: .combine)

@@ -22,6 +22,8 @@ struct RootView: View {
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
+        // Ink blue for the selected tab instead of the system blue.
+        .tint(CodeyColor.brand)
         .fullScreenCover(item: $router.study) { request in
             StudySessionView(request: request, context: modelContext)
         }
