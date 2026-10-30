@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import codey
 
+/// StudyQueue ordering, requeue on Again, and the progress counter.
 struct StudyQueueTests {
     private let a = UUID(), b = UUID(), c = UUID()
 

@@ -3,6 +3,7 @@ import SwiftData
 import Testing
 @testable import codey
 
+/// FR-25/26 tier unlocks (D9 starter-deck gating).
 struct TierGateTests {
     private func tallies(easy: (Int, Int), medium: (Int, Int), hard: (Int, Int) = (4, 0)) -> [Difficulty: TierTally] {
         [

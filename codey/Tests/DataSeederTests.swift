@@ -3,6 +3,8 @@ import SwiftData
 import Testing
 @testable import codey
 
+/// DataSeeder: idempotent upsert of the bundled bank, truncated-bank guard,
+/// profile creation.
 @MainActor
 struct DataSeederTests {
 

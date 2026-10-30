@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// The three content-button roles.
 enum CodeyButtonKind {
     /// Pastel brand fill, ink label. One per screen: the main action.
     case primary

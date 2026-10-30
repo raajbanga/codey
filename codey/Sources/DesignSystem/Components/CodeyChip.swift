@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Chip color roles. Tier chips also carry a symbol and label, so meaning
+/// never rests on color alone (NFR-12).
 enum CodeyChipVariant: Equatable {
     case neutral
     case brand

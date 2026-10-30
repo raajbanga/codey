@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import codey
 
+/// Home's pure helpers: greeting, Up-next choice, topic ordering, deep-link routes.
 struct HomeLogicTests {
     private func date(hour: Int) -> Date {
         var calendar = Calendar(identifier: .gregorian)

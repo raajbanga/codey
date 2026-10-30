@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import SwiftData
 
+/// The three tabs (D8 r3).
 enum AppTab: Hashable {
     case home
     case decks
