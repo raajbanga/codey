@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - [Pattern: Facade] Facade (groups, leaderboard)
 /// Groups, invite codes and the weekly leaderboard (FR-42, FR-50–52).
 /// Signed-in only; the last fetch is cached for offline display.
 /// Part of the BackendFacade (§9.4).

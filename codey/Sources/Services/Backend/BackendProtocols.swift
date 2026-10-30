@@ -13,6 +13,7 @@ struct AppUser: Equatable, Sendable {
     let displayName: String?
 }
 
+// MARK: - [Pattern: Facade] Subsystem (auth)
 /// Google sign-in → Supabase session (FR-01–03). The session lives in the
 /// Keychain (FR-02).
 @MainActor
@@ -119,6 +120,7 @@ struct SyncLogEntry: Equatable, Sendable {
     var deviceId: String?
 }
 
+// MARK: - [Pattern: Facade] Subsystem (remote store)
 /// The Supabase tables, via PostgREST. RLS scopes every call to the signed-in
 /// owner. Upserts are one batched request each (NFR-02).
 protocol RemoteDeckStore: Sendable {

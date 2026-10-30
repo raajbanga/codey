@@ -73,6 +73,7 @@ struct ConflictResolver {
     }
 }
 
+// MARK: - [Pattern: Factory] Client (remote cards)
 /// Applies a pull (fetchChanges) to decks that have no local changes. Dirty
 /// decks are skipped: the push-time conflict check fetches and merges them.
 /// New remote cards go through FlashcardFactory (factory rule for sync);

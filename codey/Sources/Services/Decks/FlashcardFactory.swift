@@ -4,6 +4,7 @@ enum FactoryError: Error, Equatable {
     case invalid([FieldError])
 }
 
+// MARK: - [Pattern: Factory] Factory (creator)
 /// The only way to make a Flashcard (Factory pattern, §9.2): builder input,
 /// starter decks, and synced cards all come through here, so every card is
 /// normalized and validated the same way.
