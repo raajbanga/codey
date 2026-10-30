@@ -13,4 +13,5 @@ extension Logger {
     static let study = Logger(subsystem: subsystem, category: "Study")
     static let sync = Logger(subsystem: subsystem, category: "Sync")
     static let auth = Logger(subsystem: subsystem, category: "Auth")
+    static let performance = Logger(subsystem: subsystem, category: "Performance")
 }
