@@ -8,6 +8,10 @@ import os
 /// sync. Saves go to SwiftData FIRST (FR-44) and are queued; the SyncEngine
 /// pushes them when signed in and online. Without backend keys (or in UI
 /// tests) auth/remote are nil and the app is local-only.
+///
+/// One type, split by concern (R8 file-size limit): this file holds state,
+/// lifecycle, auth and sync; decks, profile/feedback and groups live in
+/// BackendFacade+Decks/+Profile/+Groups.swift.
 @MainActor
 @Observable
 final class BackendFacade: DeckBackend {
@@ -15,12 +19,13 @@ final class BackendFacade: DeckBackend {
     private(set) var pendingCount = 0
 
     let engine: SyncEngine
-    @ObservationIgnored private let context: ModelContext
+    // Internal, not private: the BackendFacade+*.swift extensions use them.
+    @ObservationIgnored let context: ModelContext
     @ObservationIgnored private let auth: (any AuthProviding)?
-    @ObservationIgnored private let remote: (any RemoteDeckStore)?
+    @ObservationIgnored let remote: (any RemoteDeckStore)?
     @ObservationIgnored private let cursors: SyncCursorStore
-    @ObservationIgnored private let groupCache: GroupCache
-    @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored let groupCache: GroupCache
+    @ObservationIgnored let now: () -> Date
     @ObservationIgnored private var authTask: Task<Void, Never>?
     @ObservationIgnored private var started = false
 
@@ -77,9 +82,9 @@ final class BackendFacade: DeckBackend {
 
     var lastSyncedAt: Date? { engine.lastSyncedAt ?? currentUser.flatMap { cursors.lastSyncedAt(for: $0.id) } }
 
-    private var queue: SyncQueue { SyncQueue(context: context, now: now) }
-    private var store: SwiftDataService { SwiftDataService(context: context, now: now) }
-    private var userID: UUID? { currentUser?.id }
+    var queue: SyncQueue { SyncQueue(context: context, now: now) }
+    var store: SwiftDataService { SwiftDataService(context: context, now: now) }
+    var userID: UUID? { currentUser?.id }
 
     // MARK: Lifecycle
 
@@ -164,164 +169,6 @@ final class BackendFacade: DeckBackend {
     /// Unsynced changes the sign-out dialog warns about.
     var unsyncedChangeCount: Int { queue.pendingCount(ownerId: userID) }
 
-    // MARK: Decks (DeckBackend)
-
-    /// Edit → save (Fig. 7) only when the draft changed something, so an
-    /// unchanged save neither bumps updatedAt nor queues a push.
-    func saveDeck(_ draft: DeckDraft) throws -> FlashcardDeck {
-        let result: DraftSaveResult
-        do {
-            result = try store.apply(draft, ownerId: userID)
-        } catch {
-            context.rollback()
-            throw error
-        }
-        let deck = result.deck
-        if result.deckChanged {
-            deck.editAndSave()
-            try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
-            for id in result.changedCardIDs {
-                let card = try? store.fetchCard(id: id)
-                try queue.enqueue(.card, id: id, op: SyncOperationKind(deletedAt: card?.deletedAt), ownerId: deck.ownerId)
-            }
-            try queue.remove(.card, ids: result.hardDeletedCardIDs)
-        } else if deck.syncState == .drafting {
-            deck.save()
-        }
-        // The first saved user deck earns a badge (FR-35).
-        try BadgeEvaluator.award(context: context)
-        try persist()
-        return deck
-    }
-
-    func deleteDeck(_ deck: FlashcardDeck) throws {
-        if let reason = deck.deleteBlockedReason {
-            throw DeckBackendError.deleteNotAllowed(reason)
-        }
-        try queue.remove(.card, ids: deck.cards.map(\.id))
-        if deck.hasEverSynced {
-            deck.delete()
-            try queue.enqueue(.deck, id: deck.id, op: .delete, ownerId: deck.ownerId)
-        } else {
-            try queue.remove(.deck, ids: [deck.id])
-            context.delete(deck)
-        }
-        try persist()
-    }
-
-    /// FR-13 outside the builder.
-    func deleteCard(_ card: Flashcard) throws {
-        guard let deck = card.deck, deck.canEdit else { throw DeckBackendError.notEditable }
-        deck.edit()
-        if deck.hasEverSynced {
-            card.deletedAt = now()
-            card.updatedAt = now()
-            try queue.enqueue(.card, id: card.id, op: .delete, ownerId: deck.ownerId)
-        } else {
-            try queue.remove(.card, ids: [card.id])
-            context.delete(card)
-        }
-        deck.save()
-        try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
-        try persist()
-    }
-
-    func setHidden(_ hidden: Bool, deck: FlashcardDeck) throws {
-        guard deck.origin == .starter else { return }
-        deck.isHidden = hidden
-        try context.save()
-    }
-
-    /// FR-04: saves the name and avatar locally and, when signed in, queues
-    /// a profile push. A queued profile operation makes the local values win
-    /// the next merge (last write wins). Throws the validator's FieldError.
-    func updateProfile(displayName: String, avatarId: String?) throws {
-        if let error = ModelValidator().validateDisplayName(displayName).first { throw error }
-        let profile = DataSeeder.ensureProfile(context: context)
-        profile.username = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        profile.avatarId = avatarId.flatMap { ProfileAvatar.symbols.contains($0) ? $0 : nil }
-        if let userID {
-            try queue.enqueue(.profile, id: profile.id, op: .upsert, ownerId: userID)
-        }
-        try persist()
-    }
-
-    /// FR-49: sends a UI/UX issue report. Signed-in only (RLS ties the row
-    /// to the account). Not queued: on failure the form keeps the text and
-    /// shows the error, so the user can retry when back online.
-    func submitFeedback(_ text: String) async throws {
-        guard let remote, currentUser != nil else { throw FeedbackError.signInRequired }
-        if let error = ModelValidator().validateFeedback(text).first { throw error }
-        try await remote.submitFeedback(FeedbackReportPayload(
-            id: UUID(),
-            description: text.trimmingCharacters(in: .whitespacesAndNewlines),
-            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-            osVersion: UIDevice.current.systemVersion
-        ))
-    }
-
-    /// "Reset progress" writes XP 0 explicitly instead of max-merging (D10).
-    func didResetProgress() {
-        guard let userID else { return }
-        let profile = DataSeeder.ensureProfile(context: context)
-        try? queue.enqueue(.profile, id: profile.id, op: .upsert, ownerId: userID)
-        try? persist()
-    }
-
-    // MARK: Groups (FR-42, FR-50–52)
-
-    /// Last fetched groups, for offline display.
-    var cachedGroups: GroupCache.Groups? { groupCache.groups() }
-
-    func cachedLeaderboard(for groupID: UUID) -> GroupCache.Board? {
-        groupCache.board(for: groupID)
-    }
-
-    func fetchGroups() async throws -> [GroupSummary] {
-        let remote = try groupRemote()
-        let groups = try await remote.fetchGroups()
-        groupCache.setGroups(groups, at: now())
-        return groups
-    }
-
-    /// FR-50. The server makes the invite code.
-    func createGroup(name: String) async throws -> GroupSummary {
-        let remote = try groupRemote()
-        if let error = ModelValidator().validateGroupName(name).first { throw error }
-        let group = try await remote.createGroup(id: UUID(), name: name.trimmingCharacters(in: .whitespacesAndNewlines))
-        groupCache.upsert(group, at: now())
-        return group
-    }
-
-    /// FR-51. Codes are case-insensitive.
-    func joinGroup(code: String) async throws -> GroupSummary {
-        let remote = try groupRemote()
-        if let error = ModelValidator().validateInviteCode(code).first { throw error }
-        let group = try await remote.joinGroup(code: ModelValidator.normalizedInviteCode(code))
-        groupCache.upsert(group, at: now())
-        return group
-    }
-
-    /// FR-52.
-    func leaveGroup(_ group: GroupSummary) async throws {
-        try await groupRemote().leaveGroup(id: group.id)
-        groupCache.remove(group.id)
-    }
-
-    /// FR-42. Pushes this week's XP first, so your own row is current.
-    func fetchLeaderboard(for groupID: UUID) async throws -> [LeaderboardEntry] {
-        let remote = try groupRemote()
-        await engine.syncNow()
-        let entries = try await remote.fetchLeaderboard(groupID: groupID)
-        groupCache.setBoard(entries, for: groupID, at: now())
-        return entries
-    }
-
-    private func groupRemote() throws -> any RemoteDeckStore {
-        guard let remote, currentUser != nil else { throw GroupError.signInRequired }
-        return remote
-    }
-
     // MARK: Sync
 
     func syncPending() async {
@@ -338,7 +185,8 @@ final class BackendFacade: DeckBackend {
         do { try context.save() } catch { Logger.sync.error("Save failed: \(String(describing: error))") }
     }
 
-    private func persist() throws {
+    /// Saves, refreshes the pending badge, and nudges the sync engine.
+    func persist() throws {
         try context.save()
         refreshPendingCount()
         engine.requestSync()
@@ -378,16 +226,5 @@ final class BackendFacade: DeckBackend {
         }
         try? queue.removeAll(ownerId: ownerId)
         saveLoggingErrors()
-    }
-}
-
-/// FR-49 failures the form explains.
-enum FeedbackError: LocalizedError {
-    case signInRequired
-
-    var errorDescription: String? {
-        switch self {
-        case .signInRequired: "Sign in to send a report."
-        }
     }
 }
