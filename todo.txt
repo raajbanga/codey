@@ -14,7 +14,8 @@
 
 HOW TO READ THIS FILE
   - Same conventions as the Sprint 2 PRD: [ ] todo, [x] done, [~] in
-    progress. Owner tags: (AB) backend/systems, (ES) UI/UX & QA,
+    progress. [L] = needs the Mac (Xcode, Simulator, tectonic, Proxyman,
+    device); left for a local session (see the LOCAL-ONLY list). Owner tags: (AB) backend/systems, (ES) UI/UX & QA,
     (RB) PM/docs.
   - Priority: P0 = the doc can't be submitted without it.
     P1 = planned Sprint 3 code. P2 = nice to have if time remains.
@@ -111,6 +112,54 @@ HOW TO READ THIS FILE
      fresh iOS Simulator screenshots taken after the facelift.
 
 
+--------------------------------------------------------------------------------
+ STATUS 2026-10-30 (cloud session: no Xcode / Swift / TeX available)
+--------------------------------------------------------------------------------
+ Done in the cloud and pushed to dev. All Swift below is UNBUILT: build and
+ run the unit tests locally before anything else.
+   - BackendFacade split into BackendFacade.swift + +Decks/+Profile/+Groups
+     (R8; 393 lines -> largest file 230). Shared members are internal now.
+   - [Pattern: X] MARK anchors on Factory/State/Facade participants;
+     scripts/gen-pattern-map.sh -> docs/generated/pattern_lines.tex.
+   - scripts/gen-appendix-b.sh (+ listings preamble with a Unicode literate
+     map) and scripts/gen-file-table.py (fails on an ungrouped file).
+   - scripts/check-release-build.sh (SSC #12), perf-launch.sh, perf-report.sh.
+   - codey/Tests/Performance: Swift Testing harness (10 runs, drop the 1st,
+     mean/p95/stddev/peak footprint), TC-P01..P07, opt-in CODEY_PERF=1.
+     Chose a manual loop over XCTest measure(): measure() can't drop the
+     first run or report p95, and the async sync test can't run inside it.
+   - LaunchTimer: Home logs "home-ready ms=" once per process (NFR-01).
+   - Commenting pass: header/doc comments on every file that lacked one.
+   - README: leftover merge-conflict text replaced with a real README.
+   - docs/Sprint3_Documentation.tex drafted end to end; activity images
+     extracted to docs/figures/act81-*, act82-*. 38 red \tbd{} markers =
+     values only the Mac can produce (grep -n 'tbd{' to list them).
+   - check-secrets.sh --history (pattern scan): OK. check-imports: OK.
+     check-design-tokens: OK.
+
+ LOCAL-ONLY (marked [L] above), in order:
+   1. tuist generate; build; run codeyTests. Fix anything the unbuilt Swift
+      broke (facade split, LaunchTimer sysctl, perf tests). Record the pass
+      count + xccov coverage (doc \tbd).
+   2. git push origin --delete activity8_1 (the cloud git proxy refused the
+      delete; the branch is fully merged, fab9181).
+   3. scripts/check-secrets.sh --history WITH Config/Secrets.xcconfig present
+      (value scan); xcodebuild analyze; scripts/check-release-build.sh.
+   4. Post-facelift Simulator screenshots -> docs/figures (home light/dark,
+      decks, builder, study, quiz, profile, groups); update the screens fig.
+   5. Layout pass count (3 sizes x light/dark), Accessibility Inspector
+      count, taps-to-study.
+   6. Code freeze: tag sprint3-freeze; scripts/perf-report.sh and
+      scripts/perf-launch.sh; fill perf results, bottleneck numbers, the
+      metrics table, and NFR statuses.
+   7. Re-run gen-appendix-b.sh, gen-file-table.py, gen-pattern-map.sh.
+   8. Fill the remaining \tbd: Mac specs per member, git shortlog counts,
+      activity dates in the Sprint 3 Gantt, tuist/macOS versions, Appendix A
+      dry run from a fresh clone.
+   9. cd docs && tectonic Sprint3_Documentation.tex; fix errors (never
+      compiled yet: watch the new TikZ DFD, 2nd sequence diagram, pgfplots
+      chart, listings). Check the cover emails. Export the PDF.
+  10. Merge dev -> main.
 --------------------------------------------------------------------------------
  OPEN QUESTIONS (default chosen; confirm or change)
 --------------------------------------------------------------------------------
@@ -250,7 +299,7 @@ HOW TO READ THIS FILE
  [x] DesignSystemTests (TierStyle mapping etc.) still pass.
  [x] Simulator walkthrough of every screen in light + dark on 3 device
      sizes. Doubles as the NFR-10/11 layout pass (S3-G.3).
- [ ] New screenshots for the doc → docs/figures/ (home, decks, builder,
+ [L] New screenshots for the doc → docs/figures/ (home, decks, builder,
      study, quiz, profile, leaderboard; light + dark for home).
 
  A.6 Study-session UX simplification   [DEFERRED — after S3-B..D, user call]
@@ -321,7 +370,7 @@ HOW TO READ THIS FILE
    - Checked on iPhone 17 sim: a real V6 store migrated, Home goal line,
      Profile badges row (all locked).
 
- [ ] Doc: FR-32–35 → Implemented, plus TC rows. Activity 10_2 tech-debt
+ [x] Doc: FR-32–35 → Implemented, plus TC rows. Activity 10_2 tech-debt
      write-up (risk/process section).
 
 
@@ -461,7 +510,7 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
        - Leaderboard ranking ties.
        - Facade calls with mocks.
        - SupabaseSchemaTests for new CHECK limits.
- [ ] Doc: use cases (Create Group, Join Group, View Leaderboard, Track
+ [x] Doc: use cases (Create Group, Join Group, View Leaderboard, Track
      Weekly Challenge), traceability rows, component + deployment diagram
      updates, DFD gets the new flows, risk R13 (Q3).
 
@@ -483,21 +532,21 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
 ================================================================================
  S3-E — HOUSEKEEPING + CARRY-OVERS FROM SPRINT 2                P1/P2
 ================================================================================
- [ ] (P1) Merge activity8_1 into dev; delete the branch locally and on
+ [L] (P1) Merge activity8_1 into dev; delete the branch locally and on
      origin (S4). All Sprint 3 code lands on dev; dev → main at the freeze.
- [ ] (P1) Re-run the full unit-test suite after each S3 stage
+ [L] (P1) Re-run the full unit-test suite after each S3 stage
      (`xcodebuild test … -only-testing:codeyTests`). Update the pass count
      and coverage.
- [ ] (P2) Stage 2.3 perf item: measure an 80-line snippet highlight
+ [~] (P2) Stage 2.3 perf item: measure an 80-line snippet highlight
      (Textual). This becomes a performance test in S3-F, so tick both.
  [ ] (P2) Stage 4: RB content review of the starter decks (wording, tier
      calibration).
  [ ] (P2) Activity 10_2 "Next: tune tier difficulty after peer testing".
      Only if a peer test happens (UI metric "task success rate").
- [ ] (P2) Retry the UI test runner (codeyUITests-Runner refused by macOS)
+ [L] (P2) Retry the UI test runner (codeyUITests-Runner refused by macOS)
      on Xcode 27.1. If it works, the launch metric can use
      XCTApplicationLaunchMetric (S3-F).
- [ ] (Note) BackendFacade was 291/300 lines (R8). The new group/feedback
+ [x] (Note) BackendFacade was 291/300 lines (R8). The new group/feedback
      calls will push it over. Split it into extensions per concern
      (decks, profile, groups, feedback), still one façade type. Update the
      Façade class diagram to match.
@@ -512,24 +561,24 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
  9_2: 10 runs, discard the first, report mean + p95.
 
  F.1 Performance requirements (new/updated NFRs; final numbering in S3-H.2)
- [ ] NFR-01 home dashboard ready ≤ 3 s (p95) after cold launch, LTE profile.
- [ ] NFR-02 100-card deck sync ≤ 5 s on Wi-Fi.
- [ ] NEW: peak memory in a 100-card study session ≤ 150 MB.
- [ ] NEW: quiz generation (QuestionPool build, 10 Qs) ≤ 50 ms.
- [ ] NEW: deck save (validate + persist 100 cards) ≤ 250 ms.
- [ ] NEW: syntax highlight of an 80-line snippet ≤ 100 ms (first render).
- [ ] NEW: leaderboard fetch ≤ 1.5 s on Wi-Fi (if test users exist).
+ [x] NFR-01 home dashboard ready ≤ 3 s (p95) after cold launch, LTE profile.
+ [x] NFR-02 100-card deck sync ≤ 5 s on Wi-Fi.
+ [x] NEW: peak memory in a 100-card study session ≤ 150 MB.
+ [x] NEW: quiz generation (QuestionPool build, 10 Qs) ≤ 50 ms.
+ [x] NEW: deck save (validate + persist 100 cards) ≤ 250 ms.
+ [x] NEW: syntax highlight of an 80-line snippet ≤ 100 ms (first render).
+ [x] NEW: leaderboard fetch ≤ 1.5 s on Wi-Fi (if test users exist).
  Thresholds are confirmed after the first baseline run. Don't publish a
  threshold the code misses without a bottleneck explanation.
 
  F.2 Test harness
- [ ] DEBUG perf fixture (Activity 9_2 data):
+ [x] DEBUG perf fixture (Activity 9_2 data):
        - Starter decks + 5 user decks × 50 cards (mixed text/code).
        - Quiz + XP history across topics.
        - A 100-card generated deck.
      Lives in Tests (or behind a DEBUG launch argument for the launch
      test).
- [ ] codeyTests/Performance/*.swift using XCTest measure(metrics:) with
+ [x] codeyTests/Performance/*.swift using XCTest measure(metrics:) with
      XCTClockMetric / XCTMemoryMetric / XCTCPUMetric and
      options.iterationCount = 10:
        - QuizBuildPerfTests (QuestionPool / QuizViewModel start)
@@ -546,7 +595,7 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
            label which one was used.
      XCTest must be added beside Swift Testing; both can live in the same
      target.
- [ ] Cold-launch metric (UI test runner blocked → script fallback):
+ [x] Cold-launch metric (UI test runner blocked → script fallback):
        - os_signpost / Logger mark "home-ready" in HomeView.onAppear.
        - The process start time comes from sysctl kinfo_proc
          (p_starttime).
@@ -556,16 +605,16 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
          from the CLI. Note that cold launch doesn't hit the network
          (local-first), so the LTE profile doesn't change it, and say so
          in the doc.
- [ ] scripts/perf-report.sh: runs the perf tests, parses the xcresult
+ [x] scripts/perf-report.sh: runs the perf tests, parses the xcresult
      (`xcrun xcresulttool`), and writes docs/perf/sprint3.csv (mean, p95,
      stddev per test).
 
  F.3 Results + analysis (feeds the doc)
- [ ] Record the environment: Mac model/chip/RAM, macOS, Xcode 27.1,
+ [L] Record the environment: Mac model/chip/RAM, macOS, Xcode 27.1,
      Simulator device + runtime, Debug vs Release. Prefer Release
      (-configuration Release, with testability) for timing.
- [ ] Fill the metrics table: Sprint 2 baseline vs Sprint 3 values.
- [ ] Bottlenecks: name the slowest path per scenario, with the measured
+ [L] Fill the metrics table: Sprint 2 baseline vs Sprint 3 values.
+ [~] Bottlenecks: name the slowest path per scenario, with the measured
      share. Candidates:
        - Seeding on launch.
        - SwiftData fetches on Home.
@@ -573,9 +622,9 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
        - Per-request sync round trips.
        - Simulator vs device CPU/IO.
      Hardware vs software split, as the rubric asks.
- [ ] If any requirement fails: apply the Activity 9_2 corrective plan,
+ [L] If any requirement fails: apply the Activity 9_2 corrective plan,
      re-run, and report before/after.
- [ ] (P2) Instruments traces (App Launch, Allocations, Animation Hitches
+ [L] (P2) Instruments traces (App Launch, Allocations, Animation Hitches
      for deck-library scroll fps) as figures. The scroll-fps metric stays
      "Sprint 4" if it isn't measured.
 
@@ -584,24 +633,24 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
  S3-G — SECURITY + UI METRICS (automatable, S10)        P0 (AB + ES, ~0.5 day)
 ================================================================================
  G.1 Security test runs (record actual results + date)
- [ ] Live RLS check (supabase/checks/rls_live_check.sql), extended for
+ [x] Live RLS check (supabase/checks/rls_live_check.sql), extended for
      groups/weekly_xp/feedback. Target: 0 failed. Run via the Supabase MCP.
- [ ] Supabase Security Advisor after the new migrations: 0 open warnings
+ [x] Supabase Security Advisor after the new migrations: 0 open warnings
      (or each one justified).
- [ ] scripts/check-secrets.sh --history: 0 findings.
- [ ] Xcode Static Analyzer: `xcodebuild analyze -scheme codey …` → 0
+ [~] scripts/check-secrets.sh --history: 0 findings.
+ [L] Xcode Static Analyzer: `xcodebuild analyze -scheme codey …` → 0
      security warnings. Save the summary.
- [ ] Release-build check (SSC #12): build Release, then confirm
+ [~] Release-build check (SSC #12): build Release, then confirm
      SupabaseTestAccounts / test sign-in symbols are absent
      (`nm`/`strings` on the binary). Add as scripts/check-release-build.sh.
- [ ] TransportSecurityTests (no ATS exceptions, TLS 1.3 minimum) and
+ [L] TransportSecurityTests (no ATS exceptions, TLS 1.3 minimum) and
      SupabaseSchemaTests / FlashcardSchemaFileTests (validator-limit
      drift) pass.
- [ ] scripts/check-imports.sh passes (Supabase/Google imports stay in one
+ [x] scripts/check-imports.sh passes (Supabase/Google imports stay in one
      module).
  [ ] (opt) pgTAP `supabase test db` only if the CLI + Docker get installed
      cheaply. Otherwise the doc says the live check replaces it.
- [ ] Deferred, labeled "Sprint 4" in the doc:
+ [x] Deferred, labeled "Sprint 4" in the doc:
        - Proxyman TLS capture.
        - The on-device file-protection attribute check (NFR-04 /
          SSC #13).
@@ -615,15 +664,15 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
 
  G.3 UI metrics (carry-overs from Sprint 2 Stage 7/10, done with the
      Simulator)
- [ ] NFR-10/11 layout pass:
+ [L] NFR-10/11 layout pass:
        - Devices: iPhone 17e / 17 / 18 Pro Max Simulator profiles (match
          the doc's hardware table; whichever runtimes are installed).
        - Light + dark.
        - Every screen.
        - Result: screens passing / total.
- [ ] NFR-12 Accessibility Inspector audit (both modes). Fix label/contrast
+ [L] NFR-12 Accessibility Inspector audit (both modes). Fix label/contrast
      issues. Record the count.
- [ ] Taps-to-study re-check after the facelift.
+ [L] Taps-to-study re-check after the facelift.
  [ ] (P2) Peer usability test (3–5 classmates), so "task success rate" gets
      a number. Otherwise it stays "Sprint 4".
 
@@ -636,17 +685,17 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
  order is mandatory. Current gaps are marked NEW.
 
  H.0 Front matter
- [ ] Cover page:
+ [x] Cover page:
        - Title, CS 360, "Sprint 3", date submitted 2026-11-03.
        - Names + emails (already on the Sprint 2 cover; check the
          addresses).
- [ ] TOC with page numbers. Every major section starts on a page that
+ [x] TOC with page numbers. Every major section starts on a page that
      appears in the TOC (rubric).
- [ ] All figures/tables captioned. Every graph has axis labels: Gantt
+ [x] All figures/tables captioned. Every graph has axis labels: Gantt
      x/y, perf charts.
 
  H.1 Project Overview and Scope (Updated for Sprint 3)
- [ ] "Changes Since Sprint 2" subsection:
+ [x] "Changes Since Sprint 2" subsection:
        - Streaks/goal/badges.
        - Profile identity.
        - Weekly plan.
@@ -654,18 +703,18 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
        - Groups/leaderboard/weekly challenge.
        - Minimal UI facelift.
        - Security + performance measurement.
- [ ] Scope: in-scope vs Sprint 4 (coding challenges FR-39–41; Proxyman;
+ [x] Scope: in-scope vs Sprint 4 (coding challenges FR-39–41; Proxyman;
      device checks).
 
  H.2 Requirements (Updated for Sprint 3)
- [ ] FR table:
+ [x] FR table:
        - Statuses updated.
        - Split compound FRs into atomic ones (FR-42 → FR-42 + FR-50–53;
          check FR-03, FR-12, FR-24, FR-28, FR-47 for "and"-compounds and
          split where it helps testability).
        - FR-39–41 → Must / Planned – Sprint 4 (S6).
      Target ≈ 40+ specific, testable, atomic FRs (we're at 49 → ~53+).
- [ ] NFR table (target ≈ 15+; we have 20):
+ [x] NFR table (target ≈ 15+; we have 20):
        - ADD security NFRs (rubric), e.g.:
          - Session tokens never written to logs or UserDefaults.
          - service_role key never in client or repo.
@@ -674,30 +723,30 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
          - Group data visible only to members.
        - ADD performance NFRs from S3-F.1.
        Every NFR keeps a verification method that names the actual test.
- [ ] Metrics Plan table: a Sprint 3 column next to the Sprint 2 baseline
+ [x] Metrics Plan table: a Sprint 3 column next to the Sprint 2 baseline
      (NFR-17–19).
 
  H.3 Project Hardware Details (Updated for Sprint 3)
- [ ] Exact Macs (chip/RAM/macOS) per member (Activity 8_1: all macOS arm).
+ [L] Exact Macs (chip/RAM/macOS) per member (Activity 8_1: all macOS arm).
      Xcode 27.1, Simulator runtimes/devices actually used, the test
      device(s) if any. Supabase plan/region. Third-party services table
      unchanged + any new deps.
 
  H.4 Software Product Development and Organizational Approach (Sprint 3)
- [ ] Modified waterfall for Sprint 3:
+ [x] Modified waterfall for Sprint 3:
        - Timeline Oct 4–Nov 3 and the task list.
        - The Activity 10_2 status table (critical tasks: status +
          blockers).
        - Technical-debt item + refactor (currentStreak → StreakCalculator)
          and its resolution.
        - Definition of done.
- [ ] Team workflow: dev → main (S4). Fix the /docs/minutes reference
+ [x] Team workflow: dev → main (S4). Fix the /docs/minutes reference
      (still open from Sprint 2): point at the real minutes location or
      drop it.
 
  H.5 Sprint Gantt Charts
- [ ] Keep Sprint 1 and Sprint 2 charts as-is.
- [ ] NEW Sprint 3 Gantt (pgfgantt, same style), 2026-10-04 → 11-03:
+ [x] Keep Sprint 1 and Sprint 2 charts as-is.
+ [~] NEW Sprint 3 Gantt (pgfgantt, same style), 2026-10-04 → 11-03:
        - GitHub/VC setup (Act. 8_1).
        - Wireframes/storyboard (Act. 8_2).
        - Performance requirements (Act. 9_2).
@@ -707,13 +756,13 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
        - Security runs, perf tests, documentation.
      Owners + dependencies + milestone "Sprint 3 doc due 11/3".
      Progress % = actual.
- [ ] The rubric says "insert as an image": render the TikZ charts to PNG
+ [x] The rubric says "insert as an image": render the TikZ charts to PNG
      (tectonic → pdftoppm) and \includegraphics them, OR keep them as
      vector figures. Default: keep vector (it renders as an image in the
      PDF); revisit if the grader asks.
 
  H.6 Risks (Sprint 3)
- [ ] Update identification/planning/monitoring. Add:
+ [x] Update identification/planning/monitoring. Add:
        - R13 client-reported weekly XP can be inflated (Q3).
        - R14 schedule compression (4 days to deadline).
        - R15 UI-test runner blocked on macOS (launch metric via script
@@ -723,10 +772,10 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
      Refresh statuses of R1–R12 (R8 façade size; R12 Textual/Runestone).
 
  H.7 UI/UX Design section (kept from Sprint 2; rewritten for S9)
- [ ] New tokens, accent, type, glass policy, motion policy; D12/D13/D17
+ [x] New tokens, accent, type, glass policy, motion policy; D12/D13/D17
      revised.
- [ ] New screenshots (S3-A.5).
- [ ] NEW Activity 8_2 content:
+ [L] New screenshots (S3-A.5).
+ [x] NEW Activity 8_2 content:
        - Primary screens table.
        - Deck Builder requirements breakdown (content/hierarchy vs
          behavior).
@@ -743,30 +792,30 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
      Text specs for the new use cases.
 
  H.9 Requirements Traceability Table (Updated)
- [ ] Rows for every new/split FR and new NFR → design element → test case
+ [x] Rows for every new/split FR and new NFR → design element → test case
      → actual test name. Include security + perf test cases.
 
  H.10 UML Sequence Diagram (Updated)
- [ ] Keep the save→sync sequence (refresh names if BackendFacade gets
+ [x] Keep the save→sync sequence (refresh names if BackendFacade gets
      split). ADD a "Join group by code → leaderboard fetch" sequence
      (shows the RPC + RLS path).
 
  H.11 UML State Diagram (Updated)
- [ ] Keep DeckSyncState. Optional: a daily-goal/streak state machine
+ [x] Keep DeckSyncState. Optional: a daily-goal/streak state machine
      (Active / AtRisk-today / Broken). Add it only if time allows.
 
  H.12 UML Class Diagrams: 3 patterns, one per category (Updated)
- [ ] Domain model: add Badge/BadgeAward, StreakCalculator,
+ [x] Domain model: add Badge/BadgeAward, StreakCalculator,
      WeeklyChallenge, Group/LeaderboardEntry DTOs, and the V7 profile
      fields.
- [ ] Factory (FlashcardFactory), State (DeckSyncState), Façade
+ [x] Factory (FlashcardFactory), State (DeckSyncState), Façade
      (BackendFacade): sync with code. The Façade gains group/feedback
      operations and per-concern extensions.
 
  H.13 NEW Design pattern → source code line mapping
- [ ] A table per pattern: participant role → file → line range → Appendix
+ [x] A table per pattern: participant role → file → line range → Appendix
      B subsection.
- [ ] Make it reproducible:
+ [x] Make it reproducible:
        - Add `// MARK: - [Pattern: Factory] <role>` anchors in the source.
        - scripts/gen-pattern-map.sh greps the anchors and emits
          docs/generated/pattern_lines.tex (\newcommand macros, or the
@@ -774,30 +823,30 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
        - Run it AFTER the code freeze, so line numbers match Appendix B.
 
  H.14 UML Component Diagram (Updated)
- [ ] Add the Groups/Leaderboard + Feedback interfaces on BackendFacade,
+ [x] Add the Groups/Leaderboard + Feedback interfaces on BackendFacade,
      plus the new Supabase tables/RPC on the cloud side.
 
  H.15 UML Deployment Diagram (Updated)
- [ ] Data tier: groups, group_members, weekly_xp, feedback_reports, and
+ [x] Data tier: groups, group_members, weekly_xp, feedback_reports, and
      the join_group function. GitHub Actions keep-alive is already there;
      check it.
 
  H.16 NEW Usage of Version Control
- [ ] GitHub repo https://github.com/raajbanga/codey (owner raajbanga;
+ [x] GitHub repo https://github.com/raajbanga/codey (owner raajbanga;
      collaborators elnadsalcinovic2005-oss, TheRealAxnav). GitHub Desktop
      on macOS arm (Activity 8_1 tables).
- [ ] Workflow:
+ [x] Workflow:
        - dev → main.
        - Squash merges per stage.
        - PR template with the security checklist.
        - Commit message conventions.
        - The activity8_1 branch and why it was merged/removed.
- [ ] Evidence:
+ [~] Evidence:
        - Activity 8_1 screenshots (pdfimages docs/Activity8_1.pdf).
        - The commit-history table (hashes from Act. 8_1: 05bd3b6,
          8d33cb5, 30b5b0e).
        - Commit counts per member (`git shortlog -sn`).
- [ ] Other VC/infra:
+ [x] Other VC/infra:
        - GitHub Actions (supabase-keepalive.yml).
        - Repo secrets (names only).
        - Tuist-managed project.
@@ -805,7 +854,7 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
      Docker Hub not used; say so.
 
  H.17 NEW Program files / configuration files table
- [ ] Every tracked file (or file group where it's sensible: per-feature
+ [x] Every tracked file (or file group where it's sensible: per-feature
      view folders are fine as a group ONLY if each file still appears in
      Appendix B), with a short description. Generate the path list with
      `git ls-files` (minus docs/ and assets). Descriptions are
@@ -814,14 +863,14 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
      description.
 
  H.18 NEW Project Security Issues
- [ ] Security NFRs summary (link to H.2).
- [ ] Activity 10_1 content:
+ [x] Security NFRs summary (link to H.2).
+ [x] Activity 10_1 content:
        - Trust boundary analysis (app → Supabase over the internet;
          Broken Access Control threat + mitigations).
        - Security design principles: minimize attack surface, least
          privilege, defense in depth. Update for join_group RPC +
          feedback.
- [ ] NEW Security threat model as a Data Flow Diagram (TikZ):
+ [x] NEW Security threat model as a Data Flow Diagram (TikZ):
        - External entities: Student, Google OAuth, Supabase Auth.
        - Processes: Sign In, Validate Deck, Save Locally, Sync,
          PostgREST API, + Join Group / Leaderboard.
@@ -829,33 +878,33 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
          bundled JSON.
        - Trust boundaries drawn as dashed lines.
        - Numbered flows. STRIDE threats annotated per flow/element.
- [ ] Security test cases table:
+ [~] Security test cases table:
        - Columns: ID, item, steps, expected, actual, date, status.
        - Built from S3-G.1.
        - Deferred ones are marked Sprint 4.
- [ ] Software Security Checklist (Activity 10_1 Part 5: items 1–5, 21, 12,
+ [~] Software Security Checklist (Activity 10_1 Part 5: items 1–5, 21, 12,
      13, 18, 22). Fill "Actual result (now)" with Sprint 3 results.
- [ ] Security metrics table (S3-G.2).
+ [~] Security metrics table (S3-G.2).
 
  H.19 NEW System Performance
- [ ] Defined performance requirements (S3-F.1): testable, with
+ [x] Defined performance requirements (S3-F.1): testable, with
      thresholds, environment, and the method.
- [ ] Performance test cases table (TC-P01…): inputs/data (Activity 9_2
+ [x] Performance test cases table (TC-P01…): inputs/data (Activity 9_2
      fixture), steps, metric, loop (10 runs, discard 1), expected.
- [ ] Performance profile definitions:
+ [~] Performance profile definitions:
        - Profiles: cold launch, study session, quiz build, deck save,
          highlight, sync.
        - What is measured: time, memory, CPU.
      Then the results (mean, p95, stddev, pass/fail) + a chart (bar or
      box) with labeled axes.
- [ ] Hardware/software bottlenecks:
+ [~] Hardware/software bottlenecks:
        - Justified with measured numbers (rubric example style: "method X
          takes N ms, M KB").
        - Simulator-on-Mac vs device caveat.
- [ ] Corrective actions taken + before/after (if any).
+ [L] Corrective actions taken + before/after (if any).
 
  H.20 NEW Appendix A: build instructions, step by step
- [ ] Detailed enough for anyone with the hardware to deploy the project:
+ [~] Detailed enough for anyone with the hardware to deploy the project:
        1. Prerequisites: Mac (Apple Silicon), macOS version, Xcode 27.1,
           iOS Simulator runtime, Homebrew, Tuist (exact version, from
           .tool-versions / mise if present), git.
@@ -879,7 +928,7 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
      Dry-run it from a fresh clone in a temp dir to prove it works.
 
  H.21 NEW Appendix B: source code and configuration files
- [ ] scripts/gen-appendix-b.sh → docs/generated/appendix_b.tex:
+ [x] scripts/gen-appendix-b.sh → docs/generated/appendix_b.tex:
        - One \subsection{B.n path} per file + \lstinputlisting (or
          \inputminted).
        - Order: App, Models, ViewModels, Services, DesignSystem,
@@ -891,7 +940,7 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
        - Large data JSON (questions-seed.json, starter-decks.json): full
          listing in a small font, or schema + first N entries with a
          note. Default: full; it's "all project files".
- [ ] LaTeX listings setup:
+ [x] LaTeX listings setup:
        - Define a Swift language for listings (keywords). SQL/bash/JSON
          styles.
        - UTF-8 literate mapping for the non-ASCII characters in the
@@ -899,7 +948,7 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
          tectonic shell-escape.
        - Line numbers ON, so H.13 can cite lines.
        - Breaklines on.
- [ ] Commenting pass (rubric: "all source code/config files appropriately
+ [x] Commenting pass (rubric: "all source code/config files appropriately
      commented"), BEFORE the freeze:
        - Every Swift file gets a top doc comment (purpose, FR/NFR links).
        - Non-obvious logic gets "why" comments.
@@ -908,20 +957,20 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
        - xcconfig / Project.swift / Package.swift get comments.
      Match the existing comment style (/// doc comments, short why-
      comments). Don't narrate obvious code.
- [ ] Code freeze (tag dev, e.g. sprint3-freeze). After the freeze, run
+ [L] Code freeze (tag dev, e.g. sprint3-freeze). After the freeze, run
      gen-appendix-b + gen-pattern-map, then build the doc. Any code change
      after the freeze means re-running both.
 
  H.22 Final QA of the doc
- [ ] tectonic build is clean: no undefined refs, no overfull boxes > 3 pt.
- [ ] Every rubric bullet ticks (checklist at the end of this file).
+ [L] tectonic build is clean: no undefined refs, no overfull boxes > 3 pt.
+ [L] Every rubric bullet ticks (checklist at the end of this file).
      Body ≥ 4,500 words.
- [ ] Consistency: FR/NFR IDs match the traceability table, test names
+ [~] Consistency: FR/NFR IDs match the traceability table, test names
      exist in code, file paths exist, numbers match docs/perf/sprint3.csv.
- [ ] Remove all "Sprint 2" framing where it should say Sprint 3. Keep the
+ [x] Remove all "Sprint 2" framing where it should say Sprint 3. Keep the
      history sections.
- [ ] Keep the "We used AI to help create this document." line.
- [ ] Export the PDF → docs/Sprint3_Documentation.pdf for submission.
+ [x] Keep the "We used AI to help create this document." line.
+ [L] Export the PDF → docs/Sprint3_Documentation.pdf for submission.
 
 
 --------------------------------------------------------------------------------
