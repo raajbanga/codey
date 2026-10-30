@@ -191,7 +191,7 @@ extension ValidationField {
     var cardID: UUID? {
         switch self {
         case .cardPrompt(let id), .cardAnswer(let id), .snippetSource(let id), .snippetLanguage(let id): id
-        case .deckTitle, .deckTopic, .deckHasNoCards, .displayName, .feedback: nil
+        case .deckTitle, .deckTopic, .deckHasNoCards, .displayName, .feedback, .groupName, .inviteCode: nil
         }
     }
 }

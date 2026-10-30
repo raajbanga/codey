@@ -2,9 +2,9 @@
 -- through the Supabase MCP (execute_sql) or the SQL editor, without pgTAP.
 --
 -- It ALWAYS ends with an error whose message holds the results, e.g.
---   "RLS TESTS: 0 failed of 36. ok 1 … | ok 36 …"
+--   "RLS TESTS: 0 failed of 48. ok 1 … | ok 48 …"
 -- Raising it rolls back every test user and row, so nothing persists.
--- Last run: 2026-10-08, 0 failed of 30 (checks 31–36 added 2026-10-30, not yet run).
+-- Last run: 2026-10-30, 0 failed of 48 (after the S3-C/S3-D migrations).
 
 do $test$
 declare
@@ -18,6 +18,9 @@ declare
     n int;
     v text;
     ts timestamptz;
+    grp constant uuid := '30000000-0000-0000-0000-00000000000a';
+    code text;
+    monday constant date := date_trunc('week', now() at time zone 'utc')::date;
 begin
     insert into auth.users (id, email, raw_user_meta_data) values
         (a, 'a@test.codey', '{"full_name": "Ana Example"}'),
@@ -178,6 +181,68 @@ begin
     perform set_config('request.jwt.claims', claims_a, true);
     select title into v from public.decks where id = deck_a;
     if v = 'A deck' then results := results || 'ok 30 A''s deck intact'::text; else failed := failed + 1; results := results || ('FAIL 30 title=' || coalesce(v, 'missing')); end if;
+
+    -- ── S3-D: groups, weekly XP, leaderboard (A is still the role here) ──
+    begin
+        insert into public.groups (id, name, invite_code, created_by) values (grp, '  CS 360  ', 'AAAAAA', b);
+        select invite_code into code from public.groups where id = grp;
+        select count(*) into n from public.group_members where group_id = grp and user_id = a;
+        if code ~ '^[A-Z0-9]{6}$' and code <> 'AAAAAA' and n = 1 then results := results || 'ok 37 create group: server code, creator is a member'::text;
+        else failed := failed + 1; results := results || ('FAIL 37 code=' || coalesce(code, 'null') || ' members=' || n); end if;
+    exception when others then failed := failed + 1; results := results || ('FAIL 37 ' || sqlstate || ' ' || sqlerrm); end;
+    select count(*) into n from public.groups where id = grp and created_by = a and name = 'CS 360';
+    if n = 1 then results := results || 'ok 38 created_by forced to A, name trimmed'::text; else failed := failed + 1; results := results || ('FAIL 38 rows=' || n); end if;
+    begin
+        insert into public.group_members (group_id, user_id) values (grp, b);
+        failed := failed + 1; results := results || 'FAIL 39 A added B to a group directly'::text;
+    exception when insufficient_privilege then results := results || 'ok 39 memberships only via join_group'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 39 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        insert into public.weekly_xp (week_start, xp) values (monday, 100);
+        insert into public.weekly_xp (week_start, xp) values (monday, 50)
+            on conflict (owner_id, week_start) do update set xp = excluded.xp;
+        select xp into n from public.weekly_xp where owner_id = a and week_start = monday;
+        if n = 100 then results := results || 'ok 40 weekly_xp keeps the max'::text; else failed := failed + 1; results := results || ('FAIL 40 xp=' || n); end if;
+    exception when others then failed := failed + 1; results := results || ('FAIL 40 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        insert into public.weekly_xp (week_start, xp) values (monday + 1, 10);
+        failed := failed + 1; results := results || 'FAIL 41 non-Monday week accepted'::text;
+    exception when check_violation then results := results || 'ok 41 week_start must be a Monday'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 41 ' || sqlstate || ' ' || sqlerrm); end;
+
+    -- B, not a member yet
+    perform set_config('request.jwt.claims', claims_b, true);
+    select (select count(*) from public.groups) + (select count(*) from public.group_members)
+         + (select count(*) from public.weekly_xp where owner_id = a) + (select count(*) from public.group_leaderboard) into n;
+    if n = 0 then results := results || 'ok 42 non-member sees 0 groups, members, XP, board rows'::text; else failed := failed + 1; results := results || ('FAIL 42 rows=' || n); end if;
+    begin
+        perform public.join_group('ZZZZZZ');
+        failed := failed + 1; results := results || 'FAIL 43 unknown code joined'::text;
+    exception when no_data_found then results := results || 'ok 43 unknown code rejected'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 43 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        perform public.join_group(lower(code));
+        select count(*) into n from public.group_leaderboard where group_id = grp;
+        if n = 2 then results := results || 'ok 44 join by code (any case); board shows both'::text; else failed := failed + 1; results := results || ('FAIL 44 board=' || n); end if;
+    exception when others then failed := failed + 1; results := results || ('FAIL 44 ' || sqlstate || ' ' || sqlerrm); end;
+    select xp into n from public.group_leaderboard where group_id = grp and user_id = a;
+    if n = 100 then results := results || 'ok 45 member sees A''s weekly XP'::text; else failed := failed + 1; results := results || ('FAIL 45 xp=' || coalesce(n::text, 'null')); end if;
+    delete from public.group_members where group_id = grp and user_id = a;
+    get diagnostics n = row_count;
+    if n = 0 then results := results || 'ok 46 B can''t remove A'::text; else failed := failed + 1; results := results || ('FAIL 46 deleted=' || n); end if;
+    delete from public.group_members where group_id = grp and user_id = b;
+    select count(*) into n from public.groups;
+    select n + count(*) - 1 into n from public.profiles;
+    if n = 0 then results := results || 'ok 47 after leaving, B sees 0 groups and only own profile'::text; else failed := failed + 1; results := results || ('FAIL 47 rows=' || n); end if;
+
+    -- anon can't call the RPC
+    execute 'set local role anon';
+    perform set_config('request.jwt.claims', '{"role": "anon"}', true);
+    begin
+        perform public.join_group(code);
+        failed := failed + 1; results := results || 'FAIL 48 anon called join_group'::text;
+    exception when insufficient_privilege then results := results || 'ok 48 anon can''t call join_group'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 48 ' || sqlstate || ' ' || sqlerrm); end;
 
     raise exception 'RLS TESTS: % failed of %. %', failed, coalesce(array_length(results, 1), 0), array_to_string(results, ' | ');
 end

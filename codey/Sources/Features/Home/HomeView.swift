@@ -53,6 +53,7 @@ struct HomeView: View {
                 )
                 upNextCard
                 planSection
+                weekSection
                 topicsSection
                 if showsSignInNudge {
                     signInNudge
@@ -189,6 +190,39 @@ struct HomeView: View {
                 .padding(.horizontal, CodeySpacing.md)
                 .codeyNote()
             }
+        }
+    }
+
+    // MARK: This week (FR-42, FR-43)
+
+    private var challenge: WeeklyChallenge.Status? {
+        WeeklyChallenge.status(now: .now, topicIDs: topics.map(\.id), records: records)
+    }
+
+    private var weekSection: some View {
+        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+            Text("Challenge and groups")
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textSecondary)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.leading, CodeySpacing.xs)
+            VStack(spacing: 0) {
+                if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
+                    ChallengeRow(topic: topic, status: challenge) {
+                        router.quizSetupTopic = topic
+                    }
+                    Divider().overlay(CodeyColor.separator)
+                }
+                NavigationLink {
+                    GroupsView()
+                } label: {
+                    HomeLinkRow(title: "Groups", subtitle: "Weekly XP leaderboard", systemImage: "person.3.fill")
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("home.groups")
+            }
+            .padding(.horizontal, CodeySpacing.md)
+            .codeyNote()
         }
     }
 
@@ -465,6 +499,78 @@ private struct PlanRow: View {
         .buttonStyle(.plain)
         .accessibilityHint("Opens quiz setup")
         .accessibilityIdentifier("home.plan.\(topic.title)")
+    }
+}
+
+/// FR-43: "15 correct in Networking", with progress. Opens quiz setup.
+private struct ChallengeRow: View {
+    let topic: Topic
+    let status: WeeklyChallenge.Status
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: CodeySpacing.sm) {
+                Image(systemName: status.isComplete ? "trophy.fill" : "flag.checkered")
+                    .font(.codeyCallout)
+                    .foregroundStyle(status.isComplete ? CodeyColor.success : CodeyColor.brand)
+                    .frame(minWidth: 24)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: CodeySpacing.xs) {
+                    Text("Challenge: \(WeeklyChallenge.goal) correct in \(topic.title)")
+                        .font(.codeyHeadline)
+                        .foregroundStyle(CodeyColor.textPrimary)
+                        .multilineTextAlignment(.leading)
+                    Text(status.isComplete ? "Done this week" : "\(min(status.correct, WeeklyChallenge.goal))/\(WeeklyChallenge.goal) correct")
+                        .font(.codeySubheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(CodeyColor.textSecondary)
+                    ProgressBar(value: status.progress)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.codeyCallout.weight(.semibold))
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, CodeySpacing.md)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens quiz setup")
+        .accessibilityIdentifier("home.challenge")
+    }
+}
+
+/// A plain navigation row inside a Home note.
+private struct HomeLinkRow: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: CodeySpacing.sm) {
+            Image(systemName: systemImage)
+                .font(.codeyCallout)
+                .foregroundStyle(CodeyColor.brand)
+                .frame(minWidth: 24)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                Text(title)
+                    .font(.codeyHeadline)
+                    .foregroundStyle(CodeyColor.textPrimary)
+                Text(subtitle)
+                    .font(.codeySubheadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.codeyCallout.weight(.semibold))
+                .foregroundStyle(CodeyColor.textSecondary)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, CodeySpacing.md)
+        .contentShape(.rect)
     }
 }
 
