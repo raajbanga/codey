@@ -45,7 +45,6 @@ struct StudyCardView: View {
                     systemImage: "checkmark.seal.fill",
                     variant: .success
                 )
-                .symbolEffect(.bounce, value: masteredBadge)
                 .padding(.top, CodeySpacing.sm)
                 .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
             }
@@ -77,9 +76,8 @@ private struct CardFace: View {
         VStack(alignment: .leading, spacing: CodeySpacing.md) {
             HStack(spacing: CodeySpacing.xs) {
                 Text(isFront ? "Prompt" : "Answer")
-                    .font(.codeyCaption.weight(.semibold))
+                    .font(.codeySubheadline.weight(.medium))
                     .foregroundStyle(isFront ? CodeyColor.brand : CodeyColor.success)
-                    .textCase(.uppercase)
                 Spacer()
                 if let difficulty = card.difficulty {
                     CodeyChip(tier: difficulty)
@@ -97,17 +95,16 @@ private struct CardFace: View {
         }
         .padding(CodeySpacing.lg)
         .frame(maxWidth: .infinity, minHeight: 260, alignment: .topLeading)
-        .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
+        .codeyNote()
         .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
-        .shadow(color: CodeyColor.textPrimary.opacity(0.08), radius: 12, y: 4)
     }
 
     @ViewBuilder
     private var content: some View {
         if isFront {
-            CardMarkdownView(markdown: card.prompt, snippet: card.codeSnippet)
+            CardMarkdownView(markdown: card.prompt, snippet: card.codeSnippet, font: .codeyCardText)
         } else {
-            CardMarkdownView(markdown: card.answer)
+            CardMarkdownView(markdown: card.answer, font: .codeyCardText)
         }
     }
 }

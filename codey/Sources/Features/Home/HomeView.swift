@@ -1,17 +1,21 @@
 import SwiftData
 import SwiftUI
 
-/// Home (D8, simplified r3): progress at a glance plus ONE suggestion.
+/// Home (D8, simplified r3; Sprint 3 S9 facelift): progress at a glance
+/// plus ONE suggestion, as rounded notes on dotted paper.
 ///
 ///     Good evening                          (◎)
 ///     Codey Learner
-///     ╭ ◔ Lv 4   1,840 XP · 160 to Lv 5  🔥 3 ╮   ← LevelCard
+///     Level 4                   1,840 XP  🔥 3    ← LevelSummary
+///     ━━━━━━━━━━━━━━━━━━━━━━──────── 160 to Level 5
 ///     ╭ Up next: ▶ Continue Swift Closures 7/12 ╮   ← one action
-///     Topics (all; pinned first)
-///     ╭ ◆ Data Structures                    ╮
-///     │   42% mastered · 78% accuracy         │
-///     │ [▷ Practice]          [? Quiz]        │  ← deck (menu if several) / quiz setup
-///     ╰───────────────────────────────────────╯
+///     Your topics (all; pinned first)
+///     ╭ ◆ Data Structures                       ╮   ← one note per topic
+///     │ 42% mastered · 78% accuracy             │
+///     │ ━━━━━━──────────      [Cards] [Quiz]    │  ← mastery; deck (menu if several) / quiz setup
+///     ╰─────────────────────────────────────────╯
+///     ╭ ◆ Algorithms …                          ╮
+///     ╰─────────────────────────────────────────╯
 ///
 /// Everything else lives in its tab (Decks, Quiz); Home doesn't duplicate it.
 struct HomeView: View {
@@ -34,7 +38,7 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
                 header
-                LevelCard(xp: xp, streak: profile?.currentStreak ?? 0)
+                LevelSummary(xp: xp, streak: profile?.currentStreak ?? 0)
                 upNextCard
                 topicsSection
                 if showsSignInNudge {
@@ -43,15 +47,15 @@ struct HomeView: View {
             }
             .padding(CodeySpacing.md)
         }
-        .background(CodeyColor.surface)
+        .codeyPaperBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     router.showProfile = true
                 } label: {
-                    Image(systemName: "person.crop.circle.fill")
+                    Image(systemName: "person.crop.circle")
                         .font(.codeyTitle)
-                        .foregroundStyle(CodeyColor.brand)
+                        .foregroundStyle(CodeyColor.textSecondary)
                 }
                 .accessibilityLabel("Profile")
                 .accessibilityIdentifier("home.profile")
@@ -67,6 +71,7 @@ struct HomeView: View {
                 .foregroundStyle(CodeyColor.textSecondary)
             Text(profile?.username ?? UserProfile.defaultUsername)
                 .font(.codeyDisplay)
+                .foregroundStyle(CodeyColor.textPrimary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
         }
@@ -143,11 +148,14 @@ struct HomeView: View {
 
     private var topicsSection: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            Text("Topics")
-                .font(.codeyTitle)
+            Text("Your topics")
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textSecondary)
                 .accessibilityAddTraits(.isHeader)
-            ForEach(orderedTopics) { topic in
-                TopicCard(
+                .padding(.leading, CodeySpacing.xs)
+            VStack(spacing: CodeySpacing.md) {
+                ForEach(orderedTopics) { topic in
+                    TopicNote(
                     topic: topic,
                     isPinned: pinned.contains(topic.id),
                     decks: decks(for: topic),
@@ -157,7 +165,8 @@ struct HomeView: View {
                         router.study = StudyRequest(deck: deck, start: resume ? .resume : .fresh(tierFilter: nil))
                     },
                     quiz: { router.quizSetupTopic = topic }
-                )
+                    )
+                }
             }
         }
     }
@@ -238,54 +247,38 @@ struct HomeView: View {
 
 // MARK: - Components
 
-/// Level ring + XP + "n XP to Level N+1" + streak chip.
-private struct LevelCard: View {
+/// Level, XP, and streak above a thin progress line. No card: the
+/// greeting and this summary read as one header block.
+private struct LevelSummary: View {
     let xp: Int
     let streak: Int
-
-    @ScaledMetric(relativeTo: .title) private var ringSize: CGFloat = 64
 
     private var level: Int { LevelCalculator.level(forXP: xp) }
 
     var body: some View {
-        CodeyCard {
-            HStack(spacing: CodeySpacing.md) {
-                ProgressRing(value: LevelCalculator.progressFraction(xp), lineWidth: 7) {
-                    VStack(spacing: 0) {
-                        Text("Lv")
-                            .font(.codeyCaption.weight(.semibold))
-                            .foregroundStyle(CodeyColor.textSecondary)
-                        Text(level, format: .number)
-                            .font(.codeyNumericSmall)
-                            .contentTransition(.numericText(value: Double(level)))
-                    }
-                }
-                .frame(width: ringSize, height: ringSize)
-
-                VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                    HStack(alignment: .firstTextBaseline, spacing: CodeySpacing.xs) {
-                        Text(xp, format: .number)
-                            .font(.codeyNumeric)
-                            .contentTransition(.numericText(value: Double(xp)))
-                        Text("XP")
-                            .font(.codeyCaption.weight(.semibold))
-                            .foregroundStyle(CodeyColor.textSecondary)
-                    }
-                    Text("\(LevelCalculator.xpToNextLevel(xp)) XP to Level \(level + 1)")
-                        .font(.codeySubheadline)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
+        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+            HStack(alignment: .firstTextBaseline, spacing: CodeySpacing.sm) {
+                Text("Level \(level)")
+                    .font(.codeyHeadline)
+                    .foregroundStyle(CodeyColor.textPrimary)
+                    .contentTransition(.numericText(value: Double(level)))
                 Spacer(minLength: 0)
-
+                Text("\(xp.formatted()) XP")
+                    .font(.codeySubheadline.monospacedDigit())
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .contentTransition(.numericText(value: Double(xp)))
                 if streak > 0 {
                     CodeyChip("\(streak)", systemImage: "flame.fill", variant: .warning)
                         .accessibilityLabel("\(streak) day streak")
                 }
             }
+            ProgressBar(value: LevelCalculator.progressFraction(xp))
+            Text("\(LevelCalculator.xpToNextLevel(xp)) XP to Level \(level + 1)")
+                .font(.codeySubheadline)
+                .foregroundStyle(CodeyColor.textSecondary)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
         .codeyAnimation(CodeyMotion.snappy, value: xp)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Level \(level), \(xp) XP, \(LevelCalculator.xpToNextLevel(xp)) to the next level")
@@ -321,8 +314,8 @@ private struct UpNextCard: View {
                 .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                    Text(eyebrow.uppercased())
-                        .font(.codeyCaption.weight(.semibold))
+                    Text(eyebrow)
+                        .font(.codeySubheadline.weight(.medium))
                         .foregroundStyle(CodeyColor.brand)
                     Text(title)
                         .font(.codeyHeadline)
@@ -341,11 +334,7 @@ private struct UpNextCard: View {
             }
             .padding(CodeySpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
-            .overlay {
-                RoundedRectangle.codey(CodeyRadius.lg)
-                    .strokeBorder(CodeyColor.brand.opacity(0.35), lineWidth: 1)
-            }
+            .codeyNote(fill: CodeyColor.brandSoft, edge: CodeyColor.brandFill)
             .contentShape(.rect(cornerRadius: CodeyRadius.lg))
         }
         .buttonStyle(.plain)
@@ -355,9 +344,9 @@ private struct UpNextCard: View {
     }
 }
 
-/// One topic on Home: icon, title, mastery + accuracy, and the two ways to
-/// practice it: Practice (flashcards) and Quiz.
-private struct TopicCard: View {
+/// One topic on Home, as its own note: title, mastery + accuracy, and the
+/// two ways to practice it: Cards (flashcards) and Quiz.
+private struct TopicNote: View {
     let topic: Topic
     let isPinned: Bool
     let decks: [FlashcardDeck]
@@ -367,43 +356,49 @@ private struct TopicCard: View {
     let practice: (FlashcardDeck, Bool) -> Void
     let quiz: () -> Void
 
-    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 52
-
     var body: some View {
-        CodeyCard {
-            VStack(alignment: .leading, spacing: CodeySpacing.md) {
-                HStack(alignment: .top, spacing: CodeySpacing.md) {
-                    IconTile(systemName: topic.iconName, size: iconSize)
-                    VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                        HStack(spacing: CodeySpacing.xs) {
-                            Text(topic.title)
-                                .font(.codeyTitle)
-                                .foregroundStyle(CodeyColor.textPrimary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            if isPinned {
-                                Image(systemName: "pin.fill")
-                                    .font(.codeyCaption)
-                                    .foregroundStyle(CodeyColor.textSecondary)
-                                    .accessibilityLabel("Pinned")
-                            }
-                        }
-                        Text(statsLine)
-                            .font(.codeySubheadline)
-                            .foregroundStyle(CodeyColor.textSecondary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                if !decks.isEmpty {
-                    ProgressBar(value: masteryRate)
-                        .accessibilityLabel("Flashcard mastery")
-                }
+        VStack(alignment: .leading, spacing: CodeySpacing.md) {
+            VStack(alignment: .leading, spacing: CodeySpacing.xs) {
                 HStack(spacing: CodeySpacing.sm) {
-                    practiceButton
-                    CodeyButton("Quiz", systemImage: "questionmark.bubble.fill", fullWidth: true, action: quiz)
-                        .accessibilityIdentifier("home.topic.\(topic.title).quiz")
+                    Image(systemName: topic.iconName)
+                        .font(.codeyCallout)
+                        .foregroundStyle(CodeyColor.brand)
+                        .accessibilityHidden(true)
+                    Text(topic.title)
+                        .font(.codeyHeadline)
+                        .foregroundStyle(CodeyColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    if isPinned {
+                        Image(systemName: "pin")
+                            .font(.codeyCaption)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                            .accessibilityLabel("Pinned")
+                    }
                 }
+                Text(statsLine)
+                    .font(.codeySubheadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+            }
+            HStack(spacing: CodeySpacing.sm) {
+                Group {
+                    if decks.isEmpty {
+                        Spacer(minLength: 0)
+                    } else {
+                        ProgressBar(value: masteryRate)
+                            .accessibilityLabel("Flashcard mastery")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.trailing, CodeySpacing.sm)
+                practiceButton
+                CodeyButton("Quiz", compact: true, action: quiz)
+                    .accessibilityIdentifier("home.topic.\(topic.title).quiz")
             }
         }
+        .padding(CodeySpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .codeyNote()
         .accessibilityElement(children: .contain)
     }
 
@@ -425,7 +420,7 @@ private struct TopicCard: View {
             } label: {
                 practiceLabel
             }
-            .modifier(PracticeStyle())
+            .buttonStyle(CodeyFillButtonStyle(kind: .secondary, compact: true))
             .accessibilityHint("Choose a deck to study")
             .accessibilityIdentifier("home.topic.\(topic.title).practice")
         } else {
@@ -434,28 +429,16 @@ private struct TopicCard: View {
             } label: {
                 practiceLabel
             }
-            .modifier(PracticeStyle())
+            .buttonStyle(CodeyFillButtonStyle(kind: .secondary, compact: true))
             .disabled(decks.isEmpty)
             .accessibilityIdentifier("home.topic.\(topic.title).practice")
         }
     }
 
     private var practiceLabel: some View {
-        Label("Practice", systemImage: "rectangle.on.rectangle.angled")
-            .fontWeight(.semibold)
+        Text("Cards")
             .lineLimit(1)
-            .minimumScaleFactor(0.75)
-            .frame(maxWidth: .infinity)
-    }
-
-    private struct PracticeStyle: ViewModifier {
-        func body(content: Content) -> some View {
-            content
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .controlSize(.large)
-                .tint(CodeyColor.brand)
-        }
+            .accessibilityLabel("Practice with flashcards")
     }
 
     private var masteryRate: Double {

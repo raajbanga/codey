@@ -8,15 +8,27 @@ import Textual
 struct CardMarkdownView: View {
     let markdown: String
     var snippet: CodeSnippet?
+    /// Base size; study and quiz cards pass `.codeyCardText`.
+    var font: Font = .codeyBody
 
     var body: some View {
         StructuredText(markdown: CardMarkdownComposition.compose(markdown: markdown, snippet: snippet))
-            .font(.codeyBody)
+            .font(font)
             .foregroundStyle(CodeyColor.textPrimary)
             .textual.inlineStyle(Self.inlineStyle)
             .textual.codeBlockStyle(CodeyCodeBlockStyle())
             .textual.highlighterTheme(Self.highlighterTheme)
             .textual.textSelection(.enabled)
+    }
+
+    /// One-line previews (collapsed rows): inline markdown rendered as
+    /// bold/italic/code instead of showing `**` and backticks. Block syntax
+    /// is left as text; falls back to the raw string if parsing fails.
+    static func inlinePreview(_ markdown: String) -> AttributedString {
+        (try? AttributedString(
+            markdown: markdown,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        )) ?? AttributedString(markdown)
     }
 
     private static let inlineStyle = InlineStyle.default

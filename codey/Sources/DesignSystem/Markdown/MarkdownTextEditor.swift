@@ -37,12 +37,14 @@ struct MarkdownTextEditor: View {
                     Button {
                         apply(format)
                     } label: {
+                        // Plain ink icons with a 44pt target: a quiet,
+                        // editor-like toolbar (S9).
                         Image(systemName: format.symbol)
-                            .frame(minWidth: 36, minHeight: 32)
+                            .foregroundStyle(CodeyColor.brand)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(.rect)
                     }
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.roundedRectangle(radius: CodeyRadius.xs))
-                    .tint(CodeyColor.brand)
+                    .buttonStyle(.plain)
                     .accessibilityLabel(format.accessibilityLabel)
                 }
                 Spacer()

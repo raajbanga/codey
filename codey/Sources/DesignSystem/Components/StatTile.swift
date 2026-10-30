@@ -12,7 +12,7 @@ struct StatTileRow<Tiles: View>: View {
     }
 }
 
-/// A big rounded number that rolls when it changes, plus a label.
+/// A big number that rolls when it changes, plus a label.
 struct StatTile: View {
     let value: Int
     let label: String

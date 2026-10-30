@@ -43,7 +43,7 @@ struct DeckBuilderView: View {
                 CardThumbnailStrip(viewModel: viewModel, page: $page, onDelete: deleteCard)
             }
             .padding(.top, CodeySpacing.sm)
-            .background(CodeyColor.surface)
+            .codeyPaperBackground()
             .navigationTitle(viewModel.isEditing ? "Edit Deck" : "New Deck")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -128,7 +128,7 @@ struct DeckBuilderView: View {
             }
             .padding(.horizontal, CodeySpacing.md)
             .padding(.vertical, CodeySpacing.sm + CodeySpacing.xs)
-            .glassEffect(.regular, in: .capsule)
+            .codeyFloatingSurface()
             .padding(.bottom, 104)
             .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
             .accessibilityElement(children: .contain)

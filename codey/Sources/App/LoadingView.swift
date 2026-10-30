@@ -60,14 +60,7 @@ struct LoadingView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            LinearGradient(
-                colors: [CodeyColor.brandSoft, CodeyColor.surface],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        }
+        .codeyPaperBackground()
         .confirmationDialog(
             "Reset local data?",
             isPresented: $showResetConfirmation,

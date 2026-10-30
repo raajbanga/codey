@@ -28,15 +28,17 @@ struct TierUnlockedBanner: View {
     let tier: Difficulty
 
     var body: some View {
-        CodeyCard(tint: tier.style.color) {
-            Label {
-                Text("Tier unlocked: \(tier.style.label)")
-                    .font(.codeyHeadline)
-            } icon: {
-                Image(systemName: tier.style.symbol)
-                    .foregroundStyle(tier.style.color)
-            }
+        Label {
+            Text("Tier unlocked: \(tier.style.label)")
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textPrimary)
+        } icon: {
+            Image(systemName: tier.style.symbol)
+                .foregroundStyle(tier.style.color)
         }
+        .padding(CodeySpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(CodeyChipVariant.tier(tier).softColor, in: .codey(CodeyRadius.lg))
     }
 }
 

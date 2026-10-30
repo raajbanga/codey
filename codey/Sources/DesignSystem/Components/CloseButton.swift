@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Glass ✕ that dismisses a focus-mode cover (study, quiz).
+/// ✕ on a neutral circle that dismisses a focus-mode cover (study, quiz).
 struct CloseButton: View {
     let label: String
     var hint: String?
@@ -10,10 +10,12 @@ struct CloseButton: View {
         Button(action: action) {
             Image(systemName: "xmark")
                 .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textSecondary)
                 .frame(width: 44, height: 44)
+                .background(CodeyColor.fillNeutral, in: Circle())
+                .contentShape(Circle())
         }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.circle)
+        .buttonStyle(.plain)
         .accessibilityLabel(label)
         .accessibilityHint(hint ?? "")
     }

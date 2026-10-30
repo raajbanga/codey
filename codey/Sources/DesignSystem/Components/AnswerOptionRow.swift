@@ -18,7 +18,6 @@ struct AnswerOptionRow: View {
     let isLocked: Bool
     let action: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @ScaledMetric(relativeTo: .body) private var badgeSize: CGFloat = 28
 
     private var letter: String {
@@ -29,7 +28,7 @@ struct AnswerOptionRow: View {
         Button(action: action) {
             HStack(alignment: .center, spacing: CodeySpacing.md) {
                 Text(letter)
-                    .font(.codeySubheadline.weight(.bold))
+                    .font(.codeySubheadline.weight(.semibold))
                     .foregroundStyle(badgeForeground)
                     .frame(width: badgeSize, height: badgeSize)
                     .background(badgeBackground, in: Circle())
@@ -52,7 +51,7 @@ struct AnswerOptionRow: View {
             .background(fill, in: .codey(CodeyRadius.md))
             .overlay {
                 RoundedRectangle.codey(CodeyRadius.md)
-                    .strokeBorder(stroke, style: StrokeStyle(lineWidth: state == .idle ? 1 : 2, dash: state == .revealedCorrect ? [6, 4] : []))
+                    .strokeBorder(stroke, style: StrokeStyle(lineWidth: state == .idle ? 1 : 1.5, dash: state == .revealedCorrect ? [6, 4] : []))
             }
             .contentShape(.rect(cornerRadius: CodeyRadius.md))
         }
@@ -89,7 +88,11 @@ struct AnswerOptionRow: View {
     }
 
     private var fill: Color {
-        state == .idle ? CodeyColor.surfaceRaised : CodeyColor.softFill(tint, for: colorScheme)
+        switch state {
+        case .idle: CodeyColor.surfaceRaised
+        case .selectedCorrect, .revealedCorrect: CodeyColor.Soft.success
+        case .selectedWrong: CodeyColor.Soft.danger
+        }
     }
 
     private var stroke: Color {

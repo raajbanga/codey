@@ -1,4 +1,917 @@
 ================================================================================
+ CODEY — SPRINT 3 PRD / TODO
+ Deadline: Sprint 3 documentation due 2026-11-03 (Tue)
+ Sources of truth:
+   docs/sprint3rubric.docx (what the doc must contain)
+   docs/Activity8_1, 8_2, 9_2, 10_1, 10_2 .pdf (content the activities say
+     "must be placed in the project documentation")
+   docs/ProjectDetails.docx (client's mandatory requirements)
+   docs/Sprint2_Documentation.tex (baseline doc to copy and update)
+ Written: 2026-10-30. The Sprint 2 PRD (Stages 0–12) is kept below, unchanged,
+ under "SPRINT 2 PRD (ARCHIVE)". Open [ ] items there are pulled into this
+ file where they still matter. Don't tick them in both places.
+================================================================================
+
+HOW TO READ THIS FILE
+  - Same conventions as the Sprint 2 PRD: [ ] todo, [x] done, [~] in
+    progress. Owner tags: (AB) backend/systems, (ES) UI/UX & QA,
+    (RB) PM/docs.
+  - Priority: P0 = the doc can't be submitted without it.
+    P1 = planned Sprint 3 code. P2 = nice to have if time remains.
+  - Only 4 days remain. Order of work: S3-A (facelift direction, a short
+    decision) → S3-B..E code [parallel] → S3-F/G measurements → S3-H doc.
+    The doc sections that don't depend on code (Gantt, VC, risks, DFD,
+    build guide) can start on day 1 [parallel].
+
+
+--------------------------------------------------------------------------------
+ SPRINT 3 DECISIONS (agreed 2026-10-30)
+--------------------------------------------------------------------------------
+ S1  Doc format stays LaTeX → PDF. Copy Sprint2_Documentation.tex to
+     docs/Sprint3_Documentation.tex and build with tectonic. It's already
+     12 pt, double-spaced, with page numbers and a TOC, which covers the
+     rubric's "standard Word document" format intent.
+ S2  Length: keep the Sprint 2 detail, but tighten repetition and wordy
+     prose. ~4,500 words is a MINIMUM, not a target.
+ S3  docs/ stays gitignored. Doc, figures, and extracted images are local
+     only. The Version Control section points at the repo history for code,
+     not for docs.
+ S4  Branching: dev → main only (Sprint 2 rule). Commit to dev and merge to
+     main at sprint end. No feature branches. The leftover activity8_1
+     branch was made for Activity 8_1. Merge it into dev, then delete it.
+     The VC section says why it existed.
+ S5  Code scope for Sprint 3:
+       - Streaks, daily goal, badges (FR-32–35), plus the Activity 10_2
+         tech-debt refactor.
+       - Small FRs: FR-04 (display name + avatar), FR-38 (weekly study
+         plan), FR-49 (UI/UX defect report).
+       - Leaderboard + weekly challenge (FR-42–43).
+       - Minimal UI facelift (S9).
+     NOT in scope: coding challenges (FR-39–41). See S6.
+ S6  FR-39–41 (coding challenges): priority raised to MUST, because
+     ProjectDetails makes it a mandatory client requirement. Status:
+     "Planned – Sprint 4". Add a Sprint 4 row to the Gantt discussion and a
+     risk entry.
+ S7  Leaderboard = groups joined by code. Any signed-in user can create a
+     group (class/club). A group gets a 6-character invite code; others
+     join with it. The board ranks members by XP earned since Monday
+     00:00 UTC. RLS lets only members see a group and its board.
+ S8  Weekly challenge = a rotating topic goal. Each Monday 00:00 UTC a topic
+     is picked deterministically (ISO week number mod topic count). The
+     goal is N correct quiz answers in that topic that week (default
+     N = 15). Progress is computed locally from QuizAnswerRecord and shown
+     on Home. Completing it earns a "Weekly challenge" badge; it gives no
+     bonus XP (FR-30 stays the only XP rule).
+ S9  UI facelift = minimal and calm:
+       - Direction: "between quiet editorial and soft neutral". Warm
+         off-white / near-black neutrals, generous whitespace, hairline
+         dividers, flat surfaces, few filled cards.
+       - Accent: leaning desaturated ink blue (≈ #2F4A6D / #8FA8C8), but
+         run the frontend-design skill first and compare its proposals
+         before committing.
+       - Glass: system glass only (tab bar, toolbars, sheets). Remove the
+         custom .glassProminent buttons and the particle bursts. Keep
+         haptics and numericText counters; use subtle fades.
+       - Typography: drop SF Rounded and use SF Pro. SF Mono only where
+         it carries meaning (code, maybe XP numbers).
+         [REVISED 2026-10-30, second pass "notes on paper"] SF Rounded
+         for headings, numbers and nav titles; SF Pro for reading text;
+         nothing smaller than footnote. Topics on Home are separate
+         rounded notes; pages use a faint dot-grid paper background.
+       - Tier colors redone in muted tones (still color + symbol + label,
+         ≥ 4.5:1).
+       - New app icon to match.
+       - Doc UI/UX section + screenshots rewritten.
+     Supersedes D12, D13, D17 and part of D18. Mark them REVISED in the
+     archive below when this lands.
+ S10 Security verification this sprint = AUTOMATABLE checks only:
+       - Live RLS check.
+       - Supabase Security Advisor.
+       - Secret scan with --history.
+       - Xcode Static Analyzer.
+       - Release-build check: no DEBUG test sign-in.
+       - TLS/ATS unit tests.
+       - Validator-limit drift tests.
+     Deferred to Sprint 4 and labeled that way in the doc: Proxyman TLS
+     capture and physical-device file-protection checks. pgTAP via
+     `supabase test db` needs the Supabase CLI + Docker (not installed).
+     Run it only if it's set up cheaply. The live check covers the same 30
+     assertions.
+ S11 Performance numbers come from automated XCTest metrics run on the iOS
+     Simulator (10 runs, first discarded, report mean + p95, per Activity
+     9_2). Instruments traces are optional figures for the bottleneck
+     discussion. Every number states its environment (Mac model, Simulator
+     runtime, build config).
+ S12 Sprint 3 Gantt covers 2026-10-04 → 2026-11-03.
+ S13 Appendix B = EVERY source/config file, auto-included by a generator
+     script. Each file gets its own subsection. Secrets and generated files
+     are excluded. A commenting pass happens before the code freeze.
+ S14 Activity images (8_1 GitHub screenshots, 8_2 storyboard/wireframes)
+     are extracted from the activity PDFs with pdfimages. UI figures are
+     fresh iOS Simulator screenshots taken after the facelift.
+
+
+--------------------------------------------------------------------------------
+ OPEN QUESTIONS (default chosen; confirm or change)
+--------------------------------------------------------------------------------
+ Q1 Supabase test users (needed for NFR-02 sync timing + leaderboard RLS
+    tests). "We'll figure it out later". Steps when ready (5 min, no code):
+      1. Supabase Dashboard → project gwnxkcjijuhkyklsvuta →
+         Authentication → Sign In / Providers → Email: enabled.
+         "Confirm email" can stay on.
+      2. Authentication → Users → "Add user" → "Create new user". Enter an
+         email (e.g. codey.test.a@<your-domain>) and a password, and tick
+         "Auto Confirm User". Repeat for user B.
+      3. Put them ONLY in gitignored places:
+         - Config/Secrets.xcconfig, for the DEBUG in-app test sign-in
+           (SupabaseTestAccounts.swift already exists).
+         - The scheme's test env vars or your shell, for
+           SupabaseIntegrationTests: SUPABASE_TEST_URL, SUPABASE_TEST_KEY,
+           SUPABASE_TEST_EMAIL_A/B, SUPABASE_TEST_PASSWORD_A/B.
+      4. Run scripts/check-secrets.sh before committing anything.
+    Fallback if not done by 11/2: measure sync against a latency-injected
+    mock backend. The doc must state that limitation.
+ Q2 Daily-goal target stays 20 (FR-32). Weekly challenge N = 15 (S8).
+ Q3 Leaderboard XP source (default): the client upserts one weekly_xp row
+    per (owner, week_start) through the existing sync queue. Client-reported
+    XP can be inflated by a tampering user. Mitigate with a CHECK
+    (≤ 45 × 500 per week) and RLS (write own row only). Log it as risk R13.
+    A server-computed XP ledger is the Sprint 4 hardening.
+ Q4 Avatar set (FR-04): 12 SF Symbols (default).
+ Q5 [RESOLVED 2026-10-30] Palette A "Ink", made more pastel at the user's
+    request ("pastel ink"). Light: paper #F6F5F2 / raised #FFFFFF, ink
+    accent #3A5578, pastel button #CFDCEB with ink label #1F3350. Dark:
+    #141518 / #1D1F23, accent #A9C0DD, button #2E415A / #DCE7F4. Tiers use
+    a text color + pastel fill pair (Easy #2F5A3B on #DDEBDF, Medium
+    #6B4C10 on #F3E6CC, Hard #7A3045 on #F2DDE3). Lowest pair 5.2:1. Full
+    table in codey/DESIGN_SYSTEM.md (source: scripts/palette/palette.py).
+
+
+================================================================================
+ S3-A — UI FACELIFT (minimal / calm)                  P1  (ES, ~1.5 days)
+================================================================================
+ Goal: the same app and navigation (D8 r3), with a quieter look. Tokens
+ carry most of the change, because every color/type/radius goes through
+ DesignSystem/Tokens. Keep scripts/check-design-tokens.sh passing.
+
+ A.1 Direction
+ [x] Run the frontend-design skill against the current screens (Home,
+     Decks, Deck Builder, Study, Quiz, Profile). Brief: "between quiet
+     editorial and soft neutral", desaturated ink blue lean, system glass
+     only, SF Pro. Ask it for 2–3 palette proposals (light + dark
+     neutrals, accent, muted tier trio, correct/wrong states), each with
+     contrast ratios.
+ [x] Render the proposals as Simulator screenshots, or a quick preview
+     artifact, of Home + Study + Quiz. The user picks one → record the
+     hexes under S9 / Q5.
+
+ A.2 Tokens
+ [x] Colors.swift + asset catalog (Colors/):
+       - New neutral ramp: background, surface, surfaceRaised, separator
+         (hairline), textPrimary/Secondary/Tertiary.
+       - New accent; AccentColor.colorset updated.
+       - Muted tier colors.
+       - Muted success/error.
+       - Syntax palette retuned to the calmer theme (SyntaxRole).
+ [x] Typography.swift: remove design: .rounded everywhere. codeyNumeric →
+     SF Pro monospacedDigit, or SF Mono (pick one in A.1). Slightly
+     larger leading for body.
+ [x] Motion.swift: drop the "bouncy" spring from UI use; default to smooth
+     / easeOut fades. Keep the Reduce Motion handling.
+ [~] Radius: keep the tokens. Use fewer filled cards: prefer
+     List/inset-grouped sections and hairline separators.
+
+ A.3 Components
+ [x] CodeyButton: replace .glassProminent / custom glass with
+     .borderedProminent (accent) / .bordered / .plain. No glass on content
+     buttons.
+ [~] CodeyCard: a flat surface with a hairline stroke or none, no shadow.
+     Audit every call site; remove cards where a plain section reads
+     better.
+ [x] CelebrationOverlay: delete the particle burst. Level-up / tier unlock
+     → a quiet banner/sheet with a symbol and text + a haptic. Remove the
+     XPGainLabel float-up, or make it a fade.
+ [x] SF Symbol bounce effects: remove. Keep symbol transitions only where
+     they show state.
+ [~] TierChipRow / CodeyChip / StatTile / ProgressRing / ProgressBar /
+     AnswerOptionRow / EmptyStateView / IconTile: restyle to the new tokens.
+ [x] LoadingView + AppGlyph: drop the brand gradient. Plain background +
+     a monochrome glyph.
+ [x] ComponentGallery #Previews updated (light + dark).
+
+ A.4 App icon
+ [x] New Icon Composer icon in the minimal style: light, dark, and tinted
+     variants. Update scripts/render-app-icon.swift if it's still used.
+     Keep AppGlyph consistent with it.
+
+ STATUS 2026-10-30 (S3-A first pass, on dev, not committed):
+   - Done: palette + generator (HC variants for text/separator), Colors.swift
+     (custom neutrals, CodeyColor.Soft pastel pairs, onBrandFill), SF Pro type,
+     no bounce/particles/custom glass (CodeyFillButtonStyle,
+     .codeyFloatingSurface, .codeyListBackground), Home restyled (level line,
+     brandSoft Up-next, one hairline topic list with compact Cards/Quiz),
+     flat study card, XP float removed, app icon re-rendered (PNG appiconset;
+     no .icon file existed), DESIGN_SYSTEM.md rules + contrast table,
+     check-design-tokens.sh allows CodeyButton capsules.
+   - Checked in the Simulator (17 Pro Max): Home light+dark, Profile, Quiz
+     setup, quiz answer states, Decks, Deck detail, Study (code card), study
+     summary, deck builder + code editor, all 3 onboarding steps. Home also
+     checked light+dark on iPhone 17e, 17 and 18 Pro Max: no clipping.
+   - Follow-up fixes: Profile lists on the warm surface + muted danger rows;
+     builder toolbar/preview/remove-code buttons plain brand/danger (no
+     system blue); study card hairline instead of shadow.
+   - 278/278 unit tests pass; check-design-tokens.sh clean.
+   - Watch: one rapid tap sequence once pushed a blank page (likely a double
+     push; did not reproduce). Tapping on study-card text/code doesn't flip
+     the card (empty card space does) - pre-existing, selectable text.
+   - Second pass 2026-10-30 ("notes on paper", user feedback: text too
+     small in places, wants more minimal): codeyCaption = footnote (no
+     12pt text anywhere), secondary lines on Home -> subheadline; SF
+     Rounded headings/numbers + rounded nav titles (CodeyNavigationTitles);
+     PaperDot token + PaperBackground dot grid (.codeyPaperBackground on
+     every page/List, hidden under Increase Contrast); .codeyNote() for
+     CodeyCard, deck tiles, onboarding topics, study card, Up-next; Home
+     topics are one note each; tab bar tinted brand (was system blue);
+     deck detail title inline (large title truncated long names).
+     Checked on iPhone 17 (light) + 17 Pro Max (dark); 278/278 tests,
+     token lint clean.
+   - Text size pass 2 (17 Pro Max feedback): codeyCardText (title3, 20pt)
+     for study + quiz prompts/answers; study hints/rating labels -> callout;
+     card face label, quiz counter + XP breakdown, quiz-setup note, profile
+     detail lines, deck tile + onboarding subtitles -> subheadline.
+   - Fixed: deck detail's collapsed card rows showed raw markdown; now
+     CardMarkdownView.inlinePreview renders bold/italic/code.
+   - Left: per-call-site CodeyCard audit; doc screenshots (A.5).
+   - Note: icon is still the PNG appiconset rendered by
+     scripts/render-app-icon.swift, not an Icon Composer .icon.
+
+ A.5 Verify
+ [x] ContrastTests updated for the new pairs; all ≥ 4.5:1 in both modes.
+ [x] DesignSystemTests (TierStyle mapping etc.) still pass.
+ [x] Simulator walkthrough of every screen in light + dark on 3 device
+     sizes. Doubles as the NFR-10/11 layout pass (S3-G.3).
+ [ ] New screenshots for the doc → docs/figures/ (home, decks, builder,
+     study, quiz, profile, leaderboard; light + dark for home).
+
+
+================================================================================
+ S3-B — STREAKS, DAILY GOAL, BADGES (FR-32–35) + TECH DEBT   P1 (AB + ES, ~1 day)
+================================================================================
+ Activity 10_2 tech debt: UserProfile.currentStreak is a stored placeholder
+ that nothing updates. Home always shows 0.
+
+ [ ] Services/Gamification/StreakCalculator.swift, a pure enum. Same
+     pattern as LevelCalculator / XPPolicy:
+       - isGoalMet(_ day: DailyActivity) -> Bool
+         (quizAnswers + cardsRated ≥ GatingConfig.dailyGoal = 20)
+       - currentStreak(endingOn: Date, activity: [DailyActivity],
+         calendar: Calendar) -> Int.
+         Today counts only once its goal is met, so the streak doesn't drop
+         to 0 at midnight before the user studies. Comments must say why.
+ [ ] Remove stored currentStreak (and lastActiveDate if unused) in a NEW
+     schema version, CodeySchemaV7 + migration stage. Never edit a shipped
+     version. Bundle the FR-04 avatar field (S3-C) into the same V7.
+ [ ] Home LevelCard / profile: streak and today's goal progress (n/20)
+     read from StreakCalculator.
+ [ ] Badges (FR-35 + S8): enum Badge { firstDeck, sevenDayStreak,
+     xp1000, weeklyChallenge }.
+       - Earned state is derived where possible (deck count, streak, XP).
+       - Persist an earnedAt date (a @Model BadgeAward in V7) so a badge
+         stays earned after data changes.
+       - BadgeEvaluator runs after deck save, quiz answer, and card rating.
+ [ ] UI: a badges row in the ProfileSheet. A quiet banner when a badge is
+     earned (no particles, per S9).
+ [ ] Tests:
+       - StreakCalculator: gaps, time zones / DST, empty history, today
+         with no activity, goal exactly 20.
+       - BadgeEvaluator.
+       - V6→V7 migration (MigrationTests).
+ [ ] Doc: FR-32–35 → Implemented, plus TC rows. Activity 10_2 tech-debt
+     write-up (risk/process section).
+
+
+================================================================================
+ S3-C — SMALL FRs: FR-04, FR-38, FR-49                       P1 (ES + AB, ~1 day)
+================================================================================
+ FR-04 display name + avatar
+ [ ] ProfileSheet: an editable display name.
+       - Validated 1–30 chars, trimmed, Unicode-scalar count.
+       - Goes through ModelValidator, so the limit lives in one place.
+ [ ] Avatar picker: a grid of 12 SF Symbols. Stored on UserProfile (V7).
+ [ ] Profile sync: profiles table gets display_name (exists?) +
+     avatar_symbol with a CHECK matching the allowed set/length. New
+     migration. Merge rule: last-write-wins by updated_at.
+ [ ] The Home greeting uses the display name.
+ [ ] Tests: validator limits ±1; sync payload round-trip; SupabaseSchemaTests
+     limits match.
+
+ FR-38 weekly study plan
+ [ ] StudyPlanBuilder (pure):
+       - Input: the 3 topics with the lowest FR-36 accuracy (last 50
+         answers).
+       - Topics with < 5 answers are ranked first as "not started".
+       - Ties are broken by topic order.
+     Recomputed when the week changes (Monday, local time). Cache the
+     week's plan so it doesn't shuffle mid-week.
+ [ ] Home: a "This week's plan" section with 3 rows → quiz setup sheet.
+     Must not duplicate the "Up next" card logic (D8 r3); keep one Up-next
+     card.
+ [ ] Tests: ordering, ties, sparse data, week rollover.
+
+ FR-49 UI/UX defect report
+ [ ] Migration: feedback_reports(id, owner_id default auth.uid(),
+     description text CHECK 1–1000, app_version, os_version, created_at).
+       - RLS: insert own rows only; no select for users.
+       - Added to the RLS live check + SupabaseSchemaTests.
+ [ ] ProfileSheet → "Report a UI/UX issue" form: text field with a counter,
+     Send. Requires sign-in; guests see the sign-in prompt. Sent through
+     BackendFacade only. Supabase imports stay in Services/Backend/Supabase
+     (check-imports.sh).
+ [ ] Offline: queue it as a SyncOperation (entity: feedback), or disable
+     Send with an explanation. Default: queue it.
+ [ ] Tests: validator, payload, facade call with a mock.
+
+
+================================================================================
+ S3-D — LEADERBOARD GROUPS + WEEKLY CHALLENGE (FR-42–43)   P1 (AB + ES, ~1.5 days)
+================================================================================
+ Requirements to split into atomic FRs in the doc (FR-42 is currently a
+ compound). Proposed:
+   FR-42  weekly XP leaderboard of a group's members, ranked by XP since
+          Monday 00:00 UTC.
+   FR-43  one weekly challenge that resets Monday 00:00 UTC (S8).
+   FR-50  a signed-in user can create a group with a 1–40 char name and
+          receives a 6-char invite code.
+   FR-51  a signed-in user can join a group by entering a valid invite code.
+   FR-52  a user can leave a group.
+   FR-53  weekly challenge progress shows on Home (n/15).
+
+ Backend (AB)
+ [ ] Migrations (new files; never edit applied ones):
+       - groups(id, name CHECK 1–40, invite_code unique CHECK
+         ^[A-Z0-9]{6}$, created_by default auth.uid(), created_at)
+       - group_members(group_id, user_id default auth.uid(), joined_at,
+         PK(group_id, user_id))
+       - weekly_xp(owner_id default auth.uid(), week_start date, xp int
+         CHECK 0..22500, updated_at, PK(owner_id, week_start))
+       - Function join_group(code text): SECURITY DEFINER, search_path
+         pinned. Looks up the code and inserts the membership. This is the
+         ONE /rpc we expose, so document why (attack-surface note in the
+         security section).
+       - Invite codes come from a server-side generator; the client never
+         picks them.
+       - Leaderboard view/RPC: members' weekly_xp for the current
+         week_start, joined to profiles(display_name, avatar), visible
+         only to members.
+ [ ] RLS on all new tables (metric stays 100%):
+       - groups / group_members: select only if you are a member.
+       - weekly_xp: select if you share a group with the owner; insert/
+         update only your own row.
+       - Extend rls_live_check.sql with cross-group checks: a non-member
+         sees 0 rows.
+ [ ] Run the Security Advisor after the migrations; resolve any warnings.
+ [ ] SupabaseDataClient: createGroup, joinGroup(code), leaveGroup,
+     fetchLeaderboard(groupId), upsertWeeklyXP.
+       - Exposed only through BackendFacade.
+       - The weekly XP upsert rides the sync queue (entity: weeklyXP),
+         coalesced.
+
+ Client (ES)
+ [ ] Weekly XP: track XP earned since Monday 00:00 UTC. Derive it from
+     QuizAnswerRecord + XPPolicy, or a small local accumulator reset on
+     week change. Enqueue it on every XP award.
+ [ ] Leaderboard UI: where it lives is decided at S3-A. Default: a
+     "Leaderboard" section in the Quiz tab, or Home → "Groups" row → list.
+       - Group list.
+       - Create sheet (name → shows the code + ShareLink).
+       - Join sheet (6-char code field, uppercase, validated).
+       - Board: rank, avatar, name, XP; your row highlighted.
+       - Leave group.
+       - Signed-out state → sign-in prompt.
+       - Offline state → last-fetched board with a "as of" time.
+ [ ] WeeklyChallenge (pure):
+       - topic(for week:) = topics[isoWeek % count].
+       - progress = correct answers in that topic since week start
+         (UTC Monday).
+       - Home row "This week: 7/15 correct in Networking". Completion →
+         Badge.weeklyChallenge (S3-B).
+ [ ] Tests:
+       - Week-start math (UTC Monday, year boundary).
+       - Challenge topic rotation.
+       - Invite-code validation.
+       - Leaderboard ranking ties.
+       - Facade calls with mocks.
+       - SupabaseSchemaTests for new CHECK limits.
+ [ ] Doc: use cases (Create Group, Join Group, View Leaderboard, Track
+     Weekly Challenge), traceability rows, component + deployment diagram
+     updates, DFD gets the new flows, risk R13 (Q3).
+
+
+================================================================================
+ S3-E — HOUSEKEEPING + CARRY-OVERS FROM SPRINT 2                P1/P2
+================================================================================
+ [ ] (P1) Merge activity8_1 into dev; delete the branch locally and on
+     origin (S4). All Sprint 3 code lands on dev; dev → main at the freeze.
+ [ ] (P1) Re-run the full unit-test suite after each S3 stage
+     (`xcodebuild test … -only-testing:codeyTests`). Update the pass count
+     and coverage.
+ [ ] (P2) Stage 2.3 perf item: measure an 80-line snippet highlight
+     (Textual). This becomes a performance test in S3-F, so tick both.
+ [ ] (P2) Stage 4: RB content review of the starter decks (wording, tier
+     calibration).
+ [ ] (P2) Activity 10_2 "Next: tune tier difficulty after peer testing".
+     Only if a peer test happens (UI metric "task success rate").
+ [ ] (P2) Retry the UI test runner (codeyUITests-Runner refused by macOS)
+     on Xcode 27.1. If it works, the launch metric can use
+     XCTApplicationLaunchMetric (S3-F).
+ [ ] (Note) BackendFacade was 291/300 lines (R8). The new group/feedback
+     calls will push it over. Split it into extensions per concern
+     (decks, profile, groups, feedback), still one façade type. Update the
+     Façade class diagram to match.
+
+
+================================================================================
+ S3-F — PERFORMANCE: TESTS, PROFILE, RESULTS       P0 (AB, ~1 day; after S3-B..D)
+================================================================================
+ Rubric: defined, testable performance requirements; performance test
+ cases; profile definitions + results; hardware/software bottlenecks. Every
+ number must be justified with environment + method. Loop per Activity
+ 9_2: 10 runs, discard the first, report mean + p95.
+
+ F.1 Performance requirements (new/updated NFRs; final numbering in S3-H.2)
+ [ ] NFR-01 home dashboard ready ≤ 3 s (p95) after cold launch, LTE profile.
+ [ ] NFR-02 100-card deck sync ≤ 5 s on Wi-Fi.
+ [ ] NEW: peak memory in a 100-card study session ≤ 150 MB.
+ [ ] NEW: quiz generation (QuestionPool build, 10 Qs) ≤ 50 ms.
+ [ ] NEW: deck save (validate + persist 100 cards) ≤ 250 ms.
+ [ ] NEW: syntax highlight of an 80-line snippet ≤ 100 ms (first render).
+ [ ] NEW: leaderboard fetch ≤ 1.5 s on Wi-Fi (if test users exist).
+ Thresholds are confirmed after the first baseline run. Don't publish a
+ threshold the code misses without a bottleneck explanation.
+
+ F.2 Test harness
+ [ ] DEBUG perf fixture (Activity 9_2 data):
+       - Starter decks + 5 user decks × 50 cards (mixed text/code).
+       - Quiz + XP history across topics.
+       - A 100-card generated deck.
+     Lives in Tests (or behind a DEBUG launch argument for the launch
+     test).
+ [ ] codeyTests/Performance/*.swift using XCTest measure(metrics:) with
+     XCTClockMetric / XCTMemoryMetric / XCTCPUMetric and
+     options.iterationCount = 10:
+       - QuizBuildPerfTests (QuestionPool / QuizViewModel start)
+       - DeckSavePerfTests (FlashcardFactory + ModelValidator +
+         SwiftDataService for 100 cards)
+       - StudySessionMemoryPerfTests (100-card session, peak memory)
+       - DataSeederPerfTests (launch-time seeding cost)
+       - StarterDeckLoaderPerfTests
+       - HighlightPerfTests (80-line snippet through Textual/Prism)
+       - SyncPushPerfTests:
+         - 100-card push against live Supabase when the SUPABASE_TEST_*
+           env vars are set (Q1).
+         - Otherwise against a mock with injected 50 ms RTT. The doc must
+           label which one was used.
+     XCTest must be added beside Swift Testing; both can live in the same
+     target.
+ [ ] Cold-launch metric (UI test runner blocked → script fallback):
+       - os_signpost / Logger mark "home-ready" in HomeView.onAppear.
+       - The process start time comes from sysctl kinfo_proc
+         (p_starttime).
+       - scripts/perf-launch.sh: `xcrun simctl terminate` + `launch` ×10,
+         then reads the logged delta (`log show --predicate`).
+       - Network Link Conditioner "LTE" isn't available for the Simulator
+         from the CLI. Note that cold launch doesn't hit the network
+         (local-first), so the LTE profile doesn't change it, and say so
+         in the doc.
+ [ ] scripts/perf-report.sh: runs the perf tests, parses the xcresult
+     (`xcrun xcresulttool`), and writes docs/perf/sprint3.csv (mean, p95,
+     stddev per test).
+
+ F.3 Results + analysis (feeds the doc)
+ [ ] Record the environment: Mac model/chip/RAM, macOS, Xcode 27.1,
+     Simulator device + runtime, Debug vs Release. Prefer Release
+     (-configuration Release, with testability) for timing.
+ [ ] Fill the metrics table: Sprint 2 baseline vs Sprint 3 values.
+ [ ] Bottlenecks: name the slowest path per scenario, with the measured
+     share. Candidates:
+       - Seeding on launch.
+       - SwiftData fetches on Home.
+       - Textual first render.
+       - Per-request sync round trips.
+       - Simulator vs device CPU/IO.
+     Hardware vs software split, as the rubric asks.
+ [ ] If any requirement fails: apply the Activity 9_2 corrective plan,
+     re-run, and report before/after.
+ [ ] (P2) Instruments traces (App Launch, Allocations, Animation Hitches
+     for deck-library scroll fps) as figures. The scroll-fps metric stays
+     "Sprint 4" if it isn't measured.
+
+
+================================================================================
+ S3-G — SECURITY + UI METRICS (automatable, S10)        P0 (AB + ES, ~0.5 day)
+================================================================================
+ G.1 Security test runs (record actual results + date)
+ [ ] Live RLS check (supabase/checks/rls_live_check.sql), extended for
+     groups/weekly_xp/feedback. Target: 0 failed. Run via the Supabase MCP.
+ [ ] Supabase Security Advisor after the new migrations: 0 open warnings
+     (or each one justified).
+ [ ] scripts/check-secrets.sh --history: 0 findings.
+ [ ] Xcode Static Analyzer: `xcodebuild analyze -scheme codey …` → 0
+     security warnings. Save the summary.
+ [ ] Release-build check (SSC #12): build Release, then confirm
+     SupabaseTestAccounts / test sign-in symbols are absent
+     (`nm`/`strings` on the binary). Add as scripts/check-release-build.sh.
+ [ ] TransportSecurityTests (no ATS exceptions, TLS 1.3 minimum) and
+     SupabaseSchemaTests / FlashcardSchemaFileTests (validator-limit
+     drift) pass.
+ [ ] scripts/check-imports.sh passes (Supabase/Google imports stay in one
+     module).
+ [ ] (opt) pgTAP `supabase test db` only if the CLI + Docker get installed
+     cheaply. Otherwise the doc says the live check replaces it.
+ [ ] Deferred, labeled "Sprint 4" in the doc:
+       - Proxyman TLS capture.
+       - The on-device file-protection attribute check (NFR-04 /
+         SSC #13).
+     NFR-04 was already amended to completeUnlessOpen, so the Activity
+     10_1 "gap" text must be reconciled in the doc: the requirement was
+     amended in Sprint 2 and no gap remains.
+
+ G.2 Security metrics table: Sprint 2 vs Sprint 3 values (RLS %,
+     cross-account successes, non-TLS requests, secrets found) + new
+     "advisor warnings" and "static-analyzer warnings".
+
+ G.3 UI metrics (carry-overs from Sprint 2 Stage 7/10, done with the
+     Simulator)
+ [ ] NFR-10/11 layout pass:
+       - Devices: iPhone 17e / 17 / 18 Pro Max Simulator profiles (match
+         the doc's hardware table; whichever runtimes are installed).
+       - Light + dark.
+       - Every screen.
+       - Result: screens passing / total.
+ [ ] NFR-12 Accessibility Inspector audit (both modes). Fix label/contrast
+     issues. Record the count.
+ [ ] Taps-to-study re-check after the facelift.
+ [ ] (P2) Peer usability test (3–5 classmates), so "task success rate" gets
+     a number. Otherwise it stays "Sprint 4".
+
+
+================================================================================
+ S3-H — SPRINT 3 DOCUMENTATION (docs/Sprint3_Documentation.tex)   P0 (RB lead, all)
+================================================================================
+ Start: copy Sprint2_Documentation.tex → Sprint3_Documentation.tex, then
+ retitle every "(Updated for Sprint 2)" heading to Sprint 3. Rubric section
+ order is mandatory. Current gaps are marked NEW.
+
+ H.0 Front matter
+ [ ] Cover page:
+       - Title, CS 360, "Sprint 3", date submitted 2026-11-03.
+       - Names + emails (already on the Sprint 2 cover; check the
+         addresses).
+ [ ] TOC with page numbers. Every major section starts on a page that
+     appears in the TOC (rubric).
+ [ ] All figures/tables captioned. Every graph has axis labels: Gantt
+     x/y, perf charts.
+
+ H.1 Project Overview and Scope (Updated for Sprint 3)
+ [ ] "Changes Since Sprint 2" subsection:
+       - Streaks/goal/badges.
+       - Profile identity.
+       - Weekly plan.
+       - Defect reports.
+       - Groups/leaderboard/weekly challenge.
+       - Minimal UI facelift.
+       - Security + performance measurement.
+ [ ] Scope: in-scope vs Sprint 4 (coding challenges FR-39–41; Proxyman;
+     device checks).
+
+ H.2 Requirements (Updated for Sprint 3)
+ [ ] FR table:
+       - Statuses updated.
+       - Split compound FRs into atomic ones (FR-42 → FR-42 + FR-50–53;
+         check FR-03, FR-12, FR-24, FR-28, FR-47 for "and"-compounds and
+         split where it helps testability).
+       - FR-39–41 → Must / Planned – Sprint 4 (S6).
+     Target ≈ 40+ specific, testable, atomic FRs (we're at 49 → ~53+).
+ [ ] NFR table (target ≈ 15+; we have 20):
+       - ADD security NFRs (rubric), e.g.:
+         - Session tokens never written to logs or UserDefaults.
+         - service_role key never in client or repo.
+         - Server-side CHECK constraints mirror client validation limits.
+         - Only Supabase + Google hosts contacted.
+         - Group data visible only to members.
+       - ADD performance NFRs from S3-F.1.
+       Every NFR keeps a verification method that names the actual test.
+ [ ] Metrics Plan table: a Sprint 3 column next to the Sprint 2 baseline
+     (NFR-17–19).
+
+ H.3 Project Hardware Details (Updated for Sprint 3)
+ [ ] Exact Macs (chip/RAM/macOS) per member (Activity 8_1: all macOS arm).
+     Xcode 27.1, Simulator runtimes/devices actually used, the test
+     device(s) if any. Supabase plan/region. Third-party services table
+     unchanged + any new deps.
+
+ H.4 Software Product Development and Organizational Approach (Sprint 3)
+ [ ] Modified waterfall for Sprint 3:
+       - Timeline Oct 4–Nov 3 and the task list.
+       - The Activity 10_2 status table (critical tasks: status +
+         blockers).
+       - Technical-debt item + refactor (currentStreak → StreakCalculator)
+         and its resolution.
+       - Definition of done.
+ [ ] Team workflow: dev → main (S4). Fix the /docs/minutes reference
+     (still open from Sprint 2): point at the real minutes location or
+     drop it.
+
+ H.5 Sprint Gantt Charts
+ [ ] Keep Sprint 1 and Sprint 2 charts as-is.
+ [ ] NEW Sprint 3 Gantt (pgfgantt, same style), 2026-10-04 → 11-03:
+       - GitHub/VC setup (Act. 8_1).
+       - Wireframes/storyboard (Act. 8_2).
+       - Performance requirements (Act. 9_2).
+       - Threat model (Act. 10_1).
+       - Sprint wrap-up (Act. 10_2).
+       - Streaks/badges, small FRs, groups/leaderboard, facelift.
+       - Security runs, perf tests, documentation.
+     Owners + dependencies + milestone "Sprint 3 doc due 11/3".
+     Progress % = actual.
+ [ ] The rubric says "insert as an image": render the TikZ charts to PNG
+     (tectonic → pdftoppm) and \includegraphics them, OR keep them as
+     vector figures. Default: keep vector (it renders as an image in the
+     PDF); revisit if the grader asks.
+
+ H.6 Risks (Sprint 3)
+ [ ] Update identification/planning/monitoring. Add:
+       - R13 client-reported weekly XP can be inflated (Q3).
+       - R14 schedule compression (4 days to deadline).
+       - R15 UI-test runner blocked on macOS (launch metric via script
+         fallback).
+       - R16 facelift regressions (contrast/layout).
+       - R17 coding challenges slip to Sprint 4 (client-mandated).
+     Refresh statuses of R1–R12 (R8 façade size; R12 Textual/Runestone).
+
+ H.7 UI/UX Design section (kept from Sprint 2; rewritten for S9)
+ [ ] New tokens, accent, type, glass policy, motion policy; D12/D13/D17
+     revised.
+ [ ] New screenshots (S3-A.5).
+ [ ] NEW Activity 8_2 content:
+       - Primary screens table.
+       - Deck Builder requirements breakdown (content/hierarchy vs
+         behavior).
+       - Storyboard scenario (create deck → fill cards → save → practice).
+       - Extracted storyboard/wireframe images (pdfimages
+         docs/Activity8_2.pdf). Wireframing tool: Canva.
+
+ H.8 UML Use Case Diagram (Updated)
+ [ ] Add:
+       - Create Group, Join Group, View Leaderboard.
+       - Track Weekly Challenge, Earn Badge.
+       - Edit Profile (FR-04), View Weekly Plan.
+       - Report UI/UX Defect (now built, no longer "planned").
+     Text specs for the new use cases.
+
+ H.9 Requirements Traceability Table (Updated)
+ [ ] Rows for every new/split FR and new NFR → design element → test case
+     → actual test name. Include security + perf test cases.
+
+ H.10 UML Sequence Diagram (Updated)
+ [ ] Keep the save→sync sequence (refresh names if BackendFacade gets
+     split). ADD a "Join group by code → leaderboard fetch" sequence
+     (shows the RPC + RLS path).
+
+ H.11 UML State Diagram (Updated)
+ [ ] Keep DeckSyncState. Optional: a daily-goal/streak state machine
+     (Active / AtRisk-today / Broken). Add it only if time allows.
+
+ H.12 UML Class Diagrams: 3 patterns, one per category (Updated)
+ [ ] Domain model: add Badge/BadgeAward, StreakCalculator,
+     WeeklyChallenge, Group/LeaderboardEntry DTOs, and the V7 profile
+     fields.
+ [ ] Factory (FlashcardFactory), State (DeckSyncState), Façade
+     (BackendFacade): sync with code. The Façade gains group/feedback
+     operations and per-concern extensions.
+
+ H.13 NEW Design pattern → source code line mapping
+ [ ] A table per pattern: participant role → file → line range → Appendix
+     B subsection.
+ [ ] Make it reproducible:
+       - Add `// MARK: - [Pattern: Factory] <role>` anchors in the source.
+       - scripts/gen-pattern-map.sh greps the anchors and emits
+         docs/generated/pattern_lines.tex (\newcommand macros, or the
+         table itself).
+       - Run it AFTER the code freeze, so line numbers match Appendix B.
+
+ H.14 UML Component Diagram (Updated)
+ [ ] Add the Groups/Leaderboard + Feedback interfaces on BackendFacade,
+     plus the new Supabase tables/RPC on the cloud side.
+
+ H.15 UML Deployment Diagram (Updated)
+ [ ] Data tier: groups, group_members, weekly_xp, feedback_reports, and
+     the join_group function. GitHub Actions keep-alive is already there;
+     check it.
+
+ H.16 NEW Usage of Version Control
+ [ ] GitHub repo https://github.com/raajbanga/codey (owner raajbanga;
+     collaborators elnadsalcinovic2005-oss, TheRealAxnav). GitHub Desktop
+     on macOS arm (Activity 8_1 tables).
+ [ ] Workflow:
+       - dev → main.
+       - Squash merges per stage.
+       - PR template with the security checklist.
+       - Commit message conventions.
+       - The activity8_1 branch and why it was merged/removed.
+ [ ] Evidence:
+       - Activity 8_1 screenshots (pdfimages docs/Activity8_1.pdf).
+       - The commit-history table (hashes from Act. 8_1: 05bd3b6,
+         8d33cb5, 30b5b0e).
+       - Commit counts per member (`git shortlog -sn`).
+ [ ] Other VC/infra:
+       - GitHub Actions (supabase-keepalive.yml).
+       - Repo secrets (names only).
+       - Tuist-managed project.
+       - supabase/migrations as versioned schema.
+     Docker Hub not used; say so.
+
+ H.17 NEW Program files / configuration files table
+ [ ] Every tracked file (or file group where it's sensible: per-feature
+     view folders are fine as a group ONLY if each file still appears in
+     Appendix B), with a short description. Generate the path list with
+     `git ls-files` (minus docs/ and assets). Descriptions are
+     hand-written.
+     Columns: path, type (source/config/test/script/SQL/resource),
+     description.
+
+ H.18 NEW Project Security Issues
+ [ ] Security NFRs summary (link to H.2).
+ [ ] Activity 10_1 content:
+       - Trust boundary analysis (app → Supabase over the internet;
+         Broken Access Control threat + mitigations).
+       - Security design principles: minimize attack surface, least
+         privilege, defense in depth. Update for join_group RPC +
+         feedback.
+ [ ] NEW Security threat model as a Data Flow Diagram (TikZ):
+       - External entities: Student, Google OAuth, Supabase Auth.
+       - Processes: Sign In, Validate Deck, Save Locally, Sync,
+         PostgREST API, + Join Group / Leaderboard.
+       - Data stores: SwiftData store, Keychain, Supabase Postgres,
+         bundled JSON.
+       - Trust boundaries drawn as dashed lines.
+       - Numbered flows. STRIDE threats annotated per flow/element.
+ [ ] Security test cases table:
+       - Columns: ID, item, steps, expected, actual, date, status.
+       - Built from S3-G.1.
+       - Deferred ones are marked Sprint 4.
+ [ ] Software Security Checklist (Activity 10_1 Part 5: items 1–5, 21, 12,
+     13, 18, 22). Fill "Actual result (now)" with Sprint 3 results.
+ [ ] Security metrics table (S3-G.2).
+
+ H.19 NEW System Performance
+ [ ] Defined performance requirements (S3-F.1): testable, with
+     thresholds, environment, and the method.
+ [ ] Performance test cases table (TC-P01…): inputs/data (Activity 9_2
+     fixture), steps, metric, loop (10 runs, discard 1), expected.
+ [ ] Performance profile definitions:
+       - Profiles: cold launch, study session, quiz build, deck save,
+         highlight, sync.
+       - What is measured: time, memory, CPU.
+     Then the results (mean, p95, stddev, pass/fail) + a chart (bar or
+     box) with labeled axes.
+ [ ] Hardware/software bottlenecks:
+       - Justified with measured numbers (rubric example style: "method X
+         takes N ms, M KB").
+       - Simulator-on-Mac vs device caveat.
+ [ ] Corrective actions taken + before/after (if any).
+
+ H.20 NEW Appendix A: build instructions, step by step
+ [ ] Detailed enough for anyone with the hardware to deploy the project:
+       1. Prerequisites: Mac (Apple Silicon), macOS version, Xcode 27.1,
+          iOS Simulator runtime, Homebrew, Tuist (exact version, from
+          .tool-versions / mise if present), git.
+       2. Clone.
+       3. `tuist install && tuist generate`.
+       4. Secrets: copy Config/Secrets.example.xcconfig →
+          Secrets.xcconfig; where each value comes from (Supabase URL +
+          anon key, Google iOS/server client IDs, reversed client ID).
+          Never commit it.
+       5. Supabase project: create it; apply supabase/migrations in order
+          (CLI or SQL editor); enable the Google provider; optional
+          email test users (Q1 steps).
+       6. Google Cloud OAuth client setup.
+       7. Build and run on the Simulator (Xcode or the xcodebuild
+          command).
+       8. Run the tests (unit, perf, security scripts).
+       9. Optional: GitHub Actions secrets for keep-alive;
+          scripts/backup.sh.
+       10. Troubleshooting (UI test runner blocked on macOS, tuist
+           cache, etc.).
+     Dry-run it from a fresh clone in a temp dir to prove it works.
+
+ H.21 NEW Appendix B: source code and configuration files
+ [ ] scripts/gen-appendix-b.sh → docs/generated/appendix_b.tex:
+       - One \subsection{B.n path} per file + \lstinputlisting (or
+         \inputminted).
+       - Order: App, Models, ViewModels, Services, DesignSystem,
+         Features, Navigation, Support, Tests, UITests, Resources
+         (JSON + schema), Config (Base + Secrets.example ONLY), Project
+         and Tuist manifests, supabase SQL, scripts, .github.
+       - Exclude Secrets.xcconfig, Derived/, *.xcodeproj/*.xcworkspace
+         internals, asset binaries, .DS_Store.
+       - Large data JSON (questions-seed.json, starter-decks.json): full
+         listing in a small font, or schema + first N entries with a
+         note. Default: full; it's "all project files".
+ [ ] LaTeX listings setup:
+       - Define a Swift language for listings (keywords). SQL/bash/JSON
+         styles.
+       - UTF-8 literate mapping for the non-ASCII characters in the
+         source (→, ✓, emoji), or switch to minted / fvextra with
+         tectonic shell-escape.
+       - Line numbers ON, so H.13 can cite lines.
+       - Breaklines on.
+ [ ] Commenting pass (rubric: "all source code/config files appropriately
+     commented"), BEFORE the freeze:
+       - Every Swift file gets a top doc comment (purpose, FR/NFR links).
+       - Non-obvious logic gets "why" comments.
+       - Each SQL migration gets a header + per-policy comments.
+       - Each script gets a usage header.
+       - xcconfig / Project.swift / Package.swift get comments.
+     Match the existing comment style (/// doc comments, short why-
+     comments). Don't narrate obvious code.
+ [ ] Code freeze (tag dev, e.g. sprint3-freeze). After the freeze, run
+     gen-appendix-b + gen-pattern-map, then build the doc. Any code change
+     after the freeze means re-running both.
+
+ H.22 Final QA of the doc
+ [ ] tectonic build is clean: no undefined refs, no overfull boxes > 3 pt.
+ [ ] Every rubric bullet ticks (checklist at the end of this file).
+     Body ≥ 4,500 words.
+ [ ] Consistency: FR/NFR IDs match the traceability table, test names
+     exist in code, file paths exist, numbers match docs/perf/sprint3.csv.
+ [ ] Remove all "Sprint 2" framing where it should say Sprint 3. Keep the
+     history sections.
+ [ ] Keep the "We used AI to help create this document." line.
+ [ ] Export the PDF → docs/Sprint3_Documentation.pdf for submission.
+
+
+--------------------------------------------------------------------------------
+ RUBRIC CHECKLIST (tick at H.22)
+--------------------------------------------------------------------------------
+ [ ] Cover page (title, course, sprint #, date, names + emails)
+ [ ] Table of contents with page numbers
+ [ ] Project Overview and Scope (Sprint 3)
+ [ ] Requirements: ~40 FR table + ~15 NFR table; security + performance NFRs
+ [ ] Project hardware details (Sprint 3)
+ [ ] Development & organizational approach (Sprint 3)
+ [ ] Gantt charts: Sprint 1, Sprint 2, Sprint 3
+ [ ] Risks (identification, planning, monitoring)
+ [ ] Use case diagram(s) + documentation
+ [ ] Requirements traceability table + documentation
+ [ ] Sequence diagram(s) + documentation
+ [ ] State diagram(s) + documentation
+ [ ] Class diagrams: 3 patterns (creational/structural/behavioral) + docs
+ [ ] Design pattern → source line mapping (Appendix B)
+ [ ] Component diagram + documentation
+ [ ] Deployment diagram + documentation
+ [ ] Usage of version control
+ [ ] Program files / configuration files table
+ [ ] Project security issues + security NFRs
+ [ ] Security threat model DFD
+ [ ] Security test cases
+ [ ] System performance: requirements, test cases, profile + results,
+     bottlenecks
+ [ ] Appendix A: build instructions
+ [ ] Appendix B: all source/config files, one subsection each, commented
+ [ ] All figures/tables labeled; all graphs have axis labels
+
+
+--------------------------------------------------------------------------------
+ SUGGESTED SCHEDULE (4 days)
+--------------------------------------------------------------------------------
+ Thu 10/30
+   - S3-A.1 facelift direction pick.
+   - S3-E branch cleanup.
+   - Start S3-B.
+   - Doc: copy the .tex, H.0/H.5/H.16 (Gantt, VC; no code dependency).
+ Fri 10/31
+   - S3-B done, S3-C, S3-D backend migrations + RLS.
+   - Doc: H.6 risks, H.18 DFD + principles, H.20 build guide draft.
+ Sat 11/1
+   - S3-D client.
+   - S3-A tokens/components/icon.
+   - Commenting pass.
+   - Doc: H.2 requirements, H.7–H.12 UML updates.
+ Sun 11/2
+   - S3-F perf tests + runs, S3-G security/UI runs.
+   - Code freeze (evening), gen Appendix B + pattern map.
+   - Doc: H.13, H.17, H.19.
+ Mon 11/3
+   - H.22 QA, PDF export, submit.
+   - Merge dev → main.
+
+
+================================================================================
+ SPRINT 2 PRD (ARCHIVE) — kept for history; open items above supersede it
+================================================================================
+
+================================================================================
  CODEY — IMPLEMENTATION PRD / TODO
  Covers: everything Sprint 2 documentation promises + level gating (FR-22–31)
  Source of truth: docs/Sprint2_Documentation.tex (+ Activity4_1 … 6_1 PDFs)
@@ -86,14 +999,14 @@ HOW TO READ THIS FILE
      Tab API, tab minimize and bottom accessory, ConcentricRectangle
      corners. Dev/demo runtime is iOS 27 (the only Simulator runtime
      installed).
- D12 Visual direction: NATIVE + PLAYFUL ACCENTS.
+ [REVISED Sprint 3 → S9] D12 Visual direction: NATIVE + PLAYFUL ACCENTS.
        - Apple-native structure: glass on the control layer only, SF
          Symbols, system type, semantic colors.
        - SF Rounded for headings and numbers.
        - A tier color system: Easy / Medium / Hard (color + symbol, never
          color alone).
        - Celebratory moments.
- D13 Brand color = ELECTRIC INDIGO (≈ #5B5BF7 light / #8C8CFF dark; tune
+ [REVISED Sprint 3 → S9] D13 Brand color = ELECTRIC INDIGO (≈ #5B5BF7 light / #8C8CFF dark; tune
      for 4.5:1 contrast on text use).
  D14 [REVISED 2026-10-07 r3] Study UX = 3D FLIP + SWIPE TO RATE (no buttons).
        The floating rating buttons were removed (felt out of place).
@@ -116,7 +1029,7 @@ HOW TO READ THIS FILE
        1. Welcome.
        2. Pick topics (pins those topics and starter decks on Home).
        3. Optional Google sign-in, with Skip.
- D17 Delight level = MEDIUM.
+ [REVISED Sprint 3 → S9] D17 Delight level = MEDIUM.
        - XP counters roll up (numericText).
        - sensoryFeedback haptics on correct and wrong answers.
        - Particle burst ONLY for level-ups and tier unlocks.

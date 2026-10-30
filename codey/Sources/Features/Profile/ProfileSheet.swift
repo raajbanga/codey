@@ -34,6 +34,7 @@ struct ProfileSheet: View {
                 aboutSection
             }
             .listStyle(.insetGrouped)
+            .codeyListBackground()
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -92,7 +93,7 @@ struct ProfileSheet: View {
                         .font(.codeySubheadline)
                         .foregroundStyle(CodeyColor.textSecondary)
                     Text(accountStatus)
-                        .font(.codeyCaption)
+                        .font(.codeySubheadline)
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
             }
@@ -133,6 +134,7 @@ struct ProfileSheet: View {
                 .disabled(backend.engine.isSyncing)
                 .accessibilityIdentifier("profile.syncNow")
                 Button("Sign Out", role: .destructive) { confirmSignOut = true }
+                    .foregroundStyle(CodeyColor.danger)
                     .accessibilityIdentifier("profile.signOut")
             } header: {
                 Text("Account")
@@ -234,8 +236,11 @@ struct ProfileSheet: View {
 
     private var dataSection: some View {
         Section {
+            // Muted palette danger instead of the role's system red (S9).
             Button("Reset Progress", role: .destructive) { confirmReset = true }
+                .foregroundStyle(CodeyColor.danger)
             Button("Erase All Local Data", role: .destructive) { confirmErase = true }
+                .foregroundStyle(CodeyColor.danger)
                 .disabled(backend.currentUser != nil)
         } header: {
             Text("Data")
@@ -311,10 +316,11 @@ private struct AcknowledgementsView: View {
                 Text(library.name)
                     .font(.codeyHeadline)
                 Text(library.detail)
-                    .font(.codeyCaption)
+                    .font(.codeySubheadline)
                     .foregroundStyle(CodeyColor.textSecondary)
             }
         }
+        .codeyListBackground()
         .navigationTitle("Acknowledgements")
     }
 }

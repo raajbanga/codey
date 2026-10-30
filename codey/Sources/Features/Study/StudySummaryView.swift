@@ -52,7 +52,6 @@ struct StudySummaryView: View {
             Image(systemName: "rectangle.stack.badge.person.crop.fill")
                 .font(.codeyDisplay)
                 .foregroundStyle(CodeyColor.brand)
-                .symbolEffect(.bounce, options: .nonRepeating)
                 .accessibilityHidden(true)
             Text("Session complete")
                 .font(.codeyDisplay)
@@ -84,10 +83,10 @@ struct StudySummaryView: View {
     private var buttons: some View {
         VStack(spacing: CodeySpacing.sm) {
             if !wasEmpty {
-                CodeyButton("Study Again", systemImage: "arrow.clockwise", kind: .glassSecondary, fullWidth: true, action: studyAgain)
+                CodeyButton("Study Again", systemImage: "arrow.clockwise", kind: .secondary, fullWidth: true, action: studyAgain)
                     .accessibilityIdentifier("study.again")
             }
-            CodeyButton("Done", kind: .glassPrimary, fullWidth: true, action: done)
+            CodeyButton("Done", kind: .primary, fullWidth: true, action: done)
                 .accessibilityIdentifier("study.done")
         }
         .padding(.top, CodeySpacing.sm)
