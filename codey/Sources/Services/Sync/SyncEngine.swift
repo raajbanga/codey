@@ -4,7 +4,8 @@ import SwiftData
 import os
 
 /// Pushes the queue, pulls remote changes, and syncs the profile (FR-46,
-/// FR-47, NFR-09). One cycle = push (with the conflict check) → pull → profile.
+/// FR-47, NFR-09). One cycle = push (with the conflict check) → pull → profile
+/// → weekly XP.
 /// Failures back off exponentially (2, 4, 8 … 300 s); reconnecting resets the
 /// backoff and syncs at once.
 @MainActor
@@ -23,6 +24,7 @@ final class SyncEngine {
     @ObservationIgnored private let reachability: any Reachability
     @ObservationIgnored private let currentUserID: () -> UUID?
     @ObservationIgnored private let cursors: SyncCursorStore
+    @ObservationIgnored private let weeklyXP: WeeklyXPStore
     @ObservationIgnored private let deviceID: String?
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let sleep: (Duration) async throws -> Void
@@ -44,6 +46,7 @@ final class SyncEngine {
         remote: (any RemoteDeckStore)?,
         reachability: any Reachability,
         cursors: SyncCursorStore = SyncCursorStore(),
+        weeklyXP: WeeklyXPStore = WeeklyXPStore(),
         deviceID: String? = nil,
         now: @escaping () -> Date = Date.init,
         sleep: @escaping (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
@@ -53,6 +56,7 @@ final class SyncEngine {
         self.remote = remote
         self.reachability = reachability
         self.cursors = cursors
+        self.weeklyXP = weeklyXP
         self.deviceID = deviceID
         self.now = now
         self.sleep = sleep
@@ -116,6 +120,7 @@ final class SyncEngine {
                 try await push(remote: remote, userID: userID)
                 try await pull(remote: remote, userID: userID)
                 try await syncProfile(remote: remote, userID: userID)
+                try await syncWeeklyXP(remote: remote, userID: userID)
                 consecutiveFailures = 0
                 lastError = nil
                 lastSyncedAt = now()
@@ -287,6 +292,19 @@ final class SyncEngine {
             try await remote.upsertProfile(ProfilePayload(displayName: name, avatarId: avatar, totalXP: xp))
         }
         try queue.markDone(operations)
+    }
+
+    // MARK: Weekly XP (FR-42)
+
+    /// Pushes this week's XP when it changed since the last push. Not a
+    /// queued operation: like total_xp, the latest value is all that
+    /// matters, and the server keeps the max.
+    private func syncWeeklyXP(remote: any RemoteDeckStore, userID: UUID) async throws {
+        let date = now()
+        guard weeklyXP.needsPush(user: userID, now: date) else { return }
+        let xp = weeklyXP.xp(now: date)
+        try await remote.upsertWeeklyXP(weekStart: UTCWeek.key(for: date), xp: xp)
+        weeklyXP.markPushed(user: userID, xp: xp, now: date)
     }
 
     // MARK: Failure

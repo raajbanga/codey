@@ -108,6 +108,117 @@ extension SupabaseDataClient {
     }
 }
 
+// MARK: - Groups + leaderboard (S3-D)
+
+extension SupabaseDataClient {
+    func fetchGroups() async throws -> [GroupSummary] {
+        let rows: [GroupRow] = try await client.from("groups")
+            .select(GroupRow.columns)
+            .order("created_at")
+            .execute()
+            .value
+        return rows.map(\.summary)
+    }
+
+    /// Inserted without RETURNING: the creator becomes a member in an AFTER
+    /// trigger, which a RETURNING visibility check wouldn't see yet.
+    func createGroup(id: UUID, name: String) async throws -> GroupSummary {
+        try await client.from("groups")
+            .insert(NewGroupRow(id: id, name: name), returning: .minimal)
+            .execute()
+        let rows: [GroupRow] = try await client.from("groups")
+            .select(GroupRow.columns)
+            .eq("id", value: id.uuidString)
+            .execute()
+            .value
+        guard let row = rows.first else { throw GroupError.notFound }
+        return row.summary
+    }
+
+    func joinGroup(code: String) async throws -> GroupSummary {
+        do {
+            let row: GroupRow = try await client.rpc("join_group", params: ["code": code])
+                .execute()
+                .value
+            return row.summary
+        } catch let error as PostgrestError where error.code == "P0002" {
+            throw GroupError.invalidCode
+        }
+    }
+
+    /// RLS only lets you delete your own membership.
+    func leaveGroup(id: UUID) async throws {
+        try await client.from("group_members")
+            .delete(returning: .minimal)
+            .eq("group_id", value: id.uuidString)
+            .execute()
+    }
+
+    func fetchLeaderboard(groupID: UUID) async throws -> [LeaderboardEntry] {
+        let rows: [LeaderboardRow] = try await client.from("group_leaderboard")
+            .select("user_id,display_name,avatar_id,xp")
+            .eq("group_id", value: groupID.uuidString)
+            .execute()
+            .value
+        return rows.map { LeaderboardEntry(userId: $0.userId, displayName: $0.displayName, avatarId: $0.avatarId, xp: $0.xp) }
+    }
+
+    /// owner_id is sent (the upsert's conflict target) and checked by RLS.
+    func upsertWeeklyXP(weekStart: String, xp: Int) async throws {
+        guard let userID = client.auth.currentUser?.id else { return }
+        try await client.from("weekly_xp")
+            .upsert(WeeklyXPRow(ownerId: userID, weekStart: weekStart, xp: xp), onConflict: "owner_id,week_start", returning: .minimal)
+            .execute()
+    }
+}
+
+private struct GroupRow: Decodable {
+    static let columns = "id,name,invite_code"
+
+    var id: UUID
+    var name: String
+    var inviteCode: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, name
+        case inviteCode = "invite_code"
+    }
+
+    var summary: GroupSummary { GroupSummary(id: id, name: name, inviteCode: inviteCode) }
+}
+
+/// invite_code and created_by are set by the server trigger.
+private struct NewGroupRow: Encodable {
+    var id: UUID
+    var name: String
+}
+
+private struct LeaderboardRow: Decodable {
+    var userId: UUID
+    var displayName: String
+    var avatarId: String?
+    var xp: Int
+
+    enum CodingKeys: String, CodingKey {
+        case xp
+        case userId = "user_id"
+        case displayName = "display_name"
+        case avatarId = "avatar_id"
+    }
+}
+
+private struct WeeklyXPRow: Encodable {
+    var ownerId: UUID
+    var weekStart: String
+    var xp: Int
+
+    enum CodingKeys: String, CodingKey {
+        case xp
+        case ownerId = "owner_id"
+        case weekStart = "week_start"
+    }
+}
+
 // MARK: - Rows (snake_case, matching the migrations)
 
 /// owner_id is left to the column default, auth.uid().
