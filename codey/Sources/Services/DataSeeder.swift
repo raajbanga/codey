@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 import os
 
+/// Boot fails rather than seeding a truncated question bank.
 enum DataSeederError: Error, LocalizedError {
     case insufficientTopics(found: Int, expected: Int)
 

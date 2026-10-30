@@ -2,6 +2,10 @@ import SwiftData
 import SwiftUI
 import os
 
+/// Boot screen: opens (and migrates) the SwiftData store, seeds the question
+/// bank and starter decks, catches up badges, builds the BackendFacade, then
+/// shows ContentView. A failed open offers retry or an explicit store reset;
+/// user data is never deleted silently.
 struct LoadingView: View {
     @State private var progress: Double = 0
     @State private var errorMessage: String?

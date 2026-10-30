@@ -1,5 +1,7 @@
 import CoreGraphics
 
+/// Spacing scale (points). All padding and stack spacing use these tokens;
+/// scripts/check-design-tokens.sh flags raw numbers.
 enum CodeySpacing {
     static let xxs: CGFloat = 2
     static let xs: CGFloat = 4

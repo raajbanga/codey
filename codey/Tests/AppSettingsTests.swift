@@ -3,6 +3,8 @@ import SwiftUI
 import Testing
 @testable import codey
 
+/// App-level settings: appearance preference migration, and the Info.plist
+/// transport rules (no ATS exceptions, NFR-06) checked in this file.
 struct AppAppearanceTests {
 
     private func makeDefaults() -> UserDefaults {

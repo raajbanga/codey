@@ -1,3 +1,8 @@
+"""WCAG 2.x contrast helpers used by palette.py (NFR-12).
+
+lum(): relative luminance of "#rrggbb"; cr(a, b): contrast ratio;
+blend(fg, bg, a): fg at alpha a over bg, for translucent fills.
+"""
 import sys
 def lum(h):
     h=h.lstrip('#'); r,g,b=[int(h[i:i+2],16)/255 for i in (0,2,4)]

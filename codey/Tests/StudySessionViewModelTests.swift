@@ -3,6 +3,8 @@ import SwiftData
 import Testing
 @testable import codey
 
+/// Study sessions (FR-16–18): reveal-before-rate, mastery, resume snapshots,
+/// summary numbers.
 @MainActor
 struct StudySessionViewModelTests {
     private let day = Date(timeIntervalSince1970: 1_800_000_000)

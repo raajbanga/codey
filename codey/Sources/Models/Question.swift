@@ -1,6 +1,8 @@
 import Foundation
 import SwiftData
 
+/// Question/card tier (FR-24). Stored by raw value in SwiftData and Supabase,
+/// so the cases must not be renamed.
 enum Difficulty: String, Codable, CaseIterable {
     case easy
     case medium

@@ -3,6 +3,8 @@ import SwiftData
 import Testing
 @testable import codey
 
+/// Deck builder view model (UC-02): editing the draft, live validation, save
+/// and delete through the DeckBackend.
 @MainActor
 struct DeckViewModelTests {
     private let topicIds: Set<String> = ["topic-data-structures", "topic-algorithms"]

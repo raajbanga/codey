@@ -3,6 +3,7 @@ import SwiftData
 import Testing
 @testable import codey
 
+/// FR-18 mastery: what each rating does to a card's 0–5 score.
 struct CardRatingTests {
     @Test(arguments: [
         (CardRating.again, 3, 0), (.again, 0, 0),
