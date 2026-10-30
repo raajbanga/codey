@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// What an answer row shows: untouched, the user's pick (right or wrong), or
+/// the right answer revealed after a wrong pick.
 enum AnswerOptionState: Equatable {
     case idle
     case selectedCorrect

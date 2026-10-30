@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import codey
 
+/// FlashcardFactory: normalization, validation, and the only-path-to-a-card rule (§9.2).
 struct FlashcardFactoryTests {
     private let fixedNow = Date(timeIntervalSince1970: 1_800_000_000)
     private var factory: FlashcardFactory { FlashcardFactory(now: { fixedNow }) }

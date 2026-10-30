@@ -1,3 +1,6 @@
+// Renders the three 1024 px app-icon PNGs (light, dark, tinted) into the
+// AppIcon.appiconset. macOS only:
+//   swift scripts/render-app-icon.swift codey/Resources/Assets.xcassets/AppIcon.appiconset
 import SwiftUI
 import AppKit
 
