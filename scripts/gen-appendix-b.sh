@@ -91,8 +91,18 @@ cat > "$outdir/appendix_b_preamble.tex" <<'TEX'
   frame=single, rulecolor=\color{gray!40}, extendedchars=true,
   commentstyle=\color{gray}\itshape, keywordstyle=\color{blue!60!black}\bfseries,
   stringstyle=\color{red!50!black},
-  % Emoji the mono font lacks.
-  literate={👍}{{[thumbs-up]}}1 {🏽}{{}}0 {🔥}{{[fire]}}1 {🔒}{{[lock]}}1,
+  % Non-ASCII characters in the sources mapped to glyphs the T1 fonts have
+  % (box-drawing diagrams in doc comments, arrows, emoji in test strings).
+  literate={→}{{$\rightarrow$}}1 {←}{{$\leftarrow$}}1 {↑}{{$\uparrow$}}1
+    {↓}{{$\downarrow$}}1 {⇥}{{$\rightarrow$|}}2 {–}{{--}}1 {—}{{---}}1
+    {…}{{\ldots}}1 {·}{{$\cdot$}}1 {≥}{{$\geq$}}1 {≤}{{$\leq$}}1
+    {×}{{$\times$}}1 {−}{{-}}1 {≈}{{$\approx$}}1 {±}{{$\pm$}}1 {§}{{\S}}1
+    {°}{{$^\circ$}}1 {²}{{$^2$}}1 {ⁿ}{{$^n$}}1 {⁶}{{$^6$}}1 {₂}{{$_2$}}1
+    {∪}{{$\cup$}}1 {Ω}{{$\Omega$}}1 {✓}{{v}}1 {✗}{{x}}1 {✕}{{x}}1
+    {─}{{-}}1 {━}{{=}}1 {│}{{|}}1 {╭}{{+}}1 {╮}{{+}}1 {╰}{{+}}1 {╯}{{+}}1
+    {▯}{{[ ]}}1 {▮}{{[\#]}}1 {◆}{{*}}1 {◇}{{o}}1 {◎}{{o}}1 {▶}{{>}}1 {›}{{>}}1
+    {é}{{\'e}}1 {ç}{{\c{c}}}1 {À}{{\`A}}1 {ø}{{\o}}1
+    {👍}{{[thumbs-up]}}1 {🏽}{{}}0 {🔥}{{[fire]}}1 {🔒}{{[lock]}}1,
 }
 \lstdefinelanguage{Swift}{
   morekeywords={actor,any,as,associatedtype,async,await,break,case,catch,class,
