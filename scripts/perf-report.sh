@@ -36,7 +36,8 @@ TEST_RUNNER_CODEY_PERF=1 xcodebuild test \
 
 {
     echo "name,runs,mean_ms,p95_ms,stddev_ms,peak_mb,threshold_ms"
-    grep -o 'PERF name=.*' "$log" | sed -E 's/PERF //; s/[a-z_0-9]+=//g; s/ /,/g' | sort -u
+    # Names use hyphens so LaTeX can typeset them.
+    grep -o 'PERF name=.*' "$log" | sed -E 's/PERF //; s/[a-z_0-9]+=//g; s/ /,/g' | awk -F, -v OFS=, '{gsub(/_/, "-", $1)} 1' | sort -u
 } > "$outdir/sprint3.csv"
 
 echo "Wrote $outdir/sprint3.csv ($(($(wc -l < "$outdir/sprint3.csv") - 1)) scenarios) and $outdir/environment.txt"
