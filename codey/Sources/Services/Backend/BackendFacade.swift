@@ -4,6 +4,7 @@ import SwiftData
 import UIKit
 import os
 
+// MARK: - [Pattern: Facade] Facade (core: lifecycle, auth, sync)
 /// Façade (§9.4): everything the UI ever calls for auth, deck storage, and
 /// sync. Saves go to SwiftData FIRST (FR-44) and are queued; the SyncEngine
 /// pushes them when signed in and online. Without backend keys (or in UI

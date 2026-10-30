@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+// MARK: - [Pattern: Facade] Facade (decks)
 /// Deck and card writes (FR-10–15, FR-44): local save first, then queue the
 /// sync operations. Part of the BackendFacade (§9.4).
 extension BackendFacade {

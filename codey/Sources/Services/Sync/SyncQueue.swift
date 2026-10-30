@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 import os
 
+// MARK: - [Pattern: Facade] Subsystem (operation queue)
 /// The pending-changes queue (FR-45, doc: ISyncQueue), backed by SwiftData.
 /// Coalescing keeps at most one operation per entity:
 ///   - an upsert replaces a pending upsert (only the latest state matters);

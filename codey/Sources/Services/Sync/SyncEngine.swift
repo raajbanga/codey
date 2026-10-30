@@ -3,6 +3,7 @@ import Observation
 import SwiftData
 import os
 
+// MARK: - [Pattern: Facade] Subsystem (sync)
 /// Pushes the queue, pulls remote changes, and syncs the profile (FR-46,
 /// FR-47, NFR-09). One cycle = push (with the conflict check) → pull → profile
 /// → weekly XP.

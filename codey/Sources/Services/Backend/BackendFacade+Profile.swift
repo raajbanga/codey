@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 
+// MARK: - [Pattern: Facade] Facade (profile, feedback)
 /// Profile identity (FR-04), defect reports (FR-49) and the progress-reset
 /// push (D10). Part of the BackendFacade (§9.4).
 extension BackendFacade {

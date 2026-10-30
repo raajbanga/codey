@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - [Pattern: Facade] Client-facing interface
 /// What the deck builder needs from storage. BackendFacade implements it;
 /// DeckViewModel depends only on this protocol.
 @MainActor
