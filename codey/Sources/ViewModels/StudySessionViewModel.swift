@@ -128,6 +128,8 @@ final class StudySessionViewModel {
 
         do {
             try DailyActivity.forDay(timestamp, context: context).cardsRated += 1
+            // A rating can complete the daily goal → streak badge (FR-35).
+            try BadgeEvaluator.award(context: context, now: timestamp)
             if queue.isFinished {
                 finish()
             } else {

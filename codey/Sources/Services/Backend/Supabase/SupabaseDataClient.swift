@@ -98,7 +98,38 @@ struct SupabaseDataClient: RemoteDeckStore {
     }
 }
 
+extension SupabaseDataClient {
+    /// `returning: .minimal`: there's no select policy on feedback_reports,
+    /// so asking for the row back would fail RLS.
+    func submitFeedback(_ report: FeedbackReportPayload) async throws {
+        try await client.from("feedback_reports")
+            .insert(FeedbackReportRow(report), returning: .minimal)
+            .execute()
+    }
+}
+
 // MARK: - Rows (snake_case, matching the migrations)
+
+/// owner_id is left to the column default, auth.uid().
+private struct FeedbackReportRow: Encodable {
+    var id: UUID
+    var description: String
+    var appVersion: String?
+    var osVersion: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, description
+        case appVersion = "app_version"
+        case osVersion = "os_version"
+    }
+
+    init(_ payload: FeedbackReportPayload) {
+        id = payload.id
+        description = payload.description
+        appVersion = payload.appVersion
+        osVersion = payload.osVersion
+    }
+}
 
 private struct DeckRow: Codable {
     static let columns = "id,title,topic_id,created_at,updated_at,deleted_at,server_updated_at"

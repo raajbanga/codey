@@ -275,7 +275,7 @@ HOW TO READ THIS FILE
  Activity 10_2 tech debt: UserProfile.currentStreak is a stored placeholder
  that nothing updates. Home always shows 0.
 
- [ ] Services/Gamification/StreakCalculator.swift, a pure enum. Same
+ [x] Services/Gamification/StreakCalculator.swift, a pure enum. Same
      pattern as LevelCalculator / XPPolicy:
        - isGoalMet(_ day: DailyActivity) -> Bool
          (quizAnswers + cardsRated ≥ GatingConfig.dailyGoal = 20)
@@ -283,24 +283,44 @@ HOW TO READ THIS FILE
          calendar: Calendar) -> Int.
          Today counts only once its goal is met, so the streak doesn't drop
          to 0 at midnight before the user studies. Comments must say why.
- [ ] Remove stored currentStreak (and lastActiveDate if unused) in a NEW
+ [x] Remove stored currentStreak (and lastActiveDate if unused) in a NEW
      schema version, CodeySchemaV7 + migration stage. Never edit a shipped
      version. Bundle the FR-04 avatar field (S3-C) into the same V7.
- [ ] Home LevelCard / profile: streak and today's goal progress (n/20)
+ [x] Home LevelCard / profile: streak and today's goal progress (n/20)
      read from StreakCalculator.
- [ ] Badges (FR-35 + S8): enum Badge { firstDeck, sevenDayStreak,
+ [x] Badges (FR-35 + S8): enum Badge { firstDeck, sevenDayStreak,
      xp1000, weeklyChallenge }.
        - Earned state is derived where possible (deck count, streak, XP).
        - Persist an earnedAt date (a @Model BadgeAward in V7) so a badge
          stays earned after data changes.
        - BadgeEvaluator runs after deck save, quiz answer, and card rating.
- [ ] UI: a badges row in the ProfileSheet. A quiet banner when a badge is
+ [x] UI: a badges row in the ProfileSheet. A quiet banner when a badge is
      earned (no particles, per S9).
- [ ] Tests:
+ [x] Tests:
        - StreakCalculator: gaps, time zones / DST, empty history, today
          with no activity, goal exactly 20.
        - BadgeEvaluator.
        - V6→V7 migration (MigrationTests).
+ STATUS 2026-10-30 (code done, on dev, not committed; doc item open):
+   - StreakCalculator (pure; noon-stepping for DST; unmet today keeps
+     yesterday's streak). GatingConfig.dailyGoal = 20.
+   - CodeySchemaV7 + v6ToV7 lightweight stage: UserProfile drops
+     currentStreak/lastActiveDate, adds avatarId (FR-04, matches
+     profiles.avatar_id); new BadgeAward (@unique badgeRaw, earnedAt).
+   - Badge enum (firstDeck, sevenDayStreak, xp1000, weeklyChallenge) +
+     BadgeEvaluator (pure qualifying(facts) + award(context)). Hooked into
+     card rating, quiz answer, BackendFacade.saveDeck, and a launch
+     catch-up in LoadingView. weeklyChallenge can't be earned until S3-D
+     sets BadgeFacts.weeklyChallengesCompleted.
+   - Home: "Today n/20" (or "Goal met") under the level bar; streak chip
+     is now real. Profile: Badges section (BadgesRow). .badgeBanner() on
+     RootView (inactive under covers), StudySessionView, QuizModeView.
+   - Reset Progress clears BadgeAward too.
+   - Tests: StreakCalculatorTests (9), BadgeEvaluatorTests (5), V6→V7
+     migration; DataSeeder/LocalDataReset tests updated. 293/293 pass.
+   - Checked on iPhone 17 sim: a real V6 store migrated, Home goal line,
+     Profile badges row (all locked).
+
  [ ] Doc: FR-32–35 → Implemented, plus TC rows. Activity 10_2 tech-debt
      write-up (risk/process section).
 
@@ -309,43 +329,56 @@ HOW TO READ THIS FILE
  S3-C — SMALL FRs: FR-04, FR-38, FR-49                       P1 (ES + AB, ~1 day)
 ================================================================================
  FR-04 display name + avatar
- [ ] ProfileSheet: an editable display name.
+ [x] ProfileSheet: an editable display name.
        - Validated 1–30 chars, trimmed, Unicode-scalar count.
        - Goes through ModelValidator, so the limit lives in one place.
- [ ] Avatar picker: a grid of 12 SF Symbols. Stored on UserProfile (V7).
- [ ] Profile sync: profiles table gets display_name (exists?) +
-     avatar_symbol with a CHECK matching the allowed set/length. New
-     migration. Merge rule: last-write-wins by updated_at.
- [ ] The Home greeting uses the display name.
- [ ] Tests: validator limits ±1; sync payload round-trip; SupabaseSchemaTests
+ [x] Avatar picker: a grid of 12 SF Symbols. Stored on UserProfile (V7).
+ [~] Profile sync: profiles.avatar_id already exists; the new migration
+     narrows its CHECK to the 12 symbols. Merge rule kept as the existing
+     one (a queued profile op = local wins, else remote wins), not
+     updated_at LWW. Migration written, NOT applied to the live project.
+ [x] The Home greeting uses the display name.
+ [x] Tests: validator limits ±1; sync payload round-trip; SupabaseSchemaTests
      limits match.
 
  FR-38 weekly study plan
- [ ] StudyPlanBuilder (pure):
+ [x] StudyPlanBuilder (pure):
        - Input: the 3 topics with the lowest FR-36 accuracy (last 50
          answers).
        - Topics with < 5 answers are ranked first as "not started".
        - Ties are broken by topic order.
      Recomputed when the week changes (Monday, local time). Cache the
      week's plan so it doesn't shuffle mid-week.
- [ ] Home: a "This week's plan" section with 3 rows → quiz setup sheet.
+ [x] Home: a "This week's plan" section with 3 rows → quiz setup sheet.
      Must not duplicate the "Up next" card logic (D8 r3); keep one Up-next
      card.
- [ ] Tests: ordering, ties, sparse data, week rollover.
+ [x] Tests: ordering, ties, sparse data, week rollover.
 
  FR-49 UI/UX defect report
- [ ] Migration: feedback_reports(id, owner_id default auth.uid(),
+ [~] Migration: feedback_reports(id, owner_id default auth.uid(),
      description text CHECK 1–1000, app_version, os_version, created_at).
        - RLS: insert own rows only; no select for users.
        - Added to the RLS live check + SupabaseSchemaTests.
- [ ] ProfileSheet → "Report a UI/UX issue" form: text field with a counter,
+     Written, NOT applied; live checks 31–36 not run yet.
+ [x] ProfileSheet → "Report a UI/UX issue" form: text field with a counter,
      Send. Requires sign-in; guests see the sign-in prompt. Sent through
      BackendFacade only. Supabase imports stay in Services/Backend/Supabase
      (check-imports.sh).
- [ ] Offline: queue it as a SyncOperation (entity: feedback), or disable
-     Send with an explanation. Default: queue it.
- [ ] Tests: validator, payload, facade call with a mock.
+ [x] Offline: DECIDED against queueing (changed from the default). A report
+     is a one-off send with no conflict to merge, so a SyncOperation entity
+     isn't worth it. Send fails with an alert and the text is kept to retry.
+ [x] Tests: validator, payload, facade call with a mock.
 
+STATUS 2026-10-30 (client done, on dev, not committed; backend not applied):
+  - New: ProfileAvatar, ProfileEditorView (+ ProfileAvatarView),
+    FeedbackFormView, StudyPlanBuilder/StudyPlan, BackendFacade
+    updateProfile/submitFeedback, SupabaseDataClient.submitFeedback.
+  - Migration 20261030200000_avatar_set_feedback_reports.sql + live checks
+    31–36 are written. Apply with `supabase db push`, then run
+    rls_live_check.sql. Until then Send fails against the live project.
+  - 310 unit tests pass. Lint scripts clean. Checked in the simulator:
+    Home plan section, Edit Profile (avatar saves to the header), the
+    signed-out report form.
 
 ================================================================================
  S3-D — LEADERBOARD GROUPS + WEEKLY CHALLENGE (FR-42–43)   P1 (AB + ES, ~1.5 days)

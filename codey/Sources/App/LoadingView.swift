@@ -111,6 +111,14 @@ struct LoadingView: View {
                 // Starter decks are optional content: log, don't block boot.
                 Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
             }
+            do {
+                // Catches up badges already qualified for (an upgrade from a
+                // build without them), before any banner is watching.
+                try BadgeEvaluator.award(context: bootContainer.mainContext)
+                try bootContainer.mainContext.save()
+            } catch {
+                Logger.seeding.error("Badge catch-up failed: \(String(describing: error))")
+            }
             progress = 1.0
             let elapsed = ContinuousClock.now - started
             if elapsed < minimumDuration {

@@ -2,9 +2,9 @@
 -- through the Supabase MCP (execute_sql) or the SQL editor, without pgTAP.
 --
 -- It ALWAYS ends with an error whose message holds the results, e.g.
---   "RLS TESTS: 0 failed of 30. ok 1 … | ok 30 …"
+--   "RLS TESTS: 0 failed of 36. ok 1 … | ok 36 …"
 -- Raising it rolls back every test user and row, so nothing persists.
--- Last run: 2026-10-08, 0 failed of 30.
+-- Last run: 2026-10-08, 0 failed of 30 (checks 31–36 added 2026-10-30, not yet run).
 
 do $test$
 declare
@@ -102,8 +102,35 @@ begin
     exception when check_violation then results := results || 'ok 18 81-line snippet rejected'::text;
               when others then failed := failed + 1; results := results || ('FAIL 18 ' || sqlstate); end;
 
+    -- S3-C: avatar set (FR-04) and feedback reports (FR-49), as A
+    update public.profiles set avatar_id = 'star.fill' where id = a;
+    get diagnostics n = row_count;
+    if n = 1 then results := results || 'ok 31 listed avatar allowed'::text; else failed := failed + 1; results := results || ('FAIL 31 updated=' || n); end if;
+    begin
+        update public.profiles set avatar_id = 'skull.fill' where id = a;
+        failed := failed + 1; results := results || 'FAIL 32 unlisted avatar accepted'::text;
+    exception when check_violation then results := results || 'ok 32 unlisted avatar rejected'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 32 ' || sqlstate); end;
+    begin
+        insert into public.feedback_reports (description, app_version, os_version) values ('Button overlaps text', '1.0', '26.0');
+        results := results || 'ok 33 A sends a report'::text;
+    exception when others then failed := failed + 1; results := results || ('FAIL 33 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        insert into public.feedback_reports (description) values (repeat('x', 1001));
+        failed := failed + 1; results := results || 'FAIL 34 1001-char report accepted'::text;
+    exception when check_violation then results := results || 'ok 34 report > 1000 rejected'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 34 ' || sqlstate); end;
+    select count(*) into n from public.feedback_reports;
+    if n = 0 then results := results || 'ok 35 reports aren''t readable, even own'::text; else failed := failed + 1; results := results || ('FAIL 35 visible=' || n); end if;
+
     -- As user B
     perform set_config('request.jwt.claims', claims_b, true);
+
+    begin
+        insert into public.feedback_reports (owner_id, description) values (a, 'spoof');
+        failed := failed + 1; results := results || 'FAIL 36 B sent a report as A'::text;
+    exception when insufficient_privilege then results := results || 'ok 36 B can''t send a report as A'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 36 ' || sqlstate || ' ' || sqlerrm); end;
 
     select count(*) into n from public.decks;
     if n = 0 then results := results || 'ok 19 B sees 0 of A''s decks'::text; else failed := failed + 1; results := results || ('FAIL 19 decks=' || n); end if;

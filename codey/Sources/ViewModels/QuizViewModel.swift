@@ -115,6 +115,8 @@ final class QuizViewModel {
 
         do {
             try DailyActivity.forDay(timestamp, context: context).quizAnswers += 1
+            // XP and the daily goal both move here → XP / streak badges (FR-35).
+            try BadgeEvaluator.award(context: context, now: timestamp)
             try context.save()
         } catch {
             // B11: never swallow silently.
