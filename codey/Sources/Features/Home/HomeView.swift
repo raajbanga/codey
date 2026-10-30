@@ -76,7 +76,10 @@ struct HomeView: View {
             }
         }
         .toolbarTitleDisplayMode(.inline)
-        .onAppear(perform: refreshPlan)
+        .onAppear {
+            refreshPlan()
+            LaunchTimer.markHomeReady()
+        }
         .onChange(of: topics.map(\.id)) { refreshPlan() }
     }
 
