@@ -10,6 +10,10 @@ enum ValidationField: Hashable {
     case snippetSource(UUID)
     case snippetLanguage(UUID)
     case deckHasNoCards
+    /// FR-04 profile name.
+    case displayName
+    /// FR-49 UI/UX issue report.
+    case feedback
 }
 
 struct FieldError: Hashable, Error {
@@ -62,6 +66,10 @@ struct ModelValidator {
         static let answer = 1...500
         static let snippetSource = 1...2000
         static let snippetMaxLines = 80
+        /// FR-04; matches profiles.display_name.
+        static let displayName = 1...30
+        /// FR-49; matches feedback_reports.description.
+        static let feedback = 1...1000
     }
 
     /// Raw card input, before the factory turns it into a Flashcard.
@@ -125,6 +133,16 @@ struct ModelValidator {
         return errors
     }
 
+    /// FR-04: the display name is checked like deck text (trimmed scalars).
+    func validateDisplayName(_ name: String) -> ValidationResult {
+        Self.checkLength(name, Limits.displayName, field: .displayName)
+    }
+
+    /// FR-49: an issue report's description.
+    func validateFeedback(_ text: String) -> ValidationResult {
+        Self.checkLength(text, Limits.feedback, field: .feedback)
+    }
+
     /// Length as the limits count it: Unicode scalars after trimming.
     static func measuredLength(_ text: String) -> Int {
         text.trimmingCharacters(in: .whitespacesAndNewlines).unicodeScalars.count
@@ -155,4 +173,10 @@ struct ModelValidator {
         }
         return []
     }
+}
+
+/// So `$actionError.attempt` alerts show "Too long (31/30 characters)."
+/// instead of a generic error.
+extension FieldError: LocalizedError {
+    var errorDescription: String? { message }
 }

@@ -3,7 +3,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(36);
 
 -- Two users. The sign-up trigger should give each a profile.
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -138,6 +138,26 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
 select is((select title from public.decks where id = '10000000-0000-0000-0000-00000000000a'),
           'A deck', 'A''s deck is unchanged after B''s attempts');
+
+-- ── S3-C: avatar set (FR-04) + feedback_reports (FR-49) ──────────────────
+select lives_ok($$
+    update public.profiles set avatar_id = 'bolt.fill' where id = '00000000-0000-0000-0000-00000000000a'
+$$, 'A can pick an avatar from the set');
+select throws_ok($$
+    update public.profiles set avatar_id = 'skull.fill' where id = '00000000-0000-0000-0000-00000000000a'
+$$, '23514', null, 'an avatar outside the set is rejected');
+select lives_ok($$
+    insert into public.feedback_reports (description, app_version, os_version) values ('Button overlaps text', '1.0 (1)', '26.0')
+$$, 'A can send a feedback report (owner_id defaults to auth.uid())');
+select throws_ok($$
+    insert into public.feedback_reports (description) values (repeat('x', 1001))
+$$, '23514', null, 'a report over 1000 characters is rejected');
+select is((select count(*)::int from public.feedback_reports), 0, 'reports can''t be read back, even your own');
+
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+select throws_ok($$
+    insert into public.feedback_reports (owner_id, description) values ('00000000-0000-0000-0000-00000000000a', 'spoof')
+$$, '42501', null, 'B can''t send a report as A');
 
 select * from finish();
 rollback;

@@ -27,6 +27,7 @@ struct ProfileSheet: View {
         NavigationStack {
             List {
                 header
+                Section("Badges") { BadgesRow() }
                 accountSection
                 appearanceSection
                 studySection
@@ -52,7 +53,7 @@ struct ProfileSheet: View {
                 }
             }
         } message: {
-            Text("XP, streak, card mastery, quiz progress, and tier unlocks go back to zero. Your decks stay. This can't be undone.")
+            Text("XP, streak, badges, card mastery, quiz progress, and tier unlocks go back to zero. Your decks stay. This can't be undone.")
         }
         .confirmationDialog("Erase all local data?", isPresented: $confirmErase, titleVisibility: .visible) {
             Button("Erase Everything", role: .destructive) {
@@ -78,28 +79,35 @@ struct ProfileSheet: View {
 
     // MARK: Sections
 
+    /// Tapping the header edits the name and avatar (FR-04).
     private var header: some View {
         Section {
-            HStack(spacing: CodeySpacing.md) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.codeyDisplay)
-                    .imageScale(.large)
-                    .foregroundStyle(CodeyColor.brand)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                    Text(profile?.username ?? UserProfile.defaultUsername)
-                        .font(.codeyTitle)
-                    Text("Level \(LevelCalculator.level(forXP: xp)) · \(xp.formatted()) XP")
-                        .font(.codeySubheadline)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                    Text(accountStatus)
-                        .font(.codeySubheadline)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
+            NavigationLink {
+                ProfileEditorView()
+            } label: {
+                headerLabel
             }
-            .padding(.vertical, CodeySpacing.xs)
-            .accessibilityElement(children: .combine)
+            .accessibilityHint("Edit your name and avatar")
+            .accessibilityIdentifier("profile.edit")
         }
+    }
+
+    private var headerLabel: some View {
+        HStack(spacing: CodeySpacing.md) {
+            ProfileAvatarView(avatarId: profile?.avatarId)
+            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                Text(profile?.username ?? UserProfile.defaultUsername)
+                    .font(.codeyTitle)
+                Text("Level \(LevelCalculator.level(forXP: xp)) · \(xp.formatted()) XP")
+                    .font(.codeySubheadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+                Text(accountStatus)
+                    .font(.codeySubheadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+            }
+        }
+        .padding(.vertical, CodeySpacing.xs)
+        .accessibilityElement(children: .combine)
     }
 
     private var accountStatus: String {
@@ -254,6 +262,12 @@ struct ProfileSheet: View {
     private var aboutSection: some View {
         Section("About") {
             LabeledContent("Version", value: Self.versionString)
+            NavigationLink {
+                FeedbackFormView()
+            } label: {
+                Label("Report a UI/UX Issue", systemImage: "exclamationmark.bubble")
+            }
+            .accessibilityIdentifier("profile.feedback")
             NavigationLink("Acknowledgements") { AcknowledgementsView() }
             #if DEBUG
             Button("Replay Onboarding") {

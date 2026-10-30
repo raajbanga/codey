@@ -29,7 +29,6 @@ struct MigrationTests {
 
         let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
         #expect(profile.totalXP == 730)
-        #expect(profile.currentStreak == 2)
         let question = try #require(try context.fetch(FetchDescriptor<Question>()).first)
         #expect(question.topic?.id == "topic-x")
         #expect(question.difficulty == .medium)
@@ -135,6 +134,41 @@ struct MigrationTests {
         profile.pinnedTopicIds = ["topic-databases"]
         try context.save()
         #expect(try context.fetchCount(FetchDescriptor<QuizAnswerRecord>()) == 1)
+    }
+
+    /// S3-B: a V6 store opens as V7. The profile keeps XP and pins, loses
+    /// the never-updated stored streak, and gets an empty avatar; daily
+    /// activity survives, so the derived streak carries over.
+    @Test func v6StoreMigratesToCurrentWithBadgesAndDerivedStreak() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let today = Date.now
+        let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: today))
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV6.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            context.insert(CodeySchemaV5.UserProfile(
+                username: "Learner", totalXP: 1_500, currentStreak: 9, pinnedTopicIds: ["topic-x"]
+            ))
+            for date in [yesterday, today] {
+                let row = DailyActivity(day: DailyActivity.dayKey(for: date))
+                row.cardsRated = 20
+                context.insert(row)
+            }
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
+        #expect(profile.totalXP == 1_500)
+        #expect(profile.pinnedTopicIds == ["topic-x"])
+        #expect(profile.avatarId == nil)
+        let activity = try context.fetch(FetchDescriptor<DailyActivity>())
+        #expect(StreakCalculator.currentStreak(endingOn: today, activity: activity) == 2)
+
+        #expect(try BadgeEvaluator.award(context: context, now: today) == [.xp1000])
+        try context.save()
+        #expect(try context.fetchCount(FetchDescriptor<BadgeAward>()) == 1)
     }
 
     @Test func decksPersistAcrossReopen() throws {

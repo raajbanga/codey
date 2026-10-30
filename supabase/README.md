@@ -16,8 +16,9 @@ a teammate should be able to reproduce the whole backend from this page.
 | `migrations/20261008022422_sync_log.sql` | append-only push ledger (R2) |
 | `migrations/20261008022429_rls.sql` | Row Level Security on every table + owner-only policies (NFR-07) |
 | `migrations/20261008022702_lock_down_signup_trigger.sql` | revokes API access to the sign-up trigger function (Supabase security lint) |
+| `migrations/20261030200000_avatar_set_feedback_reports.sql` | FR-04 avatar CHECK to the 12-symbol set; FR-49 insert-only `feedback_reports` (**not applied yet**; rename to the remote version after applying) |
 | `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
-| `checks/rls_live_check.sql` | the same 30 checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
+| `checks/rls_live_check.sql` | the same checks (36) for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
 
 Rules: never edit a migration that has been pushed, add a new file instead.
 File versions must equal the remote migration versions (`list_migrations` in

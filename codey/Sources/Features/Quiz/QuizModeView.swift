@@ -38,6 +38,7 @@ struct QuizModeView: View {
         }
         .codeyPaperBackground()
         .overlay(alignment: .top) { levelToast }
+        .badgeBanner()
         .onChange(of: viewModel.hasAnswered) { _, answered in
             guard answered, !reduceMotion else { return }
             withAnimation(CodeyMotion.smooth) { pulsing = true }

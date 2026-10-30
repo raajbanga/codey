@@ -69,6 +69,15 @@ struct ProfilePayload: Equatable, Sendable {
     var totalXP: Int
 }
 
+/// FR-49: one UI/UX issue report. The id is made on the device, so a
+/// retried send can't create a duplicate.
+struct FeedbackReportPayload: Equatable, Sendable {
+    var id: UUID
+    var description: String
+    var appVersion: String?
+    var osVersion: String?
+}
+
 /// One sync_log row (R2 audit ledger).
 struct SyncLogEntry: Equatable, Sendable {
     var entity: SyncEntity
@@ -91,6 +100,8 @@ protocol RemoteDeckStore: Sendable {
     func fetchProfile() async throws -> ProfilePayload?
     func upsertProfile(_ profile: ProfilePayload) async throws
     func appendSyncLog(_ entries: [SyncLogEntry]) async throws
+    /// FR-49: insert-only; users can't read reports back (RLS).
+    func submitFeedback(_ report: FeedbackReportPayload) async throws
 }
 
 /// Network reachability (NWPathMonitor in the app).

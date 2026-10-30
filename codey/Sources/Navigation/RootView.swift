@@ -24,6 +24,8 @@ struct RootView: View {
         .tabBarMinimizeBehavior(.onScrollDown)
         // Ink blue for the selected tab instead of the system blue.
         .tint(CodeyColor.brand)
+        // Study and Quiz covers show their own banner (FR-35).
+        .badgeBanner(isActive: router.study == nil && router.quiz == nil)
         .fullScreenCover(item: $router.study) { request in
             StudySessionView(request: request, context: modelContext)
         }

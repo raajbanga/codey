@@ -28,7 +28,7 @@ struct DataSeederTests {
         #expect(profiles.count == 1)
         #expect(profiles.first?.username == "Codey Learner")
         #expect(profiles.first?.totalXP == 0)
-        #expect(profiles.first?.currentStreak == 0)
+        #expect(profiles.first?.avatarId == nil)
     }
 
     @Test func reseedingIsIdempotent() throws {
@@ -52,7 +52,7 @@ struct DataSeederTests {
 
         let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
         profile.totalXP = 730
-        profile.currentStreak = 4
+        profile.avatarId = "star.fill"
         try TestSupport.insertDeck(context, prompts: ["a", "b"])
         try context.save()
 
@@ -71,7 +71,7 @@ struct DataSeederTests {
         let profiles = try context.fetch(FetchDescriptor<UserProfile>())
         #expect(profiles.count == 1)
         #expect(profiles.first?.totalXP == 730)
-        #expect(profiles.first?.currentStreak == 4)
+        #expect(profiles.first?.avatarId == "star.fill")
         #expect(try context.fetchCount(FetchDescriptor<FlashcardDeck>()) == 1)
         #expect(try context.fetchCount(FetchDescriptor<Flashcard>()) == 2)
     }
@@ -146,7 +146,7 @@ struct DataSeederTests {
 
     @Test func ensureProfileNeverReplacesExisting() throws {
         let context = try TestSupport.inMemoryContext()
-        context.insert(UserProfile(username: "Raaj", totalXP: 1250, currentStreak: 7))
+        context.insert(UserProfile(username: "Raaj", totalXP: 1250))
         try context.save()
 
         let profile = DataSeeder.ensureProfile(context: context)
@@ -165,8 +165,7 @@ struct LocalDataResetTests {
         try DataSeeder.seed(context: context, bank: QuestionBankLoader.loadBank())
         let profile = DataSeeder.ensureProfile(context: context)
         profile.totalXP = 900
-        profile.currentStreak = 3
-        profile.lastActiveDate = .now
+        context.insert(BadgeAward(badge: .xp1000, earnedAt: .now))
         let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
         deck.activeCards.forEach { $0.updateMastery(rating: .easy) }
         try context.save()
@@ -181,8 +180,7 @@ struct LocalDataResetTests {
         try LocalDataReset.resetProgress(context: context)
 
         #expect(profile.totalXP == 0)
-        #expect(profile.currentStreak == 0)
-        #expect(profile.lastActiveDate == nil)
+        #expect(try context.fetchCount(FetchDescriptor<BadgeAward>()) == 0)
         #expect(deck.activeCards.count == 2)
         #expect(deck.activeCards.allSatisfy { $0.masteryScore == 0 && $0.lastReviewedAt == nil })
         #expect(try context.fetchCount(FetchDescriptor<StudyProgressSnapshot>()) == 0)

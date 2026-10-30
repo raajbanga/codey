@@ -63,3 +63,34 @@ extension CodeySchemaV5 {
         }
     }
 }
+
+extension CodeySchemaV7 {
+    /// V7 (Sprint 3) drops the stored `currentStreak` / `lastActiveDate`:
+    /// nothing ever updated them (Activity 10_2 tech debt), and the streak
+    /// is now derived from DailyActivity by StreakCalculator. Adds the
+    /// FR-04 avatar (an SF Symbol name; matches profiles.avatar_id).
+    @Model
+    final class UserProfile {
+        var id: UUID
+        var username: String
+        var totalXP: Int
+        /// Topic ids pinned in onboarding / the profile sheet, in pick order.
+        var pinnedTopicIds: [String] = []
+        /// FR-04: one of the allowed SF Symbol names, or nil for the default.
+        var avatarId: String?
+
+        init(
+            id: UUID = UUID(),
+            username: String,
+            totalXP: Int = 0,
+            pinnedTopicIds: [String] = [],
+            avatarId: String? = nil
+        ) {
+            self.id = id
+            self.username = username
+            self.totalXP = totalXP
+            self.pinnedTopicIds = pinnedTopicIds
+            self.avatarId = avatarId
+        }
+    }
+}
