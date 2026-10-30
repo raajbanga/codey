@@ -9,9 +9,12 @@ struct StudyQueueTests {
         var queue = StudyQueue(cardIDs: [a, b])
         #expect(queue.current == a)
         #expect(queue.displayPosition == 1)
+        #expect(queue.progress == 0.5)
         queue.record(.good)
         #expect(queue.current == b)
-        #expect(queue.progress == 0.5)
+        // Last card: "2 / 2" and a full bar agree.
+        #expect(queue.displayPosition == 2)
+        #expect(queue.progress == 1)
         queue.record(.easy)
         #expect(queue.isFinished)
         #expect(queue.current == nil)

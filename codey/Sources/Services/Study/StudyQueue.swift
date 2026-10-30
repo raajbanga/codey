@@ -20,7 +20,9 @@ struct StudyQueue: Equatable {
     var total: Int { cardIDs.count }
     /// 1-based index of the card on screen, for "3 / 12".
     var displayPosition: Int { min(position + 1, total) }
-    var progress: Double { total == 0 ? 1 : Double(position) / Double(total) }
+    /// Fill for the bar beside "3 / 12": matches the counter, so the last
+    /// card shows a full bar instead of "12 / 12" next to 11/12 filled.
+    var progress: Double { total == 0 ? 1 : Double(displayPosition) / Double(total) }
 
     /// Records a rating for the current card and moves on.
     mutating func record(_ rating: CardRating) {
