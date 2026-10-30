@@ -45,7 +45,8 @@ struct BadgeFacts: Equatable {
     var userDeckCount = 0
     var streak = 0
     var totalXP = 0
-    /// Set by the weekly challenge (S3-D); 0 until then.
+    /// 1 when this week's challenge (FR-43) is complete. The badge is kept
+    /// once earned, so past weeks don't need counting.
     var weeklyChallengesCompleted = 0
 }
 
@@ -84,10 +85,16 @@ enum BadgeEvaluator {
         ))
         let activity = try context.fetch(FetchDescriptor<DailyActivity>())
         let profile: UserProfile? = try context.first()
+        let challenge = WeeklyChallenge.status(
+            now: now,
+            topicIDs: try context.fetch(FetchDescriptor<Topic>()).map(\.id),
+            records: try context.fetch(FetchDescriptor<QuizAnswerRecord>())
+        )
         return BadgeFacts(
             userDeckCount: userDecks,
             streak: StreakCalculator.currentStreak(endingOn: now, activity: activity, calendar: calendar),
-            totalXP: profile?.totalXP ?? 0
+            totalXP: profile?.totalXP ?? 0,
+            weeklyChallengesCompleted: challenge?.isComplete == true ? 1 : 0
         )
     }
 }

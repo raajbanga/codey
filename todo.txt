@@ -333,10 +333,10 @@ HOW TO READ THIS FILE
        - Validated 1–30 chars, trimmed, Unicode-scalar count.
        - Goes through ModelValidator, so the limit lives in one place.
  [x] Avatar picker: a grid of 12 SF Symbols. Stored on UserProfile (V7).
- [~] Profile sync: profiles.avatar_id already exists; the new migration
+ [x] Profile sync: profiles.avatar_id already exists; the new migration
      narrows its CHECK to the 12 symbols. Merge rule kept as the existing
      one (a queued profile op = local wins, else remote wins), not
-     updated_at LWW. Migration written, NOT applied to the live project.
+     updated_at LWW. Applied 2026-10-30 (20261030200232).
  [x] The Home greeting uses the display name.
  [x] Tests: validator limits ±1; sync payload round-trip; SupabaseSchemaTests
      limits match.
@@ -355,11 +355,11 @@ HOW TO READ THIS FILE
  [x] Tests: ordering, ties, sparse data, week rollover.
 
  FR-49 UI/UX defect report
- [~] Migration: feedback_reports(id, owner_id default auth.uid(),
+ [x] Migration: feedback_reports(id, owner_id default auth.uid(),
      description text CHECK 1–1000, app_version, os_version, created_at).
        - RLS: insert own rows only; no select for users.
        - Added to the RLS live check + SupabaseSchemaTests.
-     Written, NOT applied; live checks 31–36 not run yet.
+     Applied 2026-10-30 (20261030200232); live checks 31–36 pass.
  [x] ProfileSheet → "Report a UI/UX issue" form: text field with a counter,
      Send. Requires sign-in; guests see the sign-in prompt. Sent through
      BackendFacade only. Supabase imports stay in Services/Backend/Supabase
@@ -369,11 +369,11 @@ HOW TO READ THIS FILE
      isn't worth it. Send fails with an alert and the text is kept to retry.
  [x] Tests: validator, payload, facade call with a mock.
 
-STATUS 2026-10-30 (client done, on dev, not committed; backend not applied):
+STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live checks pass):
   - New: ProfileAvatar, ProfileEditorView (+ ProfileAvatarView),
     FeedbackFormView, StudyPlanBuilder/StudyPlan, BackendFacade
     updateProfile/submitFeedback, SupabaseDataClient.submitFeedback.
-  - Migration 20261030200000_avatar_set_feedback_reports.sql + live checks
+  - Migration 20261030200232_avatar_set_feedback_reports.sql + live checks
     31–36 are written. Apply with `supabase db push`, then run
     rls_live_check.sql. Until then Send fails against the live project.
   - 310 unit tests pass. Lint scripts clean. Checked in the simulator:
@@ -395,7 +395,8 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend not applied):
    FR-53  weekly challenge progress shows on Home (n/15).
 
  Backend (AB)
- [ ] Migrations (new files; never edit applied ones):
+ [x] Migrations (new files; never edit applied ones): APPLIED 2026-10-30
+     (20261030200303_groups_leaderboard.sql):
        - groups(id, name CHECK 1–40, invite_code unique CHECK
          ^[A-Z0-9]{6}$, created_by default auth.uid(), created_at)
        - group_members(group_id, user_id default auth.uid(), joined_at,
@@ -411,25 +412,35 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend not applied):
        - Leaderboard view/RPC: members' weekly_xp for the current
          week_start, joined to profiles(display_name, avatar), visible
          only to members.
- [ ] RLS on all new tables (metric stays 100%):
+ [x] RLS on all new tables (metric stays 100%): live checks 37–48 pass
+     (0 failed of 48, 2026-10-30). pgTAP 37–48 written (no local CLI to run).
        - groups / group_members: select only if you are a member.
        - weekly_xp: select if you share a group with the owner; insert/
          update only your own row.
        - Extend rls_live_check.sql with cross-group checks: a non-member
          sees 0 rows.
- [ ] Run the Security Advisor after the migrations; resolve any warnings.
- [ ] SupabaseDataClient: createGroup, joinGroup(code), leaveGroup,
+ [x] Run the Security Advisor after the migrations; resolve any warnings.
+     Run 2026-10-30. Fixed in 20261030200802_s3_advisor_fixes.sql (applied):
+     rls_auto_enable() (dashboard event trigger) no longer callable via RPC,
+     index on groups.created_by, one profiles SELECT policy. Remaining:
+     join_group (lint 0029) is intended and documented above; "unused
+     index" INFO notes only reflect no traffic yet. Live checks re-run
+     after the fix: 0 failed of 48.
+ [x] SupabaseDataClient: createGroup, joinGroup(code), leaveGroup,
      fetchLeaderboard(groupId), upsertWeeklyXP.
        - Exposed only through BackendFacade.
-       - The weekly XP upsert rides the sync queue (entity: weeklyXP),
-         coalesced.
+       - CHANGED: weekly XP is NOT a queue entity. Like total_xp, SyncEngine
+         pushes the latest value each cycle when it changed, and the
+         server keeps the max (trigger). No sync_log entity change needed.
 
  Client (ES)
- [ ] Weekly XP: track XP earned since Monday 00:00 UTC. Derive it from
+ [x] Weekly XP: track XP earned since Monday 00:00 UTC. Derive it from
      QuizAnswerRecord + XPPolicy, or a small local accumulator reset on
-     week change. Enqueue it on every XP award.
- [ ] Leaderboard UI: where it lives is decided at S3-A. Default: a
+     week change. → WeeklyXPStore (UserDefaults accumulator, capped at
+     22,500). Reset progress / erase clear it locally.
+ [x] Leaderboard UI: where it lives is decided at S3-A. Default: a
      "Leaderboard" section in the Quiz tab, or Home → "Groups" row → list.
+     → Home "Challenge and groups" note → Groups (GroupsView, GroupBoardView).
        - Group list.
        - Create sheet (name → shows the code + ShareLink).
        - Join sheet (6-char code field, uppercase, validated).
@@ -437,13 +448,13 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend not applied):
        - Leave group.
        - Signed-out state → sign-in prompt.
        - Offline state → last-fetched board with a "as of" time.
- [ ] WeeklyChallenge (pure):
+ [x] WeeklyChallenge (pure):
        - topic(for week:) = topics[isoWeek % count].
        - progress = correct answers in that topic since week start
          (UTC Monday).
        - Home row "This week: 7/15 correct in Networking". Completion →
          Badge.weeklyChallenge (S3-B).
- [ ] Tests:
+ [x] Tests:
        - Week-start math (UTC Monday, year boundary).
        - Challenge topic rotation.
        - Invite-code validation.
@@ -453,6 +464,20 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend not applied):
  [ ] Doc: use cases (Create Group, Join Group, View Leaderboard, Track
      Weekly Challenge), traceability rows, component + deployment diagram
      updates, DFD gets the new flows, risk R13 (Q3).
+
+STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live checks pass):
+  - Backend: groups / group_members / weekly_xp, join_group(code) RPC,
+    group_leaderboard view (security_invoker), helpers in a `private`
+    schema (not exposed by PostgREST). Invite codes come from a trigger
+    (32-letter alphabet, no 0/O/1/I). Profiles gain a "read group mates"
+    policy so the board can show names/avatars.
+  - Client: UTCWeek, WeeklyChallenge, WeeklyXPStore, LeaderboardRanking,
+    GroupCache (offline board + "as of"), facade group calls, Groups UI,
+    Home challenge row. weeklyChallenge badge is now earnable.
+  - 327 unit tests pass (17 new). Simulator: Home challenge row and the
+    signed-out Groups screen checked. Signed-in create/join/board can only
+    be checked after both 20261030* migrations are applied.
+  - Not done: Security Advisor run (needs the live project), doc item.
 
 
 ================================================================================

@@ -112,13 +112,18 @@ private struct AvatarChoice: View {
 /// default person glyph.
 struct ProfileAvatarView: View {
     let avatarId: String?
-    @ScaledMetric(relativeTo: .largeTitle) private var size: CGFloat = 56
+    @ScaledMetric private var size: CGFloat
+
+    init(avatarId: String?, size: CGFloat = 56) {
+        self.avatarId = avatarId
+        _size = ScaledMetric(wrappedValue: size, relativeTo: .largeTitle)
+    }
 
     var body: some View {
         Group {
             if avatarId != nil {
                 Image(systemName: ProfileAvatar.symbol(for: avatarId))
-                    .font(.codeyTitle)
+                    .font(size < 48 ? .codeyHeadline : .codeyTitle)
                     .frame(width: size, height: size)
                     .background(CodeyColor.brandSoft, in: Circle())
             } else {
