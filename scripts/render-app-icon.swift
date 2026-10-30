@@ -1,8 +1,8 @@
 import SwiftUI
 import AppKit
 
-// Mirrors AppGlyph: "chevron.left.forwardslash.chevron.right", bold rounded,
-// 42% of the tile. The system masks the corners, so tiles are full-bleed.
+// Mirrors AppGlyph: "chevron.left.forwardslash.chevron.right", semibold SF
+// Pro, 40% of the tile (Sprint 3 "pastel ink" facelift, S9). The system masks the corners, so tiles are full-bleed.
 struct Icon: View {
     let background: Color
     let glyph: Color
@@ -10,7 +10,7 @@ struct Icon: View {
         ZStack {
             background
             Image(systemName: "chevron.left.forwardslash.chevron.right")
-                .font(.system(size: 1024 * 0.42, weight: .bold, design: .rounded))
+                .font(.system(size: 1024 * 0.40, weight: .semibold))
                 .foregroundStyle(glyph)
         }
         .frame(width: 1024, height: 1024)
@@ -36,10 +36,10 @@ func hex(_ v: UInt32) -> Color {
 
 let out = CommandLine.arguments[1]
 MainActor.assumeIsolated {
-    // Light: the loading-screen tile (BrandFill light #4F4FE8, white glyph).
-    write(Icon(background: hex(0x4F4FE8), glyph: .white), out + "/icon-1024.png")
-    // Dark: near-black indigo tile, glyph in the dark-mode brand (D13 #8C8CFF).
-    write(Icon(background: hex(0x14142B), glyph: hex(0x8C8CFF)), out + "/icon-1024-dark.png")
+    // Light: the loading-screen tile (BrandFill #CFDCEB, OnBrandFill ink glyph #1F3350).
+    write(Icon(background: hex(0xCFDCEB), glyph: hex(0x1F3350)), out + "/icon-1024.png")
+    // Dark: the dark paper surface (#141518), glyph in the dark-mode brand ink (#A9C0DD).
+    write(Icon(background: hex(0x141518), glyph: hex(0xA9C0DD)), out + "/icon-1024-dark.png")
     // Tinted: grayscale; iOS tints by luminance, so a white glyph on black.
     write(Icon(background: .black, glyph: .white), out + "/icon-1024-tinted.png")
 }

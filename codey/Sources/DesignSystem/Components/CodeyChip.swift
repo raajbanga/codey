@@ -19,6 +19,20 @@ enum CodeyChipVariant: Equatable {
         case .danger: CodeyColor.danger
         }
     }
+
+    /// The pastel fill behind `color` (a pair scripts/palette checks).
+    var softColor: Color {
+        switch self {
+        case .neutral: CodeyColor.fillNeutral
+        case .brand: CodeyColor.brandSoft
+        case .tier(.easy): CodeyColor.Soft.easy
+        case .tier(.medium): CodeyColor.Soft.medium
+        case .tier(.hard): CodeyColor.Soft.hard
+        case .success: CodeyColor.Soft.success
+        case .warning: CodeyColor.Soft.warning
+        case .danger: CodeyColor.Soft.danger
+        }
+    }
 }
 
 /// Single-line pill for status, tier, and counts. Capsule is allowed here
@@ -27,8 +41,6 @@ struct CodeyChip: View {
     let title: String
     var systemImage: String?
     var variant: CodeyChipVariant = .neutral
-
-    @Environment(\.colorScheme) private var colorScheme
 
     init(_ title: String, systemImage: String? = nil, variant: CodeyChipVariant = .neutral) {
         self.title = title
@@ -51,21 +63,13 @@ struct CodeyChip: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
-        .font(.codeyCaption.weight(.semibold))
+        .font(.codeyCaption.weight(.medium))
         .foregroundStyle(variant.color)
         .padding(.horizontal, CodeySpacing.sm + CodeySpacing.xxs)
         .padding(.vertical, CodeySpacing.xs)
-        .background(background, in: Capsule())
+        .background(variant.softColor, in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
-    }
-
-    private var background: Color {
-        switch variant {
-        case .neutral: CodeyColor.fillNeutral
-        case .brand: CodeyColor.brandSoft
-        default: CodeyColor.softFill(variant.color, for: colorScheme)
-        }
     }
 
     private var accessibilityText: String {

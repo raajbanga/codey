@@ -52,8 +52,10 @@ struct DeckDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .codeyListBackground()
         .navigationTitle(deck.title)
-        .navigationBarTitleDisplayMode(.large)
+        // Inline: deck names are long and a large title truncates them.
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if deck.isEditable {
                 ToolbarItem(placement: .primaryAction) {
@@ -128,8 +130,9 @@ private struct CardRow: View {
                 Divider()
                 CardMarkdownView(markdown: card.answer)
             } else {
-                Text(card.prompt)
+                Text(CardMarkdownView.inlinePreview(card.prompt))
                     .font(.codeyBody)
+                    .foregroundStyle(CodeyColor.textPrimary)
                     .lineLimit(3)
             }
         }

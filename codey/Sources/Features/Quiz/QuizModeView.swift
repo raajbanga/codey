@@ -36,11 +36,11 @@ struct QuizModeView: View {
                 questionView(question)
             }
         }
-        .background(CodeyColor.surface.ignoresSafeArea())
+        .codeyPaperBackground()
         .overlay(alignment: .top) { levelToast }
         .onChange(of: viewModel.hasAnswered) { _, answered in
             guard answered, !reduceMotion else { return }
-            withAnimation(CodeyMotion.bouncy) { pulsing = true }
+            withAnimation(CodeyMotion.smooth) { pulsing = true }
             Task {
                 try? await Task.sleep(for: .milliseconds(250))
                 withAnimation(CodeyMotion.smooth) { pulsing = false }
@@ -68,7 +68,7 @@ struct QuizModeView: View {
                         .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
                 }
                 if !viewModel.isPractice {
-                    XPGainLabel(total: viewModel.profileXP, lastGain: viewModel.feedback?.gain)
+                    XPGainLabel(total: viewModel.profileXP)
                 }
             } else {
                 Spacer()
@@ -96,10 +96,10 @@ struct QuizModeView: View {
                             }
                             Spacer(minLength: 0)
                             Text("\(viewModel.index + 1) of \(viewModel.questions.count)")
-                                .font(.codeyCaption)
+                                .font(.codeySubheadline)
                                 .foregroundStyle(CodeyColor.textSecondary)
                         }
-                        CardMarkdownView(markdown: question.prompt)
+                        CardMarkdownView(markdown: question.prompt, font: .codeyCardText)
                     }
                 }
 
@@ -131,7 +131,7 @@ struct QuizModeView: View {
                 CodeyButton(
                     viewModel.isLastQuestion ? "See Results" : "Next",
                     systemImage: viewModel.isLastQuestion ? "flag.checkered" : "arrow.right",
-                    kind: .glassPrimary,
+                    kind: .primary,
                     fullWidth: true
                 ) {
                     withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.next() }
@@ -164,12 +164,12 @@ struct QuizModeView: View {
                 }
                 if let breakdown = feedback.gain?.breakdown {
                     Text(breakdown)
-                        .font(.codeyCaption)
+                        .font(.codeySubheadline)
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
                 if feedback.retiredQuestion {
                     CodeyChip("Retired", systemImage: "checkmark.seal.fill", variant: .success)
-                        .symbolEffect(.bounce, value: feedback.retiredQuestion)
+                        .contentTransition(.symbolEffect(.replace))
                 }
                 CardMarkdownView(markdown: question.explanation)
             }
@@ -203,8 +203,7 @@ struct QuizModeView: View {
                 .foregroundStyle(CodeyColor.brand)
                 .padding(.horizontal, CodeySpacing.lg)
                 .padding(.vertical, CodeySpacing.sm)
-                .glassEffect(.regular, in: .capsule)
-                .symbolEffect(.bounce, value: toastLevel)
+                .codeyFloatingSurface()
                 .padding(.top, CodeySpacing.xxl)
                 .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
                 .accessibilityAddTraits(.isStaticText)
@@ -212,7 +211,7 @@ struct QuizModeView: View {
     }
 
     private func showToast(_ level: Int) {
-        withCodeyAnimation(CodeyMotion.bouncy, reduceMotion: reduceMotion) { toastLevel = level }
+        withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) { toastLevel = level }
         UIAccessibility.post(notification: .announcement, argument: "Level \(level)!")
         Task {
             try? await Task.sleep(for: .seconds(2))

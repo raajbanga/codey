@@ -38,7 +38,7 @@ struct QuizTopicsView: View {
                 .padding(CodeySpacing.md)
             }
         }
-        .background(CodeyColor.surface)
+        .codeyPaperBackground()
         .navigationTitle("Quiz")
     }
 

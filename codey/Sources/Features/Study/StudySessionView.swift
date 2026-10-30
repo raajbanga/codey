@@ -52,7 +52,7 @@ struct StudySessionView: View {
         }
         .padding(.horizontal, CodeySpacing.md)
         .padding(.bottom, CodeySpacing.sm)
-        .background(CodeyColor.surface.ignoresSafeArea())
+        .codeyPaperBackground()
         .background { keyboardShortcuts }
         .sensoryFeedback(trigger: feedbackEvent) { _, new in new?.rating.feedback }
     }
@@ -134,7 +134,7 @@ struct StudySessionView: View {
             .onChanged { drag = $0.translation }
             .onEnded { value in
                 guard let rating = CardRating.forSwipe(value.translation, threshold: Self.swipeThreshold) else {
-                    withCodeyAnimation(CodeyMotion.bouncy, reduceMotion: reduceMotion) { drag = .zero }
+                    withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) { drag = .zero }
                     return
                 }
                 commit(rating, fromSwipe: value.translation)
@@ -151,7 +151,7 @@ struct StudySessionView: View {
                     .transition(.opacity)
             } else {
                 Text("Tap the card to see the answer")
-                    .font(.codeyCaption)
+                    .font(.codeyCallout)
                     .foregroundStyle(CodeyColor.textSecondary)
                     .transition(.opacity)
             }
@@ -193,7 +193,7 @@ struct StudySessionView: View {
         let willMaster = !card.isMastered && rating.applied(to: card.masteryScore) >= Flashcard.maxMastery
         Task { @MainActor in
             if willMaster {
-                withCodeyAnimation(CodeyMotion.bouncy, reduceMotion: reduceMotion) {
+                withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) {
                     drag = .zero
                     masteredBadge = viewModel.deck.origin == .starter ? .masteredAndRetired : .mastered
                 }
@@ -231,7 +231,7 @@ private struct SwipeHint: View {
                 GridRow { item(.hard); item(.easy) }
             }
         }
-        .font(.codeyCaption.weight(.semibold))
+        .font(.codeyCallout.weight(.semibold))
     }
 
     private var items: some View {

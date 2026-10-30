@@ -2,30 +2,33 @@ import SwiftUI
 
 /// Color tokens. Views use these, never raw Color(...) or hex.
 ///
-/// Brand, status, tier, and syntax colors live in Assets.xcassets/Colors with
-/// light and dark variants; every text/background pair is checked at ≥ 4.5:1
-/// by scripts/palette/palette.py (table in codey/DESIGN_SYSTEM.md).
-/// Surfaces, separators, and text use iOS semantic colors so they track
-/// Increase Contrast and the grouped/inset hierarchy for free.
+/// Sprint 3 facelift (S9, "pastel ink"): every color lives in
+/// Assets.xcassets/Colors with light, dark, and (for the neutrals) Increase
+/// Contrast variants, generated from scripts/palette/palette.py, which checks
+/// every text/background pair at ≥ 4.5:1 (table in codey/DESIGN_SYSTEM.md).
+/// Neutrals are custom rather than iOS semantic colors so the paper tone
+/// stays warm.
 enum CodeyColor {
-    // Brand (D13). `brand` is for text, icons, and tint. `brandFill` sits
-    // behind white labels; in dark mode no single indigo passes both.
+    // Brand. `brand` is ink for text, icons, and tint. `brandFill` is the
+    // pastel button fill; its label is `onBrandFill`, never white.
     static let brand = Color("Brand")
     static let brandFill = Color("BrandFill")
-    /// ~12–16% brand tint for chips and inline-code fills.
+    static let onBrandFill = Color("OnBrandFill")
+    /// Pastel brand tint behind brand text (chips, icon tiles, inline code).
     static let brandSoft = Color("BrandSoft")
 
     // Surfaces
-    static let surface = Color(uiColor: .systemGroupedBackground)
-    static let surfaceRaised = Color(uiColor: .secondarySystemGroupedBackground)
-    static let separator = Color(uiColor: .separator)
+    static let surface = Color("Surface")
+    static let surfaceRaised = Color("SurfaceRaised")
+    static let separator = Color("Separator")
     /// Neutral fill for chips and idle controls.
-    static let fillNeutral = Color(uiColor: .tertiarySystemFill)
+    static let fillNeutral = Color("FillNeutral")
+    /// The faint dot grid on the paper background. Decoration, never text.
+    static let paperDot = Color("PaperDot")
 
     // Text
-    static let textPrimary = Color(uiColor: .label)
-    static let textSecondary = Color(uiColor: .secondaryLabel)
-    static let textOnFill = Color.white
+    static let textPrimary = Color("TextPrimary")
+    static let textSecondary = Color("TextSecondary")
 
     // Status
     static let success = Color("Success")
@@ -38,13 +41,18 @@ enum CodeyColor {
         static let hard = Color("TierHard")
     }
 
+    /// Pastel fills behind a status/tier color's own text. Paired by name
+    /// (Success → SuccessSoft) so palette.py can check each pair.
+    enum Soft {
+        static let success = Color("SuccessSoft")
+        static let warning = Color("WarningSoft")
+        static let danger = Color("DangerSoft")
+        static let easy = Color("TierEasySoft")
+        static let medium = Color("TierMediumSoft")
+        static let hard = Color("TierHardSoft")
+    }
+
     /// Code-block background, shared by Textual (display) and Runestone
     /// (editor). Syntax colors are SyntaxRole.color.
     static let codeBackground = Color("CodeBackground")
-
-    /// Tinted background for a status/tier color behind its own text: 12% in
-    /// light, 16% in dark (the opacities scripts/palette checks at 4.5:1).
-    static func softFill(_ color: Color, for scheme: ColorScheme) -> Color {
-        color.opacity(scheme == .dark ? 0.16 : 0.12)
-    }
 }

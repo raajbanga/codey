@@ -6,6 +6,7 @@ struct CodeyApp: App {
 
     init() {
         AppAppearance.migrateLegacyPreference()
+        CodeyNavigationTitles.apply()
     }
 
     var body: some Scene {
