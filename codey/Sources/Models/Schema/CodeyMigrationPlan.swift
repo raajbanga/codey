@@ -6,11 +6,11 @@ import SwiftData
 enum CodeyMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [CodeySchemaV1.self, CodeySchemaV2.self, CodeySchemaV3.self, CodeySchemaV4.self, CodeySchemaV5.self,
-         CodeySchemaV6.self]
+         CodeySchemaV6.self, CodeySchemaV7.self]
     }
 
     static var stages: [MigrationStage] {
-        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6]
+        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7]
     }
 
     /// Additive only (new deck/card entities), so lightweight is enough.
@@ -42,12 +42,20 @@ enum CodeyMigrationPlan: SchemaMigrationPlan {
         fromVersion: CodeySchemaV5.self,
         toVersion: CodeySchemaV6.self
     )
+
+    /// UserProfile drops two never-updated columns (currentStreak,
+    /// lastActiveDate) and gains an optional avatar; BadgeAward is new.
+    /// Removing columns and adding optional ones is lightweight.
+    static let v6ToV7 = MigrationStage.lightweight(
+        fromVersion: CodeySchemaV6.self,
+        toVersion: CodeySchemaV7.self
+    )
 }
 
-typealias CodeySchemaCurrent = CodeySchemaV6
+typealias CodeySchemaCurrent = CodeySchemaV7
 
 // The rest of the app always uses these names, never the versioned ones.
-typealias UserProfile = CodeySchemaV5.UserProfile
+typealias UserProfile = CodeySchemaV7.UserProfile
 typealias Topic = CodeySchemaV1.Topic
 typealias Question = CodeySchemaV1.Question
 typealias FlashcardDeck = CodeySchemaV2.FlashcardDeck
@@ -58,3 +66,4 @@ typealias QuestionProgress = CodeySchemaV4.QuestionProgress
 typealias TopicProgress = CodeySchemaV4.TopicProgress
 typealias QuizAnswerRecord = CodeySchemaV4.QuizAnswerRecord
 typealias SyncOperation = CodeySchemaV6.SyncOperation
+typealias BadgeAward = CodeySchemaV7.BadgeAward

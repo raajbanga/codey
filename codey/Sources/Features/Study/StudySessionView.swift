@@ -54,6 +54,7 @@ struct StudySessionView: View {
         .padding(.bottom, CodeySpacing.sm)
         .codeyPaperBackground()
         .background { keyboardShortcuts }
+        .badgeBanner()
         .sensoryFeedback(trigger: feedbackEvent) { _, new in new?.rating.feedback }
     }
 

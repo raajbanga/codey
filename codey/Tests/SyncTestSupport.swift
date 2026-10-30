@@ -88,6 +88,13 @@ final class MockRemoteStore: RemoteDeckStore {
         log += entries
     }
 
+    private(set) var feedback: [FeedbackReportPayload] = []
+
+    func submitFeedback(_ report: FeedbackReportPayload) async throws {
+        try record("submitFeedback")
+        feedback.append(report)
+    }
+
     // MARK: "Another device" writes
 
     func otherDeviceUpsert(deck: DeckPayload) {

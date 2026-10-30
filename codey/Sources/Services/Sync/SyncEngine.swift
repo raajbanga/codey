@@ -266,8 +266,9 @@ final class SyncEngine {
 
     /// total_xp = max(local, remote): XP only goes up, except an explicit
     /// "Reset progress" (a queued profile operation), which writes local as-is.
-    /// display_name: last write wins; the app has no local name editor yet, so
-    /// the remote name wins unless a profile operation is queued.
+    /// display_name and avatar_id (FR-04): last write wins. A local edit
+    /// queues a profile operation, so a queued operation means local is
+    /// newer; otherwise the remote values win.
     private func syncProfile(remote: any RemoteDeckStore, userID: UUID) async throws {
         guard let remoteProfile = try await remote.fetchProfile() else { return }
         let profile = DataSeeder.ensureProfile(context: context)
@@ -276,12 +277,14 @@ final class SyncEngine {
 
         let xp = explicit ? profile.totalXP : max(profile.totalXP, remoteProfile.totalXP)
         let name = explicit ? profile.username : remoteProfile.displayName
+        let avatar = explicit ? profile.avatarId : remoteProfile.avatarId
         profile.totalXP = xp
         profile.username = name
+        profile.avatarId = avatar
         try context.save()
 
-        if remoteProfile.totalXP != xp || remoteProfile.displayName != name {
-            try await remote.upsertProfile(ProfilePayload(displayName: name, avatarId: remoteProfile.avatarId, totalXP: xp))
+        if remoteProfile.totalXP != xp || remoteProfile.displayName != name || remoteProfile.avatarId != avatar {
+            try await remote.upsertProfile(ProfilePayload(displayName: name, avatarId: avatar, totalXP: xp))
         }
         try queue.markDone(operations)
     }
