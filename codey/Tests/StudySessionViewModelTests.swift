@@ -84,7 +84,8 @@ struct StudySessionViewModelTests {
         revealAndRate(vm, .again)
 
         let summary = try #require(vm.summary)
-        #expect(summary.reviewed == 3)
+        #expect(summary.reviewed == 2)
+        #expect(summary.repeats == 1)
         #expect(try snapshots(context).isEmpty, "finishing deletes the snapshot")
     }
 
@@ -101,7 +102,72 @@ struct StudySessionViewModelTests {
         #expect(try context.fetchCount(FetchDescriptor<DailyActivity>()) == 1)
     }
 
-    @Test func summaryCountsNewlyMasteredAndMasteryDelta() throws {
+    /// S19: an all-Easy first pass over 4 cards masters nothing but is
+    /// not "0 / 0%": 4 cards moved up and the deck is at 40%.
+    @Test func allEasyFirstPassReportsMovedUpAndProgress() throws {
+        let context = try TestSupport.inMemoryContext()
+        let deck = try TestSupport.insertTieredDeck(context, origin: .user, tiers: [nil, nil, nil, nil])
+        let vm = makeVM(deck, context)
+        for _ in 0..<4 { revealAndRate(vm, .easy) }
+
+        let summary = try #require(vm.summary)
+        #expect(summary.reviewed == 4)
+        #expect(summary.movedUp == 4)
+        #expect(summary.newlyMastered == 0)
+        #expect(summary.startProgressRate == 0)
+        #expect(summary.endProgressRate == 0.4)
+    }
+
+    /// A card raised and then reset by "Again" in the same session didn't
+    /// move up.
+    @Test func cardResetLaterInTheSessionDoesNotCountAsMovedUp() throws {
+        let context = try TestSupport.inMemoryContext()
+        let deck = try TestSupport.insertTieredDeck(context, origin: .user, tiers: [nil])
+        deck.activeCards[0].updateMastery(rating: .good) // 1
+        let vm = makeVM(deck, context)
+        let outcome = try #require({ vm.toggleReveal(); return vm.rate(.again) }())
+        #expect(outcome.previousScore == 1)
+        #expect(outcome.newScore == 0)
+        revealAndRate(vm, .good) // the repeat: back to 1
+
+        let summary = try #require(vm.summary)
+        #expect(summary.reviewed == 1)
+        #expect(summary.repeats == 1)
+        #expect(summary.movedUp == 0)
+    }
+
+    @Test func movedUpSurvivesAResume() throws {
+        let context = try TestSupport.inMemoryContext()
+        let deck = try TestSupport.insertTieredDeck(context, origin: .user, tiers: [nil, nil])
+        revealAndRate(makeVM(deck, context), .easy)
+
+        let resumed = makeVM(deck, context, start: .resume)
+        revealAndRate(resumed, .hard)
+        let summary = try #require(resumed.summary)
+        #expect(summary.movedUp == 1)
+        #expect(summary.startProgressRate == 0)
+        #expect(summary.endProgressRate == 0.2)
+    }
+
+    /// The snapshot must reach the store, not just the context, so the deck
+    /// screen's Continue button (another context) can see it.
+    @Test func snapshotIsSavedToTheStore() throws {
+        let context = try TestSupport.inMemoryContext()
+        let deck = try TestSupport.insertTieredDeck(context, origin: .user, tiers: [nil, nil, nil, nil])
+        try context.save()
+        let vm = makeVM(deck, context)
+        revealAndRate(vm, .good)
+        revealAndRate(vm, .again)
+        #expect(!context.hasChanges)
+
+        let other = ModelContext(context.container)
+        let saved = try #require(try other.fetch(FetchDescriptor<StudyProgressSnapshot>()).first)
+        #expect(saved.queue.displayPosition == 3)
+        #expect(saved.queue.distinctTotal == 4)
+        #expect(saved.startScoresByCard.count == 2)
+    }
+
+    @Test func summaryCountsNewlyMasteredAndProgressDelta() throws {
         let context = try TestSupport.inMemoryContext()
         let deck = try TestSupport.insertTieredDeck(context, origin: .user, tiers: [nil, nil])
         deck.activeCards[0].updateMastery(rating: .easy)
@@ -115,8 +181,9 @@ struct StudySessionViewModelTests {
 
         let summary = try #require(vm.summary)
         #expect(summary.newlyMastered == 1)
-        #expect(summary.startMasteryRate == 0)
-        #expect(summary.endMasteryRate == 0.5)
+        #expect(summary.movedUp == 1)
+        #expect(summary.startProgressRate == 0.4)
+        #expect(summary.endProgressRate == 0.5)
         #expect(summary.unlockedTiers.isEmpty)
     }
 
@@ -135,7 +202,8 @@ struct StudySessionViewModelTests {
 
         revealAndRate(resumed, .good)
         revealAndRate(resumed, .good)
-        #expect(resumed.summary?.reviewed == 4, "stats carry over from before the resume")
+        #expect(resumed.summary?.reviewed == 3, "distinct cards, from before and after the resume")
+        #expect(resumed.summary?.repeats == 1)
     }
 
     @Test func resumeSkipsCardsDeletedSinceTheSnapshot() throws {

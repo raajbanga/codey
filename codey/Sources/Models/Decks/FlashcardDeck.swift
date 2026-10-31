@@ -83,6 +83,16 @@ extension FlashcardDeck {
         return Double(active.filter(\.isMastered).count) / Double(active.count)
     }
 
+    /// Mastery points earned / points possible (5 per active card), 0 when
+    /// empty (S19). Unlike masteryRate it moves with every Good or Easy, so
+    /// a first pass through a deck shows progress instead of 0%.
+    var progressRate: Double {
+        let active = activeCards
+        guard !active.isEmpty else { return 0 }
+        let points = active.reduce(0) { $0 + $1.masteryScore }
+        return Double(points) / Double(active.count * Flashcard.maxMastery)
+    }
+
     var isEditable: Bool { origin == .user }
 
     /// Whether this deck ever reached the server. Never-synced rows can be

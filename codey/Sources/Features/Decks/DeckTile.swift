@@ -29,7 +29,7 @@ struct DeckTile: View {
 
             Spacer(minLength: 0)
 
-            ProgressBar(value: deck.masteryRate, label: "Mastery \(deck.masteryRate.percentText)")
+            ProgressBar(value: deck.progressRate, label: "Progress \(deck.progressRate.percentText)")
         }
         .padding(CodeySpacing.md)
         .frame(maxWidth: .infinity, minHeight: 168, alignment: .topLeading)

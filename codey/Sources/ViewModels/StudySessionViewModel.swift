@@ -24,20 +24,29 @@ final class StudySessionViewModel {
         let id = UUID()
         let rating: CardRating
         let cardID: UUID
+        /// Mastery score before and after the rating (the card's dots, S19).
+        let previousScore: Int
+        let newScore: Int
         let becameMastered: Bool
         /// Starter card retired by this rating (D9).
         let retired: Bool
     }
 
     struct Summary: Equatable {
+        /// Distinct cards rated; "Again" repeats are counted in `repeats`,
+        /// so a 4-card session reports 4, not 5 (S19).
         var reviewed: Int
+        var repeats: Int
+        /// Cards whose mastery score ended higher than it started (S19).
+        var movedUp: Int
         var newlyMastered: Int
-        var startMasteryRate: Double
-        var endMasteryRate: Double
+        /// Deck progress (FlashcardDeck.progressRate) before and after.
+        var startProgressRate: Double
+        var endProgressRate: Double
         /// Tiers this session unlocked (starter decks), Easy → Hard.
         var unlockedTiers: [Difficulty]
 
-        var masteryDelta: Double { endMasteryRate - startMasteryRate }
+        var progressDelta: Double { endProgressRate - startProgressRate }
     }
 
     let deck: FlashcardDeck
@@ -56,8 +65,9 @@ final class StudySessionViewModel {
     private let config: GatingConfig
     private var cardsByID: [UUID: Flashcard] = [:]
     private var reviewedCount = 0
-    private var newlyMasteredIDs: [UUID] = []
-    private var startMasteryRate = 0.0
+    /// Each rated card's score before its first rating this session.
+    private var startScores: [UUID: Int] = [:]
+    private var startProgressRate = 0.0
     private var startUnlockedTiers: Set<Difficulty> = []
 
     init(
@@ -110,16 +120,17 @@ final class StudySessionViewModel {
 
         let wasMastered = card.isMastered
         let wasRetired = card.retiredAt != nil
+        let previousScore = card.masteryScore
+        if startScores[card.id] == nil { startScores[card.id] = previousScore }
         card.updateMastery(rating: rating, at: timestamp)
         let outcome = RatingOutcome(
             rating: rating,
             cardID: card.id,
+            previousScore: previousScore,
+            newScore: card.masteryScore,
             becameMastered: !wasMastered && card.isMastered,
             retired: !wasRetired && card.retiredAt != nil
         )
-        if outcome.becameMastered, !newlyMasteredIDs.contains(card.id) {
-            newlyMasteredIDs.append(card.id)
-        }
         reviewedCount += 1
         queue.record(rating)
         isRevealed = false
@@ -173,8 +184,8 @@ final class StudySessionViewModel {
         tierFilter = snapshot.tierFilter
         queue = restored
         reviewedCount = snapshot.reviewedCount
-        newlyMasteredIDs = snapshot.newlyMasteredIDs
-        startMasteryRate = snapshot.startMasteryRate
+        startScores = snapshot.startScoresByCard
+        startProgressRate = snapshot.startProgressRate
         startUnlockedTiers = Set(snapshot.startUnlockedTiersRaw.compactMap(Difficulty.init(rawValue:)))
         isRevealed = false
         hasRevealedCurrent = false
@@ -184,8 +195,8 @@ final class StudySessionViewModel {
 
     private func resetStats() {
         reviewedCount = 0
-        newlyMasteredIDs = []
-        startMasteryRate = deck.masteryRate
+        startScores = [:]
+        startProgressRate = deck.progressRate
         startUnlockedTiers = unlockedTiers
         isRevealed = false
         hasRevealedCurrent = false
@@ -195,12 +206,16 @@ final class StudySessionViewModel {
 
     private func finish() {
         let endUnlocked = unlockedTiers
+        // Compared with the start score, so a card raised and then reset by
+        // "Again" counts as neither moved up nor mastered.
+        let movedUp = startScores.filter { id, start in (cardsByID[id]?.masteryScore ?? start) > start }
         summary = Summary(
-            reviewed: reviewedCount,
-            // A card mastered and later reset by "Again" doesn't count.
-            newlyMastered: newlyMasteredIDs.filter { cardsByID[$0]?.isMastered == true }.count,
-            startMasteryRate: startMasteryRate,
-            endMasteryRate: deck.masteryRate,
+            reviewed: queue.distinctTotal,
+            repeats: queue.repeatCount,
+            movedUp: movedUp.count,
+            newlyMastered: movedUp.keys.filter { cardsByID[$0]?.isMastered == true }.count,
+            startProgressRate: startProgressRate,
+            endProgressRate: deck.progressRate,
             unlockedTiers: Difficulty.allCases.filter { endUnlocked.contains($0) && !startUnlockedTiers.contains($0) }
         )
         deleteSnapshot()
@@ -219,8 +234,9 @@ final class StudySessionViewModel {
         snapshot.requeuedIDs = Array(queue.requeued)
         snapshot.tierFilterRaw = tierFilter?.rawValue
         snapshot.reviewedCount = reviewedCount
-        snapshot.newlyMasteredIDs = newlyMasteredIDs
-        snapshot.startMasteryRate = startMasteryRate
+        snapshot.startScoreCardIDs = Array(startScores.keys)
+        snapshot.startScores = snapshot.startScoreCardIDs.map { startScores[$0] ?? 0 }
+        snapshot.startProgressRate = startProgressRate
         snapshot.startUnlockedTiersRaw = startUnlockedTiers.map(\.rawValue)
         snapshot.updatedAt = timestamp
     }

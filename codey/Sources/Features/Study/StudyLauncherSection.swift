@@ -51,7 +51,7 @@ struct StudyLauncherSection: View {
 
             if let snapshot {
                 CodeyButton(
-                    "Continue · \(snapshot.displayPosition)/\(snapshot.cardIDs.count)",
+                    "Continue · \(snapshot.queue.displayPosition)/\(snapshot.queue.distinctTotal)",
                     systemImage: "play.fill",
                     fullWidth: true
                 ) { start(.resume) }
