@@ -5,6 +5,12 @@
 .LSOverride
 
 #Docs
+docs/*.aux
+docs/*.lof
+docs/*.lot
+docs/*.out
+docs/*.toc
+docs/*.log
 
 
 # Icon must end with two
