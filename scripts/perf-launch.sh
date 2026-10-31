@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# NFR-01 launch metric (S3-F.2). The UI-test runner is blocked on this Mac,
-# so XCTApplicationLaunchMetric isn't available; instead the app logs
+# NFR-01 launch metric (TC-P08). The app logs
 # "home-ready ms=<process start -> Home onAppear>" (LaunchTimer.swift) and
 # this script relaunches it N times on a booted Simulator and reads the log.
 #
 #   scripts/perf-launch.sh [runs]     # default 10; the first run is discarded
 #
-# Prereqs: the app is installed on the booted Simulator (run it once from
-# Xcode, or xcodebuild + `xcrun simctl install booted <app>`), onboarding is
-# finished, and the build is Release for timing. Each launch is a terminate +
+# First it runs the opt-in LaunchFixtureSeed test (Release, hosted in the
+# app) on the booted Simulator: that installs the Release app, adds the
+# Activity 9_2 store (starter decks + 5 user decks x 50 cards), and marks
+# onboarding done. SKIP_SEED=1 skips this step. Each launch is a terminate +
 # launch (dyld/file caches warm), not a reboot-cold launch; the doc says so.
 # Cold launch is local-first and makes no network call before Home, so the
 # LTE network profile doesn't change it.
@@ -21,6 +21,16 @@ out=docs/perf/launch.csv
 mkdir -p "$(dirname "$out")"
 
 xcrun simctl list devices booted | grep -q Booted || { echo "Boot a Simulator first"; exit 2; }
+
+if [[ "${SKIP_SEED:-0}" != 1 ]]; then
+    udid=$(xcrun simctl list devices booted | grep -oE '[0-9A-F-]{36}' | head -1)
+    TEST_RUNNER_CODEY_PERF_SEED=1 xcodebuild test \
+        -workspace codey.xcworkspace -scheme codey -configuration Release \
+        ENABLE_TESTABILITY=YES -destination "id=$udid" \
+        -only-testing:codeyTests/LaunchFixtureSeed >/dev/null 2>&1 \
+        || { echo "Seeding the launch store failed"; exit 1; }
+    echo "Launch store seeded (starter decks + 5 x 50-card user decks)"
+fi
 
 samples=()
 for ((i = 1; i <= runs; i++)); do

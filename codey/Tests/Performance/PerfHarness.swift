@@ -43,8 +43,8 @@ enum Perf {
         func report(thresholdMS: Double?) {
             let limit = thresholdMS.map { String(format: "%.0f", $0) } ?? "-"
             print(String(
-                format: "PERF name=%@ runs=%d mean_ms=%.2f p95_ms=%.2f stddev_ms=%.2f peak_mb=%.1f threshold_ms=%@",
-                name, samples.count, mean, p95, stddev, peakMB, limit
+                format: "PERF name=%@ runs=%d mean_ms=%.2f p95_ms=%.2f stddev_ms=%.2f peak_mb=%.1f growth_mb=%.1f threshold_ms=%@",
+                name, samples.count, mean, p95, stddev, peakMB, growthMB, limit
             ))
         }
     }
