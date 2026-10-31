@@ -10,7 +10,8 @@ struct BadgesRow: View {
 
     var body: some View {
         Grid(horizontalSpacing: CodeySpacing.sm, verticalSpacing: CodeySpacing.md) {
-            GridRow {
+            // Top-aligned so the circles line up when some titles wrap.
+            GridRow(alignment: .top) {
                 ForEach(Badge.allCases) { badge in
                     BadgeCell(badge: badge, isEarned: earned.contains(badge))
                 }

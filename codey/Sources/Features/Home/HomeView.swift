@@ -476,11 +476,7 @@ private struct PlanRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: CodeySpacing.sm) {
-                Image(systemName: topic.iconName)
-                    .font(.codeyCallout)
-                    .foregroundStyle(CodeyColor.brand)
-                    .frame(minWidth: 24)
-                    .accessibilityHidden(true)
+                HomeRowIcon(systemName: topic.iconName)
                 VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                     Text(topic.title)
                         .font(.codeyHeadline)
@@ -514,11 +510,10 @@ private struct ChallengeRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: CodeySpacing.sm) {
-                Image(systemName: status.isComplete ? "trophy.fill" : "flag.checkered")
-                    .font(.codeyCallout)
-                    .foregroundStyle(status.isComplete ? CodeyColor.success : CodeyColor.brand)
-                    .frame(minWidth: 24)
-                    .accessibilityHidden(true)
+                HomeRowIcon(
+                    systemName: status.isComplete ? "trophy.fill" : "flag.checkered",
+                    tint: status.isComplete ? CodeyColor.success : CodeyColor.brand
+                )
                 VStack(alignment: .leading, spacing: CodeySpacing.xs) {
                     Text("Challenge: \(WeeklyChallenge.goal) correct in \(topic.title)")
                         .font(.codeyHeadline)
@@ -545,6 +540,23 @@ private struct ChallengeRow: View {
     }
 }
 
+/// The leading symbol of a Home row, in a fixed-width column so titles line
+/// up whatever the symbol's width (person.3 is much wider than f(x)).
+private struct HomeRowIcon: View {
+    let systemName: String
+    var tint: Color = CodeyColor.brand
+
+    @ScaledMetric(relativeTo: .callout) private var width: CGFloat = 32
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.codeyCallout)
+            .foregroundStyle(tint)
+            .frame(width: width)
+            .accessibilityHidden(true)
+    }
+}
+
 /// A plain navigation row inside a Home note.
 private struct HomeLinkRow: View {
     let title: String
@@ -553,11 +565,7 @@ private struct HomeLinkRow: View {
 
     var body: some View {
         HStack(spacing: CodeySpacing.sm) {
-            Image(systemName: systemImage)
-                .font(.codeyCallout)
-                .foregroundStyle(CodeyColor.brand)
-                .frame(minWidth: 24)
-                .accessibilityHidden(true)
+            HomeRowIcon(systemName: systemImage)
             VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                 Text(title)
                     .font(.codeyHeadline)
@@ -593,10 +601,7 @@ private struct TopicNote: View {
         VStack(alignment: .leading, spacing: CodeySpacing.md) {
             VStack(alignment: .leading, spacing: CodeySpacing.xs) {
                 HStack(spacing: CodeySpacing.sm) {
-                    Image(systemName: topic.iconName)
-                        .font(.codeyCallout)
-                        .foregroundStyle(CodeyColor.brand)
-                        .accessibilityHidden(true)
+                    HomeRowIcon(systemName: topic.iconName)
                     Text(topic.title)
                         .font(.codeyHeadline)
                         .foregroundStyle(CodeyColor.textPrimary)

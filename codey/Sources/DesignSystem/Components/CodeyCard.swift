@@ -45,9 +45,12 @@ extension View {
             .overlay { shape.strokeBorder(CodeyColor.separator, lineWidth: 1) }
     }
 
-    /// The app's page background: warm paper with a faint dot grid.
+    /// The app's page background: warm paper with a faint dot grid. Also
+    /// tints the page in brand ink: sheets don't inherit RootView's tint, so
+    /// list buttons in them (Sign in with Google) fell back to system blue.
     func codeyPaperBackground() -> some View {
         background { PaperBackground().ignoresSafeArea() }
+            .tint(CodeyColor.brand)
     }
 
     /// Puts a List on the dotted paper. Rows keep the system grouped row
