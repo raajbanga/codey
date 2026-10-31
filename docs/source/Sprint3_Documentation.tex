@@ -334,7 +334,10 @@ leaderboards, and weekly challenges are client-mandated; all three were built in
 Sprint 3. The coding challenges (FR-39 to FR-41) are also client-mandated, so their
 priority was raised to Must in Sprint 3; they are scheduled for Sprint 4
 (risk R17), together with the two security checks that need a proxy or a physical
-device (Section~\ref{sec:security}). Table~\ref{tab:moscow}
+device (Section~\ref{sec:security}). The client's offline mandate also asks that
+quiz and flashcard results sync when connectivity returns. Sprint 3 syncs decks,
+cards, the profile, and XP; the study results themselves (mastery scores and quiz
+retirement) stay on the device until FR-61 in Sprint 4 (risk R18). Table~\ref{tab:moscow}
 prioritizes features using the MoSCoW method. Features in the Could Have category are
 built last and are the first candidates for de-scoping if the schedule slips
 (Section~\ref{sec:risks}). Any change to scope requires client approval.
@@ -382,6 +385,7 @@ Navigation that adapts to all supported iPhone screen sizes (NFR-10) & Starter d
 Stable operation (no crashes during scripted test sessions) & Daily streaks and badges & \\
 Code-completion exercises (client mandate; Sprint 4) & Personalized study plan & \\
 Leaderboards and weekly challenges (client mandate) & & \\
+Offline sync of study results (client mandate; Sprint 4) & & \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -403,7 +407,7 @@ has one testable behavior. To keep every identifier stable, the original require
 keeps its number and the split-off behavior receives a new number: FR-03 $\to$ FR-54,
 FR-12 $\to$ FR-55, FR-24 $\to$ FR-56 and FR-57, FR-28 $\to$ FR-58, FR-47 $\to$ FR-59,
 and FR-04 $\to$ FR-60. The compound leaderboard requirement FR-42 was split into
-FR-42 and FR-50 to FR-53. The functional requirements now number 60 and the
+FR-42 and FR-50 to FR-53, and FR-61 was added for the client's offline results mandate. The functional requirements now number 61 and the
 non-functional requirements 32, including 7 security and 5 performance requirements
 added in this sprint.
 
@@ -485,11 +489,12 @@ FR-52 & The app shall allow a user to leave a group. & Must & Team & Implemented
 FR-53 & The app shall show the user's weekly challenge progress (correct answers out of 15) on the home dashboard. & Must & Team & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Offline operation and synchronization}} \\
 FR-44 & The app shall save every new or edited deck to the local SwiftData store before making any network request. & Must & Client & Implemented \\
-FR-45 & The app shall queue every local change to decks, cards, and the profile's XP, including changes made while offline or signed out; queued guest changes are uploaded after the first sign-in. Study progress (mastery and quiz retirement) remains on the device. & Should & Client & Implemented \\
+FR-45 & The app shall queue every local change to decks, cards, and the profile's XP, including changes made while offline or signed out; queued guest changes are uploaded after the first sign-in. Study progress (mastery and quiz retirement) remains on the device until FR-61. & Should & Client & Implemented \\
 FR-46 & The app shall push queued changes to Supabase and pull remote changes automatically when connectivity is restored, retrying failures with exponential backoff (2 to 300 seconds). & Should & Client & Implemented \\
 FR-47 & The app shall resolve a sync conflict with an additive merge that keeps every card present in either the local or the remote version. & Should & Team & Implemented \\
 FR-59 & When the same card has been edited in both versions of a conflicting deck, the app shall keep the version with the later modification timestamp. & Should & Team & Implemented \\
 FR-48 & The app shall show each deck's sync status (Draft, Saved locally, Syncing, Synced, or Conflict) in the deck library. & Should & Team & Implemented \\
+FR-61 & The app shall sync a signed-in user's study results (card mastery scores and quiz question progress) to Supabase when connectivity is restored, keeping the higher mastery score when two devices differ. & Must & Client & Planned (Sprint 4) \\
 \multicolumn{5}{@{}l}{\textit{Feedback}} \\
 FR-49 & The app shall allow a signed-in user to submit a UI/UX defect report with a text description of 1--1,000 characters, which is stored in Supabase for review by the development team. & Could & Team & Implemented \\
 \end{xltabular}
@@ -539,7 +544,7 @@ NFR-04 & Security & The local SwiftData store shall be encrypted at rest using i
 NFR-05 & Security & All user data stored in the cloud database shall be encrypted at rest (AES-256). & Review Supabase project security settings and the provider's encryption-at-rest documentation. \\
 NFR-06 & Security & All client--server traffic shall use HTTPS with TLS 1.3, with no App Transport Security exceptions. & Info.plist test (no ATS exceptions); unit test confirms the backend URL session's minimum protocol is TLS 1.3. \\
 NFR-07 & Security & A user shall be able to read and write only rows they own, enforced by PostgreSQL Row Level Security. & Automated test: a second account's queries return zero of the first user's rows. \\
-NFR-08 & Availability & Quizzes and flashcards shall remain fully usable with no network connection. & Manual test in airplane mode on Simulator (Network Link Conditioner 100\% loss). \\
+NFR-08 & Availability & Quizzes and flashcards shall remain fully usable with no network connection. & \texttt{SyncEngineTests} offline cases (a save never touches the network); a run with no backend configured, in which every quiz and study feature works (Appendix~A.4). \\
 NFR-09 & Reliability & Queued offline changes shall sync within 30 seconds of connectivity being restored, with no lost or duplicated cards. & Unit test of the reconnect trigger against a mock backend; opt-in integration test comparing local and remote card counts after reconnect. \\
 NFR-10 & Usability & Every screen shall render without clipped or overlapping content on the smallest, standard, and largest current iPhone screen sizes (iPhone 17e, iPhone 17, and iPhone 18 Pro Max). & Manual layout pass on the three Simulator device profiles. \\
 NFR-11 & Usability & The app shall support both Light Mode and Dark Mode, following the system setting. & Manual layout pass with each appearance forced from the profile sheet. \\
@@ -627,9 +632,9 @@ project incurs no hardware or service costs.
 \textbf{Item} & \textbf{Specification} \\
 \midrule
 Development machine & One MacBook Pro (Mac16,8) with an Apple M4 Pro (12-core CPU) and 24 GB of unified memory, running macOS 27.2 with Xcode 27.2 and Tuist 4.209.0; all three members work on it in pair-programming sessions. At least 16 GB of memory is recommended to run Xcode and the Simulator concurrently. \\
-Measurement machine & The same Mac. Every performance result in Section~\ref{sec:performance} comes from it, recorded by \texttt{scripts/perf-report.sh} in \texttt{docs/perf/environment.txt}. \\
+Measurement machine & The same Mac. Every performance result in Section~\ref{sec:performance} comes from it, recorded by \texttt{scripts/perf-report.sh} in \texttt{docs/source/perf/environment.txt}. \\
 Primary test target & Xcode iOS Simulator (iOS 27 runtime) with three device profiles for layout coverage: iPhone 17e (smallest current size), iPhone 17 (also used for the performance suite), and iPhone 18 Pro Max (largest). \\
-Network simulation & Network Link Conditioner (Additional Tools for Xcode) to emulate LTE, 3G, and 100\% packet loss for the performance and offline tests. Unit tests simulate connectivity with a mock reachability monitor. \\
+Network simulation & None was needed in Sprint 3: launch makes no network request, the sync tests use a mock backend that waits 50 ms per request, and unit tests simulate connectivity with a mock reachability monitor. Network Link Conditioner (Additional Tools for Xcode), planned in Activity~9.2, is used for the live LTE and Wi-Fi tests in Sprint 4. \\
 Physical device & Raaj Banga's iPhone 16 Pro Max (128 GB, iOS 27), for the on-device checks scheduled for Sprint 4 (NFR-01, NFR-28, TC-S10). The app is installed from Xcode with a free Apple ID (personal team). No paid Apple Developer Program membership is required, but builds signed this way expire after seven days and must be reinstalled. \\
 Cloud backend & Supabase project on the Free plan (AWS region) providing GoTrue Auth, the PostgREST API, and a managed PostgreSQL database. Clients connect over HTTPS on port 443. The backend connects to PostgreSQL over SSL on port 5432. \\
 Source control and tracking & GitHub repository with a GitHub Actions keep-alive workflow (Section~\ref{sec:vc}); tasks are tracked in the project plan (\texttt{todo.txt}) in the repository. \\
@@ -694,7 +699,7 @@ before the final code freeze (Section~\ref{sec:ui}).
 Sprint 1 & Aug 25 -- Sep 12 & Requirements, feasibility, and initial implementation: team charter, scope, risk assessment, estimates, repository and Xcode scaffold, JSON question schema, flashcard/quiz UI, local SwiftData persistence. \\
 Sprint 2 & Sep 13 -- Oct 3 & Architecture, design, and implementation: UML models, three design patterns, deck builder, study mode, starter decks, adaptive practice tiers, XP and levels, Home hub and onboarding, Supabase schema and RLS, Google Sign-In, offline sync queue and sync engine, security checks, and metrics baselines. \\
 Sprint 3 & Oct 4 -- Nov 3 & Version control workflow (Activity 8.1), wireframes and storyboard (8.2), performance requirements (9.2), threat model (10.1), and sprint wrap-up (10.2); streaks, daily goal, and badges; profile identity, weekly plan, and defect reports; groups, leaderboard, and weekly challenge; UI facelift; security and performance measurement; this document. \\
-Sprint 4 & From Nov 4 & Code-completion exercises (FR-39 to FR-41), Proxyman TLS capture, physical-device file-protection check, peer usability test, and metric optimization. \\
+Sprint 4 & From Nov 4 & Code-completion exercises (FR-39 to FR-41); sync of study results (FR-61); on-device checks of launch (NFR-01), memory (NFR-28), and file protection (TC-S10) on the iPhone 16 Pro Max; the live sync and leaderboard tests (NFR-02, TC-P09); Proxyman TLS capture; peer usability test; and metric optimization. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -705,7 +710,7 @@ Sprint 4 & From Nov 4 & Code-completion exercises (FR-39 to FR-41), Proxyman TLS
         9:00 PM, in person or over Discord voice and screen share. Decisions and
         action items are recorded in the project plan (\texttt{todo.txt}) in the
         repository, under the sprint's decision log (for Sprint 3, decisions S1 to
-        S25).
+        S28).
   \item \textbf{Communication.} Discord is used for design discussion and asynchronous
         communication, and SMS/iMessage for urgent notifications. Members provide at
         least four hours' notice of absences and blocking issues.
@@ -768,11 +773,52 @@ and nine unit tests cover gaps, time zones and DST, an empty history, a day with
 activity, and a goal of exactly 20 (\texttt{StreakCalculatorTests},
 \texttt{MigrationTests}).
 
+\subsection{Input Validation and Failure Handling}
+The Activity~10.2 review also examined the system's main source of external input,
+the Deck Builder, where students type deck titles, card prompts and answers, and code.
+Every value passes through \texttt{ModelValidator} before it is saved or synchronized:
+\begin{itemize}
+  \item \textbf{Checks.} Text is trimmed, and its length is counted in Unicode scalars
+        to match PostgreSQL and the JSON schema: a title has 1--60 characters, a
+        prompt or answer 1--500, and code 1--2,000 characters in at most 80 lines.
+        The topic must be one of the predefined topics, the code language one of
+        Swift, Python, Java, and C++, and a deck needs at least one card.
+  \item \textbf{Handling.} Save is refused, each error appears inline next to its field
+        (for example, ``Too long (512/500 characters).''), and the builder moves to the
+        first card with an error. After the first failed save, the draft is checked
+        again 300 ms after the student stops typing. Errors are returned as values
+        rather than thrown, so invalid input cannot crash the app.
+  \item \textbf{Second layer.} The same limits exist as CHECK constraints in Supabase
+        and in \texttt{flashcard.schema.json}, so data that bypasses the app is still
+        rejected (NFR-23); \texttt{SupabaseSchemaTests} and
+        \texttt{FlashcardSchemaFileTests} fail if the limits drift apart.
+\end{itemize}
+
+\subsection{Sprint Readiness and Demonstration}
+Table~\ref{tab:readiness} records the Activity~10.2 readiness checklist for the end
+of the sprint and the feature chosen for the live demonstration.
+
+\begin{table}[H]
+\centering
+\caption{Sprint 3 readiness checklist and demonstration (Activity 10.2)}
+\label{tab:readiness}
+\begin{tabularx}{\textwidth}{@{}L{3.2cm} Y L{1.6cm}@{}}
+\toprule
+\textbf{Item} & \textbf{Evidence} & \textbf{Status} \\
+\midrule
+Version control & All code committed and pushed; \texttt{dev} squash-merged into \texttt{main} (Section~\ref{sec:vc}). & Done \\
+Build integrity & \texttt{main} builds and runs from a fresh clone (Appendix~A); 342 of 342 unit tests pass. & Done \\
+Documentation & UML diagrams, threat model, and performance tests match the submitted code (Sections~\ref{sec:security} and~\ref{sec:performance}). & Done \\
+Demo preparation & Feature: build a deck with a code card, save it, then study it (UC-01, UC-04). Presenter: Raaj Banga. & Done \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 \subsection{Estimation}
 In Sprint 1, the team estimated five tasks at 18 optimistic hours and 34 realistic
 hours, a ratio of approximately 1.9. Sprints 2 and 3 apply the same factor to account
 for learning curves, competing coursework, and defects. The target workload remains
-8--10 hours per member per week. Sprint 3 was longer than Sprint 2 (31 days), but the
+8--10 hours per member per week. Sprint 3 was longer than Sprint 2 (31 days against 21), but the
 implementation of the four feature stages was compressed into its final week
 (risk R14), so the two-day buffer was spent on measurement and documentation.
 
@@ -956,9 +1002,10 @@ was repeated, because the results must describe the submitted code.
 \subsection{Risk Identification}
 Table~\ref{tab:risks} is the project risk register. Risks R1--R6 were identified in
 Sprint 1 and re-rated in later sprints. Risks R7--R11 arise from Sprint 2 architecture
-decisions, R12 from the choice of third-party UI libraries, and R13--R17 from Sprint 3
+decisions, R12 from the choice of third-party UI libraries, and R13--R18 from Sprint 3
 (the client-reported leaderboard XP, the compressed schedule, the blocked UI-test
-runner, the facelift, and the deferred coding challenges). Probability (P) and impact (I) are rated High (H), Medium (M), or Low (L).
+runner, the facelift, the deferred coding challenges, and the deferred sync of study
+results). Probability (P) and impact (I) are rated High (H), Medium (M), or Low (L).
 
 \begin{xltabular}{\textwidth}{@{}l L{3.0cm} c c Y L{2.9cm} L{1.7cm}@{}}
 \caption{Risk register (updated for Sprint 3)}\label{tab:risks}\\
@@ -986,10 +1033,11 @@ R10 & Leaked session tokens or OAuth misconfiguration (Security) & L & H & Store
 R11 & Supabase free-tier limits or inactivity pausing (Operational) & L & M & A GitHub Actions workflow pings the project every 3 days to prevent inactivity pausing. Export the database with \texttt{pg\_dump} (\texttt{scripts/backup.sh}) before schema changes, because the Free plan has no automated backups. Keep the schema as migrations in the repository, and run the app in local-only mode when no backend keys are configured. & The project is paused, or usage exceeds 80\% of a tier limit. & Mitigated \\
 R12 & A third-party UI library (Textual, pre-1.0; Runestone) is abandoned or stops building on a new Xcode (Technology) & M & M & Pin exact versions and wrap each library in a single file (\texttt{CardMarkdownView}, \texttt{CodeEditorView}), enforced by \texttt{check-design-tokens.sh}, so a replacement changes one file. Fallbacks: MarkdownUI (\texttt{swift-markdown-ui}) for Textual, and a plain \texttt{TextEditor} with autocorrect, smart quotes, and smart dashes disabled for Runestone. & The project fails to build on a new Xcode release for more than two days. & Monitoring \\
 R13 & A tampering user inflates their own weekly XP on the leaderboard, because the client reports it (Security) & M & L & Row Level Security lets a user write only their own row; a CHECK caps a week at 22,500 XP (45 XP $\times$ 500 answers); the server keeps the higher of the old and new value, so a row cannot be lowered to hide tampering. A server-computed XP ledger is the Sprint 4 hardening. & A board shows a weekly total that is not a sum of valid answers. & Accepted (Sprint 4 fix) \\
-R14 & Schedule compression: four feature stages and the document in the final week (Schedule) & H & M & Fixed decision log (S1--S25) from the start of the week; strict stage order; automated generators for Appendix~B and the pattern map; deferred items labeled ``Sprint 4'' instead of being rushed. & A stage is not done by its planned day. & Occurred; contained \\
+R14 & Schedule compression: four feature stages and the document in the final week (Schedule) & H & M & Fixed decision log (S1--S28) from the start of the week; strict stage order; automated generators for Appendix~B and the pattern map; deferred items labeled ``Sprint 4'' instead of being rushed. & A stage is not done by its planned day. & Occurred; contained \\
 R15 & The UI-test runner is refused by macOS, so UI tests and XCTest's launch metric cannot run (Technology) & H & M & Measure launch from an in-app log line and a Simulator relaunch script (\texttt{perf-launch.sh}); keep the UI tests in the repository and retry on each Xcode update. & The runner still fails on the current Xcode. & Occurred; resolved on Xcode 27.2 \\
 R16 & The facelift introduces contrast or layout regressions (Quality) & M & M & Colors change only through tokens; \texttt{ContrastTests} checks every text/background pair in Light, Dark, and Increase Contrast; Simulator walkthrough on three sizes in both modes. & A contrast test fails or a screen clips. & Mitigated \\
 R17 & The client-mandated coding challenges (FR-39 to FR-41) slip to Sprint 4 (Requirements) & H & H & Raised to Must; scoped as code completion validated by comparison (no code execution, R1); first stage of Sprint 4 with the data model designed before the sprint starts. & Not started by the second week of Sprint 4. & Monitoring \\
+R18 & The client-mandated sync of study results (FR-61) slips, or merging progress from two devices loses a student's mastery (Requirements) & M & M & Reuse the deck sync design: progress tables with RLS, changes queued in \texttt{SyncQueue}, and a merge that keeps the higher mastery score and the later retirement date; design the tables before Sprint 4 starts. & Not started by the second week of Sprint 4, or a two-device test loses progress. & Monitoring \\
 \end{xltabular}
 
 \subsection{Risk Planning}
@@ -997,7 +1045,7 @@ Each risk is assigned one of four response strategies:
 \begin{itemize}
   \item \textbf{Avoid} (R1, R7): code-completion exercises require no on-device code
         execution, and the facade eliminates direct coupling to Supabase.
-  \item \textbf{Mitigate} (R2, R4, R5, R8, R9, R10, R11, R12, R14, R16, R17): design
+  \item \textbf{Mitigate} (R2, R4, R5, R8, R9, R10, R11, R12, R14, R16, R17, R18): design
         and process controls reduce the probability or impact.
   \item \textbf{Contingency} (R3, R15): a predefined fallback is triggered at a
         defined point.
@@ -1005,9 +1053,8 @@ Each risk is assigned one of four response strategies:
         because the leaderboard is a friendly competition with no prize.
 \end{itemize}
 The Project Manager maintains the register. Each risk is owned by the member
-responsible for the affected area: Arnav Bawankule (R1, R2, R7, R11), Elnad
+responsible for the affected area: Arnav Bawankule (R1, R2, R7, R11, R13, R18), Elnad
 Salcinovic (R6, R9, R12, R15, R16), and Raaj Banga (R3, R4, R5, R8, R10, R14, R17).
-Arnav Bawankule also owns R13.
 
 \subsection{Risk Monitoring}
 Risks are reviewed at the start of each Tuesday team meeting, and each monitoring
@@ -1024,7 +1071,7 @@ This is a change from the Sprint 2 plan of two classes (\texttt{AuthFacade} and
 \texttt{DeckFacade}): extensions keep a single entry point, so no view and no test had
 to change. R15: the UI-test runner was refused by macOS for most of the sprint, so the
 launch metric moved to a script; on Xcode 27.2 the runner works and the three UI test
-suites run. R17 is the highest open risk for Sprint 4.
+suites run. R17 and R18 are the highest open risks for Sprint 4.
 
 % =====================================================================
 \section{User Interface and User Experience Design (Updated for Sprint 3)}\label{sec:ui}
@@ -1422,7 +1469,7 @@ Table~\ref{tab:tcmap} maps each test case to the automated test suites that impl
 it. Requirements that share a use case, design element, and status are grouped in a
 single row but keep individual test case identifiers. A dash indicates that no use case
 covers the requirement. Design elements are the type and member names used in the code.
-Security test cases (TC-S01 to TC-S10) and performance test cases (TC-P01 to TC-P09)
+Security test cases (TC-S01 to TC-S11) and performance test cases (TC-P01 to TC-P09)
 are defined in Sections~\ref{sec:security} and~\ref{sec:performance}.
 
 \begin{xltabular}{\textwidth}{@{}l L{1.6cm} Y L{2.0cm} L{1.9cm}@{}}
@@ -1471,6 +1518,7 @@ FR-45 & UC-07 & \texttt{SyncQueue} (coalescing), \texttt{SyncOperation} & TC-45 
 FR-46 & UC-06 & \texttt{SyncEngine} (push, pull, backoff), \texttt{RemoteChangeApplier}, \texttt{NetworkMonitor} & TC-46 & Implemented \\
 FR-47, FR-59 & UC-10 & \texttt{ConflictResolver.merge()}, \texttt{ConflictState.onResolve()} & TC-47, TC-59 & Implemented \\
 FR-48 & UC-06 & \texttt{DeckStatusChip}, \texttt{DeckSyncStateKind.displayName}; state machine (Fig.~\ref{fig:state}) & TC-48 & Implemented \\
+FR-61 & UC-07 & Planned: progress tables with RLS, pushed and pulled through \texttt{SyncQueue} and \texttt{SyncEngine}, merged by keeping the higher score & TC-61 & Planned (Sprint 4) \\
 FR-49 & UC-05 & \texttt{FeedbackFormView}, \texttt{BackendFacade.submitFeedback()}, \texttt{ModelValidator.validateFeedback()}, \texttt{SupabaseDataClient.submitFeedback()}; \texttt{feedback\_reports} (insert-only) & TC-49 & Implemented \\
 \end{xltabular}
 
@@ -1505,7 +1553,7 @@ NFR-11 & Light and Dark Mode & \texttt{AppAppearance} (System, Light, Dark); ass
 NFR-12 & 4.5:1 text contrast & Design-system color tokens (Section~\ref{sec:ui}); \texttt{scripts/palette} & TC-N12 & Implemented \\
 NFR-13 & Uses a database & Local Store component and PostgreSQL (Figs.~\ref{fig:component} and~\ref{fig:deploy}) & TC-N13 & Implemented \\
 NFR-14 & Swift/SwiftUI with Xcode & \texttt{Codey.app} artifact on the client node (Fig.~\ref{fig:deploy}) & TC-N14 & Implemented \\
-NFR-15 & Team-written source code & All components; commit history and task owners (Section~\ref{sec:process}) & TC-N15 & Implemented \\
+NFR-15 & Team-written source code & All components; commit history and task owners (Section~\ref{sec:process}) & TC-N15 & Implemented: written by the team with AI coding assistance; every change reviewed and committed by a member \\
 NFR-16 & 70\% unit-test coverage & Model, ViewModel, and Service layers (89.4\%: Models 97.5\%, ViewModels 94.0\%, Services 87.4\%) & TC-N16 & Implemented \\
 NFR-17--19 & Metrics every sprint & Metrics plan (Table~\ref{tab:metrics}) with Sprint 2 and Sprint 3 columns & TC-N17--19 & Implemented \\
 NFR-20 & No service costs & Free plans and open-source libraries (Table~\ref{tab:services}) & TC-N20 & Implemented \\
@@ -1547,9 +1595,9 @@ TC-15 & \texttt{DeckViewModelTests} (starter decks can be hidden, not edited or 
 TC-16 -- TC-18 & \texttt{StudySessionViewModelTests}, \texttt{StudyQueueTests}, \texttt{SwipeRatingTests}, \texttt{CardRatingTests}, \texttt{FlashcardMasteryTests}, \texttt{StudySessionUITests} (UI) \\
 TC-19 -- TC-21 & \texttt{QuizViewModelTests}, \texttt{QuestionPoolTests}, \texttt{QuestionBankLoaderTests} \\
 TC-22 -- TC-29, TC-56 -- TC-58 & \texttt{QuestionProgressTests}, \texttt{TierGateTests}, \texttt{StudyPoolTests}, \texttt{QuestionPoolTests}, \texttt{QuizViewModelTests} \\
+TC-30, TC-31 & \texttt{XPPolicyTests}, \texttt{LevelCalculatorTests}, \texttt{QuizViewModelTests} \\
 TC-32 -- TC-34 & \texttt{StreakCalculatorTests} (gaps, time zones and DST, empty history, goal exactly 20), \texttt{MigrationTests} (V6 $\to$ V7) \\
 TC-35 & \texttt{BadgeEvaluatorTests} \\
-TC-30, TC-31 & \texttt{XPPolicyTests}, \texttt{LevelCalculatorTests}, \texttt{QuizViewModelTests} \\
 TC-36 & \texttt{QuizViewModelTests} (accuracy over the last 50 answers) \\
 TC-37 & \texttt{HomeLogicTests}, \texttt{RouterTests} \\
 TC-38 & \texttt{StudyPlanBuilderTests} (ordering, ties, sparse data, week rollover) \\
@@ -1564,7 +1612,7 @@ TC-N04 & \texttt{StoreFileProtectionTests}, \texttt{KeychainSessionStorageTests}
 TC-N06 & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} \\
 TC-N07 & \texttt{SupabaseSchemaTests} (every table has RLS), \texttt{supabase/tests/rls.sql}, \texttt{SupabaseIntegrationTests} (opt-in) \\
 TC-N08, TC-N09 & \texttt{SyncEngineTests} (offline save, reconnect), \texttt{SupabaseIntegrationTests} (opt-in) \\
-TC-N10, TC-N11 & Manual layout pass: 16 screens on iPhone 17e, 17, and 18 Pro Max, Light and Dark (96 of 96 pass, Oct 30) \\
+TC-N10, TC-N11 & Manual layout pass: 16 screens on iPhone 17e, 17, and 18 Pro Max, Light and Dark (96 of 96 pass, Oct 30; the study screen re-checked on all three sizes after the Oct 31 change) \\
 TC-N11, TC-N12 & \texttt{ColorTokenTests}, \texttt{ContrastTests}, \texttt{AppAppearanceTests}, \texttt{AccessibilityAuditUITests} (UI) \\
 TC-N03 & Build and smoke test on the iOS 27 Simulator (Appendix~A.8); deployment target iOS 26 in \texttt{Project.swift} \\
 TC-N05 & Review of the Supabase project settings and Supabase's encryption-at-rest documentation (AES-256) \\
@@ -1574,12 +1622,12 @@ TC-N15 & Review of the commit history and the task owners in the Gantt charts; t
 TC-N16 & Coverage report (\texttt{xccov}) on every test run \\
 TC-N17 -- TC-N19 & Sprint 2 and Sprint 3 columns of the metrics plan (Table~\ref{tab:metrics}) \\
 TC-N20 & Monthly review of the Supabase usage and billing pages against the Free-plan limits (Table~\ref{tab:services}) \\
-TC-S01 -- TC-S10 & Security test cases (Table~\ref{tab:sectests}) \\
+TC-S01 -- TC-S11 & Security test cases (Table~\ref{tab:sectests}) \\
 TC-P01 -- TC-P09 & \texttt{PerformanceTests} and \texttt{perf-launch.sh} (Table~\ref{tab:perftests}) \\
 \end{xltabular}
 
-Commit messages and the project plan name the requirement identifiers each task
-affects, and the Project Manager updates the Status column when the associated test passes. Every design element
+The project plan records the requirement identifiers of each task, and the Project
+Manager updates the Status column when the associated test passes. Every design element
 in these models traces to at least one requirement.
 
 % =====================================================================
@@ -1943,7 +1991,8 @@ row per earned badge with its date, so a badge stays earned after the data behin
 changes. Version 8 (the study-session fix) lets \texttt{StudyProgressSnapshot} keep
 each card's mastery score and the deck's progress at the start of a session, so the
 summary can report the cards that moved up; \texttt{FlashcardDeck.progressRate} (the
-sum of the cards' scores over five times the card count) is computed, not stored. Everything else is computed. \texttt{StreakCalculator} derives the daily goal
+sum of the cards' scores over five times the card count) is computed, not stored, as
+is everything else in the figure. \texttt{StreakCalculator} derives the daily goal
 and streak from \texttt{DailyActivity}; \texttt{WeeklyChallenge} derives the week's
 topic and progress from \texttt{QuizAnswerRecord}; and \texttt{BadgeEvaluator} turns
 those facts and the deck count and XP into the set of qualifying badges, inserting a
@@ -2398,8 +2447,10 @@ client only ever holds the public anon key and the signed-in user's session.
 The project uses Git with one GitHub repository,
 \texttt{https://github.com/raajbanga/codey}, owned by Raaj Banga (\texttt{raajbanga}).
 The other two members were added as collaborators during Activity~8.1
-(Table~\ref{tab:ghaccounts}). All three members use GitHub Desktop on Apple Silicon
-Macs; command-line Git is used for merges between the long-lived branches. Docker Hub
+(Table~\ref{tab:ghaccounts}). Each member set up GitHub Desktop on their own Apple
+Silicon Mac for Activity~8.1; day-to-day work runs on the shared MacBook Pro
+(Table~\ref{tab:hardware}), where command-line Git is used for merges between the
+long-lived branches. Docker Hub
 and other container registries are not used: the app is a native iOS binary built by
 Xcode, and the backend is a managed service, so there is no container image to
 publish.
@@ -2440,9 +2491,10 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
         imports confined (\texttt{check-imports.sh}), validation limits in sync, RLS on
         every new table, migrations added and never edited, and a new schema version
         for any model change.
-  \item \textbf{Commit messages.} A short imperative summary that names the stage or
-        requirement (``Sprint 3: groups, weekly leaderboard and challenge (S3-D)''),
-        followed by a body that says what changed and why.
+  \item \textbf{Commit messages.} A short summary, with a body that says what changed
+        and why. Stage commits name their stage (``Sprint 3: groups, weekly
+        leaderboard and challenge (S3-D)''); the requirement identifiers of each task
+        are recorded in the project plan.
   \item \textbf{Versioned infrastructure.} The Tuist manifests (\texttt{Project.swift},
         \texttt{Tuist/Package.swift}) generate the Xcode project, so no
         \texttt{.xcodeproj} is committed. The database schema is versioned as SQL
@@ -2489,16 +2541,16 @@ Arnav Bawankule & \texttt{30b5b0e} & update README.md (how the app works) & Yes 
 
 \begin{table}[H]
 \centering
-\caption{Commits by author (\texttt{git shortlog -sn -{}-all}, at submission)}
+\caption{Commits by author (\texttt{git shortlog -sn}, at the \texttt{sprint3-final} tag)}
 \label{tab:shortlog}
 \begin{tabularx}{\textwidth}{@{}L{4.2cm} l Y@{}}
 \toprule
 \textbf{Author} & \textbf{Commits} & \textbf{Notes} \\
 \midrule
-Raaj Banga & 36 & Includes commits under a second local Git name on the same account; 21 of them were made with an AI coding assistant (co-author trailer). \\
+Raaj Banga & 42 & Includes commits under a second local Git name on the same account; 27 of them were made with an AI coding assistant (co-author trailer). \\
 Arnav Bawankule & 2 & \\
 Elnad Salcinovic & 2 & Committed as \texttt{ElnadSosa}. \\
-AI-assisted commits & 7 & Authored by an AI coding assistant in cloud sessions, reviewed and pushed by a member (the 21 co-authored commits are counted above). \\
+AI-authored commits & 7 & Authored by an AI coding assistant in cloud sessions, then reviewed and pushed by a member. The 27 co-authored commits are counted under Raaj Banga. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -2516,8 +2568,10 @@ scripts, the CI workflow, and the four documentation files that go with the code
 READMEs, the design-system rules, and the pull request template), grouped by folder.
 It is generated from \texttt{git ls-files} by \texttt{scripts/gen-file-table.py},
 which stops if a file belongs to no group, so the table cannot silently miss a file.
-Only this document, the project plan, and image assets (the app icon and the color
-sets generated by \texttt{scripts/palette}) are not listed. Every listed file except
+Only the \texttt{docs/} folder (this document with its sources, figures, and
+measurement data, the Sprint 2 document, and the course material), the project plan
+(\texttt{todo.txt}), and image assets (the app icon and the color sets generated by
+\texttt{scripts/palette}) are not listed. Every listed file except
 the documentation files has its own subsection in Appendix~B.
 
 {\singlespacing\footnotesize
@@ -2566,7 +2620,7 @@ mitigations, updated for the Sprint 3 tables and function.
 \midrule
 The extracted anon key is used to call the API directly. & Row Level Security on every table: a row is visible only to its owner (\texttt{owner\_id = auth.uid()}) or, for group data, to members of the same group. The anon role has no table access. \\
 An attacker changes an \texttt{owner\_id}, \texttt{deck\_id}, or \texttt{group\_id} in a request to read, edit, or delete another user's data. & \texttt{owner\_id} and \texttt{created\_by} default to \texttt{auth.uid()} and are checked by RLS; group creation overwrites \texttt{created\_by} in a trigger; \texttt{join\_group} inserts a membership only for \texttt{auth.uid()}. \\
-An attacker joins a group by guessing invite codes. & Codes are six characters from a 32-letter alphabet (about $1.1 \times 10^9$ codes), generated by the server; a guessed code only grants membership of that group's board. Rate limiting by Supabase applies. \\
+An attacker joins a group by guessing invite codes. & Codes are six characters from a 32-letter alphabet (about $1.1 \times 10^9$ codes), generated by the server. Each request tests one code, so guessing is impractical, and a correct guess grants only a seat on that group's weekly XP board. A server-side limit on join attempts is Sprint 4 hardening. \\
 An attacker sends invalid or oversized data. & CHECK constraints mirror the app's limits (NFR-23); PostgREST sends parameterized queries, so SQL injection is not possible; the app never builds SQL. \\
 A stolen session token is used to impersonate a user. & TLS 1.3 only; tokens only in the Keychain (\emph{after first unlock, this device only}) and never logged (NFR-21). \\
 \bottomrule
@@ -2691,17 +2745,21 @@ Flows 11, 14 & Tampering, Information disclosure & A network attacker reads or a
 P6 / D3 & Elevation of privilege, Information disclosure & A user reads or writes another user's rows, or a non-member reads a group board. & RLS on all 8 tables; group policies via \texttt{private.is\_member()}; 48 live checks, 0 failures (TC-S01). \\
 Flow 14 & Elevation of privilege & \texttt{join\_group} (definer rights) is abused to add another user or read other groups. & Inserts only \texttt{auth.uid()}; empty \texttt{search\_path}; returns only the joined group; revoked from anon. \\
 D3 (\texttt{weekly\_xp}) & Tampering & A user writes an inflated weekly XP. & Own row only, CHECK $\le$ 22,500, server keeps the maximum; accepted residual risk R13. \\
-D2, flow 10 & Information disclosure & The session token leaks from storage or logs. & Keychain, this device only; logging audit: the 6 public log values are tier names, event names, starter-deck keys, and a duration (NFR-21). \\
+D2, flow 10 & Information disclosure & The session token leaks from storage or logs. & Keychain, this device only; logging audit: the 7 public log values are a launch duration, starter-deck keys and card IDs, sync event, state, and entity names, and tier names (NFR-21). \\
 D1 & Information disclosure & A lost phone exposes progress and decks. & iOS Data Protection (\emph{complete unless open}). The offline group cache (group names, invite codes, member names) is in \texttt{UserDefaults}, which has the default protection, and is cleared on sign-out. \\
 P2, flow 5 & Tampering, Denial of service & Oversized or malformed input crashes the app or the server. & Validator limits (title 60, text 500, code 2,000 characters and 80 lines), errors as values; CHECK constraints server-side. \\
 Flow 11 & Repudiation & A user denies having pushed a change. & Append-only \texttt{sync\_log} with no update or delete policies. \\
-P6 & Denial of service & Request flooding exhausts the Free plan. & Supabase platform rate limits; usage reviewed monthly (NFR-20, R11). \\
+P6 & Denial of service & Request flooding exhausts the Free plan. & Every write needs a signed-in session and passes RLS and CHECK constraints; usage is reviewed monthly against the Free-plan limits (NFR-20, R11). No per-user rate limit is configured yet (Sprint 4 hardening). \\
 \end{xltabular}
 
 \subsection{Security Test Cases}
 Table~\ref{tab:sectests} lists the security test cases, built from the automated
-checks of Activity~10.1, with the result of the Sprint 3 run. Two checks need tools or
-hardware outside the automated pipeline and are scheduled for Sprint 4.
+checks of Activity~10.1, with the result of the Sprint 3 run. Activity~10.1 chose
+tool-based analysis: each check is an automated, repeatable tool run, so results can
+be compared sprint to sprint (NFR-18). The checks run on every change that touches
+the backend and in full at the end of each sprint, and a failed check blocks the merge
+to \texttt{main} until it is fixed and run again. Two checks need tools or hardware
+outside the automated pipeline and are scheduled for Sprint 4.
 
 \begin{xltabular}{\textwidth}{@{}L{1.2cm} L{2.4cm} Y L{2.4cm} L{2.4cm} L{1.5cm}@{}}
 \caption{Security test cases and Sprint 3 results}\label{tab:sectests}\\
@@ -2722,7 +2780,7 @@ TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: k
 TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 0 in Codey's sources (Oct 30) & Pass \\
 TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & None found (Oct 30) & Pass \\
 TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 342-test run (Oct 31) & Pass \\
-TC-S07 & Token storage and logging (NFR-21) & \texttt{KeychainSessionStorageTests}; search the source for public log values and \texttt{UserDefaults} writes of tokens. & Keychain only; no token logged & 6 public log values, none sensitive; no token in \texttt{UserDefaults} (Oct 30) & Pass \\
+TC-S07 & Token storage and logging (NFR-21) & \texttt{KeychainSessionStorageTests}; search the source for public log values and \texttt{UserDefaults} writes of tokens. & Keychain only; no token logged & 7 public log values, none sensitive; no token in \texttt{UserDefaults} (Oct 30) & Pass \\
 TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 342-test run (Oct 31) & Pass \\
 TC-S09 & Hosts and TLS on the wire (NFR-24) & Capture Simulator traffic with Proxyman during sign-in, sync, and a leaderboard load. & Only Supabase and Google, all TLS 1.3 & Not run & Sprint 4 \\
 TC-S10 & File protection on device (NFR-04) & Install on an iPhone, read the store files' protection attribute. & \emph{complete unless open} & Not run & Sprint 4 \\
@@ -2806,6 +2864,16 @@ skipped in normal test runs and enabled with \texttt{CODEY\_PERF=1}, and
 \texttt{scripts/perf-report.sh} runs it and writes the results to
 \texttt{docs/source/perf/sprint3.csv}.
 
+\textbf{Testing approach (Activity 9.2).} The team chose a hybrid approach. Internal
+resources run inside the app or its test host: the XCTest-hosted
+\texttt{PerformanceTests} with in-process timers and \texttt{task\_info}, the app's
+own \texttt{LaunchTimer}, and Instruments for diagnosis. External resources observe
+from outside: \texttt{perf-launch.sh} relaunches the app with \texttt{simctl} and
+reads its log. Network Link Conditioner and the Supabase dashboard logs, also planned
+in Activity~9.2, serve the live network tests (NFR-02, TC-P09), which run in Sprint 4
+with the test accounts. Every Sprint 3 run used the iOS Simulator
+(Table~\ref{tab:hardware}).
+
 \begin{xltabular}{\textwidth}{@{}L{1.3cm} L{2.6cm} Y L{2.3cm} L{1.9cm}@{}}
 \caption{Performance test cases}\label{tab:perftests}\\
 \toprule
@@ -2858,8 +2926,11 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
 \centering
 \caption{Performance results (9 kept runs per scenario; times in ms). Peak MB is the whole test process on the Simulator, about 200~MB of which is iOS framework pages (Section~\ref{sec:bottlenecks}); Growth MB is the most one run of the scenario added to it.}
 \label{tab:perfresults}
+\resizebox{\textwidth}{!}{%
 \pgfplotstabletypeset[col sep=comma, string type,
-  columns={name,mean_ms,p95_ms,stddev_ms,peak_mb,growth_mb,threshold_ms},
+  create on use/tc/.style={create col/set list={TC-P02,TC-P06,TC-P01,TC-P04,TC-P05,TC-P03,TC-P07}},
+  columns={tc,name,mean_ms,p95_ms,stddev_ms,peak_mb,growth_mb,threshold_ms},
+  columns/tc/.style={column name=TC},
   every head row/.style={before row=\toprule, after row=\midrule},
   every last row/.style={after row=\bottomrule},
   columns/name/.style={column name=Scenario},
@@ -2869,7 +2940,7 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
   columns/stddev_ms/.style={column name=Std.\ dev.},
   columns/peak_mb/.style={column name=Peak MB},
   columns/growth_mb/.style={column name=Growth MB},
-  columns/threshold_ms/.style={column name=Threshold}]{perf/sprint3.csv}
+  columns/threshold_ms/.style={column name=Threshold}]{perf/sprint3.csv}}
 \end{table}
 
 \begin{figure}[!htbp]
