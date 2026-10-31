@@ -7,7 +7,7 @@ Supabase (PostgreSQL with Row Level Security) in the cloud.
 
 ## Build
 
-Requires an Apple Silicon Mac with Xcode 27.1 and [Tuist](https://tuist.io).
+Requires an Apple Silicon Mac with Xcode 27.2 and [Tuist](https://tuist.io).
 
 ```sh
 tuist install

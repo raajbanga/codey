@@ -109,13 +109,18 @@ update, or delete them; `anon` sees nothing; sync_log is append-only;
 `server_updated_at` is set by the server; and the length/line/language CHECKs
 match the app's validator.
 
-## Current state (2026-10-08)
+## Current state (2026-10-31)
 
-Project `<project-ref>`. Migrations applied via the Supabase MCP (the
-file names above equal the remote versions). Security advisor: clean for our
-objects; the only warning left is Supabase's own `public.rls_auto_enable()`.
-`checks/rls_live_check.sql`: **0 failed of 30**, and the database was verified
-empty afterward. Google provider: enabled with the Web + iOS client IDs, skip
+Project `<project-ref>`. All eight migrations in `migrations/` are
+applied via the Supabase MCP (the file names equal the remote versions),
+including the three Sprint 3 ones (2026-10-30): avatar set + insert-only
+`feedback_reports`, groups + `group_members` + `weekly_xp` + the
+`group_leaderboard` view + `join_group()`, and the Security Advisor fixes.
+RLS is on for 8 of 8 tables. Security Advisor: `rls_auto_enable()` revoked;
+the one remaining warning is `join_group` (SECURITY DEFINER, justified: it must
+find a group the caller cannot see yet). `checks/rls_live_check.sql`:
+**0 failed of 48**, everything rolled back. (2026-10-08: 0 of 30, before the
+Sprint 3 tables.) Google provider: enabled with the Web + iOS client IDs, skip
 nonce checks on.
 
 With the MCP you don't need steps 5–6: apply new migrations with
@@ -147,6 +152,8 @@ reports, and re-run `checks/rls_live_check.sql`.
 - Deletes are tombstones (`deleted_at`) so other devices can pull them.
 - `profiles.total_xp` is written by the client (merged as `max(local, remote)`
   except an explicit reset), so a determined user could inflate their own XP.
-  Acceptable for a class project with no leaderboards. Documented, not enforced.
+  The weekly leaderboard reads `weekly_xp`, which is capped by a CHECK
+  (22,500 per week) and can only grow; a server-computed ledger is the
+  Sprint 4 hardening (risk R13).
 - Starter decks, quiz progress, mastery, and tier unlocks never leave the
   device (D10).
