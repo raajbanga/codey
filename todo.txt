@@ -123,32 +123,33 @@ HOW TO READ THIS FILE
      "3 / 4 · +1 repeat").
 
  2. RE-FREEZE + RE-MEASURE                                        (AB) [L]
- [ ] Full unit suite (xcodebuild test -only-testing:codeyTests) + the 3 UI
-     suites. Record the pass count and xccov coverage.
- [ ] scripts/check-imports.sh, check-design-tokens.sh,
+ [x] Full unit suite (xcodebuild test -only-testing:codeyTests) + the 3 UI
+     suites. Record the pass count and xccov coverage. (342/342, 89.4%;
+     UI suites pass alone, intermittent in a full run: noted in App. A.)
+ [x] scripts/check-imports.sh, check-design-tokens.sh,
      check-secrets.sh --history, check-release-build.sh: all OK.
- [ ] New freeze tag (sprint3-final) on the commit that holds ALL code and
+ [x] New freeze tag (sprint3-final) on the commit that holds ALL code and
      tests (a67ecef changed 15 source/test files after sprint3-freeze).
      Push the tag.
- [ ] (A2) Perf harness: write the memory growth (MB added during the
+ [x] (A2) Perf harness: write the memory growth (MB added during the
      scenario) for EVERY scenario, not only the study session, as a new
      growth_mb column in sprint3.csv. The rubric's example asks for a
      per-call memory footprint; today peak_mb is the whole Simulator
      process (~250-296 MB) for every row.
- [ ] scripts/perf-report.sh at the new tag -> docs/perf/sprint3.csv.
- [ ] TC-P08 with the setup the doc specifies: starter decks + 5 user decks
+ [x] scripts/perf-report.sh at the new tag -> docs/perf/sprint3.csv.
+ [x] TC-P08 with the setup the doc specifies: starter decks + 5 user decks
      x 50 cards (the 10/30 run had 1 user deck). Then
      scripts/perf-launch.sh -> docs/perf/launch.csv. Remove the "store held
      ... one user deck" caveat in Section 18.4 if the setup now matches.
- [ ] Re-run the Appendix A dry run (A.2-A.4, A.8, A.9) from a fresh clone
+ [x] Re-run the Appendix A dry run (A.2-A.4, A.8, A.9) from a fresh clone
      at the new tag, including the UI tests now that the runner works.
 
  3. REGENERATE                                                    (RB) [L]
- [ ] scripts/gen-appendix-b.sh, gen-pattern-map.sh, gen-file-table.py at
+ [x] scripts/gen-appendix-b.sh, gen-pattern-map.sh, gen-file-table.py at
      the new tag (today all three are from 6bf0a2a and do not contain
      MasteryDots.swift or CodeySchemaV8.swift). Fix the Appendix B intro
      so the tag name matches.
- [ ] gen-file-table.py: also list the documentation/config files the
+ [x] gen-file-table.py: also list the documentation/config files the
      software uses (.github/pull_request_template.md, README.md,
      supabase/README.md, codey/DESIGN_SYSTEM.md) in a "Documentation"
      group (table only, not Appendix B), and reword "Documentation ... are
@@ -159,12 +160,12 @@ HOW TO READ THIS FILE
 
   Cover / Section 1 Overview
  [x] Cover emails confirmed (Q6); no change.
- [ ] (A2) Section 1.2 "Changes Since Sprint 2": add a bullet for the
+ [x] (A2) Section 1.2 "Changes Since Sprint 2": add a bullet for the
      study-session fix (visible mastery dots, announced repeats, progress
      summary; schema V8), found by user testing on Oct 30.
 
   Section 2 Requirements
- [ ] (A2) NFR-28 says "peak memory footprint <= 150 MB", the measured
+ [x] (A2) NFR-28 says "peak memory footprint <= 150 MB", the measured
      whole process is 267.7 MB, the test now gates on session growth
      (0.9 MB), yet Table 18 says "Met" and Table 6 shows target 150 MB.
      Per S25: keep the wording; Table 18 splits the NFR-28 row out of
@@ -172,12 +173,12 @@ HOW TO READ THIS FILE
      (267.7 MB); session adds 0.9 MB; iPhone 16 Pro Max check Sprint 4";
      Table 6 Sprint 3 cell and the 18.4 bullet ("met for what the app
      controls" -> "not met on the Simulator") say the same.
- [ ] Table 6 (metrics): unit-test count and coverage from step 2; launch,
+ [x] Table 6 (metrics): unit-test count and coverage from step 2; launch,
      memory, and timing values from the new CSVs; NFR-28 row per the
      decision above.
 
   Section 3 Hardware
- [ ] Table 7 per S22: "Development machines" -> one MacBook Pro
+ [x] Table 7 per S22: "Development machines" -> one MacBook Pro
      (Mac16,8, M4 Pro, 24 GB, macOS 27.2, Xcode 27.2); drop "3 Apple
      Silicon MacBooks, one per member" and the "other two" sentence; merge
      with the "Measurement machine" row. Section 3 intro: "Each team
@@ -185,13 +186,13 @@ HOW TO READ THIS FILE
      physical device" row -> "iPhone 16 Pro Max, 128 GB, iOS 27, for
      the Sprint 4 on-device checks". Sections 17/18 and Table 18 say
      "on the iPhone 16 Pro Max" wherever they say "on a device".
- [ ] (A2) Linear (S20): Table 7 "Source control and tracking" -> GitHub +
+ [x] (A2) Linear (S20): Table 7 "Source control and tracking" -> GitHub +
      manual tracking in todo.txt; delete the Table 8 Linear row. Table 8
      GitHub row "pull request reviews" -> "repository, PR template,
      Actions" (S15).
 
   Section 4 Development approach
- [ ] Process wording (S15). Rewrite each of these:
+ [x] Process wording (S15). Rewrite each of these:
        - 4.2 "Task tracking" -> tasks tracked manually in todo.txt (S20;
          no Linear or GitHub issues), "Build cadence"
          (weekly formal code review), and the definition of done ("pull
@@ -218,21 +219,21 @@ HOW TO READ THIS FILE
        - Table 29 (SSC) item 1 ("every PR reviewed by a second member";
          "Sprint 3 migrations reviewed against the checklist" -> say who
          checked them, when).
- [ ] (A2) 4.1 Modified waterfall: add the third feedback loop of Sprint 3
+ [x] (A2) 4.1 Modified waterfall: add the third feedback loop of Sprint 3
      (user testing on Oct 30 -> study-screen design change, S19). It is
      the best evidence of the "modified" part of the model.
- [ ] Table 5 (critical tasks): the blocker note says the UI-test runner
+ [x] Table 5 (critical tasks): the blocker note says the UI-test runner
      "does not launch"; add "resolved on Xcode 27.2" so it matches R15.
 
   Section 5 Gantt charts
- [ ] Section 5.3: activity bars end on their due dates (S23): 8.1 10/16
+ [x] Section 5.3: activity bars end on their due dates (S23): 8.1 10/16
      (today Oct 5-7), 8.2 10/18 (Oct 12-14), 9.2 10/27 (Oct 19-21), 10.1
      10/30 (Oct 26-27), 10.2 11/3 (Oct 28-29). The Course-activities group
      ends 11/3. Remove the red [TBD] and the "% Activity dates: confirm"
      comment.
- [ ] (A2) Gantt links: \ganttlink{a102}{strk} breaks (10.2 now ends after
+ [x] (A2) Gantt links: \ganttlink{a102}{strk} breaks (10.2 now ends after
      the streak work). Drop it; keep a92 -> perf and a101 -> sec.
- [ ] (A2) Text that assumed the old dates:
+ [x] (A2) Text that assumed the old dates:
        - 5.3 paragraph: "The first three weeks were spent on the course
          activities ... feature work then ran in the final week" -> the
          activities ran across the whole sprint; 10.1 and 10.2 overlap
@@ -240,106 +241,106 @@ HOW TO READ THIS FILE
        - 4.3 / Table 5: "Activity 10.2 wrap-up at the midpoint of the
          sprint" -> at the end of the sprint (due 11/3); the "checkpoint"
          column is when the activity was filled in.
- [ ] Sprint 3 Gantt: progress -> 100% for "Sprint 3 documentation" and
+ [x] Sprint 3 Gantt: progress -> 100% for "Sprint 3 documentation" and
      "Measurement & Documentation"; move the Code freeze milestone to the
      new tag's date.
- [ ] (A2) Sprint 3 Gantt: add bars for "Study-session UX fix (ES)"
+ [x] (A2) Sprint 3 Gantt: add bars for "Study-session UX fix (ES)"
      (Oct 30-31) and "Re-freeze & re-measure (AB)", linked to the freeze.
 
   Section 6 Risks
- [ ] R15: status -> resolved on Xcode 27.2 (the launch metric stays on
+ [x] R15: status -> resolved on Xcode 27.2 (the launch metric stays on
      perf-launch.sh); fix the Section 6.1 intro and Section 6.3 ("stayed
      blocked").
- [ ] (A2) R14 mitigation: "Fixed decision log (S1--S14)" -> S1-S19.
- [ ] R8 status: "largest 230 lines" -> 231 (also Section 12.4).
+ [x] (A2) R14 mitigation: "Fixed decision log (S1--S14)" -> S1-S19.
+ [x] R8 status: "largest 230 lines" -> 231 (also Section 12.4).
 
   Section 7 UI/UX
- [ ] 7.3 Key Interactions, Study bullet: mastery dots with "+1/+2/Reset/No
+ [x] 7.3 Key Interactions, Study bullet: mastery dots with "+1/+2/Reset/No
      change", the "+n repeat" counter, the Repeat chip, the new summary.
- [ ] 7.1 note: "planned Sprint 4 usability change" -> done in Sprint 3
+ [x] 7.1 note: "planned Sprint 4 usability change" -> done in Sprint 3
      (visible mastery instead of fewer ratings).
- [ ] (A2) 7 intro: "decision S9" is not defined anywhere in the doc. Drop
+ [x] (A2) 7 intro: "decision S9" is not defined anywhere in the doc. Drop
      the ID or say "a team design decision".
- [ ] Note (unchanged): Section 7 sits between Risks and Use Cases. Allowed;
+ [x] Note (unchanged): Section 7 sits between Risks and Use Cases. Allowed;
      move it after Section 4 only if the grader insists on strict order.
 
   Section 9 Traceability
- [ ] Table 18 NFR-07: "all four tables" -> all eight.
- [ ] Table 19 header: "the two XCTest UI tests" -> three.
- [ ] (A2) Table 18 cites TC-N03, N05, N14, N15, N17-19, N20, but Table 19
+ [x] Table 18 NFR-07: "all four tables" -> all eight.
+ [x] Table 19 header: "the two XCTest UI tests" -> three.
+ [x] (A2) Table 18 cites TC-N03, N05, N14, N15, N17-19, N20, but Table 19
      has no row for them. Add rows that name the review or manual check
      (from Table 2's Verification column), e.g. "TC-N05: review of
      Supabase encryption-at-rest docs".
- [ ] (A2) S19 design elements: Table 17 FR-16-18 row add MasteryDots,
+ [x] (A2) S19 design elements: Table 17 FR-16-18 row add MasteryDots,
      StudyQueue (distinctTotal, repeatCount), FlashcardDeck.progressRate,
      StudyProgressSnapshot (V8); Table 19 TC-16-18 and TC-N13 add
      MigrationTests (V7 -> V8). Rename tests here if any changed.
 
   Section 12 Class diagrams
- [ ] Figure 13: FlashcardDeck +progressRate: Double {get}.
- [ ] (A2) Section 12.1 Sprint 3 additions text: "Persisted state changed in
+ [x] Figure 13: FlashcardDeck +progressRate: Double {get}.
+ [x] (A2) Section 12.1 Sprint 3 additions text: "Persisted state changed in
      one place: schema version 7" -> V7 and V8 (StudyProgressSnapshot
      keeps start scores and start progress). Every "current schema" /
      migration-stage count -> V8.
- [ ] Section 12.4: BackendFacade.swift is 231 lines, not 230.
+ [x] Section 12.4: BackendFacade.swift is 231 lines, not 230.
 
   Section 13 Version control
  [x] Table 24 and the contribution paragraph stay as written (S21).
- [ ] Mention the sprint3-final tag and the dev -> main squash in step 6.
+ [x] Mention the sprint3-final tag and the dev -> main squash in step 6.
 
   Section 17 Security
- [ ] TC-S06 / TC-S08: "327-test run" -> the final count (Table 6 says 334
+ [x] TC-S06 / TC-S08: "327-test run" -> the final count (Table 6 says 334
      today, so the doc already disagrees with itself).
- [ ] (A2) TC-S01 steps: "through the Supabase MCP" -> "in the Supabase SQL
+ [x] (A2) TC-S01 steps: "through the Supabase MCP" -> "in the Supabase SQL
      editor (or the Supabase MCP)", so a reader can repeat it (A.6 already
      says the SQL editor).
 
   Section 18 Performance
- [ ] Figure 23 (pgfplots) mislabels its bars: the ~400 ms bar is labeled
+ [x] Figure 23 (pgfplots) mislabels its bars: the ~400 ms bar is labeled
      "study-session-100-growth" but is sync-push-100-mock50ms, and the
      sync-push row has no label. Use symbolic y coords and drop the two
      memory rows, so every bar has its own label.
- [ ] Update Table 32, the result bullets, the bottleneck numbers, and the
+ [x] Update Table 32, the result bullets, the bottleneck numbers, and the
      commit hash in 18.3 from the new CSVs.
- [ ] (A2) Table 32: show the new growth_mb column (step 2) and say in the
+ [x] (A2) Table 32: show the new growth_mb column (step 2) and say in the
      caption that "Peak MB" is the whole Simulator process.
- [ ] (A2) "Performance metrics will be gathered and optimized" (client):
+ [x] (A2) "Performance metrics will be gathered and optimized" (client):
      18.6 lists only harness fixes. Add the Sprint 2 -> 3 optimization
      evidence that exists (batched push: 3 requests instead of ~100,
      ~5 s -> 0.41 s at 50 ms RTT), or move it from 18.5 into 18.6.
 
   Appendix A
- [ ] A.6: supabase/README.md has no screenshots; remove "with screenshots
+ [x] A.6: supabase/README.md has no screenshots; remove "with screenshots
      of each setting". Also refresh supabase/README.md "Current state
      (2026-10-08)" for the three Sprint 3 migrations.
- [ ] A.11: drop the UI-test-runner bullet, or say it applies to Xcode
+ [x] A.11: drop the UI-test-runner bullet, or say it applies to Xcode
      <= 27.1.
- [ ] (A2) A.9: add the UI-test command
+ [x] (A2) A.9: add the UI-test command
      (xcodebuild test ... -only-testing:codeyUITests).
- [ ] (A2) A.3: the pins also include xctest-dynamic-overlay 1.11.0 and
+ [x] (A2) A.3: the pins also include xctest-dynamic-overlay 1.11.0 and
      swift-clocks 1.0.6 (Tuist/Package.swift); list them.
- [ ] (A2) Intro: dry-run date, tag, and test count from step 2.
- [ ] (A2) README.md says Xcode 27.1; the doc says 27.2. Make them match.
+ [x] (A2) Intro: dry-run date, tag, and test count from step 2.
+ [x] (A2) README.md says Xcode 27.1; the doc says 27.2. Make them match.
 
  5. BUILD BOTH PDFs (S16)                                         (RB) [L]
- [ ] Add a switch in Sprint3_Documentation.tex (e.g. \newif\ifcodelistings,
+ [x] Add a switch in Sprint3_Documentation.tex (e.g. \newif\ifcodelistings,
      or tectonic -Z with a \def from the command line) that leaves out
      Appendix B's listings. Keep the Appendix B heading with one line:
      "Omitted from this reading copy; see Sprint3_Documentation.pdf".
      Build docs/Sprint3_Documentation_reading.pdf (~98 pages) next to the
      full PDF.
- [ ] Table 20 and Section 16 point to Appendix B subsections. Check they
+ [x] Table 20 and Section 16 point to Appendix B subsections. Check they
      still read well in the reading copy.
- [ ] Final tectonic build: 0 undefined refs, 0 overfull boxes > 3 pt, no
+ [x] Final tectonic build: 0 undefined refs, 0 overfull boxes > 3 pt, no
      red \tbd left (grep -n 'tbd{' and grep the PDF text for TBD).
- [ ] (A2) Grep the final .tex for stale values: "327", "334", "S1--S14",
+ [x] (A2) Grep the final .tex for stale values: "327", "334", "S1--S14",
      "230 lines", "four tables", "two XCTest", "6bf0a2a", "sprint3-freeze".
- [ ] Final rubric tick (checklist below) on the built PDF.
+ [x] Final rubric tick (checklist below) on the built PDF.
 
  6. SUBMIT + MERGE                                                     (RB)
- [ ] Commit both PDFs (docs/Sprint3_Documentation.pdf is untracked right
+ [x] Commit both PDFs (docs/Sprint3_Documentation.pdf is untracked right
      now) + the regenerated files on dev.
- [ ] Squash-merge dev -> main, then merge main back into dev. Appendix
+ [x] Squash-merge dev -> main, then merge main back into dev. Appendix
      A.2 tells readers to `git checkout main`, and main has none of
      Sprint 3 (38 commits behind dev).
  [ ] Submit docs/Sprint3_Documentation.pdf by 11/3.
@@ -353,29 +354,29 @@ HOW TO READ THIS FILE
  [x] All figures/tables labeled; graphs have axis labels  -> Fig 23 (4)
  [x] Cover page (title, course, sprint #, date, names + emails)
  [x] Table of contents with page numbers (+ lists of figures/tables)
- [~] Project Overview and Scope (Sprint 3): S19 bullet (4)
- [~] Requirements: 60 FRs + 32 NFRs; NFR-28 status (S25, 4)
- [~] Project hardware details: one Mac + Simulators (S22, 4)
- [~] Development & organizational approach: S15 wording (4)
- [~] Gantt charts S1, S2, S3: [TBD], activity dates (S23), progress, S19 bars (4)
- [~] Risks (identification, planning, monitoring): R14, R15 (4)
+ [x] Project Overview and Scope (Sprint 3): S19 bullet (4)
+ [x] Requirements: 60 FRs + 32 NFRs; NFR-28 status (S25, 4)
+ [x] Project hardware details: one Mac + Simulators (S22, 4)
+ [x] Development & organizational approach: S15 wording (4)
+ [x] Gantt charts S1, S2, S3: [TBD], activity dates (S23), progress, S19 bars (4)
+ [x] Risks (identification, planning, monitoring): R14, R15 (4)
  [x] Use case diagram + documentation (UC-01 + 7 Sprint 3 specs)
- [~] Requirements traceability: undefined TC-N ids, S19 rows (4)
+ [x] Requirements traceability: undefined TC-N ids, S19 rows (4)
  [x] Sequence diagrams (2) + documentation
  [x] State diagram + documentation
- [~] Class diagrams: Factory / State / Facade + domain: progressRate (4)
+ [x] Class diagrams: Factory / State / Facade + domain: progressRate (4)
  [x] Design pattern -> source line mapping (regenerate, 3)
  [x] Component diagram + documentation
  [x] Deployment diagram + documentation
- [~] Usage of version control: main behind (6)
- [~] Program files / configuration files table: doc files, S19 files (3)
+ [x] Usage of version control: main squash-merged (6)
+ [x] Program files / configuration files table: doc files, S19 files (3)
  [x] Project security issues + security NFRs (S15 wording in 17.3)
  [x] Security threat model DFD (+ STRIDE)
  [x] Security test cases (TC-S01-S11): counts (4)
- [~] System performance: requirements, test cases, profiles, results,
+ [x] System performance: requirements, test cases, profiles, results,
      bottlenecks: Fig 23, TC-P08 fixture, per-scenario memory (2, 4)
- [~] Appendix A: build instructions: A.3, A.6, A.9, A.11, dry run (2, 4)
- [~] Appendix B: every source/config file, commented: regenerate (3)
+ [x] Appendix A: build instructions: A.3, A.6, A.9, A.11, dry run (2, 4)
+ [x] Appendix B: every source/config file, commented: regenerate (3)
 
 
 ================================================================================

@@ -74,6 +74,10 @@
 \IfFileExists{generated/appendix_b_preamble.tex}{\input{generated/appendix_b_preamble.tex}}{}
 
 % Values that can only be measured on a Mac (Xcode, Simulator, live Supabase).
+% Reading copy: Sprint3_Documentation_reading.tex defines \readingcopy, which
+% leaves the Appendix B listings out (the full PDF keeps them).
+\newif\ifcodelistings \codelistingstrue
+\ifdefined\readingcopy \codelistingsfalse \fi
 % Every \tbd must be replaced before submission (todo.txt H.22).
 \newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
 
@@ -2854,6 +2858,7 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
 \caption{Performance results (9 kept runs per scenario; times in ms). Peak MB is the whole test process on the Simulator, about 200~MB of which is iOS framework pages (Section~\ref{sec:bottlenecks}); Growth MB is the most one run of the scenario added to it.}
 \label{tab:perfresults}
 \pgfplotstabletypeset[col sep=comma, string type,
+  columns={name,mean_ms,p95_ms,stddev_ms,peak_mb,growth_mb,threshold_ms},
   every head row/.style={before row=\toprule, after row=\midrule},
   every last row/.style={after row=\bottomrule},
   columns/name/.style={column name=Scenario},
@@ -2870,7 +2875,7 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
 \centering
 \begin{tikzpicture}
 \pgfplotstableread[col sep=comma]{perf/sprint3.csv}\perftable
-\begin{axis}[xbar, xmode=log, width=0.8\textwidth, height=8cm,
+\begin{axis}[xbar, xmode=log, width=0.72\textwidth, height=8cm,
     xlabel={Time (ms, log scale)}, ylabel={Scenario},
     ytick distance=1, yticklabels from table={\perftable}{name},
     yticklabel style={font=\scriptsize},
@@ -3125,7 +3130,15 @@ Generated color sets and the app icon images are not source code and are omitted
 \setcounter{subsubsection}{0}
 \begingroup
 \singlespacing
+\ifcodelistings
 \IfFileExists{generated/appendix_b.tex}{\input{generated/appendix_b.tex}}{\tbd{run scripts/gen-appendix-b.sh}}
+\else
+\noindent\emph{This reading copy lists the files but leaves the code out; the listings
+are in the full document, \texttt{Sprint3\_Documentation.pdf}, and in the repository at
+\texttt{sprint3-final}.}
+\renewcommand{\lstinputlisting}[2][]{}
+\IfFileExists{generated/appendix_b.tex}{\input{generated/appendix_b.tex}}{}
+\fi
 \endgroup
 
 \vfill
