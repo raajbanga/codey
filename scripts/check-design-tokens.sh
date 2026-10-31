@@ -26,9 +26,9 @@ check "no raw system fonts in screens" '\.font\(\.(largeTitle|title|title2|title
 check "haptics via .sensoryFeedback, not UIKit generators" 'UI(Impact|Notification|Selection)FeedbackGenerator' "$SRC"
 
 # Capsule only for single-line, fixed-height controls (D19).
-hits=$(grep -rnE 'Capsule\(\)' "$SRC" | grep -vE "DesignSystem/Components/(CodeyChip|ProgressBar)\.swift" || true)
+hits=$(grep -rnE 'Capsule\(\)' "$SRC" | grep -vE "DesignSystem/Components/(CodeyChip|ProgressBar|CodeyButton)\.swift" || true)
 if [[ -n "$hits" ]]; then echo "✗ Capsule() outside approved single-line components"; echo "$hits" | sed 's/^/    /'; fail=1
-else echo "✓ Capsule() only in CodeyChip / ProgressBar"; fi
+else echo "✓ Capsule() only in CodeyChip / ProgressBar / CodeyButton"; fi
 
 # Third-party UI libraries stay behind one wrapper each (R12).
 hits=$(grep -rlnE '^import Textual' "$SRC" | grep -v "DesignSystem/Markdown/CardMarkdownView.swift" || true)

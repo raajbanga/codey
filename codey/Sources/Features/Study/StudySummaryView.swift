@@ -52,7 +52,6 @@ struct StudySummaryView: View {
             Image(systemName: "rectangle.stack.badge.person.crop.fill")
                 .font(.codeyDisplay)
                 .foregroundStyle(CodeyColor.brand)
-                .symbolEffect(.bounce, options: .nonRepeating)
                 .accessibilityHidden(true)
             Text("Session complete")
                 .font(.codeyDisplay)
@@ -66,15 +65,30 @@ struct StudySummaryView: View {
         .accessibilityAddTraits(.isHeader)
     }
 
+    /// S19: "moved up" and deck progress in mastery points, so a first pass
+    /// through a deck shows what changed instead of "0 mastered, 0%".
     private var stats: some View {
-        let endPercent = Int((summary.endMasteryRate * 100).rounded())
-        let deltaPoints = Int((summary.masteryDelta * 100).rounded())
+        let endPercent = Int((summary.endProgressRate * 100).rounded())
+        let deltaPoints = Int((summary.progressDelta * 100).rounded())
         let delta = deltaPoints > 0 ? "+\(deltaPoints)" : "\(deltaPoints)"
-        return StatTileRow {
-            StatTile(value: summary.reviewed, label: "Cards reviewed", systemImage: "rectangle.on.rectangle")
-            StatTile(value: summary.newlyMastered, label: "Newly mastered", systemImage: "checkmark.seal.fill", tint: CodeyColor.success)
-            StatTile(value: endPercent, label: "Deck mastery · \(delta) pts", suffix: "%", systemImage: "chart.line.uptrend.xyaxis")
+        return VStack(spacing: CodeySpacing.md) {
+            StatTileRow {
+                StatTile(value: summary.reviewed, label: reviewedLabel, systemImage: "rectangle.on.rectangle")
+                StatTile(value: summary.movedUp, label: "Moved up", systemImage: "arrow.up.circle.fill", tint: CodeyColor.success)
+                StatTile(value: endPercent, label: "Deck progress · \(delta) pts", suffix: "%", systemImage: "chart.line.uptrend.xyaxis")
+            }
+            if summary.newlyMastered > 0 {
+                CodeyChip(
+                    "\(summary.newlyMastered.counted("card")) mastered",
+                    systemImage: "checkmark.seal.fill",
+                    variant: .success
+                )
+            }
         }
+    }
+
+    private var reviewedLabel: String {
+        summary.repeats > 0 ? "Cards reviewed · +\(summary.repeats.counted("repeat"))" : "Cards reviewed"
     }
 
     private var unlockBanners: some View {
@@ -84,10 +98,10 @@ struct StudySummaryView: View {
     private var buttons: some View {
         VStack(spacing: CodeySpacing.sm) {
             if !wasEmpty {
-                CodeyButton("Study Again", systemImage: "arrow.clockwise", kind: .glassSecondary, fullWidth: true, action: studyAgain)
+                CodeyButton("Study Again", systemImage: "arrow.clockwise", kind: .secondary, fullWidth: true, action: studyAgain)
                     .accessibilityIdentifier("study.again")
             }
-            CodeyButton("Done", kind: .glassPrimary, fullWidth: true, action: done)
+            CodeyButton("Done", kind: .primary, fullWidth: true, action: done)
                 .accessibilityIdentifier("study.done")
         }
         .padding(.top, CodeySpacing.sm)

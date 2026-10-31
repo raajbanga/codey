@@ -1,5 +1,6 @@
 import Foundation
 
+/// One topic in questions-seed.json.
 struct TopicSeed: Decodable, Equatable {
     let id: String
     let title: String

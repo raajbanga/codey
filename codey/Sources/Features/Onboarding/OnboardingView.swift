@@ -35,7 +35,7 @@ struct OnboardingView: View {
             .frame(maxHeight: .infinity)
             bottomBar
         }
-        .background(CodeyColor.surface.ignoresSafeArea())
+        .codeyPaperBackground()
         .interactiveDismissDisabled()
     }
 
@@ -49,6 +49,9 @@ struct OnboardingView: View {
                 } label: {
                     Label("Back", systemImage: "chevron.left")
                         .font(.codeyCallout.weight(.semibold))
+                        // 44pt minimum target (HIG); the label alone is ~20pt tall.
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
                 }
                 .tint(CodeyColor.brand)
                 .accessibilityIdentifier("onboarding.back")
@@ -71,19 +74,19 @@ struct OnboardingView: View {
         VStack(spacing: CodeySpacing.sm) {
             switch step {
             case .welcome:
-                CodeyButton("Get Started", kind: .glassPrimary, fullWidth: true) { move(to: .topics) }
+                CodeyButton("Get Started", kind: .primary, fullWidth: true) { move(to: .topics) }
                     .accessibilityIdentifier("onboarding.continue")
             case .topics:
                 CodeyButton(
                     picked.isEmpty ? "Pick at least one topic" : "Continue",
-                    kind: .glassPrimary,
+                    kind: .primary,
                     fullWidth: true
                 ) { move(to: .sync) }
                 .disabled(picked.isEmpty)
                 .accessibilityIdentifier("onboarding.continue")
             case .sync:
                 if backend.isSignInAvailable {
-                    CodeyButton("Sign in with Google", systemImage: "person.badge.key", kind: .glassSecondary, fullWidth: true) {
+                    CodeyButton("Sign in with Google", systemImage: "person.badge.key", kind: .secondary, fullWidth: true) {
                         Task {
                             await backend.signInWithGoogle()
                             if backend.currentUser != nil { complete() }
@@ -92,7 +95,7 @@ struct OnboardingView: View {
                     .disabled(backend.authState == .signingIn)
                     .accessibilityIdentifier("onboarding.signIn")
                 }
-                CodeyButton("Skip for Now", kind: .glassPrimary, fullWidth: true) { complete() }
+                CodeyButton("Skip for Now", kind: .primary, fullWidth: true) { complete() }
                     .accessibilityIdentifier("onboarding.skip")
             }
         }
@@ -234,18 +237,17 @@ private struct TopicPickStep: View {
                         .foregroundStyle(CodeyColor.textPrimary)
                         .multilineTextAlignment(.leading)
                     Text(topic.summary)
-                        .font(.codeyCaption)
+                        .font(.codeySubheadline)
                         .foregroundStyle(CodeyColor.textSecondary)
                         .multilineTextAlignment(.leading)
                         .lineLimit(3)
                 }
                 .padding(CodeySpacing.md)
                 .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-                .background(isSelected ? CodeyColor.brandSoft : CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
-                .overlay {
-                    RoundedRectangle.codey(CodeyRadius.lg)
-                        .strokeBorder(isSelected ? CodeyColor.brand : CodeyColor.separator, lineWidth: isSelected ? 2 : 1)
-                }
+                .codeyNote(
+                    fill: isSelected ? CodeyColor.brandSoft : CodeyColor.surfaceRaised,
+                    edge: isSelected ? CodeyColor.brand : nil
+                )
                 .contentShape(.rect(cornerRadius: CodeyRadius.lg))
             }
             .buttonStyle(.plain)

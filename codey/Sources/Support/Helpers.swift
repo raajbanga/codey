@@ -1,6 +1,9 @@
 import Foundation
 import SwiftData
 
+// Small shared helpers used across features. Kept generic: anything
+// feature-specific belongs next to that feature.
+
 extension Sequence {
     /// Elements by key; the first element wins on duplicate keys.
     func keyed<Key: Hashable>(by key: (Element) -> Key) -> [Key: Element] {

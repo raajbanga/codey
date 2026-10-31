@@ -42,6 +42,7 @@ final class QuizViewModel {
     private let context: ModelContext
     private let store: QuizProgressStore
     private let now: () -> Date
+    private let weeklyXP: WeeklyXPStore
     private var generator: AnyRandomGenerator
 
     init(
@@ -50,6 +51,7 @@ final class QuizViewModel {
         context: ModelContext,
         config: GatingConfig = .standard,
         generator: any RandomNumberGenerator = SystemRandomNumberGenerator(),
+        weeklyXP: WeeklyXPStore = WeeklyXPStore(),
         now: @escaping () -> Date = Date.init
     ) {
         self.topic = topic
@@ -57,6 +59,7 @@ final class QuizViewModel {
         self.context = context
         self.store = QuizProgressStore(context: context, config: config)
         self.now = now
+        self.weeklyXP = weeklyXP
         self.generator = AnyRandomGenerator(generator)
         start()
     }
@@ -95,6 +98,7 @@ final class QuizViewModel {
             if correct {
                 let amount = XPPolicy.xpForCorrectAnswer(tier: question.difficulty, streakAfterIncrement: streak)
                 profile.totalXP += amount
+                weeklyXP.add(amount, now: timestamp)
                 xpEarned += amount
                 gain = XPGain(amount: amount, breakdown: XPPolicy.breakdown(tier: question.difficulty, streakAfterIncrement: streak))
             }
@@ -115,6 +119,8 @@ final class QuizViewModel {
 
         do {
             try DailyActivity.forDay(timestamp, context: context).quizAnswers += 1
+            // XP, the daily goal, and the weekly challenge move here → badges (FR-35).
+            try BadgeEvaluator.award(context: context, now: timestamp)
             try context.save()
         } catch {
             // B11: never swallow silently.

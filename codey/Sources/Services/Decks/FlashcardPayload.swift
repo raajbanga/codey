@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - [Pattern: Factory] Creation input
 /// The one wire/bundle DTO for a card (FR-09): starter JSON, sync, and
 /// toPayload() all use it. A typed stand-in for the UML's "Dictionary".
 /// Its JSON shape is documented in Resources/Schemas/flashcard.schema.json.

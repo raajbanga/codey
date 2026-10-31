@@ -1,6 +1,7 @@
 import Testing
 @testable import codey
 
+/// FR-30 XP per correct answer: tier base + streak bonus.
 struct XPPolicyTests {
     /// D5: base + min(5 × (streak − 1), 25).
     @Test func easySequenceMatchesTheDoc() {

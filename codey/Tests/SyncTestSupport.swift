@@ -88,6 +88,69 @@ final class MockRemoteStore: RemoteDeckStore {
         log += entries
     }
 
+    private(set) var feedback: [FeedbackReportPayload] = []
+
+    func submitFeedback(_ report: FeedbackReportPayload) async throws {
+        try record("submitFeedback")
+        feedback.append(report)
+    }
+
+    // MARK: Groups (S3-D)
+
+    private(set) var groups: [UUID: GroupSummary] = [:]
+    /// group id → member ids.
+    private(set) var members: [UUID: Set<UUID>] = [:]
+    /// user id → XP this week (max-merged like the server).
+    private(set) var weeklyXP: [UUID: Int] = [:]
+    var me = SyncHarness.alice.id
+    var displayNames: [UUID: String] = [:]
+    var nextInviteCode = "ABC234"
+
+    func fetchGroups() async throws -> [GroupSummary] {
+        try record("fetchGroups")
+        return groups.values.filter { members[$0.id]?.contains(me) == true }.sorted { $0.name < $1.name }
+    }
+
+    func createGroup(id: UUID, name: String) async throws -> GroupSummary {
+        try record("createGroup")
+        let group = GroupSummary(id: id, name: name, inviteCode: nextInviteCode)
+        groups[id] = group
+        members[id, default: []].insert(me)
+        return group
+    }
+
+    func joinGroup(code: String) async throws -> GroupSummary {
+        try record("joinGroup")
+        guard let group = groups.values.first(where: { $0.inviteCode == code }) else { throw GroupError.invalidCode }
+        members[group.id, default: []].insert(me)
+        return group
+    }
+
+    func leaveGroup(id: UUID) async throws {
+        try record("leaveGroup")
+        members[id]?.remove(me)
+    }
+
+    func fetchLeaderboard(groupID: UUID) async throws -> [LeaderboardEntry] {
+        try record("fetchLeaderboard")
+        guard members[groupID]?.contains(me) == true else { return [] }
+        return (members[groupID] ?? []).map { user in
+            LeaderboardEntry(userId: user, displayName: displayNames[user] ?? "User", avatarId: nil, xp: weeklyXP[user] ?? 0)
+        }
+    }
+
+    func upsertWeeklyXP(weekStart: String, xp: Int) async throws {
+        try record("upsertWeeklyXP")
+        weeklyXP[me] = max(weeklyXP[me] ?? 0, xp)
+    }
+
+    /// Another user's membership and XP, as if they'd joined elsewhere.
+    func addMember(_ user: UUID, name: String, xp: Int, to groupID: UUID) {
+        members[groupID, default: []].insert(user)
+        displayNames[user] = name
+        weeklyXP[user] = xp
+    }
+
     // MARK: "Another device" writes
 
     func otherDeviceUpsert(deck: DeckPayload) {
@@ -187,6 +250,7 @@ struct SyncHarness {
     let remote: MockRemoteStore
     let reachability: MockReachability
     let sleeper: SleepRecorder
+    let weeklyXP: WeeklyXPStore
 
     init(
         user: AppUser? = SyncHarness.alice,
@@ -199,12 +263,15 @@ struct SyncHarness {
         reachability = MockReachability(isReachable: reachable)
         sleeper = SleepRecorder()
         let suite = UserDefaults(suiteName: "codey-tests-\(UUID().uuidString)")!
+        weeklyXP = WeeklyXPStore(defaults: suite)
         facade = BackendFacade(
             context: context,
             auth: auth,
             remote: self.remote,
             reachability: reachability,
             cursors: SyncCursorStore(defaults: suite),
+            weeklyXP: weeklyXP,
+            groupCache: GroupCache(defaults: suite),
             deviceID: "test-device",
             sleep: sleeper.sleep
         )

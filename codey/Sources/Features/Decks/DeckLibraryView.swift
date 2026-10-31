@@ -74,7 +74,7 @@ struct DeckLibraryView: View {
             }
             .padding(CodeySpacing.md)
         }
-        .background(CodeyColor.surface)
+        .codeyPaperBackground()
         .navigationTitle("Decks")
         .searchable(text: $searchText, prompt: "Title or topic")
         .refreshable { await backend.syncPending() }

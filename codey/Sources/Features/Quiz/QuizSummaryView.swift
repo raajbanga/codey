@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// End of a quiz: percentage ring + "8/10 correct" (FR-20), XP / streak /
-/// retired tiles, and level-up / tier-unlock banners with a celebration.
+/// retired tiles, and level-up / tier-unlock banners with a quiet celebration.
 struct QuizSummaryView: View {
     let viewModel: QuizViewModel
     let done: () -> Void
@@ -76,11 +76,11 @@ struct QuizSummaryView: View {
 
     private var buttons: some View {
         VStack(spacing: CodeySpacing.sm) {
-            CodeyButton("Quiz Again", systemImage: "arrow.clockwise", kind: .glassSecondary, fullWidth: true) {
+            CodeyButton("Quiz Again", systemImage: "arrow.clockwise", kind: .secondary, fullWidth: true) {
                 withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.restart() }
             }
             .accessibilityIdentifier("quiz.again")
-            CodeyButton("Done", kind: .glassPrimary, fullWidth: true, action: done)
+            CodeyButton("Done", kind: .primary, fullWidth: true, action: done)
                 .accessibilityIdentifier("quiz.done")
         }
         .padding(.horizontal, CodeySpacing.md)
@@ -95,7 +95,7 @@ struct QuizSummaryView: View {
         }
     }
 
-    /// Level-up wins over a tier unlock; one burst per summary (D17).
+    /// Level-up wins over a tier unlock; one quiet celebration per summary (S9).
     private var celebration: (title: String, symbol: String)? {
         if let level = viewModel.reachedLevel { return ("Level \(level)!", "arrow.up.circle.fill") }
         if let tier = viewModel.unlockedTiers.last { return ("\(tier.style.label) unlocked!", tier.style.symbol) }

@@ -32,10 +32,12 @@ struct LimitCounter: View {
 extension View {
     /// Danger outline on an invalid field.
     func errorBorder(_ isShown: Bool, radius: CGFloat) -> some View {
+        // The hairline otherwise, so fields sit on the paper like notes (S9).
         overlay {
-            if isShown {
-                RoundedRectangle.codey(radius).strokeBorder(CodeyColor.danger, lineWidth: 1.5)
-            }
+            RoundedRectangle.codey(radius).strokeBorder(
+                isShown ? CodeyColor.danger : CodeyColor.separator,
+                lineWidth: isShown ? 1.5 : 1
+            )
         }
     }
 

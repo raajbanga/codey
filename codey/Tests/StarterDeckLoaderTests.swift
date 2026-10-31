@@ -3,6 +3,7 @@ import SwiftData
 import Testing
 @testable import codey
 
+/// Bundled starter decks: decode, topic references, idempotent seeding.
 @MainActor
 struct StarterDeckLoaderTests {
 

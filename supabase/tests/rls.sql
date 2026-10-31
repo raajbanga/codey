@@ -3,7 +3,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(48);
 
 -- Two users. The sign-up trigger should give each a profile.
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -138,6 +138,71 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
 select is((select title from public.decks where id = '10000000-0000-0000-0000-00000000000a'),
           'A deck', 'A''s deck is unchanged after B''s attempts');
+
+-- ── S3-C: avatar set (FR-04) + feedback_reports (FR-49) ──────────────────
+select lives_ok($$
+    update public.profiles set avatar_id = 'bolt.fill' where id = '00000000-0000-0000-0000-00000000000a'
+$$, 'A can pick an avatar from the set');
+select throws_ok($$
+    update public.profiles set avatar_id = 'skull.fill' where id = '00000000-0000-0000-0000-00000000000a'
+$$, '23514', null, 'an avatar outside the set is rejected');
+select lives_ok($$
+    insert into public.feedback_reports (description, app_version, os_version) values ('Button overlaps text', '1.0 (1)', '26.0')
+$$, 'A can send a feedback report (owner_id defaults to auth.uid())');
+select throws_ok($$
+    insert into public.feedback_reports (description) values (repeat('x', 1001))
+$$, '23514', null, 'a report over 1000 characters is rejected');
+select is((select count(*)::int from public.feedback_reports), 0, 'reports can''t be read back, even your own');
+
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+select throws_ok($$
+    insert into public.feedback_reports (owner_id, description) values ('00000000-0000-0000-0000-00000000000a', 'spoof')
+$$, '42501', null, 'B can''t send a report as A');
+
+-- ── S3-D: groups, weekly XP, leaderboard ─────────────────────────────────
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+
+select lives_ok($$
+    insert into public.groups (id, name, invite_code, created_by)
+    values ('30000000-0000-0000-0000-00000000000a', '  CS 360  ', 'AAAAAA', '00000000-0000-0000-0000-00000000000b')
+$$, 'A can create a group');
+select ok((select invite_code ~ '^[A-Z0-9]{6}$' and invite_code <> 'AAAAAA' and created_by = '00000000-0000-0000-0000-00000000000a' and name = 'CS 360'
+           from public.groups where id = '30000000-0000-0000-0000-00000000000a'),
+          'the server sets the code and creator, and trims the name');
+select is((select count(*)::int from public.group_members where group_id = '30000000-0000-0000-0000-00000000000a'),
+          1, 'the creator becomes a member');
+select throws_ok($$
+    insert into public.group_members (group_id, user_id) values ('30000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b')
+$$, '42501', null, 'memberships can only be added through join_group');
+select lives_ok($$
+    insert into public.weekly_xp (week_start, xp) values (date_trunc('week', now() at time zone 'utc')::date, 100);
+    insert into public.weekly_xp (week_start, xp) values (date_trunc('week', now() at time zone 'utc')::date, 50)
+        on conflict (owner_id, week_start) do update set xp = excluded.xp
+$$, 'A can upsert their weekly XP');
+select is((select xp from public.weekly_xp where owner_id = '00000000-0000-0000-0000-00000000000a'),
+          100, 'weekly_xp keeps the max');
+select throws_ok($$
+    insert into public.weekly_xp (week_start, xp) values (date_trunc('week', now() at time zone 'utc')::date + 1, 10)
+$$, '23514', null, 'week_start must be a Monday');
+
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+select is((select count(*)::int from public.groups) + (select count(*)::int from public.group_leaderboard)
+          + (select count(*)::int from public.weekly_xp),
+          0, 'a non-member sees no groups, board rows, or XP');
+select throws_ok($$ select public.join_group('ZZZZZZ') $$, 'P0002', null, 'an unknown code is rejected');
+
+reset role;
+select set_config('test.code', (select invite_code from public.groups where id = '30000000-0000-0000-0000-00000000000a'), true);
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+select is((select (public.join_group(lower(current_setting('test.code')))).id),
+          '30000000-0000-0000-0000-00000000000a'::uuid, 'B joins by code, in any case');
+select is((select xp from public.group_leaderboard where user_id = '00000000-0000-0000-0000-00000000000a'),
+          100, 'members see each other on the board');
+select is(
+    (with gone as (delete from public.group_members where user_id = '00000000-0000-0000-0000-00000000000a' returning 1)
+     select count(*)::int from gone),
+    0, 'B can''t remove A from the group');
 
 select * from finish();
 rollback;

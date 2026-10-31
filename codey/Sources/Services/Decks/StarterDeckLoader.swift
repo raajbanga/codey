@@ -56,6 +56,7 @@ enum StarterDeckLoaderError: Error, LocalizedError, Equatable {
     }
 }
 
+// MARK: - [Pattern: Factory] Client (starter decks)
 /// Puts the bundled starter decks into the store, using the same rules as
 /// DataSeeder (Stage 0): upsert by stable id, never touch user data.
 ///

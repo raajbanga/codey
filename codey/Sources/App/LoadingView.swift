@@ -2,6 +2,10 @@ import SwiftData
 import SwiftUI
 import os
 
+/// Boot screen: opens (and migrates) the SwiftData store, seeds the question
+/// bank and starter decks, catches up badges, builds the BackendFacade, then
+/// shows ContentView. A failed open offers retry or an explicit store reset;
+/// user data is never deleted silently.
 struct LoadingView: View {
     @State private var progress: Double = 0
     @State private var errorMessage: String?
@@ -60,14 +64,7 @@ struct LoadingView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            LinearGradient(
-                colors: [CodeyColor.brandSoft, CodeyColor.surface],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        }
+        .codeyPaperBackground()
         .confirmationDialog(
             "Reset local data?",
             isPresented: $showResetConfirmation,
@@ -117,6 +114,14 @@ struct LoadingView: View {
             } catch {
                 // Starter decks are optional content: log, don't block boot.
                 Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
+            }
+            do {
+                // Catches up badges already qualified for (an upgrade from a
+                // build without them), before any banner is watching.
+                try BadgeEvaluator.award(context: bootContainer.mainContext)
+                try bootContainer.mainContext.save()
+            } catch {
+                Logger.seeding.error("Badge catch-up failed: \(String(describing: error))")
             }
             progress = 1.0
             let elapsed = ContinuousClock.now - started

@@ -1,23 +1,34 @@
 import SwiftData
 import SwiftUI
 
-/// Home (D8, simplified r3): progress at a glance plus ONE suggestion.
+/// Home (D8, simplified r3; Sprint 3 S9 facelift): progress at a glance
+/// plus ONE suggestion, as rounded notes on dotted paper.
 ///
 ///     Good evening                          (◎)
 ///     Codey Learner
-///     ╭ ◔ Lv 4   1,840 XP · 160 to Lv 5  🔥 3 ╮   ← LevelCard
+///     Level 4                   1,840 XP  🔥 3    ← LevelSummary (streak, FR-33)
+///     ━━━━━━━━━━━━━━━━━━━━━━────────
+///     160 XP to Level 5          Today 12/20     ← daily goal (FR-32)
 ///     ╭ Up next: ▶ Continue Swift Closures 7/12 ╮   ← one action
-///     Topics (all; pinned first)
-///     ╭ ◆ Data Structures                    ╮
-///     │   42% mastered · 78% accuracy         │
-///     │ [▷ Practice]          [? Quiz]        │  ← deck (menu if several) / quiz setup
-///     ╰───────────────────────────────────────╯
+///     This week's plan                            ← FR-38, fixed for the week
+///     ╭ ◆ Networking · Not started            ›  ╮
+///     │ ◆ Databases · 41% accuracy             › │
+///     ╰ ◆ Algorithms · 58% accuracy            › ╯
+///     Your topics (all; pinned first)
+///     ╭ ◆ Data Structures                       ╮   ← one note per topic
+///     │ 42% mastered · 78% accuracy             │
+///     │ ━━━━━━──────────      [Cards] [Quiz]    │  ← mastery; deck (menu if several) / quiz setup
+///     ╰─────────────────────────────────────────╯
+///     ╭ ◆ Algorithms …                          ╮
+///     ╰─────────────────────────────────────────╯
 ///
 /// Everything else lives in its tab (Decks, Quiz); Home doesn't duplicate it.
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(BackendFacade.self) private var backend
     @AppStorage("home.signInNudgeDismissed") private var nudgeDismissed = false
+    /// FR-38: this week's plan (JSON StudyPlan), so it doesn't reshuffle.
+    @AppStorage("home.studyPlan") private var studyPlanData = Data()
 
     @Query private var profiles: [UserProfile]
     @Query(sort: \Topic.title) private var topics: [Topic]
@@ -25,6 +36,7 @@ struct HomeView: View {
     @Query(sort: [SortDescriptor(\StudyProgressSnapshot.updatedAt, order: .reverse)])
     private var snapshots: [StudyProgressSnapshot]
     @Query private var records: [QuizAnswerRecord]
+    @Query private var activity: [DailyActivity]
 
     private var profile: UserProfile? { profiles.first }
     private var xp: Int { profile?.totalXP ?? 0 }
@@ -34,8 +46,14 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
                 header
-                LevelCard(xp: xp, streak: profile?.currentStreak ?? 0)
+                LevelSummary(
+                    xp: xp,
+                    streak: StreakCalculator.currentStreak(endingOn: .now, activity: activity),
+                    today: StreakCalculator.progress(of: activity.first { $0.day == DailyActivity.dayKey(for: .now) })
+                )
                 upNextCard
+                planSection
+                weekSection
                 topicsSection
                 if showsSignInNudge {
                     signInNudge
@@ -43,21 +61,26 @@ struct HomeView: View {
             }
             .padding(CodeySpacing.md)
         }
-        .background(CodeyColor.surface)
+        .codeyPaperBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     router.showProfile = true
                 } label: {
-                    Image(systemName: "person.crop.circle.fill")
+                    Image(systemName: "person.crop.circle")
                         .font(.codeyTitle)
-                        .foregroundStyle(CodeyColor.brand)
+                        .foregroundStyle(CodeyColor.textSecondary)
                 }
                 .accessibilityLabel("Profile")
                 .accessibilityIdentifier("home.profile")
             }
         }
         .toolbarTitleDisplayMode(.inline)
+        .onAppear {
+            refreshPlan()
+            LaunchTimer.markHomeReady()
+        }
+        .onChange(of: topics.map(\.id)) { refreshPlan() }
     }
 
     private var header: some View {
@@ -67,6 +90,7 @@ struct HomeView: View {
                 .foregroundStyle(CodeyColor.textSecondary)
             Text(profile?.username ?? UserProfile.defaultUsername)
                 .font(.codeyDisplay)
+                .foregroundStyle(CodeyColor.textPrimary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
         }
@@ -82,7 +106,7 @@ struct HomeView: View {
             deckByID[snapshot.deckId] != nil && snapshot.position < snapshot.cardIDs.count
         }
         return HomeLogic.upNext(
-            resumable: resumable.map { ($0.deckId, $0.displayPosition, $0.cardIDs.count) },
+            resumable: resumable.map { ($0.deckId, $0.queue.displayPosition, $0.queue.distinctTotal) },
             isNewLearner: isNewLearner,
             starterDeckID: suggestedStarterDeck?.id,
             weakestTopicID: HomeLogic.weakestTopicID(candidates: quizCandidates, accuracy: accuracyByTopic)
@@ -125,6 +149,92 @@ struct HomeView: View {
         }
     }
 
+    // MARK: Weekly plan (FR-38)
+
+    private var plannedTopics: [Topic] {
+        guard let plan = try? JSONDecoder().decode(StudyPlan.self, from: studyPlanData) else { return [] }
+        let byID = topics.keyed(by: \.id)
+        return plan.topicIDs.compactMap { byID[$0] }
+    }
+
+    /// Keeps the cached plan while it's this week's; rebuilds on Monday.
+    private func refreshPlan() {
+        let cached = try? JSONDecoder().decode(StudyPlan.self, from: studyPlanData)
+        let window = GatingConfig.standard.accuracyWindow
+        let counts = Dictionary(grouping: records, by: \.topicId).mapValues { min($0.count, window) }
+        let plan = StudyPlan.current(cached: cached, now: .now, knownTopicIDs: Set(topics.map(\.id))) {
+            StudyPlanBuilder.build(topicIDs: topics.map(\.id), answerCounts: counts, accuracy: accuracyByTopic)
+        }
+        if plan != cached, let data = try? JSONEncoder().encode(plan) {
+            studyPlanData = data
+        }
+    }
+
+    @ViewBuilder
+    private var planSection: some View {
+        let planned = plannedTopics
+        if !planned.isEmpty {
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                Text("This week's plan")
+                    .font(.codeyHeadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.leading, CodeySpacing.xs)
+                VStack(spacing: 0) {
+                    ForEach(planned) { topic in
+                        if topic.id != planned.first?.id {
+                            Divider().overlay(CodeyColor.separator)
+                        }
+                        PlanRow(topic: topic, accuracy: planAccuracy(topic)) {
+                            router.quizSetupTopic = topic
+                        }
+                    }
+                }
+                .padding(.horizontal, CodeySpacing.md)
+                .codeyNote()
+            }
+        }
+    }
+
+    // MARK: This week (FR-42, FR-43)
+
+    private var challenge: WeeklyChallenge.Status? {
+        WeeklyChallenge.status(now: .now, topicIDs: topics.map(\.id), records: records)
+    }
+
+    private var weekSection: some View {
+        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+            Text("Challenge and groups")
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textSecondary)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.leading, CodeySpacing.xs)
+            VStack(spacing: 0) {
+                if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
+                    ChallengeRow(topic: topic, status: challenge) {
+                        router.quizSetupTopic = topic
+                    }
+                    Divider().overlay(CodeyColor.separator)
+                }
+                NavigationLink {
+                    GroupsView()
+                } label: {
+                    HomeLinkRow(title: "Groups", subtitle: "Weekly XP leaderboard", systemImage: "person.3.fill")
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("home.groups")
+            }
+            .padding(.horizontal, CodeySpacing.md)
+            .codeyNote()
+        }
+    }
+
+    /// Live accuracy, or nil while the topic has too few answers to judge.
+    private func planAccuracy(_ topic: Topic) -> Double? {
+        let count = records.lazy.filter { $0.topicId == topic.id }.count
+        return count >= StudyPlanBuilder.minimumAnswers ? accuracyByTopic[topic.id] : nil
+    }
+
     // MARK: Topics
 
     /// Every topic, pinned first.
@@ -143,11 +253,14 @@ struct HomeView: View {
 
     private var topicsSection: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            Text("Topics")
-                .font(.codeyTitle)
+            Text("Your topics")
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textSecondary)
                 .accessibilityAddTraits(.isHeader)
-            ForEach(orderedTopics) { topic in
-                TopicCard(
+                .padding(.leading, CodeySpacing.xs)
+            VStack(spacing: CodeySpacing.md) {
+                ForEach(orderedTopics) { topic in
+                    TopicNote(
                     topic: topic,
                     isPinned: pinned.contains(topic.id),
                     decks: decks(for: topic),
@@ -157,7 +270,8 @@ struct HomeView: View {
                         router.study = StudyRequest(deck: deck, start: resume ? .resume : .fresh(tierFilter: nil))
                     },
                     quiz: { router.quizSetupTopic = topic }
-                )
+                    )
+                }
             }
         }
     }
@@ -238,57 +352,59 @@ struct HomeView: View {
 
 // MARK: - Components
 
-/// Level ring + XP + "n XP to Level N+1" + streak chip.
-private struct LevelCard: View {
+/// Level, XP, and streak above a thin progress line, then today's goal.
+/// No card: the greeting and this summary read as one header block.
+private struct LevelSummary: View {
     let xp: Int
     let streak: Int
-
-    @ScaledMetric(relativeTo: .title) private var ringSize: CGFloat = 64
+    /// Quiz answers + card ratings today (FR-32).
+    let today: Int
+    private let goal = GatingConfig.standard.dailyGoal
 
     private var level: Int { LevelCalculator.level(forXP: xp) }
 
     var body: some View {
-        CodeyCard {
-            HStack(spacing: CodeySpacing.md) {
-                ProgressRing(value: LevelCalculator.progressFraction(xp), lineWidth: 7) {
-                    VStack(spacing: 0) {
-                        Text("Lv")
-                            .font(.codeyCaption.weight(.semibold))
-                            .foregroundStyle(CodeyColor.textSecondary)
-                        Text(level, format: .number)
-                            .font(.codeyNumericSmall)
-                            .contentTransition(.numericText(value: Double(level)))
-                    }
-                }
-                .frame(width: ringSize, height: ringSize)
-
-                VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                    HStack(alignment: .firstTextBaseline, spacing: CodeySpacing.xs) {
-                        Text(xp, format: .number)
-                            .font(.codeyNumeric)
-                            .contentTransition(.numericText(value: Double(xp)))
-                        Text("XP")
-                            .font(.codeyCaption.weight(.semibold))
-                            .foregroundStyle(CodeyColor.textSecondary)
-                    }
-                    Text("\(LevelCalculator.xpToNextLevel(xp)) XP to Level \(level + 1)")
-                        .font(.codeySubheadline)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
+        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+            HStack(alignment: .firstTextBaseline, spacing: CodeySpacing.sm) {
+                Text("Level \(level)")
+                    .font(.codeyHeadline)
+                    .foregroundStyle(CodeyColor.textPrimary)
+                    .contentTransition(.numericText(value: Double(level)))
                 Spacer(minLength: 0)
-
+                Text("\(xp.formatted()) XP")
+                    .font(.codeySubheadline.monospacedDigit())
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .contentTransition(.numericText(value: Double(xp)))
                 if streak > 0 {
                     CodeyChip("\(streak)", systemImage: "flame.fill", variant: .warning)
                         .accessibilityLabel("\(streak) day streak")
                 }
             }
+            ProgressBar(value: LevelCalculator.progressFraction(xp))
+            HStack(spacing: CodeySpacing.sm) {
+                Text("\(LevelCalculator.xpToNextLevel(xp)) XP to Level \(level + 1)")
+                    .foregroundStyle(CodeyColor.textSecondary)
+                Spacer(minLength: 0)
+                if today >= goal {
+                    Label("Goal met", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(CodeyColor.success)
+                } else {
+                    Text("Today \(today)/\(goal)")
+                        .monospacedDigit()
+                        .foregroundStyle(CodeyColor.textSecondary)
+                }
+            }
+            .font(.codeySubheadline)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
         .codeyAnimation(CodeyMotion.snappy, value: xp)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Level \(level), \(xp) XP, \(LevelCalculator.xpToNextLevel(xp)) to the next level")
+        .accessibilityLabel(
+            "Level \(level), \(xp) XP, \(LevelCalculator.xpToNextLevel(xp)) to the next level. "
+                + (today >= goal ? "Daily goal met" : "Daily goal \(today) of \(goal)")
+                + (streak > 0 ? ", \(streak) day streak" : "")
+        )
     }
 }
 
@@ -321,8 +437,8 @@ private struct UpNextCard: View {
                 .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                    Text(eyebrow.uppercased())
-                        .font(.codeyCaption.weight(.semibold))
+                    Text(eyebrow)
+                        .font(.codeySubheadline.weight(.medium))
                         .foregroundStyle(CodeyColor.brand)
                     Text(title)
                         .font(.codeyHeadline)
@@ -341,11 +457,7 @@ private struct UpNextCard: View {
             }
             .padding(CodeySpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
-            .overlay {
-                RoundedRectangle.codey(CodeyRadius.lg)
-                    .strokeBorder(CodeyColor.brand.opacity(0.35), lineWidth: 1)
-            }
+            .codeyNote(fill: CodeyColor.brandSoft, edge: CodeyColor.brandFill)
             .contentShape(.rect(cornerRadius: CodeyRadius.lg))
         }
         .buttonStyle(.plain)
@@ -355,9 +467,127 @@ private struct UpNextCard: View {
     }
 }
 
-/// One topic on Home: icon, title, mastery + accuracy, and the two ways to
-/// practice it: Practice (flashcards) and Quiz.
-private struct TopicCard: View {
+/// One topic in the weekly plan; the whole row opens quiz setup.
+private struct PlanRow: View {
+    let topic: Topic
+    let accuracy: Double?
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: CodeySpacing.sm) {
+                HomeRowIcon(systemName: topic.iconName)
+                VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                    Text(topic.title)
+                        .font(.codeyHeadline)
+                        .foregroundStyle(CodeyColor.textPrimary)
+                        .multilineTextAlignment(.leading)
+                    Text(accuracy.map { "\($0.percentText) accuracy" } ?? "Not started")
+                        .font(.codeySubheadline)
+                        .foregroundStyle(CodeyColor.textSecondary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.codeyCallout.weight(.semibold))
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, CodeySpacing.md)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens quiz setup")
+        .accessibilityIdentifier("home.plan.\(topic.title)")
+    }
+}
+
+/// FR-43: "15 correct in Networking", with progress. Opens quiz setup.
+private struct ChallengeRow: View {
+    let topic: Topic
+    let status: WeeklyChallenge.Status
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: CodeySpacing.sm) {
+                HomeRowIcon(
+                    systemName: status.isComplete ? "trophy.fill" : "flag.checkered",
+                    tint: status.isComplete ? CodeyColor.success : CodeyColor.brand
+                )
+                VStack(alignment: .leading, spacing: CodeySpacing.xs) {
+                    Text("Challenge: \(WeeklyChallenge.goal) correct in \(topic.title)")
+                        .font(.codeyHeadline)
+                        .foregroundStyle(CodeyColor.textPrimary)
+                        .multilineTextAlignment(.leading)
+                    Text(status.isComplete ? "Done this week" : "\(min(status.correct, WeeklyChallenge.goal))/\(WeeklyChallenge.goal) correct")
+                        .font(.codeySubheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(CodeyColor.textSecondary)
+                    ProgressBar(value: status.progress)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.codeyCallout.weight(.semibold))
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, CodeySpacing.md)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens quiz setup")
+        .accessibilityIdentifier("home.challenge")
+    }
+}
+
+/// The leading symbol of a Home row, in a fixed-width column so titles line
+/// up whatever the symbol's width (person.3 is much wider than f(x)).
+private struct HomeRowIcon: View {
+    let systemName: String
+    var tint: Color = CodeyColor.brand
+
+    @ScaledMetric(relativeTo: .callout) private var width: CGFloat = 32
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.codeyCallout)
+            .foregroundStyle(tint)
+            .frame(width: width)
+            .accessibilityHidden(true)
+    }
+}
+
+/// A plain navigation row inside a Home note.
+private struct HomeLinkRow: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: CodeySpacing.sm) {
+            HomeRowIcon(systemName: systemImage)
+            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                Text(title)
+                    .font(.codeyHeadline)
+                    .foregroundStyle(CodeyColor.textPrimary)
+                Text(subtitle)
+                    .font(.codeySubheadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.codeyCallout.weight(.semibold))
+                .foregroundStyle(CodeyColor.textSecondary)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, CodeySpacing.md)
+        .contentShape(.rect)
+    }
+}
+
+/// One topic on Home, as its own note: title, mastery + accuracy, and the
+/// two ways to practice it: Cards (flashcards) and Quiz.
+private struct TopicNote: View {
     let topic: Topic
     let isPinned: Bool
     let decks: [FlashcardDeck]
@@ -367,43 +597,46 @@ private struct TopicCard: View {
     let practice: (FlashcardDeck, Bool) -> Void
     let quiz: () -> Void
 
-    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 52
-
     var body: some View {
-        CodeyCard {
-            VStack(alignment: .leading, spacing: CodeySpacing.md) {
-                HStack(alignment: .top, spacing: CodeySpacing.md) {
-                    IconTile(systemName: topic.iconName, size: iconSize)
-                    VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                        HStack(spacing: CodeySpacing.xs) {
-                            Text(topic.title)
-                                .font(.codeyTitle)
-                                .foregroundStyle(CodeyColor.textPrimary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            if isPinned {
-                                Image(systemName: "pin.fill")
-                                    .font(.codeyCaption)
-                                    .foregroundStyle(CodeyColor.textSecondary)
-                                    .accessibilityLabel("Pinned")
-                            }
-                        }
-                        Text(statsLine)
-                            .font(.codeySubheadline)
-                            .foregroundStyle(CodeyColor.textSecondary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                if !decks.isEmpty {
-                    ProgressBar(value: masteryRate)
-                        .accessibilityLabel("Flashcard mastery")
-                }
+        VStack(alignment: .leading, spacing: CodeySpacing.md) {
+            VStack(alignment: .leading, spacing: CodeySpacing.xs) {
                 HStack(spacing: CodeySpacing.sm) {
-                    practiceButton
-                    CodeyButton("Quiz", systemImage: "questionmark.bubble.fill", fullWidth: true, action: quiz)
-                        .accessibilityIdentifier("home.topic.\(topic.title).quiz")
+                    HomeRowIcon(systemName: topic.iconName)
+                    Text(topic.title)
+                        .font(.codeyHeadline)
+                        .foregroundStyle(CodeyColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    if isPinned {
+                        Image(systemName: "pin")
+                            .font(.codeyCaption)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                            .accessibilityLabel("Pinned")
+                    }
                 }
+                Text(statsLine)
+                    .font(.codeySubheadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+            }
+            HStack(spacing: CodeySpacing.sm) {
+                Group {
+                    if decks.isEmpty {
+                        Spacer(minLength: 0)
+                    } else {
+                        ProgressBar(value: progressRate)
+                            .accessibilityLabel("Flashcard progress")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.trailing, CodeySpacing.sm)
+                practiceButton
+                CodeyButton("Quiz", compact: true, action: quiz)
+                    .accessibilityIdentifier("home.topic.\(topic.title).quiz")
             }
         }
+        .padding(CodeySpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .codeyNote()
         .accessibilityElement(children: .contain)
     }
 
@@ -425,7 +658,7 @@ private struct TopicCard: View {
             } label: {
                 practiceLabel
             }
-            .modifier(PracticeStyle())
+            .buttonStyle(CodeyFillButtonStyle(kind: .secondary, compact: true))
             .accessibilityHint("Choose a deck to study")
             .accessibilityIdentifier("home.topic.\(topic.title).practice")
         } else {
@@ -434,39 +667,30 @@ private struct TopicCard: View {
             } label: {
                 practiceLabel
             }
-            .modifier(PracticeStyle())
+            .buttonStyle(CodeyFillButtonStyle(kind: .secondary, compact: true))
             .disabled(decks.isEmpty)
             .accessibilityIdentifier("home.topic.\(topic.title).practice")
         }
     }
 
     private var practiceLabel: some View {
-        Label("Practice", systemImage: "rectangle.on.rectangle.angled")
-            .fontWeight(.semibold)
+        Text("Cards")
             .lineLimit(1)
-            .minimumScaleFactor(0.75)
-            .frame(maxWidth: .infinity)
+            .accessibilityLabel("Practice with flashcards")
     }
 
-    private struct PracticeStyle: ViewModifier {
-        func body(content: Content) -> some View {
-            content
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .controlSize(.large)
-                .tint(CodeyColor.brand)
-        }
-    }
-
-    private var masteryRate: Double {
+    /// Mastery points over all this topic's decks (S19, as
+    /// FlashcardDeck.progressRate).
+    private var progressRate: Double {
         let cards = decks.flatMap(\.activeCards)
         guard !cards.isEmpty else { return 0 }
-        return Double(cards.filter(\.isMastered).count) / Double(cards.count)
+        let points = cards.reduce(0) { $0 + $1.masteryScore }
+        return Double(points) / Double(cards.count * Flashcard.maxMastery)
     }
 
     private var statsLine: String {
         var parts: [String] = []
-        if !decks.isEmpty { parts.append("\(masteryRate.percentText) mastered") }
+        if !decks.isEmpty { parts.append("\(progressRate.percentText) progress") }
         parts.append(accuracy.map { "\($0.percentText) accuracy" } ?? "No quizzes yet")
         return parts.joined(separator: " · ")
     }
