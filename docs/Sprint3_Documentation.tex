@@ -271,6 +271,11 @@ measured the system's security and performance. The principal changes are:
   \item \textbf{Minimal UI facelift.} The interface was restyled to a calm ``pastel
         ink'' look: warm paper neutrals, a desaturated ink-blue accent, flat surfaces,
         system glass only, and no particle effects (Section~\ref{sec:ui}).
+  \item \textbf{Study-session clarity.} User testing on October 30 found the
+        hidden 0--5 mastery score confusing. A card now shows its score as
+        five dots, a card rated Again is announced as a repeat in the counter
+        instead of growing the total, and the summary reports cards moved up
+        and deck progress (schema version 8; Section~\ref{sec:ui}).
   \item \textbf{Measurement.} Security checks (live RLS check, Security Advisor,
         secret scan, release-build check) and an automated performance suite were run,
         and their results are reported in Sections~\ref{sec:security}
@@ -536,7 +541,7 @@ NFR-11 & Usability & The app shall support both Light Mode and Dark Mode, follow
 NFR-12 & Accessibility & All text shall have a contrast ratio of at least 4.5:1 (WCAG 2.1 AA) in both Light and Dark Mode. & Automated contrast test over every shipped text/background color pair in both modes, plus an Xcode Accessibility Inspector audit. \\
 NFR-13 & Data & The system shall persist user data in a database: SwiftData (SQLite) on the device and PostgreSQL hosted by Supabase in the cloud. & Schema review; integration test reads back a saved deck from both stores. \\
 NFR-14 & Constraint & The app shall be implemented in Swift and SwiftUI and built with Xcode on macOS. & Repository language statistics; project build settings. \\
-NFR-15 & Constraint & All project source code shall be written by the CS 360 project team, excluding the third-party libraries listed in Table~\ref{tab:services} (Supabase, GoogleSignIn-iOS, Textual, Runestone, and TreeSitterLanguages) and their dependencies. & GitHub commit history and pull request authorship. \\
+NFR-15 & Constraint & All project source code shall be written by the CS 360 project team, excluding the third-party libraries listed in Table~\ref{tab:services} (Supabase, GoogleSignIn-iOS, Textual, Runestone, and TreeSitterLanguages) and their dependencies. & GitHub commit history and the task owners recorded in the Gantt charts. \\
 NFR-16 & Maintainability & Unit tests shall achieve at least 70\% line coverage of the Model, ViewModel, and Service layers. & Xcode code-coverage report (\texttt{xccov}). \\
 NFR-17 & Measurement & Performance metrics shall be collected every sprint and compared with the previous sprint. & Metrics section of each sprint document (Table~\ref{tab:metrics}). \\
 NFR-18 & Measurement & Security metrics shall be collected every sprint and compared with the previous sprint. & Metrics section of each sprint document (Table~\ref{tab:metrics}). \\
@@ -602,11 +607,11 @@ User interface & Task success rate in peer usability test & 3--5 classmates, scr
 % =====================================================================
 \section{Project Hardware Details (Updated for Sprint 3)}
 % =====================================================================
-Development and testing are performed primarily on the iOS Simulator. Each team member
-develops on an Apple Silicon MacBook, which provides a consistent compiler toolchain
-and simulator environment across the team. Physical iPhones are optional and are
-reserved for final on-device performance checks. The project incurs no hardware or
-service costs.
+Development and testing are performed primarily on the iOS Simulator. The team
+develops on one Apple Silicon MacBook Pro in pair-programming sessions, so every
+build, test run, and measurement uses the same compiler toolchain and simulator
+runtime. One physical iPhone is reserved for the on-device checks in Sprint 4. The
+project incurs no hardware or service costs.
 
 \begin{table}[H]
 \centering
@@ -616,13 +621,13 @@ service costs.
 \toprule
 \textbf{Item} & \textbf{Specification} \\
 \midrule
-Development machines & 3 Apple Silicon MacBooks, one per member, all macOS on arm64 (Activity 8.1). The measurement Mac is a MacBook Pro (Mac16,8) with an Apple M4 Pro and 24 GB of memory on macOS 27.2; the other two are Apple Silicon MacBooks on macOS 27. Xcode 27 and Tuist manage the build. At least 16 GB of unified memory is recommended to run Xcode and the Simulator concurrently. \\
-Measurement machine & The performance results in Section~\ref{sec:performance} come from one machine, recorded by \texttt{scripts/perf-report.sh} in \texttt{docs/perf/environment.txt}: MacBook Pro (Mac16,8), Apple M4 Pro, 24 GB, macOS 27.2, Xcode 27.2. \\
+Development machine & One MacBook Pro (Mac16,8) with an Apple M4 Pro (12-core CPU) and 24 GB of unified memory, running macOS 27.2 with Xcode 27.2 and Tuist 4.209.0; all three members work on it in pair-programming sessions. At least 16 GB of memory is recommended to run Xcode and the Simulator concurrently. \\
+Measurement machine & The same Mac. Every performance result in Section~\ref{sec:performance} comes from it, recorded by \texttt{scripts/perf-report.sh} in \texttt{docs/perf/environment.txt}. \\
 Primary test target & Xcode iOS Simulator (iOS 27 runtime) with three device profiles for layout coverage: iPhone 17e (smallest current size), iPhone 17 (also used for the performance suite), and iPhone 18 Pro Max (largest). \\
 Network simulation & Network Link Conditioner (Additional Tools for Xcode) to emulate LTE, 3G, and 100\% packet loss for the performance and offline tests. Unit tests simulate connectivity with a mock reachability monitor. \\
-Optional physical device & Any team member's iPhone running iOS 26 or later, for final on-device checks. The app is installed from Xcode with a free Apple ID (personal team). No paid Apple Developer Program membership is required, but builds signed this way expire after seven days and must be reinstalled. \\
+Physical device & Raaj Banga's iPhone 16 Pro Max (128 GB, iOS 27), for the on-device checks scheduled for Sprint 4 (NFR-01, NFR-28, TC-S10). The app is installed from Xcode with a free Apple ID (personal team). No paid Apple Developer Program membership is required, but builds signed this way expire after seven days and must be reinstalled. \\
 Cloud backend & Supabase project on the Free plan (AWS region) providing GoTrue Auth, the PostgREST API, and a managed PostgreSQL database. Clients connect over HTTPS on port 443. The backend connects to PostgreSQL over SSL on port 5432. \\
-Source control and tracking & GitHub repository with a GitHub Actions keep-alive workflow (Section~\ref{sec:vc}), and a Linear workspace (cloud hosted, no local hardware). \\
+Source control and tracking & GitHub repository with a GitHub Actions keep-alive workflow (Section~\ref{sec:vc}); tasks are tracked in the project plan (\texttt{todo.txt}) in the repository. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -647,8 +652,7 @@ used. App Store distribution, which also requires that membership, is out of sco
 Supabase (Auth, PostgREST, PostgreSQL) & Free & 2 active projects; 500 MB database per project; 50,000 monthly active users; 5 GB egress; 1 GB file storage; social OAuth providers included; AES-256 encryption at rest; projects pause after one week of inactivity (prevented by the keep-alive workflow); no automated backups (manual \texttt{pg\_dump} script). & \$0 \\
 Google Sign-In (Google Cloud OAuth client, GoogleSignIn-iOS SDK) & No-cost & OAuth consent screen kept in Testing mode, which permits up to 100 listed test users without Google app verification. & \$0 \\
 Xcode, iOS Simulator, and on-device installs & Free Apple ID & Personal-team signing; device builds expire after seven days. & \$0 \\
-GitHub and GitHub Actions & Free & Repository and pull request reviews; a scheduled workflow pings the Supabase API every 3 days. & \$0 \\
-Linear & Free & Issue tracking for a three-person team. & \$0 \\
+GitHub and GitHub Actions & Free & Repository, pull request template, and Actions; a scheduled workflow pings the Supabase API every 3 days. & \$0 \\
 Textual & Open source (MIT) & Markdown and Prism.js code rendering for card text (pinned at 0.5.0). & \$0 \\
 Runestone and TreeSitterLanguages & Open source (MIT) & Code editor and Tree-sitter grammars for Swift, Python, Java, and C++ (pinned). & \$0 \\
 Supabase Swift and GoogleSignIn-iOS SDKs & Open source (MIT, Apache 2.0) & Client libraries for the two services above (pinned). The app's Acknowledgements screen credits them and their dependencies. & \$0 \\
@@ -670,7 +674,9 @@ requirements, which were revised within the same sprint rather than deferred. In
 Sprint 3, implementation fed back into requirements twice: the leaderboard requirement
 FR-42 was split into five atomic requirements once the group design was fixed, and the
 coding challenges were raised to Must after the client's mandatory list was
-re-checked.
+re-checked. Testing also fed back into design: a user test on October 30 found the
+study screen's hidden mastery score confusing, so the design was revised and rebuilt
+before the final code freeze (Section~\ref{sec:ui}).
 
 \begin{table}[H]
 \centering
@@ -694,7 +700,7 @@ Sprint 4 & From Nov 4 & Code-completion exercises (FR-39 to FR-41), Proxyman TLS
         9:00 PM, in person or over Discord voice and screen share. Decisions and
         action items are recorded in the project plan (\texttt{todo.txt}) in the
         repository, under the sprint's decision log (for Sprint 3, decisions S1 to
-        S14).
+        S25).
   \item \textbf{Communication.} Discord is used for design discussion and asynchronous
         communication, and SMS/iMessage for urgent notifications. Members provide at
         least four hours' notice of absences and blocking issues.
@@ -703,23 +709,24 @@ Sprint 4 & From Nov 4 & Code-completion exercises (FR-39 to FR-41), Proxyman TLS
         and \texttt{dev} is squash-merged into \texttt{main} at the end of each stage
         or sprint; \texttt{main} is then merged back into \texttt{dev} so the branches
         never diverge.
-  \item \textbf{Task tracking.} Each Gantt task has a corresponding Linear or GitHub
-        issue that records its owner, estimate, and associated requirement IDs.
-  \item \textbf{Build cadence.} Local builds run nightly or every other night, and a
-        formal team code review is held weekly.
+  \item \textbf{Task tracking.} Tasks are tracked manually in the project plan
+        (\texttt{todo.txt}): each task records its owner, its requirement IDs, and a
+        checkbox status. No separate issue tracker is used.
+  \item \textbf{Build cadence.} The app is built and the unit tests are run in every
+        pair-programming session; code is reviewed on screen during the session.
   \item \textbf{Definition of done.} A task is complete when the code compiles without
         warnings, all unit tests pass, the repository checks pass
         (\texttt{check-imports.sh} for the Supabase boundary,
         \texttt{check-design-tokens.sh} for the design system, and
-        \texttt{check-secrets.sh} for leaked keys), the pull request checklist is
-        satisfied, every new or changed file has a header comment, and the status of
+        \texttt{check-secrets.sh} for leaked keys), the checklist in the pull request
+        template is satisfied before a merge to \texttt{main}, every new or changed file has a header comment, and the status of
         each associated requirement is updated.
 \end{itemize}
 
 \subsection{Sprint 3 Status of Critical Tasks}
 Table~\ref{tab:status} records the three critical tasks identified in the
-Activity~10.2 wrap-up at the midpoint of the sprint, their blockers, and how each was
-resolved by the end of the sprint.
+Activity~10.2 wrap-up, their status when the activity was first filled in (the
+checkpoint), their blockers, and how each was resolved by the end of the sprint.
 
 \begin{table}[H]
 \centering
@@ -730,7 +737,7 @@ resolved by the end of the sprint.
 \textbf{Task} & \textbf{Checkpoint} & \textbf{Blockers and Notes} & \textbf{Sprint end} \\
 \midrule
 Adaptive tiers, XP and levels (FR-22 to FR-31) & Done & Tier gating per topic; XP = tier base (10/15/20) plus a capped streak bonus, at most 45 per answer; a level every 500 XP. Tier difficulty is to be tuned after a peer test (Sprint 4). & Done \\
-Security and performance metrics (NFR-04 to NFR-19) & In progress & Done at the checkpoint: RLS on 4 of 4 tables, 0 secrets, TLS 1.3 minimum, 88.2\% coverage. Blocker: the UI-test runner does not launch on the development Mac, so the launch metric could not use XCTest's launch metric. Resolved with a log-based launch timer and script (R15). & Done (Sections~\ref{sec:security}, \ref{sec:performance}) \\
+Security and performance metrics (NFR-04 to NFR-19) & In progress & Done at the checkpoint: RLS on 4 of 4 tables, 0 secrets, TLS 1.3 minimum, 88.2\% coverage. Blocker: the UI-test runner does not launch on the development Mac, so the launch metric could not use XCTest's launch metric. Worked around with a log-based launch timer and script; the runner works on Xcode 27.2 (R15). & Done (Sections~\ref{sec:security}, \ref{sec:performance}) \\
 Streaks, daily goal, badges (FR-32 to FR-35) & In progress & \texttt{DailyActivity} already logged cards rated and quiz answers per day, but nothing computed the streak, goal, or badges; deprioritized behind sync and security work. & Done \\
 \bottomrule
 \end{tabularx}
@@ -804,7 +811,7 @@ mark milestones.
   \ganttbar[progress=100]{Task estimation \& scheduling (RB)}{2026-09-01}{2026-09-03} \\
   \ganttbar[progress=100]{Sprint 1 documentation (RB)}{2026-09-04}{2026-09-12} \\
   \ganttgroup[progress=100]{Implementation}{2026-08-27}{2026-09-11} \\
-  \ganttbar[progress=100, name=repo]{Repo \& Linear workspace setup (RB)}{2026-08-27}{2026-08-29} \\
+  \ganttbar[progress=100, name=repo]{Repo setup (RB)}{2026-08-27}{2026-08-29} \\
   \ganttbar[progress=100, name=xcode]{Xcode base setup \& navigation (RB)}{2026-08-30}{2026-09-03} \\
   \ganttbar[progress=100, name=schema]{JSON schema \& question bank (AB)}{2026-08-31}{2026-09-04} \\
   \ganttbar[progress=100, name=ui]{Flashcard \& quiz UI (ES)}{2026-09-05}{2026-09-11} \\
@@ -873,7 +880,6 @@ sync queue was on the critical path, because it depends on the State pattern, an
 closest to the R5 trigger (Section~\ref{sec:risks}).
 
 \subsection{Sprint 3 Gantt Chart}
-% Activity dates: confirm against the course schedule before submission.
 \begin{figure}[!htbp]
 \centering
 \resizebox{\textwidth}{!}{%
@@ -897,25 +903,27 @@ closest to the R5 trigger (Section~\ref{sec:risks}).
   ]{2026-10-04}{2026-11-03}
   \gantttitle{Date (2026)}{31} \\
   \gantttitlecalendar{month=name, day} \\
-  \ganttgroup[progress=100]{Course activities}{2026-10-05}{2026-10-29} \\
-  \ganttbar[progress=100, name=a81]{GitHub \& VC workflow, Act.\ 8.1 (All)}{2026-10-05}{2026-10-07} \\
-  \ganttbar[progress=100, name=a82]{Wireframes \& storyboard, Act.\ 8.2 (All)}{2026-10-12}{2026-10-14} \\
-  \ganttbar[progress=100, name=a92]{Performance requirements, Act.\ 9.2 (All)}{2026-10-19}{2026-10-21} \\
-  \ganttbar[progress=100, name=a101]{Threat model \& SSC, Act.\ 10.1 (AB)}{2026-10-26}{2026-10-27} \\
-  \ganttbar[progress=100, name=a102]{Sprint wrap-up \& tech debt, Act.\ 10.2 (RB)}{2026-10-28}{2026-10-29} \\
-  \ganttgroup[progress=100]{Implementation}{2026-10-28}{2026-10-30} \\
+  \ganttgroup[progress=100]{Course activities}{2026-10-05}{2026-11-03} \\
+  \ganttbar[progress=100, name=a81]{GitHub \& VC workflow, Act.\ 8.1 (All)}{2026-10-05}{2026-10-16} \\
+  \ganttbar[progress=100, name=a82]{Wireframes \& storyboard, Act.\ 8.2 (All)}{2026-10-12}{2026-10-18} \\
+  \ganttbar[progress=100, name=a92]{Performance requirements, Act.\ 9.2 (All)}{2026-10-19}{2026-10-27} \\
+  \ganttbar[progress=100, name=a101]{Threat model \& SSC, Act.\ 10.1 (AB)}{2026-10-26}{2026-10-30} \\
+  \ganttbar[progress=100, name=a102]{Sprint wrap-up \& tech debt, Act.\ 10.2 (RB)}{2026-10-28}{2026-11-03} \\
+  \ganttgroup[progress=100]{Implementation}{2026-10-28}{2026-10-31} \\
   \ganttbar[progress=100, name=face]{UI facelift: tokens, components, icon (ES)}{2026-10-28}{2026-10-30} \\
   \ganttbar[progress=100, name=strk]{Streaks, daily goal, badges (AB, ES)}{2026-10-29}{2026-10-30} \\
   \ganttbar[progress=100, name=small]{Profile, weekly plan, defect reports (ES, AB)}{2026-10-29}{2026-10-30} \\
   \ganttbar[progress=100, name=grp]{Groups, leaderboard, weekly challenge (AB, ES)}{2026-10-30}{2026-10-30} \\
   \ganttbar[progress=100, name=fac]{Facade split \& commenting pass (RB)}{2026-10-30}{2026-10-30} \\
-  \ganttgroup[progress=90]{Measurement \& Documentation}{2026-10-30}{2026-11-03} \\
+  \ganttbar[progress=100, name=ux]{Study-session fix after user test (ES)}{2026-10-30}{2026-10-31} \\
+  \ganttgroup[progress=100]{Measurement \& Documentation}{2026-10-30}{2026-11-03} \\
   \ganttbar[progress=100, name=sec]{Security runs: RLS, Advisor, secrets (AB)}{2026-10-30}{2026-10-30} \\
-  \ganttbar[progress=100, name=perf]{Performance suite \& runs (AB)}{2026-10-30}{2026-10-30} \\
-  \ganttbar[progress=80, name=doc]{Sprint 3 documentation (RB)}{2026-10-30}{2026-11-03} \\
-  \ganttmilestone[name=frz]{Code freeze}{2026-10-30} \\
+  \ganttbar[progress=100, name=perf]{Performance suite \& first runs (AB)}{2026-10-30}{2026-10-30} \\
+  \ganttbar[progress=100, name=rem]{Re-freeze \& re-measure (AB)}{2026-10-31}{2026-10-31} \\
+  \ganttbar[progress=100, name=doc]{Sprint 3 documentation (RB)}{2026-10-30}{2026-11-03} \\
+  \ganttmilestone[name=frz]{Code freeze}{2026-10-31} \\
   \ganttmilestone{Sprint 3 documentation due}{2026-11-03}
-  \ganttlink{a102}{strk}
+  \ganttlink{ux}{rem}
   \ganttlink{strk}{grp}
   \ganttlink{grp}{perf}
   \ganttlink{a92}{perf}
@@ -926,14 +934,15 @@ closest to the R5 trigger (Section~\ref{sec:risks}).
 \label{fig:gantt3}
 \end{figure}
 
-Sprint 3 had two halves. The first three weeks were spent on the course activities,
-whose results are folded into this document: the version-control workflow
+The course activities ran across the whole sprint, each bar ending on its due date,
+and their results are folded into this document: the version-control workflow
 (Section~\ref{sec:vc}), the wireframes and storyboard (Section~\ref{sec:ui}), the
-performance requirements (Section~\ref{sec:performance}), and the threat model
-(Section~\ref{sec:security}). The feature work then ran in the final week, ordered by
-dependency: badges need the streak, and the weekly-challenge badge needs the groups
-stage. Performance tests ran after the code froze, because their results must describe
-the submitted code. \tbd{confirm the activity dates against the course calendar}
+performance requirements (Section~\ref{sec:performance}), the threat model
+(Section~\ref{sec:security}), and the wrap-up (Section~\ref{sec:process}). The feature
+work ran in the final week, ordered by dependency: badges need the streak, and the
+weekly-challenge badge needs the groups stage. A user test on October 30 led to the
+study-session fix, so the code was frozen again on October 31 and every measurement
+was repeated, because the results must describe the submitted code.
 
 % =====================================================================
 \section{Risks (Updated for Sprint 3)}\label{sec:risks}
@@ -962,18 +971,18 @@ runner, the facelift, and the deferred coding challenges). Probability (P) and i
 R1 & iOS sandbox limits on in-app code execution (Technology) & H & L & Validate code-completion exercises by comparing answers with accepted solutions, so that no code is executed on the device (FR-39 through FR-41). Attempt open-ended problems only if a prototype interpreted engine or no-cost server-side runner proves feasible. & No working execution prototype exists by the end of Sprint 3; the stretch goal is then dropped. & Occurred: stretch goal dropped \\
 R2 & Offline/cloud sync conflicts cause data loss or duplicates (Technology) & M & M & Apply an additive merge policy, use the State pattern to prevent undefined transitions, and record all sync operations in a ledger table for auditing. & A sync test fails, or local and remote card counts differ. & Mitigated \\
 R3 & Scope creep (Requirements) & H & M & Apply MoSCoW triage. With client approval, de-scope in the following order: leaderboards, the XP system, and code-completion exercises. De-scoping XP removes the level condition from FR-26. & Fewer than 80\% of planned tasks are completed in a sprint. & Monitoring \\
-R4 & Member illness, absence, or exam load (People) & M & M & Enforce the four-hour notice policy, cross-review every pull request to distribute knowledge, and pair-program on critical-path tasks. & A member misses two or more team meetings in a sprint. & Monitoring \\
+R4 & Member illness, absence, or exam load (People) & M & M & Enforce the four-hour notice policy and pair-program, so that at least two members know every change. & A member misses two or more team meetings in a sprint. & Monitoring \\
 R5 & Underestimated effort, particularly for offline sync (Estimation) & H & M & Apply the Sprint 1 realistic-to-optimistic factor ($\approx$1.9) to estimates and reserve the final two days of each sprint as buffer. & A task exceeds its realistic estimate by more than 25\%. & Occurred (see R14) \\
 R6 & SwiftUI/iOS framework bugs delay features (Technology) & M & L & Use only stable APIs, isolate workarounds in the view layer, and document fixes in the team Discord channel. & A blocking issue remains open for more than two days. & Monitoring \\
 R7 & Lock-in to Supabase after a late backend choice (Technology) & M & M & Route all backend access through \texttt{BackendFacade}, and confine Supabase and Google Sign-In to one adapter folder behind protocols, so that a provider change affects only that folder. & \texttt{check-imports.sh} finds Supabase or GoogleSignIn imported outside \texttt{Services/\allowbreak Backend/\allowbreak Supabase/}. & Mitigated \\
-R8 & \texttt{BackendFacade} grows into a ``god class'' (Design) & M & L & Limit the facade to coordination. When a facade file exceeds 300 lines, split it by concern into extension files of the same type, so the UI keeps one entry point. & A facade source file exceeds 300 lines. & Occurred: split into four files (largest 230 lines) \\
+R8 & \texttt{BackendFacade} grows into a ``god class'' (Design) & M & L & Limit the facade to coordination. When a facade file exceeds 300 lines, split it by concern into extension files of the same type, so the UI keeps one entry point. & A facade source file exceeds 300 lines. & Occurred: split into four files (largest 231 lines) \\
 R9 & A sync-state transition is missed when adding a state (Design) & M & M & Keep all states in \texttt{DeckSyncState.swift} and unit-test every transition in the state diagram. & A state diagram transition has no corresponding test. & Mitigated \\
-R10 & Leaked session tokens or OAuth misconfiguration (Security) & L & H & Store tokens only in the Keychain and exclude them from logs, enable RLS on every table, and permit only TLS 1.3 connections. & A pull request fails a security checklist item. & Monitoring \\
+R10 & Leaked session tokens or OAuth misconfiguration (Security) & L & H & Store tokens only in the Keychain and exclude them from logs, enable RLS on every table, and permit only TLS 1.3 connections. & A security checklist item fails before a merge to \texttt{main}, or \texttt{check-secrets.sh} reports a finding. & Monitoring \\
 R11 & Supabase free-tier limits or inactivity pausing (Operational) & L & M & A GitHub Actions workflow pings the project every 3 days to prevent inactivity pausing. Export the database with \texttt{pg\_dump} (\texttt{scripts/backup.sh}) before schema changes, because the Free plan has no automated backups. Keep the schema as migrations in the repository, and run the app in local-only mode when no backend keys are configured. & The project is paused, or usage exceeds 80\% of a tier limit. & Mitigated \\
 R12 & A third-party UI library (Textual, pre-1.0; Runestone) is abandoned or stops building on a new Xcode (Technology) & M & M & Pin exact versions and wrap each library in a single file (\texttt{CardMarkdownView}, \texttt{CodeEditorView}), enforced by \texttt{check-design-tokens.sh}, so a replacement changes one file. Fallbacks: MarkdownUI (\texttt{swift-markdown-ui}) for Textual, and a plain \texttt{TextEditor} with autocorrect, smart quotes, and smart dashes disabled for Runestone. & The project fails to build on a new Xcode release for more than two days. & Monitoring \\
 R13 & A tampering user inflates their own weekly XP on the leaderboard, because the client reports it (Security) & M & L & Row Level Security lets a user write only their own row; a CHECK caps a week at 22,500 XP (45 XP $\times$ 500 answers); the server keeps the higher of the old and new value, so a row cannot be lowered to hide tampering. A server-computed XP ledger is the Sprint 4 hardening. & A board shows a weekly total that is not a sum of valid answers. & Accepted (Sprint 4 fix) \\
-R14 & Schedule compression: four feature stages and the document in the final week (Schedule) & H & M & Fixed decision log (S1--S14) at the start of the week; strict stage order; automated generators for Appendix~B and the pattern map; deferred items labeled ``Sprint 4'' instead of being rushed. & A stage is not done by its planned day. & Occurred; contained \\
-R15 & The UI-test runner is refused by macOS, so UI tests and XCTest's launch metric cannot run (Technology) & H & M & Measure launch from an in-app log line and a Simulator relaunch script (\texttt{perf-launch.sh}); keep the two UI tests in the repository and retry on each Xcode update. & The runner still fails on the current Xcode. & Occurred; worked around \\
+R14 & Schedule compression: four feature stages and the document in the final week (Schedule) & H & M & Fixed decision log (S1--S25) from the start of the week; strict stage order; automated generators for Appendix~B and the pattern map; deferred items labeled ``Sprint 4'' instead of being rushed. & A stage is not done by its planned day. & Occurred; contained \\
+R15 & The UI-test runner is refused by macOS, so UI tests and XCTest's launch metric cannot run (Technology) & H & M & Measure launch from an in-app log line and a Simulator relaunch script (\texttt{perf-launch.sh}); keep the UI tests in the repository and retry on each Xcode update. & The runner still fails on the current Xcode. & Occurred; resolved on Xcode 27.2 \\
 R16 & The facelift introduces contrast or layout regressions (Quality) & M & M & Colors change only through tokens; \texttt{ContrastTests} checks every text/background pair in Light, Dark, and Increase Contrast; Simulator walkthrough on three sizes in both modes. & A contrast test fails or a screen clips. & Mitigated \\
 R17 & The client-mandated coding challenges (FR-39 to FR-41) slip to Sprint 4 (Requirements) & H & H & Raised to Must; scoped as code completion validated by comparison (no code execution, R1); first stage of Sprint 4 with the data model designed before the sprint starts. & Not started by the second week of Sprint 4. & Monitoring \\
 \end{xltabular}
@@ -997,7 +1006,7 @@ Arnav Bawankule also owns R13.
 
 \subsection{Risk Monitoring}
 Risks are reviewed at the start of each Tuesday team meeting, and each monitoring
-trigger is checked against Linear and GitHub data. When a trigger fires, the risk's
+trigger is checked against the task list in the project plan and the repository. When a trigger fires, the risk's
 status is changed to ``Occurred'' and its contingency is added to the backlog as a
 task. No trigger fired during Sprint 2. In Sprint 3 five triggers fired. R1: no
 code-execution prototype existed, so open-ended problems were dropped as planned.
@@ -1008,14 +1017,15 @@ the response was a fixed decision log and labeling the remaining measurements
 authentication, sync) and three extension files (decks, profile and feedback, groups).
 This is a change from the Sprint 2 plan of two classes (\texttt{AuthFacade} and
 \texttt{DeckFacade}): extensions keep a single entry point, so no view and no test had
-to change. R15: the UI-test runner stayed blocked, and the launch metric moved to a
-script. R17 is the highest open risk for Sprint 4.
+to change. R15: the UI-test runner was refused by macOS for most of the sprint, so the
+launch metric moved to a script; on Xcode 27.2 the runner works and the three UI test
+suites run. R17 is the highest open risk for Sprint 4.
 
 % =====================================================================
 \section{User Interface and User Experience Design (Updated for Sprint 3)}\label{sec:ui}
 % =====================================================================
 The user interface follows a native iOS 26 structure. In Sprint 3 its look was
-redone to be calm and minimal (decision S9, ``pastel ink''): content sits on rounded
+redone to be calm and minimal (``pastel ink''): content sits on rounded
 notes laid on warm, faintly dotted paper; a desaturated ink-blue accent replaces the
 Sprint 2 electric indigo; Liquid Glass is left to the system's own controls; and
 celebrations are quiet banners with a haptic instead of particle bursts. The
@@ -1083,8 +1093,10 @@ Bottom: card thumbnail strip and a ``+'' tile & A thumbnail shows the card's pre
 The built Deck Builder follows the wireframes with two changes found during
 implementation: the deck information and the first card share one screen, so a deck
 can be saved in fewer steps, and the rating at the end of practice uses the four
-ratings of FR-17 instead of the wireframes' ``Still learning'' and ``Got it''. The
-second difference is the subject of a planned Sprint 4 usability change.
+ratings of FR-17 instead of the wireframes' ``Still learning'' and ``Got it''. A user
+test on October 30 showed that the four ratings were confusing only because the
+mastery score behind them was hidden, so Sprint 3 kept the ratings and made the score
+visible (the Study item in Section~\ref{sec:keyint}).
 
 \begin{figure}[!htbp]
 \centering
@@ -1163,7 +1175,7 @@ session or a quiz the same way.
 \label{fig:nav}
 \end{figure}
 
-\subsection{Key Interactions}
+\subsection{Key Interactions}\label{sec:keyint}
 \begin{itemize}
   \item \textbf{Onboarding} (first launch only) has three steps: a welcome screen,
         a topic picker that pins the chosen topics and their starter decks on Home,
@@ -1187,7 +1199,12 @@ session or a quiz the same way.
         been shown, a swipe rates it: left Again, down Hard, up Easy, right Good. The
         card is tinted with the rating's color while dragging, and a caption names the
         gestures. Keys 1--4 and VoiceOver actions on the card rate without gestures.
-        Each rating has its own haptic.
+        Each rating has its own haptic. Five dots on the card show its mastery score
+        (0--5, FR-18); after a rating they fill or empty with a short ``+1'', ``+2'',
+        ``Reset'', or ``No change'' label. A card rated Again comes back once at the
+        end, and the counter says so at once (``2 / 4 $\cdot$ +1 repeat''); the
+        repeated card carries a Repeat chip. The summary reports the cards reviewed,
+        the cards whose score rose (``Moved up''), and the deck's progress in points.
   \item \textbf{Quiz.} A setup sheet shows the tier locks with their reasons (for
         example, ``Retire 3 more Medium questions'') and offers a mixed quiz or a single
         unlocked tier. During the quiz, a segmented progress bar, a streak chip, and a
@@ -1431,7 +1448,7 @@ FR-12, FR-55 & UC-01 & \texttt{BackendFacade.deleteDeck()}, \texttt{DeckSyncStat
 FR-13 & UC-01 & \texttt{DeckViewModel.deleteCard()} (in the builder), \texttt{BackendFacade.deleteCard()} & TC-13 & Implemented \\
 FR-14 & -- & \texttt{StarterDeckLoader}, \texttt{FlashcardFactory.createCard(from:)}, \texttt{starter-decks.json} & TC-14 & Implemented \\
 FR-15 & UC-13 & \texttt{BackendFacade.setHidden(\_:deck:)}, \texttt{DeckLibraryView}, profile sheet & TC-15 & Implemented \\
-FR-16 -- FR-18 & UC-04 & \texttt{StudySessionViewModel}, \texttt{StudyQueue}, \texttt{Flashcard.updateMastery(rating:)}, \texttt{CardRating} & TC-16 -- TC-18 & Implemented \\
+FR-16 -- FR-18 & UC-04 & \texttt{StudySessionViewModel}, \texttt{StudyQueue} (distinct total, repeats), \texttt{Flashcard.updateMastery(rating:)}, \texttt{CardRating}, \texttt{MasteryDots}, \texttt{FlashcardDeck.progressRate}, \texttt{StudyProgressSnapshot} (V8) & TC-16 -- TC-18 & Implemented \\
 FR-19 -- FR-21 & UC-11 & \texttt{QuizViewModel}, \texttt{QuestionPool.build()}, \texttt{QuestionBankLoader} & TC-19 -- TC-21 & Implemented \\
 FR-22 -- FR-29, FR-56 -- FR-58 & UC-11, UC-12 & \texttt{QuizProgressStore}, \texttt{QuestionProgress}, \texttt{TopicProgress}, \texttt{TierGate}, \texttt{QuestionPool}, \texttt{StudyPool}, \texttt{GatingConfig} & TC-22 -- TC-29, TC-56 -- TC-58 & Implemented \\
 FR-30 -- FR-31 & UC-11 & \texttt{XPPolicy}, \texttt{LevelCalculator}, \texttt{QuizViewModel.select()} & TC-30 -- TC-31 & Implemented \\
@@ -1475,7 +1492,7 @@ NFR-03 & Latest iOS, target iOS 26 & Client node (Fig.~\ref{fig:deploy}); Xcode 
 NFR-04 & Local encryption at rest & SwiftData store with \emph{complete unless open} protection; Keychain item \emph{this device only} (Fig.~\ref{fig:deploy}) & TC-N04 & Implemented \\
 NFR-05 & Cloud encryption at rest & Data tier node: managed PostgreSQL instance (Fig.~\ref{fig:deploy}) & TC-N05 & Implemented \\
 NFR-06 & TLS 1.3 in transit & \texttt{SupabaseServices.tlsConfiguration} (minimum TLS 1.3); HTTPS path on port 443 (Fig.~\ref{fig:deploy}) & TC-N06 & Implemented \\
-NFR-07 & Row-level data ownership & RLS policies on all four tables, enforced by PostgREST (Fig.~\ref{fig:deploy}) & TC-N07 & Implemented \\
+NFR-07 & Row-level data ownership & RLS policies on all eight tables, enforced by PostgREST (Fig.~\ref{fig:deploy}) & TC-N07 & Implemented \\
 NFR-08 & Offline quizzes and flashcards & Local Store component; local-only \texttt{BackendFacade} when signed out or unconfigured; save-local-first sequence (Fig.~\ref{fig:sequence}) & TC-N08 & Implemented \\
 NFR-09 & Reliable sync within 30 s & \texttt{SyncQueue}, \texttt{SyncEngine} reconnect trigger, \texttt{NetworkMonitor} (\texttt{Reachability}); State pattern (Fig.~\ref{fig:statepattern}) & TC-N09 & Implemented \\
 NFR-10 & Consistent layout across screen sizes & Presentation component (SwiftUI adaptive layouts, \texttt{ViewThatFits}) & TC-N10 & Implemented \\
@@ -1483,7 +1500,7 @@ NFR-11 & Light and Dark Mode & \texttt{AppAppearance} (System, Light, Dark); ass
 NFR-12 & 4.5:1 text contrast & Design-system color tokens (Section~\ref{sec:ui}); \texttt{scripts/palette} & TC-N12 & Implemented \\
 NFR-13 & Uses a database & Local Store component and PostgreSQL (Figs.~\ref{fig:component} and~\ref{fig:deploy}) & TC-N13 & Implemented \\
 NFR-14 & Swift/SwiftUI with Xcode & \texttt{Codey.app} artifact on the client node (Fig.~\ref{fig:deploy}) & TC-N14 & Implemented \\
-NFR-15 & Team-written source code & All components; GitHub pull request workflow (Section~\ref{sec:process}) & TC-N15 & Implemented \\
+NFR-15 & Team-written source code & All components; commit history and task owners (Section~\ref{sec:process}) & TC-N15 & Implemented \\
 NFR-16 & 70\% unit-test coverage & Model, ViewModel, and Service layers (87.8\%: Models 94.8\%, ViewModels 92.9\%, Services 86.0\%) & TC-N16 & Implemented \\
 NFR-17--19 & Metrics every sprint & Metrics plan (Table~\ref{tab:metrics}) with Sprint 2 and Sprint 3 columns & TC-N17--19 & Implemented \\
 NFR-20 & No service costs & Free plans and open-source libraries (Table~\ref{tab:services}) & TC-N20 & Implemented \\
@@ -1501,7 +1518,7 @@ NFR-32 & Leaderboard $\le$ 1.5 s & \texttt{group\_leaderboard} view (one request
 \begin{xltabular}{\textwidth}{@{}L{2.4cm} Y@{}}
 \caption{Test cases mapped to automated test suites}\label{tab:tcmap}\\
 \toprule
-\textbf{Test case} & \textbf{Suites (Swift Testing; the two XCTest UI tests are marked UI)} \\
+\textbf{Test case} & \textbf{Suites (Swift Testing; the three XCTest UI test suites are marked UI)} \\
 \midrule
 \endfirsthead
 \multicolumn{2}{@{}l}{\small\itshape Table \thetable\ continued} \\
@@ -1543,14 +1560,20 @@ TC-N07 & \texttt{SupabaseSchemaTests} (every table has RLS), \texttt{supabase/te
 TC-N08, TC-N09 & \texttt{SyncEngineTests} (offline save, reconnect), \texttt{SupabaseIntegrationTests} (opt-in) \\
 TC-N10, TC-N11 & Manual layout pass: 16 screens on iPhone 17e, 17, and 18 Pro Max, Light and Dark (96 of 96 pass, Oct 30) \\
 TC-N11, TC-N12 & \texttt{ColorTokenTests}, \texttt{ContrastTests}, \texttt{AppAppearanceTests}, \texttt{AccessibilityAuditUITests} (UI) \\
-TC-N13 & \texttt{MigrationTests}, \texttt{DataSeederTests}, \texttt{LocalDataResetTests} \\
+TC-N03 & Build and smoke test on the iOS 27 Simulator (Appendix~A.8); deployment target iOS 26 in \texttt{Project.swift} \\
+TC-N05 & Review of the Supabase project settings and Supabase's encryption-at-rest documentation (AES-256) \\
+TC-N13 & \texttt{MigrationTests} (every stage up to V7 $\to$ V8), \texttt{DataSeederTests}, \texttt{LocalDataResetTests} \\
+TC-N14 & Review of the project build settings (\texttt{Project.swift}) and the repository's language statistics \\
+TC-N15 & Review of the commit history and the task owners in the Gantt charts; third-party code only through the pinned packages in \texttt{Tuist/Package.swift} \\
 TC-N16 & Coverage report (\texttt{xccov}) on every test run \\
+TC-N17 -- TC-N19 & Sprint 2 and Sprint 3 columns of the metrics plan (Table~\ref{tab:metrics}) \\
+TC-N20 & Monthly review of the Supabase usage and billing pages against the Free-plan limits (Table~\ref{tab:services}) \\
 TC-S01 -- TC-S10 & Security test cases (Table~\ref{tab:sectests}) \\
 TC-P01 -- TC-P09 & \texttt{PerformanceTests} and \texttt{perf-launch.sh} (Table~\ref{tab:perftests}) \\
 \end{xltabular}
 
-Each pull request references the requirement identifiers it affects, and the Project
-Manager updates the Status column when the associated test passes. Every design element
+Commit messages and the project plan name the requirement identifiers each task
+affects, and the Project Manager updates the Status column when the associated test passes. Every design element
 in these models traces to at least one requirement.
 
 % =====================================================================
@@ -1818,7 +1841,7 @@ participant to its source lines in Appendix~B. Visibility is denoted by \texttt{
   \node[cls={violet}{4.6cm}, anchor=north] (bf) at (3.9,-1.6) {\ctitle{\textbf{BackendFacade}}\nodepart{two}~\nodepart{three}\raggedright see Fig.~\ref{fig:facade}};
   \node[cls={magenta}{5.6cm}, anchor=north] (deck) at (-3.0,-5.0) {\ctitle{\textbf{FlashcardDeck}}
     \nodepart{two}\raggedright +id: UUID\\ +title: String\\ +topicId: String\\ +origin: DeckOrigin\\ +isHidden: Bool\\ +ownerId: UUID?\\ +syncState: DeckSyncStateKind\\ +deletedAt: Date?
-    \nodepart{three}\raggedright +activeCards: [Flashcard] \{get\}\\ +cardCount: Int \{get\}\\ +masteryRate: Double \{get\}\\ \textasciitilde markDirty(at: Date)};
+    \nodepart{three}\raggedright +activeCards: [Flashcard] \{get\}\\ +cardCount: Int \{get\}\\ +masteryRate: Double \{get\}\\ +progressRate: Double \{get\}\\ \textasciitilde markDirty(at: Date)};
   \node[cls={cyan}{4.6cm}, anchor=north] (sds) at (3.9,-5.0) {\ctitle{\textbf{SwiftDataService}}
     \nodepart{two}\raggedright \priv context: ModelContext\\ \priv factory: FlashcardFactory
     \nodepart{three}\raggedright +apply(draft, ownerId) : DraftSaveResult\\ +fetch(id: UUID) : FlashcardDeck?\\ +fetchCard(id: UUID) : Flashcard?};
@@ -1908,10 +1931,13 @@ changes take a \texttt{CardRating}.
 \end{figure}
 
 Figure~\ref{fig:domain3} shows the types Sprint 3 added. Persisted state changed
-in one place: schema version 7 removes the unused stored streak from
+in two schema versions. Version 7 removes the unused stored streak from
 \texttt{UserProfile}, adds \texttt{avatarId} (FR-60), and adds \texttt{BadgeAward}, one
 row per earned badge with its date, so a badge stays earned after the data behind it
-changes. Everything else is computed. \texttt{StreakCalculator} derives the daily goal
+changes. Version 8 (the study-session fix) lets \texttt{StudyProgressSnapshot} keep
+each card's mastery score and the deck's progress at the start of a session, so the
+summary can report the cards that moved up; \texttt{FlashcardDeck.progressRate} (the
+sum of the cards' scores over five times the card count) is computed, not stored. Everything else is computed. \texttt{StreakCalculator} derives the daily goal
 and streak from \texttt{DailyActivity}; \texttt{WeeklyChallenge} derives the week's
 topic and progress from \texttt{QuizAnswerRecord}; and \texttt{BadgeEvaluator} turns
 those facts and the deck count and XP into the set of qualifying badges, inserting a
@@ -2103,7 +2129,7 @@ protocols. The facade may accumulate unrelated backend
 responsibilities and become a god class (risk R8). Sprint 3 tested this: the group and
 feedback operations took it to 393 lines. It stays one type, limited to coordination,
 but is now split by concern into four files: \texttt{BackendFacade.swift} (state,
-lifecycle, authentication, sync; 230 lines) and the extensions
+lifecycle, authentication, sync; 231 lines) and the extensions
 \texttt{BackendFacade+Decks.swift}, \texttt{+Profile.swift}, and \texttt{+Groups.swift}
 (under 75 lines each). Members the extensions share are internal instead of private,
 which is the cost of the split: Swift has no access level between file and module.
@@ -2390,7 +2416,7 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
 \subsection{Workflow}
 \begin{itemize}
   \item \textbf{Branches.} Two long-lived branches: \texttt{dev} for day-to-day work
-        and \texttt{main} for reviewed, working states. At the end of a stage or sprint,
+        and \texttt{main} for working states merged at the end of each stage or sprint. At the end of a stage or sprint,
         \texttt{dev} is squash-merged into \texttt{main} (one commit per stage, for
         example ``Stage 12: Sprint 2 doc reconciliation''), and \texttt{main} is merged
         back into \texttt{dev} so the two never diverge. Feature branches are not used:
@@ -2562,8 +2588,8 @@ A stolen session token is used to impersonate a user. & TLS 1.3 only; tokens onl
   \item \textbf{Defense in depth.} Input is checked in the app (\texttt{ModelValidator})
         and again by CHECK constraints; traffic is TLS 1.3; every request needs a valid
         session; RLS filters every row; data is encrypted at rest on the device (iOS
-        file protection) and in the cloud (AES-256); and the secret scan and PR
-        checklist run before every merge.
+        file protection) and in the cloud (AES-256); and the secret scan and the pull
+        request template's checklist run before each merge to \texttt{main}.
 \end{itemize}
 
 \subsection{Security Threat Model (Data Flow Diagram)}
@@ -2683,7 +2709,7 @@ hardware outside the automated pipeline and are scheduled for Sprint 4.
 \endhead
 \bottomrule
 \endfoot
-TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} through the Supabase MCP; two simulated users and a non-member try to read, change, and delete each other's rows on all 8 tables; everything rolls back. & 0 of 48 checks fail & 0 of 48 failed (Oct 30) & Pass \\
+TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} in the Supabase SQL editor (or through the Supabase MCP server); two simulated users and a non-member try to read, change, and delete each other's rows on all 8 tables; everything rolls back. & 0 of 48 checks fail & 0 of 48 failed (Oct 30) & Pass \\
 TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after the Sprint 3 migrations; fix or justify each warning. & 0 unjustified warnings & 1 fixed (\texttt{rls\_auto\_enable}); 1 justified (\texttt{join\_group}) (Oct 30) & Pass \\
 TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings, 0 real values (Oct 30) & Pass \\
 TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 0 in Codey's sources (Oct 30) & Pass \\
@@ -2714,7 +2740,7 @@ of Sprint 3.
 \endhead
 \bottomrule
 \endfoot
-1 & Security review in every phase & Security items in the PR template; every PR reviewed by a second member; security walkthrough at each sprint review. & In use since Sprint 2; Sprint 3 migrations reviewed against the checklist. \\
+1 & Security review in every phase & Security items in the PR template, checked before each merge to \texttt{main}; security walkthrough at each sprint review. & In use since Sprint 2; the three Sprint 3 migrations were checked against it before they were applied (Oct 30). \\
 2 & Security metrics and trace matrix & Security metrics compared sprint to sprint; security NFRs traced to test cases. & Sprint 2 vs Sprint 3 values in Table~\ref{tab:metrics}; NFR-21--27 traced to TC-S01--S11. \\
 3 & Stakeholders and their security needs & Students: private, encrypted progress; client: no cost, team-written code; team: no leaked keys. & Complete; group mates see only name, avatar, and weekly XP. \\
 4 & Usage context and operating environment & iPhone app, offline-capable, Supabase Free plan over the public internet, possibly public Wi-Fi. & Complete; NFR-03 to NFR-06. \\
@@ -2978,14 +3004,15 @@ unit tests in A.9 (334 of 334 passed).
 \textbf{A.2 Get the code.}
 \begin{itemize}
   \item \texttt{git clone https://github.com/raajbanga/codey.git \&\& cd codey}
-  \item \texttt{git checkout main} (the reviewed state; \texttt{dev} has the latest work).
+  \item \texttt{git checkout main} (the submitted state; \texttt{dev} has the latest work).
 \end{itemize}
 
 \textbf{A.3 Generate the Xcode workspace.}
 \begin{itemize}
   \item \texttt{tuist install} downloads the pinned Swift packages
         (\texttt{Tuist/Package.swift}: Textual 0.5.0, Runestone 0.5.2,
-        TreeSitterLanguages 0.1.10, supabase-swift 2.55.3, GoogleSignIn-iOS 10.0.0).
+        TreeSitterLanguages 0.1.10, supabase-swift 2.55.3, GoogleSignIn-iOS 10.0.0, and the
+        test helpers xctest-dynamic-overlay 1.11.0 and swift-clocks 1.0.6).
   \item \texttt{tuist generate} creates \texttt{codey.xcworkspace} and opens it.
 \end{itemize}
 
@@ -3023,7 +3050,7 @@ Run \texttt{scripts/check-secrets.sh} to confirm nothing secret is tracked.
   \item Optional, for the integration and leaderboard tests: enable the Email provider
         and add two users with ``Auto Confirm User''.
 \end{itemize}
-\texttt{supabase/README.md} has the same steps with screenshots of each setting.
+\texttt{supabase/README.md} has the same steps.
 
 \textbf{A.7 Google Cloud OAuth.} In the Google Cloud console, create a project, configure
 the OAuth consent screen in Testing mode with the team as test users, and create two
@@ -3040,6 +3067,9 @@ Simulator, then Run (Command-R). From the command line:
   \item Unit tests: \texttt{xcodebuild test -workspace codey.xcworkspace -scheme codey
         -destination 'platform=iOS Simulator,name=iPhone 17'
         -only-testing:codeyTests}.
+  \item UI tests: the same command with \texttt{-only-testing:codeyUITests} (three
+        suites: deck builder, study session, accessibility audit). On Xcode 27.1 and
+        earlier, macOS may refuse the UI-test runner (R15); use Xcode 27.2.
   \item Integration tests (optional): set \texttt{TEST\_RUNNER\_SUPABASE\_TEST\_URL},
         \texttt{\ldots\_KEY}, and the two accounts' \texttt{\ldots\_EMAIL\_A/B} and
         \texttt{\ldots\_PASSWORD\_A/B} in the environment.
@@ -3057,9 +3087,6 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 
 \textbf{A.11 Troubleshooting.}
 \begin{itemize}
-  \item \emph{The UI-test runner is refused by macOS} (``codeyUITests-Runner''): a
-        known local issue (R15); unit tests are unaffected. Run unit tests with
-        \texttt{-only-testing:codeyTests}.
   \item \emph{Packages fail to resolve or the project is stale}: \texttt{tuist clean},
         then \texttt{tuist install \&\& tuist generate}.
   \item \emph{Sign-in button missing}: a key in \texttt{Secrets.xcconfig} is empty, so
