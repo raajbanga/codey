@@ -145,9 +145,9 @@ HOW TO READ THIS FILE
       delete; the branch is fully merged, fab9181).
    3. scripts/check-secrets.sh --history WITH Config/Secrets.xcconfig present
       (value scan); xcodebuild analyze; scripts/check-release-build.sh.
-   4. Post-facelift Simulator screenshots -> docs/figures (home light/dark,
+   4. [x] Post-facelift Simulator screenshots -> docs/figures (home light/dark,
       decks, builder, study, quiz, profile, groups); update the screens fig.
-   5. Layout pass count (3 sizes x light/dark), Accessibility Inspector
+   5. [x] Layout pass count (3 sizes x light/dark), Accessibility Inspector
       count, taps-to-study.
    6. Code freeze: tag sprint3-freeze; scripts/perf-report.sh and
       scripts/perf-launch.sh; fill perf results, bottleneck numbers, the
@@ -273,6 +273,9 @@ HOW TO READ THIS FILE
    - Watch: one rapid tap sequence once pushed a blank page (likely a double
      push; did not reproduce). Tapping on study-card text/code doesn't flip
      the card (empty card space does) - pre-existing, selectable text.
+     FIXED 2026-10-30: Textual's link overlay put a tap gesture on every
+     text line; the card now flips via a simultaneous tap gesture, and card
+     text is no longer selectable. Checked on 17e (text + code cards).
    - Second pass 2026-10-30 ("notes on paper", user feedback: text too
      small in places, wants more minimal): codeyCaption = footnote (no
      12pt text anywhere), secondary lines on Home -> subheadline; SF
@@ -299,8 +302,9 @@ HOW TO READ THIS FILE
  [x] DesignSystemTests (TierStyle mapping etc.) still pass.
  [x] Simulator walkthrough of every screen in light + dark on 3 device
      sizes. Doubles as the NFR-10/11 layout pass (S3-G.3).
- [L] New screenshots for the doc → docs/figures/ (home, decks, builder,
-     study, quiz, profile, leaderboard; light + dark for home).
+ [x] New screenshots for the doc → docs/figures/ (home, decks, builder,
+     study, quiz, profile, groups; light + dark for home). iPhone 17,
+     2026-10-30; fig:screens + new fig:screens2.
 
  A.6 Study-session UX simplification   [DEFERRED — after S3-B..D, user call]
      Problem (user testing 2026-10-30): the session mixes two hidden
@@ -534,18 +538,21 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
 ================================================================================
  [L] (P1) Merge activity8_1 into dev; delete the branch locally and on
      origin (S4). All Sprint 3 code lands on dev; dev → main at the freeze.
- [L] (P1) Re-run the full unit-test suite after each S3 stage
+ [x] (P1) Re-run the full unit-test suite after each S3 stage
      (`xcodebuild test … -only-testing:codeyTests`). Update the pass count
-     and coverage.
+     and coverage. 2026-10-30, Xcode 27.2: 334/334; 87.8% on Models
+     94.8 / ViewModels 92.9 / Services 86.0 (re-run after the freeze).
  [~] (P2) Stage 2.3 perf item: measure an 80-line snippet highlight
      (Textual). This becomes a performance test in S3-F, so tick both.
  [ ] (P2) Stage 4: RB content review of the starter decks (wording, tier
      calibration).
  [ ] (P2) Activity 10_2 "Next: tune tier difficulty after peer testing".
      Only if a peer test happens (UI metric "task success rate").
- [L] (P2) Retry the UI test runner (codeyUITests-Runner refused by macOS)
+ [x] (P2) Retry the UI test runner (codeyUITests-Runner refused by macOS)
      on Xcode 27.1. If it works, the launch metric can use
-     XCTApplicationLaunchMetric (S3-F).
+     XCTApplicationLaunchMetric (S3-F). 2026-10-30: the runner works on
+     Xcode 27.2 (AccessibilityAuditUITests runs); the launch metric stays
+     on perf-launch.sh, which the doc already describes.
  [x] (Note) BackendFacade was 291/300 lines (R8). The new group/feedback
      calls will push it over. Split it into extensions per concern
      (decks, profile, groups, feedback), still one façade type. Update the
@@ -638,8 +645,9 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
  [x] Supabase Security Advisor after the new migrations: 0 open warnings
      (or each one justified).
  [~] scripts/check-secrets.sh --history: 0 findings.
- [L] Xcode Static Analyzer: `xcodebuild analyze -scheme codey …` → 0
-     security warnings. Save the summary.
+ [x] Xcode Static Analyzer: `xcodebuild analyze -scheme codey …` → 0
+     security warnings. Save the summary. 2026-10-30, Xcode 27.2: 0 in
+     Codey, 0 security.*; docs/security/static-analysis.txt; doc filled.
  [~] Release-build check (SSC #12): build Release, then confirm
      SupabaseTestAccounts / test sign-in symbols are absent
      (`nm`/`strings` on the binary). Add as scripts/check-release-build.sh.
@@ -664,15 +672,25 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
 
  G.3 UI metrics (carry-overs from Sprint 2 Stage 7/10, done with the
      Simulator)
- [L] NFR-10/11 layout pass:
+ [x] NFR-10/11 layout pass:
        - Devices: iPhone 17e / 17 / 18 Pro Max Simulator profiles (match
          the doc's hardware table; whichever runtimes are installed).
        - Light + dark.
        - Every screen.
        - Result: screens passing / total.
- [L] NFR-12 Accessibility Inspector audit (both modes). Fix label/contrast
-     issues. Record the count.
- [L] Taps-to-study re-check after the facelift.
+       DONE 2026-10-30: 96/96 (16 screens x 3 sizes x 2 modes). Notes, by
+       design: onboarding topic cards truncate descriptions; code snippets
+       scroll sideways on the 17e.
+ [x] NFR-12 Accessibility Inspector audit (both modes). Fix label/contrast
+     issues. Record the count. DONE 2026-10-30 as a UI test
+     (codeyUITests/AccessibilityAuditUITests: performAccessibilityAudit,
+     the same checks, 16 screens, light + dark). 1 real issue fixed
+     (onboarding Back target < 44pt); 251 raw findings triaged as audit
+     heuristics (pixel contrast over paper/glass, intentional truncation,
+     Dynamic Type on text styles, non-button hit areas, text behind a
+     modal sheet), whitelisted with reasons in the test. 0 open.
+ [x] Taps-to-study re-check after the facelift. Still 1 (Home "Up
+     next"); Decks tab -> tile -> Study is 3.
  [ ] (P2) Peer usability test (3–5 classmates), so "task success rate" gets
      a number. Otherwise it stays "Sprint 4".
 
@@ -774,7 +792,7 @@ STATUS 2026-10-30 (client done, on dev, not committed; backend applied + live ch
  H.7 UI/UX Design section (kept from Sprint 2; rewritten for S9)
  [x] New tokens, accent, type, glass policy, motion policy; D12/D13/D17
      revised.
- [L] New screenshots (S3-A.5).
+ [x] New screenshots (S3-A.5).
  [x] NEW Activity 8_2 content:
        - Primary screens table.
        - Deck Builder requirements breakdown (content/hierarchy vs

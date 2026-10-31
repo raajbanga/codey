@@ -102,9 +102,9 @@ private struct CardFace: View {
     @ViewBuilder
     private var content: some View {
         if isFront {
-            CardMarkdownView(markdown: card.prompt, snippet: card.codeSnippet, font: .codeyCardText)
+            CardMarkdownView(markdown: card.prompt, snippet: card.codeSnippet, font: .codeyCardText, isSelectable: false)
         } else {
-            CardMarkdownView(markdown: card.answer, font: .codeyCardText)
+            CardMarkdownView(markdown: card.answer, font: .codeyCardText, isSelectable: false)
         }
     }
 }

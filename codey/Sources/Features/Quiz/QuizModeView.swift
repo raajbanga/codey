@@ -12,7 +12,6 @@ struct QuizModeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: QuizViewModel
     @State private var toastLevel: Int?
-    @State private var pulsing = false
 
     init(request: QuizRequest, context: ModelContext) {
         _viewModel = State(initialValue: QuizViewModel(topic: request.topic, mode: request.mode, context: context))
@@ -39,14 +38,6 @@ struct QuizModeView: View {
         .codeyPaperBackground()
         .overlay(alignment: .top) { levelToast }
         .badgeBanner()
-        .onChange(of: viewModel.hasAnswered) { _, answered in
-            guard answered, !reduceMotion else { return }
-            withAnimation(CodeyMotion.smooth) { pulsing = true }
-            Task {
-                try? await Task.sleep(for: .milliseconds(250))
-                withAnimation(CodeyMotion.smooth) { pulsing = false }
-            }
-        }
         .onChange(of: viewModel.levelUpToast) { _, level in
             guard let level else { return }
             showToast(level)
@@ -114,14 +105,13 @@ struct QuizModeView: View {
                         ) {
                             withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.select(index) }
                         }
-                        .scaleEffect(pulse(index, question: question) ? 1.03 : 1)
                         .accessibilityIdentifier("quiz.option.\(index)")
                     }
                 }
 
                 if let feedback = viewModel.feedback {
                     explanation(question, feedback: feedback)
-                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+                        .transition(.opacity)
                 }
             }
             .padding(CodeySpacing.md)
@@ -187,11 +177,6 @@ struct QuizModeView: View {
             return .revealedCorrect
         }
         return .idle
-    }
-
-    /// The correct row pulses once after answering.
-    private func pulse(_ index: Int, question: Question) -> Bool {
-        !reduceMotion && viewModel.hasAnswered && index == question.correctOptionIndex && pulsing
     }
 
     // MARK: Level-up toast

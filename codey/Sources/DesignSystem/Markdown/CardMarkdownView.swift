@@ -10,15 +10,22 @@ struct CardMarkdownView: View {
     var snippet: CodeSnippet?
     /// Base size; study and quiz cards pass `.codeyCardText`.
     var font: Font = .codeyBody
+    /// Off on the study card, where tap flips and swipe rates the card
+    /// (FR-16), so selection gestures would only get in the way.
+    var isSelectable = true
 
     var body: some View {
-        StructuredText(markdown: CardMarkdownComposition.compose(markdown: markdown, snippet: snippet))
+        let text = StructuredText(markdown: CardMarkdownComposition.compose(markdown: markdown, snippet: snippet))
             .font(font)
             .foregroundStyle(CodeyColor.textPrimary)
             .textual.inlineStyle(Self.inlineStyle)
             .textual.codeBlockStyle(CodeyCodeBlockStyle())
             .textual.highlighterTheme(Self.highlighterTheme)
-            .textual.textSelection(.enabled)
+        if isSelectable {
+            text.textual.textSelection(.enabled)
+        } else {
+            text
+        }
     }
 
     /// One-line previews (collapsed rows): inline markdown rendered as

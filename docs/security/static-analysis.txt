@@ -1,0 +1,17 @@
+Static analysis, 2026-10-30 23:26 UTC, commit 462aecb + working tree
+Command: xcodebuild analyze -workspace codey.xcworkspace -scheme codey -configuration Debug -destination 'generic/platform=iOS Simulator'
+Xcode: Xcode 27.2; result: ** ANALYZE SUCCEEDED **
+
+Clang Static Analyzer findings in Codey's own sources (codey/): 0 (the app is Swift; the analyzer checks C/Obj-C)
+Swift compiler warnings in Codey's own sources: 0
+security.* checker findings anywhere: 0
+
+Third-party (C/Obj-C dependencies) analyzer findings, unique:
+   3   AppAuth-iOS  [nullability.NullPassedToNonnull]
+   1   AppAuth-iOS  [nullability.NullReturnedFromNonnull]
+   1   AppAuth-iOS  [osx.NumberObjectConversion]
+   2   AppAuth-iOS  [osx.cocoa.NSError]
+   3   GoogleSignIn-iOS  [nullability.NullPassedToNonnull]
+   4   GoogleSignIn-iOS  [nullability.NullReturnedFromNonnull]
+   4   TreeSitterLanguages  [deadcode.DeadStores]
+   3   tree-sitter  [deadcode.DeadStores]

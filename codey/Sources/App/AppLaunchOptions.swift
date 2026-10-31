@@ -9,8 +9,11 @@ enum AppLaunchOptions {
     }
 
     /// UI tests skip onboarding (they always use the in-memory store), or
-    /// pass `-SkipOnboarding` explicitly.
+    /// pass `-SkipOnboarding` explicitly. `-UITestOnboarding` keeps it for
+    /// the accessibility audit.
     static var skipsOnboarding: Bool {
-        usesInMemoryStore || ProcessInfo.processInfo.arguments.contains("-SkipOnboarding")
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-UITestOnboarding") { return false }
+        return usesInMemoryStore || arguments.contains("-SkipOnboarding")
     }
 }

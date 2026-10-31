@@ -27,18 +27,18 @@ struct TierChipRow: View {
 struct TierUnlockedBanner: View {
     let tier: Difficulty
 
+    // Same note + colored edge as the level-up banner it sits under.
     var body: some View {
-        Label {
-            Text("Tier unlocked: \(tier.style.label)")
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.textPrimary)
-        } icon: {
-            Image(systemName: tier.style.symbol)
-                .foregroundStyle(tier.style.color)
+        CodeyCard(tint: tier.style.color) {
+            Label {
+                Text("Tier unlocked: \(tier.style.label)")
+                    .font(.codeyHeadline)
+                    .foregroundStyle(CodeyColor.textPrimary)
+            } icon: {
+                Image(systemName: tier.style.symbol)
+                    .foregroundStyle(tier.style.color)
+            }
         }
-        .padding(CodeySpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(CodeyChipVariant.tier(tier).softColor, in: .codey(CodeyRadius.lg))
     }
 }
 

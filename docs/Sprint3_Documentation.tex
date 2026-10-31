@@ -572,11 +572,11 @@ Security & Cross-account or non-member reads/writes that succeed & Live RLS chec
 Security & Backend requests not using TLS 1.3 & URL session minimum protocol (unit test) & 0 & 0 & 0 \\
 Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 \\
 Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1 (fixed) & 1, justified (\texttt{join\_group}) \\
-Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & Not measured & \tbd{analyzer count} \\
-Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{xcodebuild test} with \texttt{xccov} & All pass; $\ge$ 70\% & 278 of 278; 89.3\% & \tbd{count; coverage} \\
-User interface & Screens passing the layout pass (3 sizes, Light and Dark) & Simulator walkthrough & 100\% & Not measured & \tbd{n of n} \\
+Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & Not measured & 0 (\texttt{docs/security/static-analysis.txt}) \\
+Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{xcodebuild test} with \texttt{xccov} & All pass; $\ge$ 70\% & 278 of 278; 89.3\% & 334 of 334; 87.8\% \\
+User interface & Screens passing the layout pass (3 sizes, Light and Dark) & Simulator walkthrough & 100\% & Not measured & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) \\
 User interface & Text/background pairs below 4.5:1 & \texttt{ContrastTests} (Light, Dark, Increase Contrast) & 0 & 0 & 0 \\
-User interface & Accessibility audit issues & Xcode Accessibility Inspector & 0 & Not measured & \tbd{issue count} \\
+User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}, the Accessibility Inspector checks) over 16 screens, Light and Dark & 0 & Not measured & 0 open (1 fixed: onboarding Back target under 44 pt; 251 heuristic findings triaged) \\
 User interface & Taps to start a study session from launch & Task walkthrough & $\le$ 3 & 1 & 1 (Home ``Up next'') \\
 User interface & Task success rate in peer usability test & 3--5 classmates, scripted tasks & $\ge$ 90\% & Not measured & Sprint 4 \\
 \end{xltabular}
@@ -1002,9 +1002,10 @@ notes laid on warm, faintly dotted paper; a desaturated ink-blue accent replaces
 Sprint 2 electric indigo; Liquid Glass is left to the system's own controls; and
 celebrations are quiet banners with a haptic instead of particle bursts. The
 navigation model did not change. Figure~\ref{fig:screens} shows the launch screen,
-the first onboarding step, and the Home screen in Light and Dark Mode.
-\tbd{replace with post-facelift Simulator screenshots: home light/dark, decks,
-builder, study, quiz, profile, groups}
+the first onboarding step, and the Home screen in Light and Dark Mode, and
+Figure~\ref{fig:screens2} the Decks tab, the Deck Builder, a study card, a quiz
+question, the profile sheet, and the Groups sign-in prompt, all captured on an
+iPhone~17 Simulator after the facelift.
 
 \subsection{Wireframes and Storyboard (Activity 8.2)}
 Before the facelift, the team identified the app's primary screens
@@ -1075,6 +1076,18 @@ second difference is the subject of a planned Sprint 4 usability change.
 \includegraphics[width=0.235\textwidth]{home-dark.png}
 \caption{Screens (iOS Simulator): launch, onboarding step 1, and Home in Light and Dark Mode}
 \label{fig:screens}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.235\textwidth]{decks.png}\hfill
+\includegraphics[width=0.235\textwidth]{builder.png}\hfill
+\includegraphics[width=0.235\textwidth]{study.png}\hfill
+\includegraphics[width=0.235\textwidth]{quiz.png}\\[1ex]
+\includegraphics[width=0.235\textwidth]{profile.png}\hspace{0.02\textwidth}
+\includegraphics[width=0.235\textwidth]{groups.png}
+\caption{Screens after the facelift (iOS Simulator): Decks, Deck Builder, a study card (answer side), a quiz question after a correct answer, the profile sheet, and Groups while signed out}
+\label{fig:screens2}
 \end{figure}
 
 \subsection{Navigation Model}
@@ -1453,7 +1466,7 @@ NFR-12 & 4.5:1 text contrast & Design-system color tokens (Section~\ref{sec:ui})
 NFR-13 & Uses a database & Local Store component and PostgreSQL (Figs.~\ref{fig:component} and~\ref{fig:deploy}) & TC-N13 & Implemented \\
 NFR-14 & Swift/SwiftUI with Xcode & \texttt{Codey.app} artifact on the client node (Fig.~\ref{fig:deploy}) & TC-N14 & Implemented \\
 NFR-15 & Team-written source code & All components; GitHub pull request workflow (Section~\ref{sec:process}) & TC-N15 & Implemented \\
-NFR-16 & 70\% unit-test coverage & Model, ViewModel, and Service layers (\tbd{coverage}) & TC-N16 & Implemented \\
+NFR-16 & 70\% unit-test coverage & Model, ViewModel, and Service layers (87.8\%: Models 94.8\%, ViewModels 92.9\%, Services 86.0\%) & TC-N16 & Implemented \\
 NFR-17--19 & Metrics every sprint & Metrics plan (Table~\ref{tab:metrics}) with Sprint 2 and Sprint 3 columns & TC-N17--19 & Implemented \\
 NFR-20 & No service costs & Free plans and open-source libraries (Table~\ref{tab:services}) & TC-N20 & Implemented \\
 NFR-21 & Tokens never logged or stored outside the Keychain & \texttt{KeychainSessionStorage}; \texttt{Logger} privacy defaults & TC-S07 & Implemented \\
@@ -1510,7 +1523,8 @@ TC-N04 & \texttt{StoreFileProtectionTests}, \texttt{KeychainSessionStorageTests}
 TC-N06 & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} \\
 TC-N07 & \texttt{SupabaseSchemaTests} (every table has RLS), \texttt{supabase/tests/rls.sql}, \texttt{SupabaseIntegrationTests} (opt-in) \\
 TC-N08, TC-N09 & \texttt{SyncEngineTests} (offline save, reconnect), \texttt{SupabaseIntegrationTests} (opt-in) \\
-TC-N11, TC-N12 & \texttt{ColorTokenTests}, \texttt{ContrastTests}, \texttt{AppAppearanceTests} \\
+TC-N10, TC-N11 & Manual layout pass: 16 screens on iPhone 17e, 17, and 18 Pro Max, Light and Dark (96 of 96 pass, Oct 30) \\
+TC-N11, TC-N12 & \texttt{ColorTokenTests}, \texttt{ContrastTests}, \texttt{AppAppearanceTests}, \texttt{AccessibilityAuditUITests} (UI) \\
 TC-N13 & \texttt{MigrationTests}, \texttt{DataSeederTests}, \texttt{LocalDataResetTests} \\
 TC-N16 & Coverage report (\texttt{xccov}) on every test run \\
 TC-S01 -- TC-S10 & Security test cases (Table~\ref{tab:sectests}) \\
@@ -2654,7 +2668,7 @@ hardware outside the automated pipeline and are scheduled for Sprint 4.
 TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} through the Supabase MCP; two simulated users and a non-member try to read, change, and delete each other's rows on all 8 tables; everything rolls back. & 0 of 48 checks fail & 0 of 48 failed (Oct 30) & Pass \\
 TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after the Sprint 3 migrations; fix or justify each warning. & 0 unjustified warnings & 1 fixed (\texttt{rls\_auto\_enable}); 1 justified (\texttt{join\_group}) (Oct 30) & Pass \\
 TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings (Oct 30); value scan \tbd{date} & \tbd{} \\
-TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & \tbd{count, date} & \tbd{} \\
+TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 0 in Codey's sources (Oct 30) & Pass \\
 TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & \tbd{date} & \tbd{} \\
 TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 327-test run (Oct 30) & Pass \\
 TC-S07 & Token storage and logging (NFR-21) & \texttt{KeychainSessionStorageTests}; search the source for public log values and \texttt{UserDefaults} writes of tokens. & Keychain only; no token logged & 6 public log values, none sensitive; no token in \texttt{UserDefaults} (Oct 30) & Pass \\

@@ -49,6 +49,9 @@ struct OnboardingView: View {
                 } label: {
                     Label("Back", systemImage: "chevron.left")
                         .font(.codeyCallout.weight(.semibold))
+                        // 44pt minimum target (HIG); the label alone is ~20pt tall.
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
                 }
                 .tint(CodeyColor.brand)
                 .accessibilityIdentifier("onboarding.back")

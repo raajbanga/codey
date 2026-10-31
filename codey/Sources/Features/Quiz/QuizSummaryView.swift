@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// End of a quiz: percentage ring + "8/10 correct" (FR-20), XP / streak /
-/// retired tiles, and level-up / tier-unlock banners with a celebration.
+/// retired tiles, and level-up / tier-unlock banners with a quiet celebration.
 struct QuizSummaryView: View {
     let viewModel: QuizViewModel
     let done: () -> Void
@@ -95,7 +95,7 @@ struct QuizSummaryView: View {
         }
     }
 
-    /// Level-up wins over a tier unlock; one burst per summary (D17).
+    /// Level-up wins over a tier unlock; one quiet celebration per summary (S9).
     private var celebration: (title: String, symbol: String)? {
         if let level = viewModel.reachedLevel { return ("Level \(level)!", "arrow.up.circle.fill") }
         if let tier = viewModel.unlockedTiers.last { return ("\(tier.style.label) unlocked!", tier.style.symbol) }

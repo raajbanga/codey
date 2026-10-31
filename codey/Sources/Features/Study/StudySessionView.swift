@@ -114,7 +114,10 @@ struct StudySessionView: View {
             .rotationEffect(.degrees(reduceMotion ? 0 : Double(drag.width / 20)))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(.rect)
-            .onTapGesture { flip() }
+            // Simultaneous: Textual's link overlay puts a tap gesture on every
+            // line of card text, which would otherwise win and leave only the
+            // empty card space flipping it.
+            .simultaneousGesture(TapGesture().onEnded { flip() })
             .gesture(swipeGesture, isEnabled: viewModel.hasRevealedCurrent && !isCommitting)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
