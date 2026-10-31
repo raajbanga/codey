@@ -1,7 +1,7 @@
-date: 2026-10-31 00:31 UTC
-commit: 6bf0a2a
+date: 2026-10-31 18:56 UTC
+commit: 957c971
 mac: Apple M4 Pro, 24 GB RAM
 macOS: 27.2
 xcode: Xcode 27.2
-destination: platform=iOS Simulator,id=BAB7E146-C04B-4287-A84B-7D340F6B19E9
+destination: platform=iOS Simulator,name=iPhone 17
 configuration: Release (ENABLE_TESTABILITY=YES)

@@ -585,10 +585,10 @@ Advisor warnings and static-analyzer warnings.
 \endhead
 \bottomrule
 \endfoot
-Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & Not measured & 4.61 s on the Simulator (about 1.0 s after the app's code starts) \\
+Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & Not measured & 4.19 s on the Simulator (about 1.0 s after the app's code starts) \\
 Performance & 100-card deck sync & Mock with 50 ms per request (TC-P07); live opt-in test & $\le$ 5 s & 2 data requests; time not measured & 0.41 s \\
-Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & Not measured & 267.7 MB whole process on the Simulator: not met (the session adds 0.9 MB); device check Sprint 4 \\
-Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & Not measured & 0.38 / 56.5 / 14.0 ms \\
+Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & Not measured & 270.6 MB whole process on the Simulator: not met (the session adds 1.2 MB); device check Sprint 4 \\
+Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & Not measured & 0.39 / 57.9 / 15.1 ms \\
 Performance & Frame rate while scrolling the deck library & Instruments (Animation Hitches) & $\ge$ 60 fps & Not measured & Sprint 4 \\
 Security & Tables with RLS enabled & Schema unit test and live SQL check & 100\% & 100\% (4 of 4) & 100\% (8 of 8) \\
 Security & Cross-account or non-member reads/writes that succeed & Live RLS check (48 checks) & 0 & 0 (30 checks) & 0 (48 checks) \\
@@ -596,7 +596,7 @@ Security & Backend requests not using TLS 1.3 & URL session minimum protocol (un
 Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 \\
 Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1 (fixed) & 1, justified (\texttt{join\_group}) \\
 Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & Not measured & 0 \\
-Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{xcodebuild test} with \texttt{xccov} & All pass; $\ge$ 70\% & 278 of 278; 89.3\% & 334 of 334; 87.8\% \\
+Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{xcodebuild test} with \texttt{xccov} & All pass; $\ge$ 70\% & 278 of 278; 89.3\% & 342 of 342; 89.4\% \\
 User interface & Screens passing the layout pass (3 sizes, Light and Dark) & Simulator walkthrough & 100\% & Not measured & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) \\
 User interface & Text/background pairs below 4.5:1 & \texttt{ContrastTests} (Light, Dark, Increase Contrast) & 0 & 0 & 0 \\
 User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}, the Accessibility Inspector checks) over 16 screens, Light and Dark & 0 & Not measured & 0 open (1 fixed; 251 heuristic findings triaged) \\
@@ -1486,7 +1486,7 @@ satisfies it (component, deployment node, or class) and to its verification test
 \endhead
 \bottomrule
 \endfoot
-NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & Not met on the Simulator (4.61 s); device check Sprint 4 \\
+NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & Not met on the Simulator (4.19 s); device check Sprint 4 \\
 NFR-02 & 100-card sync $\le$ 5 s & \texttt{SyncEngine} batched push (one request per table, up to 500 operations); PostgREST (Fig.~\ref{fig:deploy}) & TC-N02, TC-P07 & Met with mock latency (0.41 s); live test Sprint 4 \\
 NFR-03 & Latest iOS, target iOS 26 & Client node (Fig.~\ref{fig:deploy}); Xcode deployment target & TC-N03 & Implemented \\
 NFR-04 & Local encryption at rest & SwiftData store with \emph{complete unless open} protection; Keychain item \emph{this device only} (Fig.~\ref{fig:deploy}) & TC-N04 & Implemented \\
@@ -1501,7 +1501,7 @@ NFR-12 & 4.5:1 text contrast & Design-system color tokens (Section~\ref{sec:ui})
 NFR-13 & Uses a database & Local Store component and PostgreSQL (Figs.~\ref{fig:component} and~\ref{fig:deploy}) & TC-N13 & Implemented \\
 NFR-14 & Swift/SwiftUI with Xcode & \texttt{Codey.app} artifact on the client node (Fig.~\ref{fig:deploy}) & TC-N14 & Implemented \\
 NFR-15 & Team-written source code & All components; commit history and task owners (Section~\ref{sec:process}) & TC-N15 & Implemented \\
-NFR-16 & 70\% unit-test coverage & Model, ViewModel, and Service layers (87.8\%: Models 94.8\%, ViewModels 92.9\%, Services 86.0\%) & TC-N16 & Implemented \\
+NFR-16 & 70\% unit-test coverage & Model, ViewModel, and Service layers (89.4\%: Models 97.5\%, ViewModels 94.0\%, Services 87.4\%) & TC-N16 & Implemented \\
 NFR-17--19 & Metrics every sprint & Metrics plan (Table~\ref{tab:metrics}) with Sprint 2 and Sprint 3 columns & TC-N17--19 & Implemented \\
 NFR-20 & No service costs & Free plans and open-source libraries (Table~\ref{tab:services}) & TC-N20 & Implemented \\
 NFR-21 & Tokens never logged or stored outside the Keychain & \texttt{KeychainSessionStorage}; \texttt{Logger} privacy defaults & TC-S07 & Implemented \\
@@ -1511,7 +1511,7 @@ NFR-24 & Only Supabase and Google contacted & Supabase Adapter component (Fig.~\
 NFR-25 & Group data visible only to members & RLS on \texttt{groups}, \texttt{group\_members}, \texttt{weekly\_xp}; \texttt{private.is\_member()} & TC-S01 & Implemented \\
 NFR-26 & No test sign-in in Release & \texttt{\#if DEBUG} around \texttt{SupabaseTestAccounts} & TC-S05 & Implemented \\
 NFR-27 & One callable function; Advisor clean & \texttt{private} schema for helpers; \texttt{join\_group} only & TC-S02 & Implemented \\
-NFR-28 & Memory $\le$ 150 MB & \texttt{StudySessionViewModel}, \texttt{StudyQueue} & TC-P03 & Not met on the Simulator (267.7 MB process; the session adds 0.9 MB); iPhone 16 Pro Max check Sprint 4 \\
+NFR-28 & Memory $\le$ 150 MB & \texttt{StudySessionViewModel}, \texttt{StudyQueue} & TC-P03 & Not met on the Simulator (270.6 MB process; the session adds 1.2 MB); iPhone 16 Pro Max check Sprint 4 \\
 NFR-29 -- NFR-31 & Quiz build, deck save, render & \texttt{QuestionPool}, \texttt{SwiftDataService} + \texttt{FlashcardFactory}, \texttt{CardMarkdownView} & TC-P01, TC-P02, TC-P06 & Met \\
 NFR-32 & Leaderboard $\le$ 1.5 s & \texttt{group\_leaderboard} view (one request) & TC-P09 & Planned (Sprint 4) \\
 \end{xltabular}
@@ -2716,9 +2716,9 @@ TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after the
 TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings, 0 real values (Oct 30) & Pass \\
 TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 0 in Codey's sources (Oct 30) & Pass \\
 TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & None found (Oct 30) & Pass \\
-TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 327-test run (Oct 30) & Pass \\
+TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 342-test run (Oct 31) & Pass \\
 TC-S07 & Token storage and logging (NFR-21) & \texttt{KeychainSessionStorageTests}; search the source for public log values and \texttt{UserDefaults} writes of tokens. & Keychain only; no token logged & 6 public log values, none sensitive; no token in \texttt{UserDefaults} (Oct 30) & Pass \\
-TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 327-test run (Oct 30) & Pass \\
+TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 342-test run (Oct 31) & Pass \\
 TC-S09 & Hosts and TLS on the wire (NFR-24) & Capture Simulator traffic with Proxyman during sign-in, sync, and a leaderboard load. & Only Supabase and Google, all TLS 1.3 & Not run & Sprint 4 \\
 TC-S10 & File protection on device (NFR-04) & Install on an iPhone, read the store files' protection attribute. & \emph{complete unless open} & Not run & Sprint 4 \\
 TC-S11 & SDK confinement (R7) & \texttt{scripts/check-imports.sh}. & Pass & Pass (Oct 30) & Pass \\
@@ -2842,8 +2842,8 @@ A profile is one user-facing path with the resources it is measured on:
 \end{itemize}
 Measurements were taken on the iOS Simulator on the machine recorded in
 Table~\ref{tab:hardware}, with the Release configuration (testability enabled) on an
-iPhone 17 Simulator, iOS 27 runtime (24A5370g), on Oct 30, 2026 at the
-\texttt{sprint3-freeze} commit (\texttt{6bf0a2a}).
+iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Oct 31, 2026 at the
+\texttt{sprint3-final} commit (\texttt{957c971}).
 
 \subsection{Results}
 \IfFileExists{perf/sprint3.csv}{%
@@ -2889,9 +2889,9 @@ built from docs/perf/sprint3.csv}}
 Against each requirement (p95 over 9 kept runs):
 \begin{itemize}
   \item \textbf{NFR-01, launch (TC-P08): not met on the Simulator.} Home was ready
-        4.61~s after process start (mean 4.57~s, \texttt{docs/perf/launch.csv}) against
-        3~s. The store held the starter decks and one user deck rather than the five
-        50-card decks in the TC-P08 setup. An Instruments App Launch trace and the
+        4.19~s after process start (mean 4.17~s, \texttt{docs/perf/launch.csv}) against
+        3~s, with the TC-P08 store (the starter decks plus five 50-card user decks,
+        written by the \texttt{LaunchFixtureSeed} test before timing). An Instruments App Launch trace and the
         dynamic loader's log show where the time goes: about 3.3~s pass in the
         Simulator's loader (\texttt{dyld\_sim}) before any Codey code runs, loading
         about 1{,}600 iOS system images (counted with \texttt{DYLD\_PRINT\_LIBRARIES}).
@@ -2905,17 +2905,17 @@ Against each requirement (p95 over 9 kept runs):
         5~s, with 50~ms of latency per request. The live two-account test waits on
         the Supabase test users.
   \item \textbf{NFR-28, memory (TC-P03): not met on the Simulator.} The whole test
-        process peaked at 267.7~MB against 150~MB, while a full 100-card session
-        added at most 0.9~MB to the footprint. About 205~MB of an idle Codey process on the
+        process peaked at 270.6~MB against 150~MB, while a full 100-card session
+        added at most 1.2~MB to the footprint. About 205~MB of an idle Codey process on the
         Simulator is iOS framework data (\texttt{\_\_DATA\_CONST}, \texttt{\_\_DATA}, and
         mapped files) that a device keeps in the shared cache; the heap was about
         31~MB. So the session itself is cheap, but the requirement names the peak
         footprint, so it stays open until it is measured on the iPhone 16 Pro Max in
         Sprint 4. The test gates on the session's growth, which it can control on the
         Simulator, and reports both numbers.
-  \item \textbf{NFR-29, quiz build (TC-P01): met.} 0.38~ms against 50~ms.
-  \item \textbf{NFR-30, deck save (TC-P02): met.} 56.5~ms against 250~ms.
-  \item \textbf{NFR-31, 80-line render (TC-P06): met.} 14.0~ms against 100~ms.
+  \item \textbf{NFR-29, quiz build (TC-P01): met.} 0.39~ms against 50~ms.
+  \item \textbf{NFR-30, deck save (TC-P02): met.} 57.9~ms against 250~ms.
+  \item \textbf{NFR-31, 80-line render (TC-P06): met.} 15.1~ms against 100~ms.
 \end{itemize}
 
 \subsection{Hardware and Software Bottlenecks}\label{sec:bottlenecks}
@@ -2933,17 +2933,17 @@ the times come from the results above.
         about 0.35 s, an order of magnitude under the 5 s limit. Sprint 2's batching
         (one request per table instead of one per card) is what keeps this flat as the
         deck grows; per-card requests would have needed 100 round trips, about 5 s at
-        50 ms. TC-P07 measured 0.41 s at p95 (mean 0.39 s).
+        50 ms. TC-P07 measured 0.41 s at p95 (mean 0.40 s).
   \item \textbf{Launch work is seeding plus the first Home queries (software).} Every
         launch decodes 83 KB of questions and 66 KB of starter decks and upserts them
         by ID (176 questions, 144 cards through the factory). TC-P04 and TC-P05 put
-        this at 16.9~ms and 14.6~ms (p95), about 3\% of the 1.0~s the app's own code
-        takes and under 1\% of the 4.6~s TC-P08 measured. Because seeding is idempotent, an unchanged bundle could
+        this at 16.6~ms and 15.3~ms (p95), about 3\% of the 1.0~s the app's own code
+        takes and under 1\% of the 4.2~s TC-P08 measured. Because seeding is idempotent, an unchanged bundle could
         skip it with a content hash; that is the first optimization if NFR-01 is ever
         at risk.
   \item \textbf{First render of code is the most expensive UI path (software,
         third-party).} Highlighting runs Prism (JavaScript) through Textual on first
-        display; an 80-line snippet measured 14.0~ms at p95 (TC-P06). The validator caps a
+        display; an 80-line snippet measured 15.1~ms at p95 (TC-P06). The validator caps a
         snippet at 80 lines and 2,000 characters, which bounds this cost.
   \item \textbf{Simulator versus device (hardware).} All numbers come from the iOS
         Simulator, which runs the app natively on the Mac's Apple Silicon CPU with the
@@ -2971,9 +2971,10 @@ failed two checks, and both were traced with that plan:
         session. \texttt{footprint} on the running app attributed about 205~MB to iOS
         framework pages (see above). Action: the harness now also records each run's
         growth (every scenario now reports it), and TC-P03 gates on it; the re-run
-        measured 0.9~MB. NFR-28 itself names the peak, so it stays open for the
+        measured 1.2~MB. NFR-28 itself names the peak, so it stays open for the
         device measurement.
-  \item \textbf{TC-P08 (launch).} 4.61~s against 3~s. The Instruments trace placed
+  \item \textbf{TC-P08 (launch).} 4.61~s against 3~s in the first run, with a smaller
+        store; 4.19~s in the re-run with the full TC-P08 store. The Instruments trace placed
         about 3.3~s before \texttt{main}, in the Simulator's loader; updating the
         Simulator runtime's shared cache and rebooting the Simulator did not change
         it. The app's own 1.0~s already meets the requirement with room to spare.
@@ -2994,9 +2995,11 @@ inside \texttt{\#if DEBUG}.
 \addcontentsline{toc}{section}{Appendix A: Build Instructions}
 % =====================================================================
 These steps build and run the current version of Codey from a clean machine. They
-were last dry-run from a fresh clone on Oct 30, 2026 (Raaj Banga, with an AI coding
-assistant) at the \texttt{sprint3-freeze} commit, in local-only mode: A.2--A.4, A.8, and the
-unit tests in A.9 (334 of 334 passed).
+were last dry-run from a fresh clone on Oct 31, 2026 (Raaj Banga, with an AI coding
+assistant) at the \texttt{sprint3-final} commit, in local-only mode: A.2--A.4, A.8, and the
+unit tests in A.9 (342 of 342 passed). The three UI test suites pass when run on their own;
+in a full run on a busy Simulator the deck-builder and accessibility-audit suites
+sometimes fail on dropped keystrokes or an ignored swipe, so run them one at a time.
 
 \textbf{A.1 Prerequisites.}
 \begin{itemize}
@@ -3113,7 +3116,7 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 This appendix lists every source and configuration file in the repository, one per
 subsection, with line numbers; Table~\ref{tab:pattern-lines} refers to these line
 numbers. It is generated by \texttt{scripts/gen-appendix-b.sh} from the commit tagged
-\texttt{sprint3-freeze}. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
+\texttt{sprint3-final}. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
 repository and is not listed; \texttt{Secrets.example.xcconfig} shows its format.
 Generated color sets and the app icon images are not source code and are omitted.
 
