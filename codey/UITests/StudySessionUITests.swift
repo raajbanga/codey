@@ -25,28 +25,38 @@ final class StudySessionUITests: XCTestCase {
         study.tap()
 
         // New learner: only the 4 Easy cards are unlocked (D9).
-        XCTAssertTrue(app.staticTexts["1 / 4"].waitForExistence(timeout: 5))
+        let counter = app.staticTexts["study.counter"]
+        XCTAssertTrue(counter.waitForExistence(timeout: 5))
+        XCTAssertEqual(counter.label, "Card 1 of 4")
         let card = app.descendants(matching: .any)["study.card"].firstMatch
 
         // Swiping before the reveal does nothing (FR-16).
         card.swipeRight()
-        XCTAssertTrue(app.staticTexts["1 / 4"].exists)
+        XCTAssertEqual(counter.label, "Card 1 of 4")
 
         // Tap to flip, swipe right = Good.
         card.tap()
         card.swipeRight()
-        XCTAssertTrue(app.staticTexts["2 / 4"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForLabel(counter, "Card 2 of 4"))
 
-        // Flip, swipe left = Again (re-queued once).
+        // Flip, swipe left = Again: re-queued once and announced as a repeat
+        // instead of growing the total (S19).
         card.tap()
         card.swipeLeft()
-        XCTAssertTrue(app.staticTexts["3 / 5"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForLabel(counter, "Card 3 of 4, 1 repeat added"))
 
         app.buttons["study.close"].tap()
         let resume = app.buttons["deck.continue"]
         XCTAssertTrue(resume.waitForExistence(timeout: 5))
-        XCTAssertTrue(resume.label.contains("3/5"))
+        XCTAssertTrue(resume.label.contains("3/4"))
         resume.tap()
-        XCTAssertTrue(app.staticTexts["3 / 5"].waitForExistence(timeout: 5))
+        XCTAssertTrue(counter.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForLabel(counter, "Card 3 of 4, 1 repeat added"))
+    }
+
+    private func waitForLabel(_ element: XCUIElement, _ label: String, timeout: TimeInterval = 5) -> Bool {
+        let predicate = NSPredicate(format: "label == %@", label)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 }

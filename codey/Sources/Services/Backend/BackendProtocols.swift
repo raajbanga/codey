@@ -13,6 +13,7 @@ struct AppUser: Equatable, Sendable {
     let displayName: String?
 }
 
+// MARK: - [Pattern: Facade] Subsystem (auth)
 /// Google sign-in → Supabase session (FR-01–03). The session lives in the
 /// Keychain (FR-02).
 @MainActor
@@ -69,6 +70,47 @@ struct ProfilePayload: Equatable, Sendable {
     var totalXP: Int
 }
 
+/// FR-49: one UI/UX issue report. The id is made on the device, so a
+/// retried send can't create a duplicate.
+struct FeedbackReportPayload: Equatable, Sendable {
+    var id: UUID
+    var description: String
+    var appVersion: String?
+    var osVersion: String?
+}
+
+/// FR-50: a leaderboard group you're in.
+struct GroupSummary: Codable, Equatable, Identifiable, Sendable {
+    var id: UUID
+    var name: String
+    var inviteCode: String
+}
+
+/// FR-42: one member's XP this UTC week (group_leaderboard view).
+struct LeaderboardEntry: Codable, Equatable, Identifiable, Sendable {
+    var userId: UUID
+    var displayName: String
+    var avatarId: String?
+    var xp: Int
+
+    var id: UUID { userId }
+}
+
+/// FR-50–52 failures the group screens explain.
+enum GroupError: LocalizedError, Equatable {
+    case signInRequired
+    case invalidCode
+    case notFound
+
+    var errorDescription: String? {
+        switch self {
+        case .signInRequired: "Sign in to use groups."
+        case .invalidCode: "No group has that code. Check it and try again."
+        case .notFound: "That group isn't available anymore."
+        }
+    }
+}
+
 /// One sync_log row (R2 audit ledger).
 struct SyncLogEntry: Equatable, Sendable {
     var entity: SyncEntity
@@ -78,6 +120,7 @@ struct SyncLogEntry: Equatable, Sendable {
     var deviceId: String?
 }
 
+// MARK: - [Pattern: Facade] Subsystem (remote store)
 /// The Supabase tables, via PostgREST. RLS scopes every call to the signed-in
 /// owner. Upserts are one batched request each (NFR-02).
 protocol RemoteDeckStore: Sendable {
@@ -91,6 +134,20 @@ protocol RemoteDeckStore: Sendable {
     func fetchProfile() async throws -> ProfilePayload?
     func upsertProfile(_ profile: ProfilePayload) async throws
     func appendSyncLog(_ entries: [SyncLogEntry]) async throws
+    /// FR-49: insert-only; users can't read reports back (RLS).
+    func submitFeedback(_ report: FeedbackReportPayload) async throws
+
+    // FR-42, FR-50–52: groups and the weekly leaderboard.
+    /// Groups the signed-in user is a member of.
+    func fetchGroups() async throws -> [GroupSummary]
+    /// The server picks the invite code and adds the creator as a member.
+    func createGroup(id: UUID, name: String) async throws -> GroupSummary
+    /// join_group(code). Throws GroupError.invalidCode for an unknown code.
+    func joinGroup(code: String) async throws -> GroupSummary
+    func leaveGroup(id: UUID) async throws
+    func fetchLeaderboard(groupID: UUID) async throws -> [LeaderboardEntry]
+    /// Max-merged on the server (weekly_xp trigger).
+    func upsertWeeklyXP(weekStart: String, xp: Int) async throws
 }
 
 /// Network reachability (NWPathMonitor in the app).

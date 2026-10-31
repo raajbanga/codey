@@ -4,22 +4,24 @@ import os
 
 /// The two "Danger Zone" actions (Stage 0.5).
 enum LocalDataReset {
-    /// Zeroes XP and streak; clears card mastery, saved study sessions,
-    /// daily activity, and quiz progress (retirement, tier unlocks, answer
-    /// history). Content, decks, and the profile's identity stay.
-    static func resetProgress(context: ModelContext) throws {
+    /// Zeroes XP (and this week's XP); clears card mastery, saved study sessions, daily activity
+    /// (so the derived streak is 0), badges, and quiz progress (retirement,
+    /// tier unlocks, answer history). Content, decks, and the profile's
+    /// identity stay.
+    static func resetProgress(context: ModelContext, weeklyXP: WeeklyXPStore = WeeklyXPStore()) throws {
         let profile = DataSeeder.ensureProfile(context: context)
         profile.totalXP = 0
-        profile.currentStreak = 0
-        profile.lastActiveDate = nil
 
         for card in try context.fetch(FetchDescriptor<Flashcard>()) {
             card.resetMastery()
         }
         try deleteAll(StudyProgressSnapshot.self, context: context)
         try deleteAll(DailyActivity.self, context: context)
+        try deleteAll(BadgeAward.self, context: context)
         try deleteQuizProgress(context: context)
         try context.save()
+        // The server keeps this week's max (weekly_xp), like total_xp.
+        weeklyXP.reset()
         Logger.settings.notice("Progress reset by user")
     }
 
@@ -27,16 +29,18 @@ enum LocalDataReset {
     /// re-seeds bundled content (quiz bank + starter decks) and a fresh
     /// profile. The auth session is not touched; the UI requires sign-out
     /// first.
-    static func eraseAllLocalData(context: ModelContext, bank: QuestionBank) throws {
+    static func eraseAllLocalData(context: ModelContext, bank: QuestionBank, weeklyXP: WeeklyXPStore = WeeklyXPStore()) throws {
         try deleteAll(FlashcardDeck.self, context: context)
         try deleteAll(Flashcard.self, context: context)
         try deleteAll(StudyProgressSnapshot.self, context: context)
         try deleteAll(DailyActivity.self, context: context)
+        try deleteAll(BadgeAward.self, context: context)
         try deleteQuizProgress(context: context)
         try deleteAll(UserProfile.self, context: context)
         try deleteAll(Question.self, context: context)
         try deleteAll(Topic.self, context: context)
         try context.save()
+        weeklyXP.reset()
 
         try DataSeeder.seed(context: context, bank: bank)
         try StarterDeckLoader.seed(context: context)

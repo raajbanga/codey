@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 @testable import codey
 
+/// Shared fixtures: in-memory/on-disk stores that stay alive, and seeded decks/topics.
 enum TestSupport {
     /// A ModelContext does NOT retain its ModelContainer. If the container is
     /// freed, the next fetch/save traps inside SwiftData (EXC_BREAKPOINT), which

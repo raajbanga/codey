@@ -20,6 +20,9 @@ struct GatingConfig: Equatable {
     var accuracyWindow = 50
     /// Answer history kept per topic.
     var answerHistoryCap = 200
+    /// FR-32: quiz answers + card ratings per day that meet the daily goal
+    /// (and count toward the streak, FR-33).
+    var dailyGoal = 20
 
     static let standard = GatingConfig()
 }

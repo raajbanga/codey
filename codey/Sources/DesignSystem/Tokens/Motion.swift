@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Standard animations (D17). Use the modifiers below rather than raw
+/// Standard animations. Sprint 3 (S9) keeps motion quiet: short snaps and
+/// smooth settles only, no bounce. Use the modifiers below rather than raw
 /// animations so Reduce Motion is respected everywhere.
 enum CodeyMotion {
     static let snappy: Animation = .snappy(duration: 0.25)
-    static let bouncy: Animation = .bouncy(duration: 0.4)
     static let smooth: Animation = .smooth(duration: 0.35)
     /// What any motion becomes under Reduce Motion: a short crossfade.
     static let reduced: Animation = .easeInOut(duration: 0.2)
@@ -13,9 +13,9 @@ enum CodeyMotion {
         reduceMotion ? reduced : animation
     }
 
-    /// Scale + fade normally; fade only under Reduce Motion.
+    /// A slight scale + fade normally; fade only under Reduce Motion.
     static func popTransition(reduceMotion: Bool) -> AnyTransition {
-        reduceMotion ? .opacity : .scale(scale: 0.85).combined(with: .opacity)
+        reduceMotion ? .opacity : .scale(scale: 0.96).combined(with: .opacity)
     }
 }
 
