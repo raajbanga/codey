@@ -31,6 +31,9 @@ final class DeckBuilderUITests: XCTestCase {
         app.buttons["strip.addCard"].tap()
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Prompt'"))).tap()
         app.typeText("What prints?")
+        // The keyboard covers "Add code" on smaller phones; close it the
+        // way a user would, with the builder's keyboard "Done" button.
+        dismissKeyboard()
         hittable(app.buttons.matching(identifier: "card.addCode")).tap()
 
         let language = hittable(app.buttons.matching(identifier: "card.language"))
@@ -60,6 +63,11 @@ final class DeckBuilderUITests: XCTestCase {
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Answer'"))).tap()
         app.typeText(answer)
         switchSide(to: "Front")
+    }
+
+    private func dismissKeyboard() {
+        let done = app.toolbars.buttons["Done"]
+        if done.waitForExistence(timeout: 2) { done.tap() }
     }
 
     private func switchSide(to side: String) {

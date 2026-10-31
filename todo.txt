@@ -71,28 +71,42 @@ HOW TO READ THIS FILE
      Repeat chip, summary = cards reviewed (distinct) · moved up · deck
      progress in points. Built in a67ecef (CodeySchemaV8, MasteryDots,
      FlashcardDeck.progressRate).
+ S20 (2026-10-31) No Linear. Tasks were tracked manually in todo.txt;
+     the doc says so wherever it mentions issue tracking.
+ S21 (2026-10-31) Git history is not used to check the doc's account of
+     who did what; the doc's contribution text stands.
+ S22 (2026-10-31) Hardware = one Mac (MacBook Pro Mac16,8, M4 Pro, 24 GB,
+     macOS 27.2, Xcode 27.2) and iOS 27 Simulator devices (iPhone 17e,
+     17, 18 Pro Max), plus Raaj's iPhone 16 Pro Max (128 GB, iOS 27) for the
+     Sprint 4 on-device checks (NFR-01, NFR-28, TC-S10).
+ S23 (2026-10-31) Activity due dates: 8.1 10/16, 8.2 10/18, 9.2 10/27,
+     10.1 10/30, 10.2 11/3.
+ S24 (2026-10-31) LaTeX -> PDF is accepted by the client; ~28k words
+     stands (S1, S2).
+ S25 (2026-10-31) NFR-28 keeps its wording (peak <= 150 MB) and is
+     reported "Not met on the Simulator (267.7 MB whole process; the
+     session adds 0.9 MB); measured on the iPhone 16 Pro Max in Sprint 4",
+     the same way as NFR-01. No new FRs for the S19 counter/summary
+     (FR-16-18 cover it).
 
 
 --------------------------------------------------------------------------------
  QUESTIONS FOR THE TEAM (answer before step 4)
 --------------------------------------------------------------------------------
- Q1 (A2) Was Linear actually used? The doc claims a Linear workspace
-     (Table 3, Table 4, Sprint 1 Gantt "Repo & Linear workspace setup",
-     Section 6.3). If not, drop every Linear mention (S15).
- Q2 (A2) Activity 8.1 date. The Sprint 3 Gantt puts it Oct 5-7, but the
-     README commits it produced (05bd3b6..30b5b0e) are dated Oct 13. Use
-     the real class date (this is the red [TBD] in Section 5.3).
- Q3 (A2) Sprint 2 code reached GitHub on Oct 7-8 (Stages 0-12 squashes),
-     after the Sprint 2 Gantt's Oct 3 end. If it was built locally and
-     pushed in stages, say so in one sentence in Section 13 so a grader
-     comparing the history with the Gantt sees no contradiction.
- Q4 (A2) Rubric says "Standard word document" and "~4,500 words". S1/S2
-     keep the LaTeX PDF at ~28k words. Confirm with Dr. Galloway that a
-     PDF is accepted (one email); if not, export the reading copy to .docx.
- Q5 Hardware: exact Mac model, chip, RAM, macOS for Arnav and Elnad
-     (About This Mac), and the iPhone model anyone will use for the
-     Sprint 4 on-device checks.
- Q6 Confirm all three @topper.wku.edu emails on the cover page.
+ Answered 2026-10-31 (S20-S23 below):
+ [x] Q1 Linear was never used; tasks were tracked manually (todo.txt).
+ [x] Q2 Activity 8.1 was due 2026-10-16.
+ [x] Q3 Git history is not reconciled with the doc; the doc's own account
+     of contribution stands.
+ [x] Q5 Hardware: one Mac (the measurement Mac: MacBook Pro Mac16,8, M4
+     Pro, 24 GB, macOS 27.2) plus iOS 27 Simulator devices.
+ [x] Q4 PDF accepted (S24).
+ [x] Q7 Activity due dates (S23).
+ [x] Q8 iPhone 16 Pro Max, 128 GB (S22).
+ [x] Q9, Q10 NFR-28 option b; no new FRs (S25).
+ [x] Q6 Cover emails confirmed as in the doc.
+ [x] Q11 iPhone 16 Pro Max runs iOS 27.
+ No open questions.
 
 
 ================================================================================
@@ -100,15 +114,13 @@ HOW TO READ THIS FILE
 ================================================================================
 
  1. STUDY-SESSION UX FIX: LEFTOVERS (S17/S19)                    (ES) [L]
- [ ] Simulator: iPhone 18 Pro Max (the NFR-10 "largest" profile) + dark;
-     re-check the summary after the distinct-card change
-     ("4 · +1 repeat").
- [ ] DeckBuilderUITests.testCreateDeckWithPythonSnippet fails: the
-     keyboard covers "Add code" on card 2 (not hittable). Fix (scroll or
-     dismiss the keyboard in the test, or a keyboard-aware layout) before
-     the re-freeze. TC-05-07 cite this UI test, so it must pass.
- [ ] Retake the study-card screenshot (Figure 7, docs/figures/study.png)
-     with the mastery dots and the "+1 repeat" counter visible.
+ [x] Simulator: iPhone 18 Pro Max + dark, 2026-10-31: counter "3 / 4 ·
+     +1 repeat", Repeat chip ("Repeat 1 of 1"), summary "4 · +1 repeat",
+     4 moved up, deck progress 10% (+10 pts). iPhone 17 light same.
+ [x] DeckBuilderUITests: the test now closes the keyboard with the
+     builder's "Done" button before "Add code". Passes on iPhone 17.
+ [x] Study-card screenshot retaken (iPhone 17, light; answer side, dots,
+     "3 / 4 · +1 repeat").
 
  2. RE-FREEZE + RE-MEASURE                                        (AB) [L]
  [ ] Full unit suite (xcodebuild test -only-testing:codeyTests) + the 3 UI
@@ -146,7 +158,7 @@ HOW TO READ THIS FILE
  4. DOC CORRECTIONS (doc order)                                    (RB)
 
   Cover / Section 1 Overview
- [ ] Cover emails (Q6).
+ [x] Cover emails confirmed (Q6); no change.
  [ ] (A2) Section 1.2 "Changes Since Sprint 2": add a bullet for the
      study-session fix (visible mastery dots, announced repeats, progress
      summary; schema V8), found by user testing on Oct 30.
@@ -155,31 +167,33 @@ HOW TO READ THIS FILE
  [ ] (A2) NFR-28 says "peak memory footprint <= 150 MB", the measured
      whole process is 267.7 MB, the test now gates on session growth
      (0.9 MB), yet Table 18 says "Met" and Table 6 shows target 150 MB.
-     Pick one and make all three places agree:
-       a. reword NFR-28 to what is measured ("a 100-card study session
-          shall add at most N MB to the app's footprint"; absolute
-          <= 150 MB checked on a device in Sprint 4), or
-       b. keep the wording and set the status to "Not met on the
-          Simulator (267.7 MB process); session growth 0.9 MB; device
-          check Sprint 4", like NFR-01.
- [ ] (A2) Optional but cheap: add FR-61 (the study counter shows distinct
-     cards plus the repeats added by "Again") and FR-62 (the session
-     summary reports cards reviewed, cards moved up, and deck progress),
-     so the S19 behavior is traceable. Then add them to Tables 1, 17, 19.
+     Per S25: keep the wording; Table 18 splits the NFR-28 row out of
+     "NFR-28 -- NFR-31: Met" with status "Not met on the Simulator
+     (267.7 MB); session adds 0.9 MB; iPhone 16 Pro Max check Sprint 4";
+     Table 6 Sprint 3 cell and the 18.4 bullet ("met for what the app
+     controls" -> "not met on the Simulator") say the same.
  [ ] Table 6 (metrics): unit-test count and coverage from step 2; launch,
      memory, and timing values from the new CSVs; NFR-28 row per the
      decision above.
 
   Section 3 Hardware
- [ ] Table 7: exact Mac model, chip, RAM, macOS for Arnav and Elnad (Q5);
-     name the physical iPhone if one is known.
- [ ] (A2) Table 7 "Source control and tracking" and Table 8 "Linear" row:
-     drop Linear if Q1 = not used. Table 8 GitHub row says "pull request
-     reviews"; change to "repository, PR template, Actions" (S15).
+ [ ] Table 7 per S22: "Development machines" -> one MacBook Pro
+     (Mac16,8, M4 Pro, 24 GB, macOS 27.2, Xcode 27.2); drop "3 Apple
+     Silicon MacBooks, one per member" and the "other two" sentence; merge
+     with the "Measurement machine" row. Section 3 intro: "Each team
+     member develops on an Apple Silicon MacBook" -> one Mac. "Optional
+     physical device" row -> "iPhone 16 Pro Max, 128 GB, iOS 27, for
+     the Sprint 4 on-device checks". Sections 17/18 and Table 18 say
+     "on the iPhone 16 Pro Max" wherever they say "on a device".
+ [ ] (A2) Linear (S20): Table 7 "Source control and tracking" -> GitHub +
+     manual tracking in todo.txt; delete the Table 8 Linear row. Table 8
+     GitHub row "pull request reviews" -> "repository, PR template,
+     Actions" (S15).
 
   Section 4 Development approach
  [ ] Process wording (S15). Rewrite each of these:
-       - 4.2 "Task tracking" (no issue per Gantt task), "Build cadence"
+       - 4.2 "Task tracking" -> tasks tracked manually in todo.txt (S20;
+         no Linear or GitHub issues), "Build cadence"
          (weekly formal code review), and the definition of done ("pull
          request checklist" -> the template's checklist before a merge to
          main).
@@ -187,7 +201,10 @@ HOW TO READ THIS FILE
        - Section 6.1 R4 mitigation ("cross-review every pull request").
        - R10 monitoring trigger ("a pull request fails a security
          checklist item").
-       - Section 6.3 ("checked against Linear and GitHub data").
+       - Section 6.3 ("checked against Linear and GitHub data" -> against
+         the task list in todo.txt).
+       - (A2) Sprint 1 Gantt bar "Repo & Linear workspace setup" -> "Repo
+         setup".
        - Section 9 closing paragraph ("each pull request references the
          requirement identifiers").
        - NFR-15 verification (Table 2: "pull request authorship" -> commit
@@ -208,14 +225,26 @@ HOW TO READ THIS FILE
      "does not launch"; add "resolved on Xcode 27.2" so it matches R15.
 
   Section 5 Gantt charts
- [ ] Section 5.3: remove the red [TBD] after fixing the activity dates
-     (Q2: Activity 8.1 commits are dated Oct 13, the bar says Oct 5-7).
+ [ ] Section 5.3: activity bars end on their due dates (S23): 8.1 10/16
+     (today Oct 5-7), 8.2 10/18 (Oct 12-14), 9.2 10/27 (Oct 19-21), 10.1
+     10/30 (Oct 26-27), 10.2 11/3 (Oct 28-29). The Course-activities group
+     ends 11/3. Remove the red [TBD] and the "% Activity dates: confirm"
+     comment.
+ [ ] (A2) Gantt links: \ganttlink{a102}{strk} breaks (10.2 now ends after
+     the streak work). Drop it; keep a92 -> perf and a101 -> sec.
+ [ ] (A2) Text that assumed the old dates:
+       - 5.3 paragraph: "The first three weeks were spent on the course
+         activities ... feature work then ran in the final week" -> the
+         activities ran across the whole sprint; 10.1 and 10.2 overlap
+         the feature and measurement work.
+       - 4.3 / Table 5: "Activity 10.2 wrap-up at the midpoint of the
+         sprint" -> at the end of the sprint (due 11/3); the "checkpoint"
+         column is when the activity was filled in.
  [ ] Sprint 3 Gantt: progress -> 100% for "Sprint 3 documentation" and
      "Measurement & Documentation"; move the Code freeze milestone to the
      new tag's date.
  [ ] (A2) Sprint 3 Gantt: add bars for "Study-session UX fix (ES)"
      (Oct 30-31) and "Re-freeze & re-measure (AB)", linked to the freeze.
- [ ] (A2) Q3: one sentence on why Sprint 2 code is dated Oct 7-8 in Git.
 
   Section 6 Risks
  [ ] R15: status -> resolved on Xcode 27.2 (the launch metric stays on
@@ -255,8 +284,7 @@ HOW TO READ THIS FILE
  [ ] Section 12.4: BackendFacade.swift is 231 lines, not 230.
 
   Section 13 Version control
- [ ] Table 24: re-run `git shortlog -sn --all` on the final commit (the
-     co-authored and AI-authored counts change too).
+ [x] Table 24 and the contribution paragraph stay as written (S21).
  [ ] Mention the sprint3-final tag and the dev -> main squash in step 6.
 
   Section 17 Security
@@ -320,16 +348,16 @@ HOW TO READ THIS FILE
 --------------------------------------------------------------------------------
  RUBRIC CHECKLIST (audited 2026-10-31; re-tick on the final PDF)
 --------------------------------------------------------------------------------
- [~] Format: 12 pt, double-spaced, numbered pages, TOC          (Q4 format)
- [~] ~4,500 words: ~28k body words (S2); reading copy (5)       (Q4)
+ [x] Format: 12 pt, double-spaced, numbered pages, TOC          (S24: OK)
+ [x] ~4,500 words: ~28k body words (S2); reading copy (5)       (S24: OK)
  [x] All figures/tables labeled; graphs have axis labels  -> Fig 23 (4)
- [~] Cover page (title, course, sprint #, date, names + emails)  (Q6)
+ [x] Cover page (title, course, sprint #, date, names + emails)
  [x] Table of contents with page numbers (+ lists of figures/tables)
  [~] Project Overview and Scope (Sprint 3): S19 bullet (4)
- [~] Requirements: 60 FRs + 32 NFRs; security + perf NFRs: NFR-28 (4)
- [~] Project hardware details: two Macs not specific (Q5, 4)
+ [~] Requirements: 60 FRs + 32 NFRs; NFR-28 status (S25, 4)
+ [~] Project hardware details: one Mac + Simulators (S22, 4)
  [~] Development & organizational approach: S15 wording (4)
- [~] Gantt charts S1, S2, S3: [TBD], dates, progress, S19 bars (4)
+ [~] Gantt charts S1, S2, S3: [TBD], activity dates (S23), progress, S19 bars (4)
  [~] Risks (identification, planning, monitoring): R14, R15 (4)
  [x] Use case diagram + documentation (UC-01 + 7 Sprint 3 specs)
  [~] Requirements traceability: undefined TC-N ids, S19 rows (4)
@@ -339,7 +367,7 @@ HOW TO READ THIS FILE
  [x] Design pattern -> source line mapping (regenerate, 3)
  [x] Component diagram + documentation
  [x] Deployment diagram + documentation
- [~] Usage of version control: Table 24, main behind (4, 6)
+ [~] Usage of version control: main behind (6)
  [~] Program files / configuration files table: doc files, S19 files (3)
  [x] Project security issues + security NFRs (S15 wording in 17.3)
  [x] Security threat model DFD (+ STRIDE)
