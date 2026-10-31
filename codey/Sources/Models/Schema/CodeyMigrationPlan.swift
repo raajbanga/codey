@@ -6,11 +6,11 @@ import SwiftData
 enum CodeyMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [CodeySchemaV1.self, CodeySchemaV2.self, CodeySchemaV3.self, CodeySchemaV4.self, CodeySchemaV5.self,
-         CodeySchemaV6.self]
+         CodeySchemaV6.self, CodeySchemaV7.self, CodeySchemaV8.self]
     }
 
     static var stages: [MigrationStage] {
-        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6]
+        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7, v7ToV8]
     }
 
     /// Additive only (new deck/card entities), so lightweight is enough.
@@ -42,19 +42,37 @@ enum CodeyMigrationPlan: SchemaMigrationPlan {
         fromVersion: CodeySchemaV5.self,
         toVersion: CodeySchemaV6.self
     )
+
+    /// UserProfile drops two never-updated columns (currentStreak,
+    /// lastActiveDate) and gains an optional avatar; BadgeAward is new.
+    /// Removing columns and adding optional ones is lightweight.
+    static let v6ToV7 = MigrationStage.lightweight(
+        fromVersion: CodeySchemaV6.self,
+        toVersion: CodeySchemaV7.self
+    )
+
+    /// StudyProgressSnapshot drops newlyMasteredIDs and startMasteryRate and
+    /// gains start scores with defaults (S19), so lightweight. An in-progress
+    /// session resumes with no start scores: cards rated before the update
+    /// count from their current score.
+    static let v7ToV8 = MigrationStage.lightweight(
+        fromVersion: CodeySchemaV7.self,
+        toVersion: CodeySchemaV8.self
+    )
 }
 
-typealias CodeySchemaCurrent = CodeySchemaV6
+typealias CodeySchemaCurrent = CodeySchemaV8
 
 // The rest of the app always uses these names, never the versioned ones.
-typealias UserProfile = CodeySchemaV5.UserProfile
+typealias UserProfile = CodeySchemaV7.UserProfile
 typealias Topic = CodeySchemaV1.Topic
 typealias Question = CodeySchemaV1.Question
 typealias FlashcardDeck = CodeySchemaV2.FlashcardDeck
 typealias Flashcard = CodeySchemaV2.Flashcard
-typealias StudyProgressSnapshot = CodeySchemaV3.StudyProgressSnapshot
+typealias StudyProgressSnapshot = CodeySchemaV8.StudyProgressSnapshot
 typealias DailyActivity = CodeySchemaV3.DailyActivity
 typealias QuestionProgress = CodeySchemaV4.QuestionProgress
 typealias TopicProgress = CodeySchemaV4.TopicProgress
 typealias QuizAnswerRecord = CodeySchemaV4.QuizAnswerRecord
 typealias SyncOperation = CodeySchemaV6.SyncOperation
+typealias BadgeAward = CodeySchemaV7.BadgeAward

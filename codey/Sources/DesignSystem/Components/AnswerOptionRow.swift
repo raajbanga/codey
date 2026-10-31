@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// What an answer row shows: untouched, the user's pick (right or wrong), or
+/// the right answer revealed after a wrong pick.
 enum AnswerOptionState: Equatable {
     case idle
     case selectedCorrect
@@ -18,7 +20,6 @@ struct AnswerOptionRow: View {
     let isLocked: Bool
     let action: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @ScaledMetric(relativeTo: .body) private var badgeSize: CGFloat = 28
 
     private var letter: String {
@@ -26,10 +27,13 @@ struct AnswerOptionRow: View {
     }
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            // VoiceOver can still activate a row that ignores touches.
+            if !isLocked { action() }
+        } label: {
             HStack(alignment: .center, spacing: CodeySpacing.md) {
                 Text(letter)
-                    .font(.codeySubheadline.weight(.bold))
+                    .font(.codeySubheadline.weight(.semibold))
                     .foregroundStyle(badgeForeground)
                     .frame(width: badgeSize, height: badgeSize)
                     .background(badgeBackground, in: Circle())
@@ -44,7 +48,7 @@ struct AnswerOptionRow: View {
                     Image(systemName: icon)
                         .font(.title3)
                         .foregroundStyle(tint)
-                        .transition(.scale.combined(with: .opacity))
+                        .transition(.opacity)
                 }
             }
             .padding(.vertical, CodeySpacing.sm + CodeySpacing.xs)
@@ -52,12 +56,16 @@ struct AnswerOptionRow: View {
             .background(fill, in: .codey(CodeyRadius.md))
             .overlay {
                 RoundedRectangle.codey(CodeyRadius.md)
-                    .strokeBorder(stroke, style: StrokeStyle(lineWidth: state == .idle ? 1 : 2, dash: state == .revealedCorrect ? [6, 4] : []))
+                    .strokeBorder(stroke, style: StrokeStyle(lineWidth: state == .idle ? 1 : 1.5, dash: state == .revealedCorrect ? [6, 4] : []))
             }
             .contentShape(.rect(cornerRadius: CodeyRadius.md))
         }
-        .buttonStyle(.plain)
-        .disabled(isLocked)
+        // Not .disabled: a disabled .plain button dims its whole label, which
+        // greyed out the picked and revealed rows too (contrast below 4.5:1).
+        // Only the untouched rows fade once the question is locked.
+        .buttonStyle(AnswerRowButtonStyle())
+        .allowsHitTesting(!isLocked)
+        .accessibilityAddTraits(isLocked ? .isStaticText : [])
         .opacity(isLocked && state == .idle ? 0.55 : 1)
         .codeyAnimation(CodeyMotion.snappy, value: state)
         .sensoryFeedback(trigger: state) { _, new in
@@ -89,7 +97,11 @@ struct AnswerOptionRow: View {
     }
 
     private var fill: Color {
-        state == .idle ? CodeyColor.surfaceRaised : CodeyColor.softFill(tint, for: colorScheme)
+        switch state {
+        case .idle: CodeyColor.surfaceRaised
+        case .selectedCorrect, .revealedCorrect: CodeyColor.Soft.success
+        case .selectedWrong: CodeyColor.Soft.danger
+        }
     }
 
     private var stroke: Color {
@@ -110,5 +122,12 @@ struct AnswerOptionRow: View {
         case .selectedWrong: "Your answer. Incorrect."
         case .revealedCorrect: "Correct answer."
         }
+    }
+}
+
+/// Plain press feedback without the system's disabled dimming.
+private struct AnswerRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.7 : 1)
     }
 }

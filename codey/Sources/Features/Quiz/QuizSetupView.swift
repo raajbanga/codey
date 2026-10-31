@@ -71,7 +71,7 @@ struct QuizSetupView: View {
                 .padding(CodeySpacing.md)
             }
             .scrollBounceBehavior(.basedOnSize)
-            .background(CodeyColor.surface)
+            .codeyPaperBackground()
             .safeAreaInset(edge: .bottom) { startButton }
             .navigationTitle("Quiz Setup")
             .navigationBarTitleDisplayMode(.inline)
@@ -113,7 +113,7 @@ struct QuizSetupView: View {
             Text(choice == .mixed
                  ? "Mixed (recommended): mostly your highest unlocked tier, plus some review of lower tiers."
                  : "Only \(choiceLabel) questions.")
-                .font(.codeyCaption)
+                .font(.codeySubheadline)
                 .foregroundStyle(CodeyColor.textSecondary)
 
             Label(countText, systemImage: "number")
@@ -146,13 +146,13 @@ struct QuizSetupView: View {
     private var startButton: some View {
         Group {
             if isMastered {
-                CodeyButton("Review Retired Questions", systemImage: "arrow.counterclockwise", kind: .glassPrimary, fullWidth: true) {
+                CodeyButton("Review Retired Questions", systemImage: "arrow.counterclockwise", kind: .primary, fullWidth: true) {
                     start(.review)
                 }
                 .disabled(retiredCount == 0)
                 .accessibilityHint("Practice only. No XP.")
             } else {
-                CodeyButton("Start", systemImage: "play.fill", kind: .glassPrimary, fullWidth: true) {
+                CodeyButton("Start", systemImage: "play.fill", kind: .primary, fullWidth: true) {
                     start(choice)
                 }
                 .disabled(activeCount == 0)

@@ -5,7 +5,6 @@ import SwiftUI
 struct ComponentGallery: View {
     @State private var answer: AnswerOptionState = .idle
     @State private var xp = 1_840
-    @State private var gain: XPGain?
     @State private var celebrate = false
     @State private var prompt = "What does **`defer`** do?"
     @State private var code = "for i in range(3):\n    print(i)"
@@ -50,9 +49,11 @@ struct ComponentGallery: View {
 
     private var colors: some View {
         let swatches: [(String, Color)] = [
-            ("brand", CodeyColor.brand), ("brandFill", CodeyColor.brandFill), ("brandSoft", CodeyColor.brandSoft),
+            ("brand", CodeyColor.brand), ("brandFill", CodeyColor.brandFill), ("onBrandFill", CodeyColor.onBrandFill),
+            ("brandSoft", CodeyColor.brandSoft), ("surface", CodeyColor.surface), ("separator", CodeyColor.separator),
             ("success", CodeyColor.success), ("warning", CodeyColor.warning), ("danger", CodeyColor.danger),
             ("easy", CodeyColor.Tier.easy), ("medium", CodeyColor.Tier.medium), ("hard", CodeyColor.Tier.hard),
+            ("easySoft", CodeyColor.Soft.easy), ("mediumSoft", CodeyColor.Soft.medium), ("hardSoft", CodeyColor.Soft.hard),
         ] + SyntaxRole.allCases.map { ("\($0)", $0.color) }
         return LazyVGrid(columns: [GridItem(.adaptive(minimum: 72))], spacing: CodeySpacing.sm) {
             ForEach(swatches, id: \.0) { name, color in
@@ -72,8 +73,8 @@ struct ComponentGallery: View {
                 CodeyButton("Primary") {}
             }
             HStack {
-                CodeyButton("Glass", kind: .glassPrimary) {}
-                CodeyButton("Glass", kind: .glassSecondary) {}
+                CodeyButton("Compact", kind: .secondary, compact: true) {}
+                CodeyButton("Quiz", compact: true) {}
                 CodeyButton("Delete", kind: .destructive) {}
             }
         }
@@ -117,10 +118,9 @@ struct ComponentGallery: View {
                 }
                 .frame(width: 84, height: 84)
                 VStack(alignment: .leading) {
-                    XPGainLabel(total: xp, lastGain: gain)
+                    XPGainLabel(total: xp)
                     Button("+25 XP") {
                         xp += 25
-                        gain = XPGain(amount: 25, breakdown: "Medium 15 + streak 10")
                     }
                     Button("Celebrate") { celebrate = true }
                 }

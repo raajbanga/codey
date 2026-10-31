@@ -2,6 +2,10 @@ import Foundation
 import Testing
 @testable import codey
 
+// SupabaseTestAccounts is DEBUG-only (NFR-26); the Release perf run
+// (scripts/perf-report.sh) builds the test target without it.
+#if DEBUG
+
 /// SupabaseDataClient against a stubbed network: the exact PostgREST requests
 /// (paths, filters, upsert headers, explicit nulls) and response decoding.
 @Suite(.serialized)
@@ -208,3 +212,4 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
 private extension Array {
     var only: Element? { count == 1 ? first : nil }
 }
+#endif

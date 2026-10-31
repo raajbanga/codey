@@ -1,0 +1,8 @@
+name,runs,mean_ms,p95_ms,stddev_ms,peak_mb,growth_mb,threshold_ms
+deck-save-100,9,54.67,57.89,1.70,252.6,0.2,250
+highlight-80-lines,9,13.05,15.11,0.77,295.4,22.9,100
+quiz-build-10q,9,0.33,0.39,0.02,249.1,0.0,50
+seed-question-bank,9,15.85,16.61,0.33,263.8,0.3,-
+seed-starter-decks,9,14.71,15.31,0.42,268.6,0.1,-
+study-session-100,9,215.66,223.11,3.10,270.6,1.2,-
+sync-push-100-mock50ms,9,395.34,407.47,12.90,292.9,0.0,5000

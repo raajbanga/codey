@@ -3,6 +3,7 @@ import SwiftData
 import Testing
 @testable import codey
 
+/// FR-18 mastery: what each rating does to a card's 0–5 score.
 struct CardRatingTests {
     @Test(arguments: [
         (CardRating.again, 3, 0), (.again, 0, 0),
@@ -106,6 +107,20 @@ struct FlashcardDeckTests {
         let deck = try TestSupport.insertDeck(context, prompts: ["a", "b", "c", "d"])
         for _ in 0..<3 { deck.activeCards[0].updateMastery(rating: .easy) }
         #expect(deck.masteryRate == 0.25)
+    }
+
+    /// S19: one Easy pass over 4 cards is 8 of 20 points = 40%, while no
+    /// card is mastered yet.
+    @Test func progressRateCountsMasteryPoints() throws {
+        let context = try TestSupport.inMemoryContext()
+        let empty = FlashcardDeck(title: "Empty", topicId: "t", origin: .user)
+        context.insert(empty)
+        #expect(empty.progressRate == 0)
+
+        let deck = try TestSupport.insertDeck(context, prompts: ["a", "b", "c", "d"])
+        for card in deck.activeCards { card.updateMastery(rating: .easy) }
+        #expect(deck.progressRate == 0.4)
+        #expect(deck.masteryRate == 0)
     }
 
     @Test func deletingDeckCascadesToCards() throws {

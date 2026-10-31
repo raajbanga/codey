@@ -4,10 +4,15 @@ import SwiftData
 import UIKit
 import os
 
+// MARK: - [Pattern: Facade] Facade (core: lifecycle, auth, sync)
 /// Façade (§9.4): everything the UI ever calls for auth, deck storage, and
 /// sync. Saves go to SwiftData FIRST (FR-44) and are queued; the SyncEngine
 /// pushes them when signed in and online. Without backend keys (or in UI
 /// tests) auth/remote are nil and the app is local-only.
+///
+/// One type, split by concern (R8 file-size limit): this file holds state,
+/// lifecycle, auth and sync; decks, profile/feedback and groups live in
+/// BackendFacade+Decks/+Profile/+Groups.swift.
 @MainActor
 @Observable
 final class BackendFacade: DeckBackend {
@@ -15,10 +20,13 @@ final class BackendFacade: DeckBackend {
     private(set) var pendingCount = 0
 
     let engine: SyncEngine
-    @ObservationIgnored private let context: ModelContext
+    // Internal, not private: the BackendFacade+*.swift extensions use them.
+    @ObservationIgnored let context: ModelContext
     @ObservationIgnored private let auth: (any AuthProviding)?
+    @ObservationIgnored let remote: (any RemoteDeckStore)?
     @ObservationIgnored private let cursors: SyncCursorStore
-    @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored let groupCache: GroupCache
+    @ObservationIgnored let now: () -> Date
     @ObservationIgnored private var authTask: Task<Void, Never>?
     @ObservationIgnored private var started = false
 
@@ -28,18 +36,22 @@ final class BackendFacade: DeckBackend {
         remote: (any RemoteDeckStore)?,
         reachability: any Reachability,
         cursors: SyncCursorStore = SyncCursorStore(),
+        weeklyXP: WeeklyXPStore = WeeklyXPStore(),
+        groupCache: GroupCache = GroupCache(),
         deviceID: String? = nil,
         now: @escaping () -> Date = Date.init,
         sleep: @escaping (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.context = context
         self.auth = auth
+        self.remote = remote
         self.cursors = cursors
+        self.groupCache = groupCache
         self.now = now
         weak let weakAuth = auth
         engine = SyncEngine(
             context: context, remote: remote, reachability: reachability, cursors: cursors,
-            deviceID: deviceID, now: now, sleep: sleep, currentUserID: { weakAuth?.currentUserID() }
+            weeklyXP: weeklyXP, deviceID: deviceID, now: now, sleep: sleep, currentUserID: { weakAuth?.currentUserID() }
         )
         authState = auth?.currentUser().map(AuthState.signedIn) ?? .signedOut
         refreshPendingCount()
@@ -71,9 +83,9 @@ final class BackendFacade: DeckBackend {
 
     var lastSyncedAt: Date? { engine.lastSyncedAt ?? currentUser.flatMap { cursors.lastSyncedAt(for: $0.id) } }
 
-    private var queue: SyncQueue { SyncQueue(context: context, now: now) }
-    private var store: SwiftDataService { SwiftDataService(context: context, now: now) }
-    private var userID: UUID? { currentUser?.id }
+    var queue: SyncQueue { SyncQueue(context: context, now: now) }
+    var store: SwiftDataService { SwiftDataService(context: context, now: now) }
+    var userID: UUID? { currentUser?.id }
 
     // MARK: Lifecycle
 
@@ -149,6 +161,7 @@ final class BackendFacade: DeckBackend {
             }
             cursors.setCursor(nil, for: signedOutUser)
         }
+        groupCache.clear()
         authState = .signedOut
         refreshPendingCount()
         engine.start()
@@ -156,80 +169,6 @@ final class BackendFacade: DeckBackend {
 
     /// Unsynced changes the sign-out dialog warns about.
     var unsyncedChangeCount: Int { queue.pendingCount(ownerId: userID) }
-
-    // MARK: Decks (DeckBackend)
-
-    /// Edit → save (Fig. 7) only when the draft changed something, so an
-    /// unchanged save neither bumps updatedAt nor queues a push.
-    func saveDeck(_ draft: DeckDraft) throws -> FlashcardDeck {
-        let result: DraftSaveResult
-        do {
-            result = try store.apply(draft, ownerId: userID)
-        } catch {
-            context.rollback()
-            throw error
-        }
-        let deck = result.deck
-        if result.deckChanged {
-            deck.editAndSave()
-            try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
-            for id in result.changedCardIDs {
-                let card = try? store.fetchCard(id: id)
-                try queue.enqueue(.card, id: id, op: SyncOperationKind(deletedAt: card?.deletedAt), ownerId: deck.ownerId)
-            }
-            try queue.remove(.card, ids: result.hardDeletedCardIDs)
-        } else if deck.syncState == .drafting {
-            deck.save()
-        }
-        try persist()
-        return deck
-    }
-
-    func deleteDeck(_ deck: FlashcardDeck) throws {
-        if let reason = deck.deleteBlockedReason {
-            throw DeckBackendError.deleteNotAllowed(reason)
-        }
-        try queue.remove(.card, ids: deck.cards.map(\.id))
-        if deck.hasEverSynced {
-            deck.delete()
-            try queue.enqueue(.deck, id: deck.id, op: .delete, ownerId: deck.ownerId)
-        } else {
-            try queue.remove(.deck, ids: [deck.id])
-            context.delete(deck)
-        }
-        try persist()
-    }
-
-    /// FR-13 outside the builder.
-    func deleteCard(_ card: Flashcard) throws {
-        guard let deck = card.deck, deck.canEdit else { throw DeckBackendError.notEditable }
-        deck.edit()
-        if deck.hasEverSynced {
-            card.deletedAt = now()
-            card.updatedAt = now()
-            try queue.enqueue(.card, id: card.id, op: .delete, ownerId: deck.ownerId)
-        } else {
-            try queue.remove(.card, ids: [card.id])
-            context.delete(card)
-        }
-        deck.save()
-        try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
-        try persist()
-    }
-
-    func setHidden(_ hidden: Bool, deck: FlashcardDeck) throws {
-        guard deck.origin == .starter else { return }
-        deck.isHidden = hidden
-        try context.save()
-    }
-
-    /// "Reset progress" writes XP 0 explicitly instead of max-merging (D10).
-    func didResetProgress() {
-        guard let userID else { return }
-        let profile = DataSeeder.ensureProfile(context: context)
-        try? queue.enqueue(.profile, id: profile.id, op: .upsert, ownerId: userID)
-        try? persist()
-    }
 
     // MARK: Sync
 
@@ -247,7 +186,8 @@ final class BackendFacade: DeckBackend {
         do { try context.save() } catch { Logger.sync.error("Save failed: \(String(describing: error))") }
     }
 
-    private func persist() throws {
+    /// Saves, refreshes the pending badge, and nudges the sync engine.
+    func persist() throws {
         try context.save()
         refreshPendingCount()
         engine.requestSync()

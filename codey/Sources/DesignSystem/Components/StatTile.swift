@@ -12,7 +12,8 @@ struct StatTileRow<Tiles: View>: View {
     }
 }
 
-/// A big rounded number that rolls when it changes, plus a label.
+/// A big number that rolls when it changes, plus a label, on a flat
+/// hairline-edged tile (S9: no shadow, no filled-only cards).
 struct StatTile: View {
     let value: Int
     let label: String
@@ -46,6 +47,10 @@ struct StatTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(CodeySpacing.md)
         .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.md))
+        .overlay {
+            RoundedRectangle.codey(CodeyRadius.md)
+                .strokeBorder(CodeyColor.separator, lineWidth: 1)
+        }
         .codeyAnimation(CodeyMotion.snappy, value: value)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)

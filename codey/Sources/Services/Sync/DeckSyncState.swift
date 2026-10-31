@@ -11,6 +11,7 @@ enum RemoteResult: Equatable, Sendable {
     case timestampMismatch
 }
 
+// MARK: - [Pattern: State] State (interface)
 /// State pattern (§9.3). ALL five states live in this file (R9). SwiftData
 /// can't store a protocol existential, so a deck persists only its
 /// DeckSyncStateKind and rebuilds the state object on demand
@@ -60,6 +61,7 @@ extension DeckSyncState {
     }
 }
 
+// MARK: - [Pattern: State] Concrete state
 /// In the editor. Only a valid save leaves it (invalid saves never reach the
 /// state: the validator throws first, so the deck stays Drafting).
 struct DraftingState: DeckSyncState {
@@ -73,6 +75,7 @@ struct DraftingState: DeckSyncState {
     func onEdit(_ deck: FlashcardDeck) -> any DeckSyncState { self }
 }
 
+// MARK: - [Pattern: State] Concrete state
 /// Saved on the device with changes the server hasn't seen.
 struct LocallyPersistedState: DeckSyncState {
     let kind = DeckSyncStateKind.locallyPersisted
@@ -84,6 +87,7 @@ struct LocallyPersistedState: DeckSyncState {
     func onDelete(_ deck: FlashcardDeck) -> (any DeckSyncState)? { tombstone(deck) }
 }
 
+// MARK: - [Pattern: State] Concrete state
 /// A push is in flight.
 struct SyncingState: DeckSyncState {
     let kind = DeckSyncStateKind.syncing
@@ -105,6 +109,7 @@ struct SyncingState: DeckSyncState {
     }
 }
 
+// MARK: - [Pattern: State] Concrete state
 /// Local and remote agree.
 struct SyncedState: DeckSyncState {
     let kind = DeckSyncStateKind.synced
@@ -114,6 +119,7 @@ struct SyncedState: DeckSyncState {
     func onDelete(_ deck: FlashcardDeck) -> (any DeckSyncState)? { tombstone(deck) }
 }
 
+// MARK: - [Pattern: State] Concrete state
 /// Someone else changed the deck since our last sync. The additive merge
 /// (ConflictResolver) runs first; resolving marks the result dirty for re-push.
 struct ConflictState: DeckSyncState {
@@ -127,6 +133,7 @@ struct ConflictState: DeckSyncState {
 
 // MARK: - Context
 
+// MARK: - [Pattern: State] Context
 /// FlashcardDeck is the State pattern's context: it persists the kind and
 /// forwards each event to the current state. Starter decks never edit,
 /// delete, or push.

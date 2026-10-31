@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import codey
 
+/// ModelValidator limits (FR-09/10, FR-04, FR-49, FR-50/51), each tested at ±1.
 struct ModelValidatorTests {
     private let validator = ModelValidator()
     private let id = UUID()

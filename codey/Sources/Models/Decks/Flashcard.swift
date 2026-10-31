@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 
 extension CodeySchemaV2 {
+    // MARK: - [Pattern: Factory] Product
     /// One prompt/answer card (FR-06, FR-07). Only FlashcardFactory can create
     /// one: the init needs a FlashcardFactory.Token, which only the factory's
     /// file can make (factory rule, §9.2).
