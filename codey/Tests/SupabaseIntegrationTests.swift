@@ -3,6 +3,10 @@ import SwiftData
 import Testing
 @testable import codey
 
+// SupabaseTestAccounts is DEBUG-only (NFR-26); the Release perf run
+// (scripts/perf-report.sh) builds the test target without it.
+#if DEBUG
+
 /// Opt-in, against a real Supabase project (9.7). Runs only when these are
 /// set in the test environment (prefix with TEST_RUNNER_ for xcodebuild):
 ///   SUPABASE_TEST_URL, SUPABASE_TEST_KEY,
@@ -119,3 +123,4 @@ struct IntegrationEnvironment {
         )
     }()
 }
+#endif

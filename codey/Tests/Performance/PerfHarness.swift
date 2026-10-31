@@ -21,6 +21,11 @@ enum Perf {
         let samples: [Double]
         /// Peak physical footprint seen across the kept runs, in MB.
         let peakMB: Double
+        /// Most the footprint grew across one run (after body minus before
+        /// it), in MB: what the scenario itself holds. The Simulator's
+        /// absolute footprint also counts ~200 MB of iOS framework pages
+        /// that a device keeps in the shared cache.
+        var growthMB: Double = 0
 
         var mean: Double { samples.reduce(0, +) / Double(samples.count) }
         /// Nearest-rank p95 (with 9 samples this is the max).
@@ -55,14 +60,19 @@ enum Perf {
     ) rethrows -> Result {
         var samples: [Double] = []
         var peak = 0.0
+        var growth = 0.0
         for _ in 0..<iterations {
             let state = try setUp()
+            let before = footprintMB()
             let start = ContinuousClock.now
             try body(state)
             samples.append(milliseconds(ContinuousClock.now - start))
-            peak = max(peak, footprintMB())
+            let after = footprintMB()
+            peak = max(peak, after)
+            growth = max(growth, after - before)
         }
-        let result = Result(name: name, samples: Array(samples.dropFirst()), peakMB: peak)
+        var result = Result(name: name, samples: Array(samples.dropFirst()), peakMB: peak)
+        result.growthMB = growth
         result.report(thresholdMS: thresholdMS)
         return result
     }
@@ -76,14 +86,19 @@ enum Perf {
     ) async rethrows -> Result {
         var samples: [Double] = []
         var peak = 0.0
+        var growth = 0.0
         for _ in 0..<iterations {
             let state = try setUp()
+            let before = footprintMB()
             let start = ContinuousClock.now
             try await body(state)
             samples.append(milliseconds(ContinuousClock.now - start))
-            peak = max(peak, footprintMB())
+            let after = footprintMB()
+            peak = max(peak, after)
+            growth = max(growth, after - before)
         }
-        let result = Result(name: name, samples: Array(samples.dropFirst()), peakMB: peak)
+        var result = Result(name: name, samples: Array(samples.dropFirst()), peakMB: peak)
+        result.growthMB = growth
         result.report(thresholdMS: thresholdMS)
         return result
     }
