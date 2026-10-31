@@ -2,9 +2,9 @@
  CODEY — SPRINT 3 SUBMISSION + SPRINT 4 BACKLOG
  Deadline: Sprint 3 documentation due 2026-11-03 (Tue)
  Sources of truth:
-   docs/sprint3rubric.docx (what the doc must contain)
-   docs/Activity8_1, 8_2, 9_2, 10_1, 10_2 .pdf
-   docs/ProjectDetails.docx (client's mandatory requirements)
+   docs/course/sprint3rubric.docx (what the doc must contain)
+   docs/course/Activity8_1, 8_2, 9_2, 10_1, 10_2 .pdf
+   docs/course/ProjectDetails.docx (client's mandatory requirements)
  Completed items were removed 2026-10-31; git history has the earlier lists
  (todo.txt at 37f2778 has the fully ticked Sprint 3 finish list).
 ================================================================================
