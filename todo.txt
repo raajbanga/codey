@@ -5,16 +5,38 @@
    docs/sprint3rubric.docx (what the doc must contain)
    docs/Activity8_1, 8_2, 9_2, 10_1, 10_2 .pdf
    docs/ProjectDetails.docx (client's mandatory requirements)
- Rewritten 2026-10-30 after the doc-vs-rubric audit. Everything already done
- was removed; git history has the full Sprint 2 PRD and the Sprint 3 PRD
- (todo.txt at f81fb1b).
+ Rewritten 2026-10-31 after the second doc-vs-rubric-vs-code audit (A2).
+ Done items were removed; git history has the earlier lists (todo.txt at
+ a67ecef has the 10/30 version).
 ================================================================================
 
 HOW TO READ THIS FILE
   - [ ] todo, [~] in progress, [x] done. [L] = needs the Mac (Xcode,
     Simulator, tectonic). Owners: (AB) backend/systems, (ES) UI/UX & QA,
     (RB) PM/docs.
-  - Part 1 is in order: each step depends on the one before it.
+  - (A2) = new gap found in the 2026-10-31 audit; everything else carries
+    over from the 10/30 audit.
+  - Part 1 is in order: each step depends on the one before it. Inside
+    step 4 the items follow the doc's section order, so one pass through
+    the .tex covers them.
+  - "Table n" / "Figure n" numbers refer to the 10/30 PDF build.
+
+
+--------------------------------------------------------------------------------
+ AUDIT GRADE (2026-10-31, on the 10/30 PDF build)
+--------------------------------------------------------------------------------
+ Overall today: B+ (~88/100). After Part 1: A (~95). Content and depth are
+ well above the rubric; the points are lost on staleness after the S19
+ change, process claims the git history contradicts (S15), two NFRs whose
+ status doesn't match their wording, and dates/labels a grader can check.
+
+   A   Cover, TOC, use case, sequence, state, component, deployment,
+       threat-model DFD, pattern mapping (after regen)
+   A-  Overview/scope, requirements, traceability, class diagrams,
+       security issues + tests, Appendix B
+   B+  Risks, version control, system performance, Appendix A
+   B   Hardware, Gantt charts, program-files table
+   B-  Development & organizational approach (process wording)
 
 
 --------------------------------------------------------------------------------
@@ -27,7 +49,7 @@ HOW TO READ THIS FILE
      easy reading (S16).
  S4  Branching: dev -> main only, squash merge at sprint end.
  S5  Sprint 3 code scope is done (FR-04, 32-35, 38, 42-43, 49-53,
-     facelift). Coding challenges FR-39-41 = Must, Planned Sprint 4.
+     facelift, S19). Coding challenges FR-39-41 = Must, Planned Sprint 4.
  S10 Security checks = automatable ones only. Proxyman (TC-S09) and the
      on-device file-protection check (TC-S10) are Sprint 4.
  S11 Perf numbers = automated runs on the Simulator: 10 runs, drop the
@@ -40,157 +62,236 @@ HOW TO READ THIS FILE
      reviews).
  S16 (2026-10-30) Build two PDFs from one .tex: the full submission
      (with Appendix B) and a reading copy without the code listings.
- S17 (2026-10-30) The study-session UX fix (old S3-A.6) goes in before
-     the submission. That means a new code freeze and re-running the
-     generators.
- S19 (2026-10-30) Study UX: show mastery as dots on the card (keep 4
-     ratings), keep the one-time "Again" repeat but show it in the
-     counter as soon as it is added ("2 / 4 · +1 repeat") and label the
-     repeated card, and the summary reports cards moved up + deck
-     progress in points. Details in Part 1, step 1.
+ S17 (2026-10-30) The study-session UX fix goes in before the submission,
+     so there is a new code freeze and the generators run again.
  S18 (2026-10-30) Supabase test users, the live NFR-02 test, TC-P09, and
      the peer usability test stay in Sprint 4.
+ S19 (2026-10-30) Study UX: mastery dots on the card (keep 4 ratings),
+     "Again" repeat announced in the counter ("2 / 4 · +1 repeat") with a
+     Repeat chip, summary = cards reviewed (distinct) · moved up · deck
+     progress in points. Built in a67ecef (CodeySchemaV8, MasteryDots,
+     FlashcardDeck.progressRate).
+
+
+--------------------------------------------------------------------------------
+ QUESTIONS FOR THE TEAM (answer before step 4)
+--------------------------------------------------------------------------------
+ Q1 (A2) Was Linear actually used? The doc claims a Linear workspace
+     (Table 3, Table 4, Sprint 1 Gantt "Repo & Linear workspace setup",
+     Section 6.3). If not, drop every Linear mention (S15).
+ Q2 (A2) Activity 8.1 date. The Sprint 3 Gantt puts it Oct 5-7, but the
+     README commits it produced (05bd3b6..30b5b0e) are dated Oct 13. Use
+     the real class date (this is the red [TBD] in Section 5.3).
+ Q3 (A2) Sprint 2 code reached GitHub on Oct 7-8 (Stages 0-12 squashes),
+     after the Sprint 2 Gantt's Oct 3 end. If it was built locally and
+     pushed in stages, say so in one sentence in Section 13 so a grader
+     comparing the history with the Gantt sees no contradiction.
+ Q4 (A2) Rubric says "Standard word document" and "~4,500 words". S1/S2
+     keep the LaTeX PDF at ~28k words. Confirm with Dr. Galloway that a
+     PDF is accepted (one email); if not, export the reading copy to .docx.
+ Q5 Hardware: exact Mac model, chip, RAM, macOS for Arnav and Elnad
+     (About This Mac), and the iPhone model anyone will use for the
+     Sprint 4 on-device checks.
+ Q6 Confirm all three @topper.wku.edu emails on the cover page.
 
 
 ================================================================================
  PART 1 — FINISH SPRINT 3 (in order)
 ================================================================================
 
- 1. STUDY-SESSION UX FIX (S17)                                   (ES) [L]
-    Problem (user testing 2026-10-30): "x / 4" counts cards in the
-    session, but mastery is a hidden 0-5 score per card (Again->0, Hard
-    +0, Good +1, Easy +2). All-Easy shows "0 newly mastered, 0%", a card
-    retires only on its 3rd Easy, and "Again" silently grows the total
-    (2/4 -> 3/5). It reads as broken.
- [x] Design picked 2026-10-30 (S19):
-       a. Mastery dots: keep the 4 ratings, the 4-way swipe, and the FR-18
-          rule. The card shows 5 mastery dots (StudyCardView). After a
-          rating the dots fill or empty, with a short "+1" / "+2" / "Reset"
-          / "No change" label (fade; a crossfade under Reduce Motion). The
-          VoiceOver value is "Mastery n of 5".
-       b. "Again" repeat (user's main complaint: "why answer 5 when it says
-          x / 4"): the card still comes back once at the end, but it is
-          announced the moment "Again" is tapped. The counter becomes
-          "2 / 4 · +1 repeat" (VoiceOver: "Card 2 of 4, 1 repeat added"),
-          and the bar tracks distinct cards (full while repeats play),
-          so it never jumps backwards. The repeated card shows a "Repeat" chip, and
-          the counter reads "Repeat 1 of 1" while repeats play. StudyQueue
-          gains distinctTotal, repeatCount, and isRepeat(current).
-       c. Summary tiles: Cards reviewed · Moved up (cards whose score rose
-          this session) · Deck progress % = sum(masteryScore) /
-          (5 x cards), with the delta in points. Show the "Mastered" line
-          only when > 0. Add FlashcardDeck.progressRate. The deck tile and
-          deck detail use it too, so the numbers agree; masteryRate stays
-          for "mastered" counts and starter retirement. The snapshot stores
-          the start progress and the moved-up IDs (new SwiftData fields:
-          check whether they need a V8 schema, or reuse
-          StudyProgressSnapshot fields).
-       Built as: "Cards reviewed" counts distinct cards, with "· +n repeat"
-       under it (a 4-card run with one Again says 4, not 5). New
-       CodeySchemaV8 (StudyProgressSnapshot drops newlyMastered/
-       startMasteryRate, adds startScores + startProgressRate), V7->V8
-       lightweight stage. New MasteryDots component. Deck tile, deck
-       detail, Home and Continue now say "progress" and n/distinct.
- [x] Implement a-c.
- [x] Tests: StudyQueueTests, StudySessionViewModelTests (incl. snapshot
-     saved to the store), FlashcardMasteryTests (progressRate),
-     MigrationTests (V7 -> V8); StudySessionUITests updated to the new
-     counter. 342 unit tests pass; lint OK.
- [x] Bug found by the UI test and fixed: StudySessionView built its view
-     model in init, and SwiftUI re-runs init during the cover's dismissal;
-     that throwaway view model started a fresh session and deleted the
-     saved snapshot, so "Continue" vanished. Now StudySessionHost builds
-     it once. (QuizModeView has the same pattern but its init only builds
-     a quiz; leave it.)
- [x] Simulator (iPhone 17, light): counter "+1 repeat", dots "+2", Repeat
-     chip, summary tiles, V7 store migrated.
- [ ] Simulator: 17 Pro Max + dark; re-check the summary after the
-     distinct-card change ("4 · +1 repeat").
+ 1. STUDY-SESSION UX FIX: LEFTOVERS (S17/S19)                    (ES) [L]
+ [ ] Simulator: iPhone 18 Pro Max (the NFR-10 "largest" profile) + dark;
+     re-check the summary after the distinct-card change
+     ("4 · +1 repeat").
  [ ] DeckBuilderUITests.testCreateDeckWithPythonSnippet fails: the
-     keyboard covers "Add code" on card 2 (not hittable). Unrelated to
-     S19; fix (scroll/dismiss keyboard in the test, or keyboard-aware
-     layout) before the re-freeze in step 2.
- [ ] Doc: FR-17/18 unchanged. Update the Section 7.3 study bullet (dots,
-     Repeat), the Section 7.1 note ("planned Sprint 4 usability change" ->
-     done in Sprint 3: visible mastery instead of fewer ratings), the
-     Figure 13 class diagram (FlashcardDeck +progressRate), the TC-16-18
-     row in Table 19 if test names change, and the study-card screenshot
-     (Figure 7). Schema mentions: V7 -> V8 (current schema, migration
-     stages count).
+     keyboard covers "Add code" on card 2 (not hittable). Fix (scroll or
+     dismiss the keyboard in the test, or a keyboard-aware layout) before
+     the re-freeze. TC-05-07 cite this UI test, so it must pass.
+ [ ] Retake the study-card screenshot (Figure 7, docs/figures/study.png)
+     with the mastery dots and the "+1 repeat" counter visible.
 
  2. RE-FREEZE + RE-MEASURE                                        (AB) [L]
  [ ] Full unit suite (xcodebuild test -only-testing:codeyTests) + the 3 UI
-     suites. Record the pass count and xccov coverage. Update Table 6, the
-     NFR-16 row, the Appendix A intro, TC-S06/TC-S08.
+     suites. Record the pass count and xccov coverage.
  [ ] scripts/check-imports.sh, check-design-tokens.sh,
      check-secrets.sh --history, check-release-build.sh: all OK.
- [ ] New freeze tag (sprint3-final) on the commit that holds ALL code,
-     test files included (4 test files changed after sprint3-freeze in
-     f81fb1b). Push the tag.
+ [ ] New freeze tag (sprint3-final) on the commit that holds ALL code and
+     tests (a67ecef changed 15 source/test files after sprint3-freeze).
+     Push the tag.
+ [ ] (A2) Perf harness: write the memory growth (MB added during the
+     scenario) for EVERY scenario, not only the study session, as a new
+     growth_mb column in sprint3.csv. The rubric's example asks for a
+     per-call memory footprint; today peak_mb is the whole Simulator
+     process (~250-296 MB) for every row.
  [ ] scripts/perf-report.sh at the new tag -> docs/perf/sprint3.csv.
- [ ] TC-P08 re-run with the setup the doc specifies: starter decks + 5
-     user decks x 50 cards (the 10/30 run had 1 user deck). Then
-     scripts/perf-launch.sh -> docs/perf/launch.csv. Remove the
-     "store held ... one user deck" caveat in Section 18.4 if the setup now
-     matches.
- [ ] Update Section 18 (Table 32, the result bullets, bottleneck numbers,
-     the commit hash in 18.3) and Table 6 from the new CSVs.
+ [ ] TC-P08 with the setup the doc specifies: starter decks + 5 user decks
+     x 50 cards (the 10/30 run had 1 user deck). Then
+     scripts/perf-launch.sh -> docs/perf/launch.csv. Remove the "store held
+     ... one user deck" caveat in Section 18.4 if the setup now matches.
+ [ ] Re-run the Appendix A dry run (A.2-A.4, A.8, A.9) from a fresh clone
+     at the new tag, including the UI tests now that the runner works.
 
  3. REGENERATE                                                    (RB) [L]
  [ ] scripts/gen-appendix-b.sh, gen-pattern-map.sh, gen-file-table.py at
-     the new tag. Fix the Appendix B intro text so the tag name matches.
- [ ] gen-file-table.py: also list the documentation/config files that
-     the software uses (.github/pull_request_template.md, README.md,
+     the new tag (today all three are from 6bf0a2a and do not contain
+     MasteryDots.swift or CodeySchemaV8.swift). Fix the Appendix B intro
+     so the tag name matches.
+ [ ] gen-file-table.py: also list the documentation/config files the
+     software uses (.github/pull_request_template.md, README.md,
      supabase/README.md, codey/DESIGN_SYSTEM.md) in a "Documentation"
-     group (table only, not Appendix B), or reword "every file" in
-     Section 16. Rubric: "identify all files used in the project".
+     group (table only, not Appendix B), and reword "Documentation ... are
+     not listed" in Section 16. Rubric: "identify all files used in the
+     project".
 
- 4. DOC CORRECTIONS (found in the 2026-10-30 audit)               (RB)
+ 4. DOC CORRECTIONS (doc order)                                    (RB)
+
+  Cover / Section 1 Overview
+ [ ] Cover emails (Q6).
+ [ ] (A2) Section 1.2 "Changes Since Sprint 2": add a bullet for the
+     study-session fix (visible mastery dots, announced repeats, progress
+     summary; schema V8), found by user testing on Oct 30.
+
+  Section 2 Requirements
+ [ ] (A2) NFR-28 says "peak memory footprint <= 150 MB", the measured
+     whole process is 267.7 MB, the test now gates on session growth
+     (0.9 MB), yet Table 18 says "Met" and Table 6 shows target 150 MB.
+     Pick one and make all three places agree:
+       a. reword NFR-28 to what is measured ("a 100-card study session
+          shall add at most N MB to the app's footprint"; absolute
+          <= 150 MB checked on a device in Sprint 4), or
+       b. keep the wording and set the status to "Not met on the
+          Simulator (267.7 MB process); session growth 0.9 MB; device
+          check Sprint 4", like NFR-01.
+ [ ] (A2) Optional but cheap: add FR-61 (the study counter shows distinct
+     cards plus the repeats added by "Again") and FR-62 (the session
+     summary reports cards reviewed, cards moved up, and deck progress),
+     so the S19 behavior is traceable. Then add them to Tables 1, 17, 19.
+ [ ] Table 6 (metrics): unit-test count and coverage from step 2; launch,
+     memory, and timing values from the new CSVs; NFR-28 row per the
+     decision above.
+
+  Section 3 Hardware
+ [ ] Table 7: exact Mac model, chip, RAM, macOS for Arnav and Elnad (Q5);
+     name the physical iPhone if one is known.
+ [ ] (A2) Table 7 "Source control and tracking" and Table 8 "Linear" row:
+     drop Linear if Q1 = not used. Table 8 GitHub row says "pull request
+     reviews"; change to "repository, PR template, Actions" (S15).
+
+  Section 4 Development approach
  [ ] Process wording (S15). Rewrite each of these:
-       - Section 4.2: "Task tracking" (no issue per Gantt task), "Build
-         cadence" (weekly formal code review), and the definition of done
-         ("pull request checklist" -> the template's checklist before a
-         merge to main).
+       - 4.2 "Task tracking" (no issue per Gantt task), "Build cadence"
+         (weekly formal code review), and the definition of done ("pull
+         request checklist" -> the template's checklist before a merge to
+         main).
+       - (A2) 4.2 "Meetings": decisions are S1 to S19 now, not S1 to S14.
        - Section 6.1 R4 mitigation ("cross-review every pull request").
        - R10 monitoring trigger ("a pull request fails a security
          checklist item").
        - Section 6.3 ("checked against Linear and GitHub data").
        - Section 9 closing paragraph ("each pull request references the
          requirement identifiers").
-       - NFR-15 verification ("pull request authorship" -> commit
-         history).
+       - NFR-15 verification (Table 2: "pull request authorship" -> commit
+         history) and (A2) Table 18 NFR-15 row ("GitHub pull request
+         workflow" -> commit history and pair sessions).
+       - (A2) Section 13 Branches: "main for reviewed, working states" ->
+         "working states merged at the end of a stage"; Appendix A.2
+         "(the reviewed state)" -> "(the submitted state)".
        - Section 17.3 defense in depth ("PR checklist run before every
          merge").
-       - Table 29 item 1 ("every PR reviewed by a second member").
- [ ] UI-test runner is no longer blocked (it runs on Xcode 27.2; the
-     accessibility audit ran as a UI test). Update R15 (status ->
-     resolved on Xcode 27.2; the launch metric stays on perf-launch.sh),
-     the Section 6.1 intro, Section 6.3 ("stayed blocked"), and Appendix
-     A.11 (drop the troubleshooting bullet, or say it applies to Xcode <=
-     27.1).
- [ ] Appendix A.6: supabase/README.md has no screenshots; remove "with
-     screenshots of each setting". Also refresh supabase/README.md's
-     "Current state (2026-10-08)" section for the Sprint 3 migrations.
- [ ] Figure 23 (pgfplots) mislabels its bars. The ~400 ms bar is labeled
-     "study-session-100-growth" but is sync-push-100-mock50ms; the
+       - Table 29 (SSC) item 1 ("every PR reviewed by a second member";
+         "Sprint 3 migrations reviewed against the checklist" -> say who
+         checked them, when).
+ [ ] (A2) 4.1 Modified waterfall: add the third feedback loop of Sprint 3
+     (user testing on Oct 30 -> study-screen design change, S19). It is
+     the best evidence of the "modified" part of the model.
+ [ ] Table 5 (critical tasks): the blocker note says the UI-test runner
+     "does not launch"; add "resolved on Xcode 27.2" so it matches R15.
+
+  Section 5 Gantt charts
+ [ ] Section 5.3: remove the red [TBD] after fixing the activity dates
+     (Q2: Activity 8.1 commits are dated Oct 13, the bar says Oct 5-7).
+ [ ] Sprint 3 Gantt: progress -> 100% for "Sprint 3 documentation" and
+     "Measurement & Documentation"; move the Code freeze milestone to the
+     new tag's date.
+ [ ] (A2) Sprint 3 Gantt: add bars for "Study-session UX fix (ES)"
+     (Oct 30-31) and "Re-freeze & re-measure (AB)", linked to the freeze.
+ [ ] (A2) Q3: one sentence on why Sprint 2 code is dated Oct 7-8 in Git.
+
+  Section 6 Risks
+ [ ] R15: status -> resolved on Xcode 27.2 (the launch metric stays on
+     perf-launch.sh); fix the Section 6.1 intro and Section 6.3 ("stayed
+     blocked").
+ [ ] (A2) R14 mitigation: "Fixed decision log (S1--S14)" -> S1-S19.
+ [ ] R8 status: "largest 230 lines" -> 231 (also Section 12.4).
+
+  Section 7 UI/UX
+ [ ] 7.3 Key Interactions, Study bullet: mastery dots with "+1/+2/Reset/No
+     change", the "+n repeat" counter, the Repeat chip, the new summary.
+ [ ] 7.1 note: "planned Sprint 4 usability change" -> done in Sprint 3
+     (visible mastery instead of fewer ratings).
+ [ ] (A2) 7 intro: "decision S9" is not defined anywhere in the doc. Drop
+     the ID or say "a team design decision".
+ [ ] Note (unchanged): Section 7 sits between Risks and Use Cases. Allowed;
+     move it after Section 4 only if the grader insists on strict order.
+
+  Section 9 Traceability
+ [ ] Table 18 NFR-07: "all four tables" -> all eight.
+ [ ] Table 19 header: "the two XCTest UI tests" -> three.
+ [ ] (A2) Table 18 cites TC-N03, N05, N14, N15, N17-19, N20, but Table 19
+     has no row for them. Add rows that name the review or manual check
+     (from Table 2's Verification column), e.g. "TC-N05: review of
+     Supabase encryption-at-rest docs".
+ [ ] (A2) S19 design elements: Table 17 FR-16-18 row add MasteryDots,
+     StudyQueue (distinctTotal, repeatCount), FlashcardDeck.progressRate,
+     StudyProgressSnapshot (V8); Table 19 TC-16-18 and TC-N13 add
+     MigrationTests (V7 -> V8). Rename tests here if any changed.
+
+  Section 12 Class diagrams
+ [ ] Figure 13: FlashcardDeck +progressRate: Double {get}.
+ [ ] (A2) Section 12.1 Sprint 3 additions text: "Persisted state changed in
+     one place: schema version 7" -> V7 and V8 (StudyProgressSnapshot
+     keeps start scores and start progress). Every "current schema" /
+     migration-stage count -> V8.
+ [ ] Section 12.4: BackendFacade.swift is 231 lines, not 230.
+
+  Section 13 Version control
+ [ ] Table 24: re-run `git shortlog -sn --all` on the final commit (the
+     co-authored and AI-authored counts change too).
+ [ ] Mention the sprint3-final tag and the dev -> main squash in step 6.
+
+  Section 17 Security
+ [ ] TC-S06 / TC-S08: "327-test run" -> the final count (Table 6 says 334
+     today, so the doc already disagrees with itself).
+ [ ] (A2) TC-S01 steps: "through the Supabase MCP" -> "in the Supabase SQL
+     editor (or the Supabase MCP)", so a reader can repeat it (A.6 already
+     says the SQL editor).
+
+  Section 18 Performance
+ [ ] Figure 23 (pgfplots) mislabels its bars: the ~400 ms bar is labeled
+     "study-session-100-growth" but is sync-push-100-mock50ms, and the
      sync-push row has no label. Use symbolic y coords and drop the two
      memory rows, so every bar has its own label.
- [ ] Stale counts:
-       - Table 18 NFR-07: "all four tables" -> all eight.
-       - Table 19 header: "the two XCTest UI tests" -> three.
-       - TC-S06 / TC-S08: "327-test run" -> the final count.
-       - Section 12.4: BackendFacade.swift is 231 lines, not 230.
- [ ] Section 5.3: remove the red [TBD] after checking the Sprint 3 Gantt
-     activity dates against the course calendar.
- [ ] Sprint 3 Gantt: progress at submission -> 100% for "Sprint 3
-     documentation" and "Measurement & Documentation". Move the Code freeze
-     milestone to the new tag's date.
- [ ] Table 7 hardware: exact Mac model, chip, RAM, and macOS for Arnav and
-     Elnad (rubric: "as specific as possible"). Ask them for
-      > About This Mac.
- [ ] Table 24: re-run `git shortlog -sn --all` on the final commit (the
-     21 co-authored commits and 7 AI-authored ones also change).
- [ ] Cover page: confirm all three @topper.wku.edu emails with the team.
+ [ ] Update Table 32, the result bullets, the bottleneck numbers, and the
+     commit hash in 18.3 from the new CSVs.
+ [ ] (A2) Table 32: show the new growth_mb column (step 2) and say in the
+     caption that "Peak MB" is the whole Simulator process.
+ [ ] (A2) "Performance metrics will be gathered and optimized" (client):
+     18.6 lists only harness fixes. Add the Sprint 2 -> 3 optimization
+     evidence that exists (batched push: 3 requests instead of ~100,
+     ~5 s -> 0.41 s at 50 ms RTT), or move it from 18.5 into 18.6.
+
+  Appendix A
+ [ ] A.6: supabase/README.md has no screenshots; remove "with screenshots
+     of each setting". Also refresh supabase/README.md "Current state
+     (2026-10-08)" for the three Sprint 3 migrations.
+ [ ] A.11: drop the UI-test-runner bullet, or say it applies to Xcode
+     <= 27.1.
+ [ ] (A2) A.9: add the UI-test command
+     (xcodebuild test ... -only-testing:codeyUITests).
+ [ ] (A2) A.3: the pins also include xctest-dynamic-overlay 1.11.0 and
+     swift-clocks 1.0.6 (Tuist/Package.swift); list them.
+ [ ] (A2) Intro: dry-run date, tag, and test count from step 2.
+ [ ] (A2) README.md says Xcode 27.1; the doc says 27.2. Make them match.
 
  5. BUILD BOTH PDFs (S16)                                         (RB) [L]
  [ ] Add a switch in Sprint3_Documentation.tex (e.g. \newif\ifcodelistings,
@@ -200,55 +301,53 @@ HOW TO READ THIS FILE
      Build docs/Sprint3_Documentation_reading.pdf (~98 pages) next to the
      full PDF.
  [ ] Table 20 and Section 16 point to Appendix B subsections. Check they
-     still read well in the reading copy (the line numbers are still
-     valid; the listing just isn't printed).
+     still read well in the reading copy.
  [ ] Final tectonic build: 0 undefined refs, 0 overfull boxes > 3 pt, no
      red \tbd left (grep -n 'tbd{' and grep the PDF text for TBD).
+ [ ] (A2) Grep the final .tex for stale values: "327", "334", "S1--S14",
+     "230 lines", "four tables", "two XCTest", "6bf0a2a", "sprint3-freeze".
  [ ] Final rubric tick (checklist below) on the built PDF.
 
  6. SUBMIT + MERGE                                                     (RB)
- [ ] Commit both PDFs (docs/ is tracked; Sprint2_Documentation.pdf is
-     committed too) + the regenerated files on dev.
+ [ ] Commit both PDFs (docs/Sprint3_Documentation.pdf is untracked right
+     now) + the regenerated files on dev.
  [ ] Squash-merge dev -> main, then merge main back into dev. Appendix
-     A.2 tells readers to `git checkout main`, and main currently has none
-     of Sprint 3 (37 commits behind).
+     A.2 tells readers to `git checkout main`, and main has none of
+     Sprint 3 (38 commits behind dev).
  [ ] Submit docs/Sprint3_Documentation.pdf by 11/3.
 
 
 --------------------------------------------------------------------------------
- RUBRIC CHECKLIST (audited 2026-10-30; re-tick on the final PDF)
+ RUBRIC CHECKLIST (audited 2026-10-31; re-tick on the final PDF)
 --------------------------------------------------------------------------------
- [x] Cover page (title, course, sprint #, date, names + emails)
-     -> emails still to confirm (4)
+ [~] Format: 12 pt, double-spaced, numbered pages, TOC          (Q4 format)
+ [~] ~4,500 words: ~28k body words (S2); reading copy (5)       (Q4)
+ [x] All figures/tables labeled; graphs have axis labels  -> Fig 23 (4)
+ [~] Cover page (title, course, sprint #, date, names + emails)  (Q6)
  [x] Table of contents with page numbers (+ lists of figures/tables)
- [x] Project Overview and Scope (Sprint 3)
- [x] Requirements: 60 FRs + 32 NFRs (tables); 7 security + 5 perf NFRs
- [~] Project hardware details: two members' Macs not specific yet (4)
- [~] Development & organizational approach: process wording (4)
- [~] Gantt charts S1, S2, S3: [TBD] + progress % (4)
- [~] Risks (identification, planning, monitoring): R15 stale (4)
+ [~] Project Overview and Scope (Sprint 3): S19 bullet (4)
+ [~] Requirements: 60 FRs + 32 NFRs; security + perf NFRs: NFR-28 (4)
+ [~] Project hardware details: two Macs not specific (Q5, 4)
+ [~] Development & organizational approach: S15 wording (4)
+ [~] Gantt charts S1, S2, S3: [TBD], dates, progress, S19 bars (4)
+ [~] Risks (identification, planning, monitoring): R14, R15 (4)
  [x] Use case diagram + documentation (UC-01 + 7 Sprint 3 specs)
- [x] Requirements traceability (FR, NFR, test-case tables)
+ [~] Requirements traceability: undefined TC-N ids, S19 rows (4)
  [x] Sequence diagrams (2) + documentation
  [x] State diagram + documentation
- [x] Class diagrams: Factory / State / Facade + domain models
- [x] Design pattern -> source line mapping (Table 20, generated)
+ [~] Class diagrams: Factory / State / Facade + domain: progressRate (4)
+ [x] Design pattern -> source line mapping (regenerate, 3)
  [x] Component diagram + documentation
  [x] Deployment diagram + documentation
- [x] Usage of version control
- [~] Program files / configuration files table: doc files missing (3)
- [x] Project security issues + security NFRs
+ [~] Usage of version control: Table 24, main behind (4, 6)
+ [~] Program files / configuration files table: doc files, S19 files (3)
+ [x] Project security issues + security NFRs (S15 wording in 17.3)
  [x] Security threat model DFD (+ STRIDE)
- [x] Security test cases (TC-S01-S11)
+ [x] Security test cases (TC-S01-S11): counts (4)
  [~] System performance: requirements, test cases, profiles, results,
-     bottlenecks: Figure 23 labels + TC-P08 fixture (2, 4)
- [x] Appendix A: build instructions (dry-run 10/30)
-     -> A.6 / A.11 fixes (4)
- [x] Appendix B: every source/config file, one subsection each, commented
- [~] All figures/tables labeled; graphs have axis labels: Figure 23 (4)
- Note: the UI/UX section (Section 7) is extra and sits between Risks and Use
- Cases. Allowed, but move it to after Section 4 if the grader insists on
- strict order.
+     bottlenecks: Fig 23, TC-P08 fixture, per-scenario memory (2, 4)
+ [~] Appendix A: build instructions: A.3, A.6, A.9, A.11, dry run (2, 4)
+ [~] Appendix B: every source/config file, commented: regenerate (3)
 
 
 ================================================================================
@@ -258,6 +357,10 @@ HOW TO READ THIS FILE
  [ ] FR-39-41 coding challenges: code-completion exercises validated by
      comparison with accepted solutions (no code execution, R1). First
      stage of Sprint 4; design the data model before the sprint (R17).
+ [ ] (A2) Offline mandate says quiz/flashcard "results" sync when
+     connectivity returns; FR-45 syncs decks, cards, and XP but keeps
+     mastery and quiz retirement on the device. Either sync them (new
+     tables + RLS) or record the deviation with the client's OK.
 
  Deferred checks (labeled "Sprint 4" in the Sprint 3 doc)
  [ ] TC-S09 Proxyman capture: only Supabase + Google hosts, TLS 1.3
