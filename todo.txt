@@ -83,10 +83,9 @@ HOW TO READ THIS FILE
  [ ] FR-39-41 coding challenges: code-completion exercises validated by
      comparison with accepted solutions (no code execution, R1). First
      stage of Sprint 4; design the data model before the sprint (R17).
- [ ] (A2) Offline mandate says quiz/flashcard "results" sync when
-     connectivity returns; FR-45 syncs decks, cards, and XP but keeps
-     mastery and quiz retirement on the device. Either sync them (new
-     tables + RLS) or record the deviation with the client's OK.
+ [ ] FR-61 (S26, risk R18): sync study results (mastery scores, quiz
+     question progress) to Supabase: new tables + RLS, queued through
+     SyncQueue, merge keeps the higher score / later retirement.
 
  Deferred checks (labeled "Sprint 4" in the Sprint 3 doc)
  [ ] TC-S09 Proxyman capture: only Supabase + Google hosts, TLS 1.3
