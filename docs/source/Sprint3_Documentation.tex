@@ -1,9 +1,10 @@
 % =====================================================================
 %  CS 360 -- Sprint 3 Project Documentation
 %  Codey: A Gamified Computer Science Study App
-%  Build:  tectonic Sprint3_Documentation.tex
+%  Build (from docs/source/):  tectonic --outdir .. Sprint3_Documentation.tex
+%  and the reading copy:      tectonic --outdir .. Sprint3_Documentation_reading.tex
 %  Before building: scripts/gen-appendix-b.sh and scripts/gen-pattern-map.sh
-%  (they write docs/generated/, which Appendix B and Table~\ref{tab:pattern-lines}
+%  (they write docs/source/generated/, which Appendix B and Table~\ref{tab:pattern-lines}
 %  \input). Run both again after any code change.
 % =====================================================================
 \documentclass[12pt,letterpaper]{article}
@@ -2803,7 +2804,7 @@ prompts and answers; every third card carries a 12-line Swift snippet, and tiers
 rotate Easy, Medium, Hard. The suite is \texttt{codey/Tests/Performance}; it is
 skipped in normal test runs and enabled with \texttt{CODEY\_PERF=1}, and
 \texttt{scripts/perf-report.sh} runs it and writes the results to
-\texttt{docs/perf/sprint3.csv}.
+\texttt{docs/source/perf/sprint3.csv}.
 
 \begin{xltabular}{\textwidth}{@{}L{1.3cm} L{2.6cm} Y L{2.3cm} L{1.9cm}@{}}
 \caption{Performance test cases}\label{tab:perftests}\\
@@ -2889,12 +2890,12 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
 \label{fig:perfchart}
 \end{figure}
 }{\tbd{run scripts/perf-report.sh and scripts/perf-launch.sh; the table and chart are
-built from docs/perf/sprint3.csv}}
+built from docs/source/perf/sprint3.csv}}
 
 Against each requirement (p95 over 9 kept runs):
 \begin{itemize}
   \item \textbf{NFR-01, launch (TC-P08): not met on the Simulator.} Home was ready
-        4.19~s after process start (mean 4.17~s, \texttt{docs/perf/launch.csv}) against
+        4.19~s after process start (mean 4.17~s, \texttt{docs/source/perf/launch.csv}) against
         3~s, with the TC-P08 store (the starter decks plus five 50-card user decks,
         written by the \texttt{LaunchFixtureSeed} test before timing). An Instruments App Launch trace and the
         dynamic loader's log show where the time goes: about 3.3~s pass in the

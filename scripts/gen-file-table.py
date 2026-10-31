@@ -2,7 +2,7 @@
 
 Lists every tracked source, test, resource, configuration, SQL, script and CI
 file (git ls-files), grouped by folder, with a hand-written description per
-group. Writes docs/generated/file_table.tex (a longtable). A tracked file
+group. Writes docs/source/generated/file_table.tex (a longtable). A tracked file
 that matches no group stops the script, so the table can't silently miss a
 file. Run with gen-appendix-b.sh after the code freeze:
 
@@ -82,7 +82,7 @@ def tex(text):
 
 def main():
     root = os.path.join(os.path.dirname(__file__), "..")
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, "docs/generated/file_table.tex")
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, "docs/source/generated/file_table.tex")
     files = subprocess.run(["git", "-C", root, "ls-files"], capture_output=True, text=True, check=True).stdout.split("\n")
     rows = {g[0]: [] for g in GROUPS}
     for f in filter(None, files):

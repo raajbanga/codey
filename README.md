@@ -17,7 +17,7 @@ tuist generate
 Without backend keys the app runs fully in local-only mode. To enable sign-in and
 sync, copy `Config/Secrets.example.xcconfig` to `Config/Secrets.xcconfig` (never
 commit it) and follow `supabase/README.md`. The full step-by-step guide is
-Appendix A of `docs/Sprint3_Documentation.tex`.
+Appendix A of `docs/Sprint3_Documentation.pdf` (source in `docs/source/`).
 
 ## Checks
 
