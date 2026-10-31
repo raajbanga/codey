@@ -63,6 +63,11 @@ HOW TO READ THIS FILE
      session adds 1.2 MB); measured on the iPhone 16 Pro Max in Sprint 4",
      the same way as NFR-01. No new FRs for the S19 counter/summary
      (FR-16-18 cover it).
+ S26 (2026-10-31) Offline results sync (client mandate) is a Sprint 4 Must
+     with its own FR and risk; Sprint 3 syncs decks, cards, profile, XP.
+ S27 (2026-10-31) NFR-15: code written by the team with AI assistance;
+     every change reviewed and committed by a member.
+ S28 (2026-10-31) Study screen re-checked on iPhone 17e after S19: OK.
 
 ================================================================================
  SPRINT 3 — REMAINING
