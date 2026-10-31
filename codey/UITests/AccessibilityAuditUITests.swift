@@ -94,12 +94,16 @@ final class AccessibilityAuditUITests: XCTestCase {
         sleep(1)
         try audit("study.back")
         card.swipeRight()
-        for _ in 0..<3 {
+        // Rate until the summary shows: under load a swipe can land before
+        // the flip finishes and is ignored (FR-16), so don't count swipes.
+        let done = app.buttons["study.done"]
+        for _ in 0..<8 where !done.exists {
             sleep(1)
             card.tap()
+            sleep(1)
             card.swipeRight()
         }
-        XCTAssertTrue(app.buttons["study.done"].waitForExistence(timeout: 5))
+        XCTAssertTrue(done.waitForExistence(timeout: 5))
         try audit("study.summary")
         app.buttons["study.done"].tap()
 

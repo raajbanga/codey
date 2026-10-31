@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S3-F: runs the performance suite (codey/Tests/Performance) on the
 # Simulator and writes docs/perf/sprint3.csv (one row per scenario: mean,
-# p95, stddev, peak memory, threshold) plus docs/perf/environment.txt.
+# p95, stddev, peak memory, memory growth, threshold) plus docs/perf/environment.txt.
 #
 #   scripts/perf-report.sh [destination]
 #   default destination: 'platform=iOS Simulator,name=iPhone 17'
@@ -35,7 +35,7 @@ TEST_RUNNER_CODEY_PERF=1 xcodebuild test \
     -only-testing:codeyTests/PerformanceTests 2>&1 | tee "$log" | grep -E 'PERF |Test .*(passed|failed)|error:' || true
 
 {
-    echo "name,runs,mean_ms,p95_ms,stddev_ms,peak_mb,threshold_ms"
+    echo "name,runs,mean_ms,p95_ms,stddev_ms,peak_mb,growth_mb,threshold_ms"
     # Names use hyphens so LaTeX can typeset them.
     grep -o 'PERF name=.*' "$log" | sed -E 's/PERF //; s/[a-z_0-9]+=//g; s/ /,/g' | awk -F, -v OFS=, '{gsub(/_/, "-", $1)} 1' | sort -u
 } > "$outdir/sprint3.csv"

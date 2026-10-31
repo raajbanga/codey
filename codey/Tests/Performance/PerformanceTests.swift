@@ -35,8 +35,9 @@ struct PerformanceTests {
     }
 
     /// TC-P03: a full 100-card study session stays under 150 MB. The gate is
-    /// the footprint the session adds; the Simulator's absolute footprint is
-    /// reported too, but most of it is iOS framework pages (see growthMB).
+    /// the footprint the session adds (growth_mb); the Simulator's absolute
+    /// footprint (peak_mb) is reported too, but most of it is iOS framework
+    /// pages (see growthMB). NFR-28's absolute check runs on a device.
     @Test func studySession100CardsMemory() throws {
         let result = try Perf.measure("study_session_100", setUp: { () -> (FlashcardDeck, ModelContext) in
             let (context, facade) = try PerfFixture.seededContext()
@@ -52,8 +53,6 @@ struct PerformanceTests {
             }
             #expect(session.isFinished)
         }
-        print(String(format: "PERF name=study_session_100_memory runs=%d mean_ms=0 p95_ms=0 stddev_ms=0 peak_mb=%.1f threshold_ms=-", result.samples.count, result.peakMB))
-        print(String(format: "PERF name=study_session_100_growth runs=%d mean_ms=0 p95_ms=0 stddev_ms=0 peak_mb=%.1f threshold_ms=-", result.samples.count, result.growthMB))
         #expect(result.growthMB <= 150)
     }
 
@@ -144,4 +143,32 @@ final class LatencyRemoteStore: RemoteDeckStore {
     func leaveGroup(id: UUID) async throws { try await wait(); try await base.leaveGroup(id: id) }
     func fetchLeaderboard(groupID: UUID) async throws -> [LeaderboardEntry] { try await wait(); return try await base.fetchLeaderboard(groupID: groupID) }
     func upsertWeeklyXP(weekStart: String, xp: Int) async throws { try await wait(); try await base.upsertWeeklyXP(weekStart: weekStart, xp: xp) }
+}
+
+/// TC-P08 fixture (Activity 9_2): writes 5 user decks of 50 cards into the
+/// app's real on-disk store and marks onboarding done, so the launches that
+/// scripts/perf-launch.sh times open a realistic store. The unit tests are
+/// hosted in the app, so this runs inside the app's own container. Opt-in
+/// (CODEY_PERF_SEED=1); safe to repeat, it only adds missing decks.
+@MainActor
+@Suite(.serialized, .tags(.performance), .enabled(if: ProcessInfo.processInfo.environment["CODEY_PERF_SEED"] == "1", "Set CODEY_PERF_SEED=1 to seed the launch store"))
+struct LaunchFixtureSeed {
+    static let userDecks = 5
+    static let cardsPerDeck = 50
+
+    @Test func seedLaunchStore() throws {
+        let container = try ModelContainerFactory.make()
+        let context = container.mainContext
+        try DataSeeder.seed(context: context, bank: QuestionBankLoader.loadBank())
+        _ = try StarterDeckLoader.seed(context: context)
+        let existing = Set(try context.fetch(FetchDescriptor<FlashcardDeck>()).map(\.title))
+        let facade = BackendFacade.localOnly(context: context)
+        for n in 1...Self.userDecks where !existing.contains("Launch deck \(n)") {
+            _ = try facade.saveDeck(PerfFixture.draft(title: "Launch deck \(n)", cards: Self.cardsPerDeck))
+        }
+        try context.save()
+        UserDefaults.standard.set(true, forKey: OnboardingView.completedKey)
+        let titles = try context.fetch(FetchDescriptor<FlashcardDeck>()).map(\.title)
+        #expect(titles.filter { $0.hasPrefix("Launch deck") }.count == Self.userDecks)
+    }
 }

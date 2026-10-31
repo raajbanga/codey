@@ -50,8 +50,10 @@ final class DeckBuilderUITests: XCTestCase {
 
         app.buttons["builder.save"].tap()
 
+        // The sheet's dismissal can take a few seconds on a busy Simulator
+        // (e.g. right after the accessibility audit); same budget as launch.
         let tile = app.buttons["deckTile.UI Test Deck"].firstMatch
-        XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        XCTAssertTrue(tile.waitForExistence(timeout: 15))
         XCTAssertTrue(tile.staticTexts["Saved locally"].exists || tile.label.contains("Saved locally"))
         XCTAssertTrue(tile.label.contains("2 cards"))
     }
