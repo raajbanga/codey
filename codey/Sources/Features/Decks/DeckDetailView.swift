@@ -30,7 +30,7 @@ struct DeckDetailView: View {
                         Spacer()
                         DeckStatusChip(deck: deck)
                     }
-                    ProgressBar(value: deck.masteryRate, label: "\(deck.cardCount.counted("card")) · \(deck.masteryRate.percentText) mastered")
+                    ProgressBar(value: deck.progressRate, label: "\(deck.cardCount.counted("card")) · \(deck.progressRate.percentText) progress")
                 }
                 .padding(.vertical, CodeySpacing.xs)
             }

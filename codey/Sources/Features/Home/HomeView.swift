@@ -106,7 +106,7 @@ struct HomeView: View {
             deckByID[snapshot.deckId] != nil && snapshot.position < snapshot.cardIDs.count
         }
         return HomeLogic.upNext(
-            resumable: resumable.map { ($0.deckId, $0.displayPosition, $0.cardIDs.count) },
+            resumable: resumable.map { ($0.deckId, $0.queue.displayPosition, $0.queue.distinctTotal) },
             isNewLearner: isNewLearner,
             starterDeckID: suggestedStarterDeck?.id,
             weakestTopicID: HomeLogic.weakestTopicID(candidates: quizCandidates, accuracy: accuracyByTopic)
@@ -623,8 +623,8 @@ private struct TopicNote: View {
                     if decks.isEmpty {
                         Spacer(minLength: 0)
                     } else {
-                        ProgressBar(value: masteryRate)
-                            .accessibilityLabel("Flashcard mastery")
+                        ProgressBar(value: progressRate)
+                            .accessibilityLabel("Flashcard progress")
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -679,15 +679,18 @@ private struct TopicNote: View {
             .accessibilityLabel("Practice with flashcards")
     }
 
-    private var masteryRate: Double {
+    /// Mastery points over all this topic's decks (S19, as
+    /// FlashcardDeck.progressRate).
+    private var progressRate: Double {
         let cards = decks.flatMap(\.activeCards)
         guard !cards.isEmpty else { return 0 }
-        return Double(cards.filter(\.isMastered).count) / Double(cards.count)
+        let points = cards.reduce(0) { $0 + $1.masteryScore }
+        return Double(points) / Double(cards.count * Flashcard.maxMastery)
     }
 
     private var statsLine: String {
         var parts: [String] = []
-        if !decks.isEmpty { parts.append("\(masteryRate.percentText) mastered") }
+        if !decks.isEmpty { parts.append("\(progressRate.percentText) progress") }
         parts.append(accuracy.map { "\($0.percentText) accuracy" } ?? "No quizzes yet")
         return parts.joined(separator: " · ")
     }

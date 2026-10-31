@@ -12,12 +12,34 @@ struct StudyRequest: Identifiable, Equatable {
 /// Focus-mode study session (D8, D14, UC-04). Presented as a
 /// .fullScreenCover so no tab bar or accessory covers the controls.
 ///
-///     ✕        ━━━━━━━━━──────  3 / 12
+///     ✕        ━━━━━━━━━──────  3 / 12 · +1 repeat
 ///     ╭ card (tap / Space to flip) ╮
+///     │                    ●●○○○  │   ← mastery dots (S19)
 ///      ← Again  ↓ Hard  ↑ Easy  Good →   ← swipe to rate (hint only)
 ///
 /// Rating is swipe-only (D14 revised): no floating buttons. Keyboard 1–4
 /// and VoiceOver actions on the card cover non-gesture use.
+/// Builds the session's view model once. SwiftUI can re-run a view's init
+/// whenever its parent updates (e.g. while the cover is dismissed), and a
+/// view model built there starts a fresh session, which deletes the saved
+/// snapshot that "Continue" relies on.
+struct StudySessionHost: View {
+    let request: StudyRequest
+    let context: ModelContext
+
+    @State private var viewModel: StudySessionViewModel?
+
+    var body: some View {
+        if let viewModel {
+            StudySessionView(viewModel: viewModel)
+        } else {
+            Color.clear.onAppear {
+                viewModel = StudySessionViewModel(deck: request.deck, start: request.start, context: context)
+            }
+        }
+    }
+}
+
 struct StudySessionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -26,12 +48,13 @@ struct StudySessionView: View {
     @State private var drag: CGSize = .zero
     @State private var isCommitting = false
     @State private var masteredBadge: StudyCardView.MasteredBadge?
+    @State private var scoreChange: StudyCardView.ScoreChange?
     @State private var feedbackEvent: FeedbackEvent?
 
     private static let swipeThreshold: CGFloat = 110
 
-    init(request: StudyRequest, context: ModelContext) {
-        _viewModel = State(initialValue: StudySessionViewModel(deck: request.deck, start: request.start, context: context))
+    init(viewModel: StudySessionViewModel) {
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
@@ -67,16 +90,35 @@ struct StudySessionView: View {
 
             if viewModel.summary == nil {
                 ProgressBar(value: viewModel.queue.progress)
-                Text("\(viewModel.queue.displayPosition) / \(viewModel.queue.total)")
+                Text(counterText)
                     .font(.codeyNumericSmall)
                     .foregroundStyle(CodeyColor.textSecondary)
                     .contentTransition(.numericText())
-                    .accessibilityLabel("Card \(viewModel.queue.displayPosition) of \(viewModel.queue.total)")
+                    .accessibilityLabel(counterAccessibilityLabel)
+                    .accessibilityIdentifier("study.counter")
             } else {
                 Spacer()
             }
         }
         .padding(.top, CodeySpacing.xs)
+    }
+
+    /// "3 / 12", "3 / 12 · +1 repeat", or "Repeat 1 of 2" (S19): cards that
+    /// "Again" adds are announced as soon as they're added.
+    private var counterText: String {
+        let queue = viewModel.queue
+        if queue.isRepeat { return "Repeat \(queue.repeatPosition) of \(queue.repeatCount)" }
+        let base = "\(queue.displayPosition) / \(queue.distinctTotal)"
+        guard queue.repeatCount > 0 else { return base }
+        return "\(base) · +\(queue.repeatCount.counted("repeat"))"
+    }
+
+    private var counterAccessibilityLabel: String {
+        let queue = viewModel.queue
+        if queue.isRepeat { return "Repeat \(queue.repeatPosition) of \(queue.repeatCount)" }
+        let base = "Card \(queue.displayPosition) of \(queue.distinctTotal)"
+        guard queue.repeatCount > 0 else { return base }
+        return "\(base), \(queue.repeatCount.counted("repeat")) added"
     }
 
     // MARK: Card
@@ -86,7 +128,13 @@ struct StudySessionView: View {
         let pastThreshold = CardRating.forSwipe(drag, threshold: Self.swipeThreshold)
         let dragProgress = min(max(abs(drag.width), abs(drag.height)) / Self.swipeThreshold, 1)
 
-        return StudyCardView(card: card, isRevealed: viewModel.isRevealed, masteredBadge: masteredBadge)
+        return StudyCardView(
+            card: card,
+            isRevealed: viewModel.isRevealed,
+            masteredBadge: masteredBadge,
+            scoreChange: scoreChange,
+            isRepeat: viewModel.queue.isRepeat
+        )
             .overlay {
                 if let candidate {
                     RoundedRectangle.codey(CodeyRadius.lg)
@@ -187,22 +235,27 @@ struct StudySessionView: View {
         viewModel.toggleReveal()
     }
 
-    /// Rates the card. A rating that masters the card first shows the
-    /// "Mastered" chip on it; a swipe first flies the card off-screen.
+    /// Rates the card. The card settles back and its dots show the new
+    /// score and the change ("+2", "Reset") for a moment (S19); a rating
+    /// that masters it also shows the "Mastered" chip. A swipe then flies
+    /// the card off-screen.
     private func commit(_ rating: CardRating, fromSwipe translation: CGSize? = nil) {
         guard !isCommitting, viewModel.hasRevealedCurrent, let card = viewModel.currentCard else { return }
         isCommitting = true
         feedbackEvent = FeedbackEvent(rating: rating)
 
-        let willMaster = !card.isMastered && rating.applied(to: card.masteryScore) >= Flashcard.maxMastery
+        let newScore = rating.applied(to: card.masteryScore)
+        let willMaster = !card.isMastered && newScore >= Flashcard.maxMastery
         Task { @MainActor in
-            if willMaster {
-                withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) {
-                    drag = .zero
+            withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) {
+                drag = .zero
+                scoreChange = .init(previous: card.masteryScore, new: newScore)
+                if willMaster {
                     masteredBadge = viewModel.deck.origin == .starter ? .masteredAndRetired : .mastered
                 }
-                try? await Task.sleep(for: .milliseconds(900))
-            } else if let translation, !reduceMotion {
+            }
+            try? await Task.sleep(for: .milliseconds(willMaster ? 900 : 650))
+            if let translation, !reduceMotion {
                 withAnimation(.easeIn(duration: 0.2)) {
                     drag = CGSize(width: translation.width * 4, height: translation.height * 4)
                 }
@@ -210,6 +263,7 @@ struct StudySessionView: View {
             }
 
             masteredBadge = nil
+            scoreChange = nil
             drag = .zero
             withCodeyAnimation(CodeyMotion.snappy, reduceMotion: reduceMotion) {
                 _ = viewModel.rate(rating)

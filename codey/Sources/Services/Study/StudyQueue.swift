@@ -4,6 +4,9 @@ import Foundation
 ///
 /// Rating a card advances. "Again" also re-queues the card at the end, but
 /// only once per session, so a hard card can't trap the learner in a loop.
+/// Repeats are counted apart from the cards the session started with (S19),
+/// so "2 / 4" never silently becomes "3 / 5": the counter says
+/// "2 / 4 · +1 repeat", then "Repeat 1 of 1".
 struct StudyQueue: Equatable {
     private(set) var cardIDs: [UUID]
     private(set) var position: Int
@@ -17,12 +20,26 @@ struct StudyQueue: Equatable {
 
     var current: UUID? { position < cardIDs.count ? cardIDs[position] : nil }
     var isFinished: Bool { position >= cardIDs.count }
+    /// Every card still to be shown or already shown, repeats included.
     var total: Int { cardIDs.count }
-    /// 1-based index of the card on screen, for "3 / 12".
-    var displayPosition: Int { min(position + 1, total) }
+    /// Cards the session started with. Repeats are appended after them, so
+    /// the first `distinctTotal` entries are the original cards.
+    var distinctTotal: Int { Set(cardIDs).count }
+    /// Cards added by "Again".
+    var repeatCount: Int { total - distinctTotal }
+    /// Whether the card on screen is a repeat.
+    var isRepeat: Bool { !isFinished && position >= distinctTotal }
+    /// 1-based index among the original cards, for "3 / 12". Stays at the
+    /// last card while repeats play.
+    var displayPosition: Int { min(position + 1, distinctTotal) }
+    /// 1-based index of the repeat on screen, for "Repeat 1 of 2".
+    var repeatPosition: Int { min(max(position - distinctTotal + 1, 0), repeatCount) }
     /// Fill for the bar beside "3 / 12": matches the counter, so the last
     /// card shows a full bar instead of "12 / 12" next to 11/12 filled.
-    var progress: Double { total == 0 ? 1 : Double(displayPosition) / Double(total) }
+    /// Repeats keep it full, so adding one never moves the bar back.
+    var progress: Double {
+        distinctTotal == 0 ? 1 : Double(displayPosition) / Double(distinctTotal)
+    }
 
     /// Records a rating for the current card and moves on.
     mutating func record(_ rating: CardRating) {
