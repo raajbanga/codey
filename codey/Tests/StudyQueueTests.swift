@@ -34,6 +34,41 @@ struct StudyQueueTests {
         #expect(queue.isFinished)
     }
 
+    /// S19: "Again" on a 4-card session shows "2 / 4 · +1 repeat", not
+    /// "3 / 5", and the bar never moves back.
+    @Test func repeatsAreCountedApartFromTheOriginalCards() {
+        let d = UUID()
+        var queue = StudyQueue(cardIDs: [a, b, c, d])
+        queue.record(.again)
+        #expect(queue.total == 5)
+        #expect(queue.distinctTotal == 4)
+        #expect(queue.repeatCount == 1)
+        #expect(queue.displayPosition == 2)
+        #expect(queue.progress == 0.5)
+        #expect(!queue.isRepeat)
+
+        queue.record(.good)
+        queue.record(.good)
+        queue.record(.good)
+        #expect(queue.current == a)
+        #expect(queue.isRepeat)
+        #expect(queue.repeatPosition == 1)
+        #expect(queue.displayPosition == 4)
+        #expect(queue.progress == 1)
+
+        queue.record(.good)
+        #expect(queue.isFinished)
+        #expect(!queue.isRepeat)
+    }
+
+    @Test func noRepeatsMeansNoRepeatCount() {
+        var queue = StudyQueue(cardIDs: [a, b])
+        queue.record(.hard)
+        #expect(queue.repeatCount == 0)
+        #expect(queue.repeatPosition == 0)
+        #expect(!queue.isRepeat)
+    }
+
     @Test(arguments: [CardRating.hard, .good, .easy])
     func onlyAgainRequeues(rating: CardRating) {
         var queue = StudyQueue(cardIDs: [a])

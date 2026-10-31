@@ -96,7 +96,7 @@ struct MigrationTests {
             let context = ModelContext(container)
             let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
             deckId = deck.id
-            let snapshot = StudyProgressSnapshot(deckId: deck.id)
+            let snapshot = CodeySchemaV3.StudyProgressSnapshot(deckId: deck.id)
             snapshot.cardIDs = deck.activeCards.map(\.id)
             snapshot.position = 1
             context.insert(snapshot)
@@ -169,6 +169,42 @@ struct MigrationTests {
         #expect(try BadgeEvaluator.award(context: context, now: today) == [.xp1000])
         try context.save()
         #expect(try context.fetchCount(FetchDescriptor<BadgeAward>()) == 1)
+    }
+
+    /// S19: a V7 store with a session in progress opens as V8. The session
+    /// resumes where it was; the dropped summary fields start empty.
+    @Test func v7StoreMigratesToCurrentAndKeepsTheStudySession() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let deckId: UUID
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV7.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let deck = try TestSupport.insertDeck(context, prompts: ["a", "b", "c"])
+            deckId = deck.id
+            let snapshot = CodeySchemaV3.StudyProgressSnapshot(deckId: deck.id)
+            snapshot.cardIDs = deck.activeCards.map(\.id) + [deck.activeCards[0].id]
+            snapshot.requeuedIDs = [deck.activeCards[0].id]
+            snapshot.position = 1
+            snapshot.reviewedCount = 1
+            snapshot.newlyMasteredIDs = [deck.activeCards[0].id]
+            snapshot.startMasteryRate = 0.5
+            context.insert(snapshot)
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let snapshot = try #require(try StudyProgressSnapshot.fetch(deckId: deckId, context: context))
+        #expect(snapshot.position == 1)
+        #expect(snapshot.reviewedCount == 1)
+        #expect(snapshot.startScoreCardIDs.isEmpty)
+        #expect(snapshot.startProgressRate == 0)
+        #expect(snapshot.queue.distinctTotal == 3)
+        #expect(snapshot.queue.repeatCount == 1)
+
+        let deck = try #require(try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.id == deckId })).first)
+        let vm = StudySessionViewModel(deck: deck, start: .resume, context: context)
+        #expect(vm.queue.position == 1)
     }
 
     @Test func decksPersistAcrossReopen() throws {
