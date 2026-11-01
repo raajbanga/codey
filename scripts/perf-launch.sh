@@ -17,7 +17,7 @@ cd "$(dirname "$0")/.."
 
 runs=${1:-10}
 bundle=edu.wku.cs360.codey
-out=docs/perf/launch.csv
+out=docs/source/perf/launch.csv
 mkdir -p "$(dirname "$out")"
 
 xcrun simctl list devices booted | grep -q Booted || { echo "Boot a Simulator first"; exit 2; }

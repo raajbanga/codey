@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S3-F: runs the performance suite (codey/Tests/Performance) on the
-# Simulator and writes docs/perf/sprint3.csv (one row per scenario: mean,
-# p95, stddev, peak memory, memory growth, threshold) plus docs/perf/environment.txt.
+# Simulator and writes docs/source/perf/sprint3.csv (one row per scenario: mean,
+# p95, stddev, peak memory, memory growth, threshold) plus docs/source/perf/environment.txt.
 #
 #   scripts/perf-report.sh [destination]
 #   default destination: 'platform=iOS Simulator,name=iPhone 17'
@@ -13,7 +13,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 destination=${1:-'platform=iOS Simulator,name=iPhone 17'}
-outdir=docs/perf
+outdir=docs/source/perf
 mkdir -p "$outdir"
 log=$(mktemp)
 trap 'rm -f "$log"' EXIT
