@@ -332,7 +332,9 @@ changes are:
 Table~\ref{tab:scope} defines the project scope. Personalized study plans,
 leaderboards, and weekly challenges are client-mandated; all three were built in
 Sprint 3. The coding challenges (FR-39 to FR-41) are also client-mandated, so their
-priority was raised to Must in Sprint 3; they are scheduled for Sprint 4
+priority was raised to Must in Sprint 3, together with every other requirement taken
+from the client's mandatory list (XP, streaks, badges, analytics, the study plan, and
+offline sync); the coding challenges are scheduled for Sprint 4
 (risk R17), together with the two security checks that need a proxy or a physical
 device (Section~\ref{sec:security}). The client's offline mandate also asks that
 quiz and flashcard results sync when connectivity returns. Sprint 3 syncs decks,
@@ -377,13 +379,16 @@ Secure data handling (encryption and row-level access control) & Paid third-part
 \toprule
 \textbf{Must Have} & \textbf{Should Have} & \textbf{Could Have} \\
 \midrule
-User-created flashcards & XP and leveling system & Customized profile \\
-Working SwiftUI interface & Cloud data sync & Defect reports \\
+User-created flashcards & Code snippets on cards & Customized profile \\
+Working SwiftUI interface & Levels & Defect reports \\
 Easy/Medium/Hard difficulty & Dark/Light mode & Open-ended coding problems (dropped, R1) \\
-Adaptive tier rotation (client mandate) & Performance analytics & \\
-Navigation that adapts to all supported iPhone screen sizes (NFR-10) & Starter decks & \\
-Stable operation (no crashes during scripted test sessions) & Daily streaks and badges & \\
-Code-completion exercises (client mandate; Sprint 4) & Personalized study plan & \\
+Adaptive tier rotation (client mandate) & Starter decks & \\
+XP, daily streaks, and badges (client mandate) & Review returns of retired questions & \\
+Progress analytics and personalized study plan (client mandate) & Guest-mode upload, sync retries, conflict merge, and sync status & \\
+Offline use with cloud sync of decks (client mandate) & & \\
+Navigation that adapts to all supported iPhone screen sizes (NFR-10) & & \\
+Stable operation (no crashes during scripted test sessions) & & \\
+Code-completion exercises (client mandate; Sprint 4) & & \\
 Leaderboards and weekly challenges (client mandate) & & \\
 Offline sync of study results (client mandate; Sprint 4) & & \\
 \bottomrule
@@ -406,10 +411,13 @@ accordingly. In Sprint 3 the remaining compound requirements were split so that 
 has one testable behavior. To keep every identifier stable, the original requirement
 keeps its number and the split-off behavior receives a new number: FR-03 $\to$ FR-54,
 FR-12 $\to$ FR-55, FR-24 $\to$ FR-56 and FR-57, FR-28 $\to$ FR-58, FR-47 $\to$ FR-59,
-and FR-04 $\to$ FR-60. The compound leaderboard requirement FR-42 was split into
-FR-42 and FR-50 to FR-53, and FR-61 was added for the client's offline results mandate. The functional requirements now number 61 and the
-non-functional requirements 32, including 7 security and 5 performance requirements
-added in this sprint.
+FR-04 $\to$ FR-60, FR-08 $\to$ FR-62, FR-14 $\to$ FR-63, FR-15 $\to$ FR-64,
+FR-45 $\to$ FR-65, and FR-46 $\to$ FR-66. The compound leaderboard requirement FR-42
+was split into FR-42 and FR-50 to FR-53, and FR-61 was added for the client's offline
+results mandate. Every requirement whose source is the client's mandatory list has
+Must priority. The functional requirements now number 66 and the non-functional
+requirements 32, including 7 security and 5 performance requirements added in this
+sprint.
 
 \subsection{Functional Requirements}
 
@@ -437,15 +445,18 @@ FR-60 & The app shall allow a user to choose an avatar from a predefined set of 
 FR-05 & The app shall allow a user to create a flashcard deck with a title of 1--60 characters and a topic category chosen from a predefined list. & Must & Team & Implemented \\
 FR-06 & The app shall allow a user to add a flashcard with a prompt and an answer of 1--500 characters each to a deck. & Must & Team & Implemented \\
 FR-07 & The app shall allow a user to attach an optional code snippet (language and source text) to a flashcard. & Should & Team & Implemented \\
-FR-08 & The app shall render card prompts and answers as Markdown and display code snippets with syntax highlighting for Swift, Python, Java, and C++ (rendered with Textual and Prism.js, edited with Runestone and Tree-sitter). & Should & Team & Implemented \\
+FR-08 & The app shall render card prompts and answers as Markdown. & Should & Team & Implemented \\
+FR-62 & The app shall display code snippets with syntax highlighting for Swift, Python, Java, and C++. & Should & Team & Implemented \\
 FR-09 & The app shall validate every flashcard against the JSON card schema (\texttt{flashcard.schema.json}, encoded as \texttt{FlashcardPayload}) before saving it. & Must & Team & Implemented \\
 FR-10 & The app shall show an inline error message next to each field that fails validation. & Must & Team & Implemented \\
 FR-11 & The app shall allow a user to edit the prompt, answer, or code snippet of an existing flashcard. & Must & Team & Implemented \\
 FR-12 & The app shall allow a user to delete a deck after confirming a deletion prompt. & Must & Team & Implemented \\
 FR-55 & The app shall propagate a deleted deck that was synced before to Supabase on the next sync. & Must & Team & Implemented \\
 FR-13 & The app shall allow a user to delete an individual flashcard from a deck. & Must & Team & Implemented \\
-FR-14 & The app shall include at least one developer-authored starter deck for each predefined topic category, bundled in \texttt{starter-decks.json} with every card tagged with a difficulty tier, and loaded through \texttt{FlashcardFactory} at launch. & Should & Team & Implemented \\
-FR-15 & The app shall allow a user to hide a starter deck from the deck library and restore it, and shall not allow starter decks to be edited or deleted. & Should & Team & Implemented \\
+FR-14 & The app shall include at least one developer-authored starter deck for each predefined topic category, bundled with the app (\texttt{starter-decks.json}). & Should & Team & Implemented \\
+FR-63 & The app shall tag every starter-deck card with exactly one difficulty tier: Easy, Medium, or Hard. & Should & Team & Implemented \\
+FR-15 & The app shall allow a user to toggle a starter deck between hidden and shown in the deck library. & Should & Team & Implemented \\
+FR-64 & The app shall prevent a user from editing or deleting a starter deck. & Should & Team & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Study and quizzes}} \\
 FR-16 & The app shall present the cards of a selected deck one at a time, with the answer hidden until the user taps the card. & Must & Team & Implemented \\
 FR-17 & The app shall let the user rate a revealed card as Again, Hard, Good, or Easy. & Must & Team & Implemented \\
@@ -466,16 +477,16 @@ FR-28 & The app shall return a retired question to the user's active pool as a r
 FR-58 & The app shall retire a review question again after one correct answer, and reset its consecutive correct count to zero after an incorrect answer. & Should & Team & Implemented \\
 FR-29 & The app shall let the user restrict a practice session to any single tier they have unlocked for the selected topic. & Must & Team & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Gamification}} \\
-FR-30 & The app shall award XP for each correctly answered quiz question equal to a tier base (Easy 10, Medium 15, Hard 20) plus a streak bonus of $\min(5\times(\text{streak}-1), 25)$, for at most 45 XP per answer. & Should & Client & Implemented \\
+FR-30 & The app shall award XP for each correctly answered quiz question equal to a tier base (Easy 10, Medium 15, Hard 20) plus a streak bonus of $\min(5\times(\text{streak}-1), 25)$, for at most 45 XP per answer. & Must & Client & Implemented \\
 FR-31 & The app shall compute the user's level as $\lfloor \text{XP}/500 \rfloor + 1$. & Should & Team & Implemented \\
-FR-32 & The app shall mark the daily goal as met when the user answers 20 questions (quiz questions answered plus flashcards rated) within one calendar day in the device's time zone. & Should & Client & Implemented \\
-FR-33 & The app shall set the daily streak to 1 on a day the daily goal is met following a day it was not met, and increase it by one for each subsequent consecutive day the goal is met. & Should & Client & Implemented \\
-FR-34 & The app shall reset the daily streak to zero after a calendar day in which the daily goal was not met. & Should & Client & Implemented \\
-FR-35 & The app shall award a badge for each of four milestones: saving a first deck, reaching a 7-day streak, earning 1,000 total XP, and completing a weekly challenge; an earned badge stays earned. & Should & Client & Implemented \\
+FR-32 & The app shall mark the daily goal as met when the user answers 20 questions (quiz questions answered plus flashcards rated) within one calendar day in the device's time zone. & Must & Client & Implemented \\
+FR-33 & The app shall set the daily streak to 1 on a day the daily goal is met following a day it was not met, and increase it by one for each subsequent consecutive day the goal is met. & Must & Client & Implemented \\
+FR-34 & The app shall reset the daily streak to zero after a calendar day in which the daily goal was not met. & Must & Client & Implemented \\
+FR-35 & The app shall award a badge for each of four milestones: saving a first deck, reaching a 7-day streak, earning 1,000 total XP, and completing a weekly challenge; an earned badge stays earned. & Must & Client & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Progress and analytics}} \\
-FR-36 & The app shall calculate per-topic accuracy as the percentage of correct answers over the user's last 50 quiz answers in that topic. & Should & Client & Implemented \\
-FR-37 & The app shall display a home dashboard showing total XP, level, current streak, and per-topic accuracy. & Should & Client & Implemented \\
-FR-38 & The app shall generate a weekly study plan that recommends the three topics with the lowest accuracy (topics with fewer than 5 answers first), fixed until the next Monday. & Should & Client & Implemented \\
+FR-36 & The app shall calculate per-topic accuracy as the percentage of correct answers over the user's last 50 quiz answers in that topic. & Must & Client & Implemented \\
+FR-37 & The app shall display a home dashboard showing total XP, level, current streak, and per-topic accuracy. & Must & Client & Implemented \\
+FR-38 & The app shall generate a weekly study plan that recommends the three topics with the lowest accuracy (topics with fewer than 5 answers first), fixed until the next Monday. & Must & Client & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Code-completion exercises}} \\
 FR-39 & The app shall provide code-completion exercises in which the user fills in the missing tokens or lines of a code snippet in an in-app editor. & Must & Client & Planned (Sprint 4) \\
 FR-40 & The app shall validate each completed blank against the exercise's automated test cases, which compare the answer with the accepted solutions after whitespace normalization. & Must & Client & Planned (Sprint 4) \\
@@ -489,8 +500,10 @@ FR-52 & The app shall allow a user to leave a group. & Must & Team & Implemented
 FR-53 & The app shall show the user's weekly challenge progress (correct answers out of 15) on the home dashboard. & Must & Team & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Offline operation and synchronization}} \\
 FR-44 & The app shall save every new or edited deck to the local SwiftData store before making any network request. & Must & Client & Implemented \\
-FR-45 & The app shall queue every local change to decks, cards, and the profile's XP, including changes made while offline or signed out; queued guest changes are uploaded after the first sign-in. Study progress (mastery and quiz retirement) remains on the device until FR-61. & Should & Client & Implemented \\
-FR-46 & The app shall push queued changes to Supabase and pull remote changes automatically when connectivity is restored, retrying failures with exponential backoff (2 to 300 seconds). & Should & Client & Implemented \\
+FR-45 & The app shall queue every local change to decks, cards, and the profile's XP for synchronization, including changes made while offline or signed out. (Study progress, mastery and quiz retirement, remains on the device until FR-61.) & Must & Client & Implemented \\
+FR-65 & The app shall upload the changes queued while the user was signed out after the user's first sign-in. & Should & Team & Implemented \\
+FR-46 & The app shall push queued changes to Supabase and pull remote changes automatically when connectivity is restored. & Must & Client & Implemented \\
+FR-66 & The app shall retry a failed synchronization with exponential backoff, from 2 seconds up to 300 seconds. & Should & Team & Implemented \\
 FR-47 & The app shall resolve a sync conflict with an additive merge that keeps every card present in either the local or the remote version. & Should & Team & Implemented \\
 FR-59 & When the same card has been edited in both versions of a conflicting deck, the app shall keep the version with the later modification timestamp. & Should & Team & Implemented \\
 FR-48 & The app shall show each deck's sync status (Draft, Saved locally, Syncing, Synced, or Conflict) in the deck library. & Should & Team & Implemented \\
@@ -544,7 +557,7 @@ NFR-04 & Security & The local SwiftData store shall be encrypted at rest using i
 NFR-05 & Security & All user data stored in the cloud database shall be encrypted at rest (AES-256). & Review Supabase project security settings and the provider's encryption-at-rest documentation. \\
 NFR-06 & Security & All client--server traffic shall use HTTPS with TLS 1.3, with no App Transport Security exceptions. & Info.plist test (no ATS exceptions); unit test confirms the backend URL session's minimum protocol is TLS 1.3. \\
 NFR-07 & Security & A user shall be able to read and write only rows they own, enforced by PostgreSQL Row Level Security. & Automated test: a second account's queries return zero of the first user's rows. \\
-NFR-08 & Availability & Quizzes and flashcards shall remain fully usable with no network connection. & \texttt{SyncEngineTests} offline cases (a save never touches the network); a run with no backend configured, in which every quiz and study feature works (Appendix~A.4). \\
+NFR-08 & Availability & With no network connection, the app shall let the user create, edit, and study flashcard decks and take quizzes, with no feature of either disabled. & \texttt{SyncEngineTests} offline cases (a save never touches the network); a run with no backend configured, in which every quiz and study feature works (Appendix~A.4). \\
 NFR-09 & Reliability & Queued offline changes shall sync within 30 seconds of connectivity being restored, with no lost or duplicated cards. & Unit test of the reconnect trigger against a mock backend; opt-in integration test comparing local and remote card counts after reconnect. \\
 NFR-10 & Usability & Every screen shall render without clipped or overlapping content on the smallest, standard, and largest current iPhone screen sizes (iPhone 17e, iPhone 17, and iPhone 18 Pro Max). & Manual layout pass on the three Simulator device profiles. \\
 NFR-11 & Usability & The app shall support both Light Mode and Dark Mode, following the system setting. & Manual layout pass with each appearance forced from the profile sheet. \\
@@ -683,8 +696,8 @@ predecessor. In Sprint 2, for example, design work exposed gaps in the Sprint 1
 requirements, which were revised within the same sprint rather than deferred. In
 Sprint 3, implementation fed back into requirements twice: the leaderboard requirement
 FR-42 was split into five atomic requirements once the group design was fixed, and the
-coding challenges were raised to Must after the client's mandatory list was
-re-checked. Testing also fed back into design: a user test on October 30 found the
+coding challenges and every other client-sourced requirement were raised to Must after
+the client's mandatory list was re-checked. Testing also fed back into design: a user test on October 30 found the
 study screen's hidden mastery score confusing, so the design was revised and rebuilt
 before the final code freeze (Section~\ref{sec:ui}).
 
@@ -1074,231 +1087,6 @@ launch metric moved to a script; on Xcode 27.2 the runner works and the three UI
 suites run. R17 and R18 are the highest open risks for Sprint 4.
 
 % =====================================================================
-\section{User Interface and User Experience Design (Updated for Sprint 3)}\label{sec:ui}
-% =====================================================================
-The user interface follows a native iOS 26 structure. In Sprint 3 its look was
-redone to be calm and minimal (``pastel ink''): content sits on rounded
-notes laid on warm, faintly dotted paper; a desaturated ink-blue accent replaces the
-Sprint 2 electric indigo; Liquid Glass is left to the system's own controls; and
-celebrations are quiet banners with a haptic instead of particle bursts. The
-navigation model did not change. Figure~\ref{fig:screens} shows the launch screen,
-the first onboarding step, and the Home screen in Light and Dark Mode, and
-Figure~\ref{fig:screens2} the Decks tab, the Deck Builder, a study card, a quiz
-question, the profile sheet, and the Groups sign-in prompt, all captured on an
-iPhone~17 Simulator after the facelift.
-
-\subsection{Wireframes and Storyboard (Activity 8.2)}
-Before the facelift, the team identified the app's primary screens
-(Table~\ref{tab:screens}), broke one screen (the Deck Builder) into its content and its
-behavior (Table~\ref{tab:builderreq}), and storyboarded one scenario on paper notes:
-creating a new deck, filling in its blank cards, saving it to Decks, and then
-practicing with it (Figure~\ref{fig:storyboard}). The storyboard was converted into
-digital wireframes in Canva by all three members (Figure~\ref{fig:wireframes}).
-
-\begin{table}[H]
-\centering
-\caption{Primary screens and their purpose (Activity 8.2)}
-\label{tab:screens}
-\begin{tabularx}{\textwidth}{@{}L{3.4cm} Y@{}}
-\toprule
-\textbf{Screen / View} & \textbf{Primary Purpose and User Goal} \\
-\midrule
-Sign-in (onboarding step 3, profile sheet) & Create an account or sign in with Google to sync decks and progress; optional, the app works fully as a guest. \\
-Home / Dashboard & See level, XP, streak, today's goal, the weekly challenge and plan, and per-topic progress, and pick what to study next. \\
-Quiz / Practice & Answer multiple-choice computer science questions, get immediate feedback, and earn XP for correct answers. \\
-Deck Builder & Create a deck and add cards one at a time, Quizlet-style, with an optional syntax-highlighted code block per card. \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\begin{table}[H]
-\centering
-\caption{Deck Builder requirements: content and hierarchy versus behavior (Activity 8.2)}
-\label{tab:builderreq}
-\begin{tabularx}{\textwidth}{@{}Y Y@{}}
-\toprule
-\textbf{Content and Hierarchy} & \textbf{Functionality and Behavior} \\
-\midrule
-Header: Cancel, ``New Deck'', Save & Save stores the deck on the device and returns to Decks, where it shows a ``Saved locally'' badge with its card count, topic, and 0\% mastery. Cancel discards the draft. \\
-Deck info: title field and topic picker & Live character counter on the title (1--60); the topic comes from the predefined list. \\
-Card editor: Front/Back toggle, tier tag, Preview, text area with a formatting toolbar, ``+ Add code'' & Front/Back switches the side being edited; the toolbar formats the selected text; counters show 1--500 characters; ``+ Add code'' reveals a language picker and editor. \\
-Code block: language picker and a line-numbered code editor & Live syntax highlighting (Swift, Python, Java, C++); the trash icon removes the block. \\
-Bottom: card thumbnail strip and a ``+'' tile & A thumbnail shows the card's preview text and number, with a \texttt{</>} badge if it has code. Tap to jump to a card; ``+'' adds a blank card and jumps to it; long-press to duplicate or delete; ``Done'' dismisses the keyboard. \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=0.55\textwidth]{act82-storyboard.jpg}
-\caption{Paper storyboard (Activity 8.2): Decks $\to$ deck information $\to$ create a card $\to$ add more cards $\to$ Decks $\to$ practice (front, then back)}
-\label{fig:storyboard}
-\end{figure}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\textwidth]{act82-wireframes.png}
-\caption{Digital wireframes made in Canva from the storyboard (Activity 8.2); the highlighted control is the one tapped to reach the next frame}
-\label{fig:wireframes}
-\end{figure}
-
-The built Deck Builder follows the wireframes with two changes found during
-implementation: the deck information and the first card share one screen, so a deck
-can be saved in fewer steps, and the rating at the end of practice uses the four
-ratings of FR-17 instead of the wireframes' ``Still learning'' and ``Got it''. A user
-test on October 30 showed that the four ratings were confusing only because the
-mastery score behind them was hidden, so Sprint 3 kept the ratings and made the score
-visible (the Study item in Section~\ref{sec:keyint}).
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=0.235\textwidth]{launch.png}\hfill
-\includegraphics[width=0.235\textwidth]{onboarding.png}\hfill
-\includegraphics[width=0.235\textwidth]{home-light.png}\hfill
-\includegraphics[width=0.235\textwidth]{home-dark.png}
-\caption{Screens (iOS Simulator): launch, onboarding step 1, and Home in Light and Dark Mode}
-\label{fig:screens}
-\end{figure}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=0.235\textwidth]{decks.png}\hfill
-\includegraphics[width=0.235\textwidth]{builder.png}\hfill
-\includegraphics[width=0.235\textwidth]{study.png}\hfill
-\includegraphics[width=0.235\textwidth]{quiz.png}\\[1ex]
-\includegraphics[width=0.235\textwidth]{profile.png}\hspace{0.02\textwidth}
-\includegraphics[width=0.235\textwidth]{groups.png}
-\caption{Screens after the facelift (iOS Simulator): Decks, Deck Builder, a study card (answer side), a quiz question after a correct answer, the profile sheet, and Groups while signed out}
-\label{fig:screens2}
-\end{figure}
-
-\subsection{Navigation Model}
-The app is organized as a Home hub with a three-tab Liquid Glass tab bar (Home, Decks,
-Quiz) that shrinks to a pill when the content scrolls (Figure~\ref{fig:nav}). Home shows
-a greeting with the display name, the level line (level, XP, streak, and today's goal
-as $n$/20), one ``Up next'' suggestion, the weekly challenge and a ``Challenge and
-groups'' entry to the leaderboards, this week's three-topic plan, and every topic as
-its own note with Cards and Quiz buttons. The suggestion is, in
-priority order: resume a saved study session, start a starter deck (new learners), or
-take a quiz on the weakest pinned topic. The avatar opens the profile sheet, an
-inset-grouped list for the account, the display name and avatar editor, badges,
-appearance (System, Light, Dark), pinned topics, hidden starter decks, the UI/UX issue
-report form, and the data reset actions. Studying and quizzing run as
-full-screen covers (``focus mode''), so the tab bar never covers their controls. A
-single router object owns every tab, sheet, and cover, so any screen can start a study
-session or a quiz the same way.
-
-\begin{figure}[!htbp]
-\centering
-\resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[font=\sffamily\scriptsize,
-    scr/.style={rectangle, rounded corners=3pt, draw, line width=0.6pt, fill=white,
-                align=center, text width=2.6cm, minimum height=0.9cm},
-    nav/.style={line width=0.6pt, -{Stealth[length=2mm]}},
-    nl/.style={font=\sffamily\tiny, fill=white, inner sep=1pt}]
-  \node[scr] (launch) at (-6.2,0)  {Launch\\(open store, seed content)};
-  \node[scr] (onb)    at (-6.2,-2.0) {Onboarding\\(welcome, topics, sign-in)};
-  \node[scr] (home)   at (-1.6,0)  {\textbf{Home} tab};
-  \node[scr] (decks)  at (-1.6,-2.0) {\textbf{Decks} tab\\(library, search)};
-  \node[scr] (quiz)   at (-1.6,-4.0) {\textbf{Quiz} tab\\(topics, tier locks)};
-  \node[scr] (prof)   at (3.0,0)   {Profile sheet\\(edit, badges, report)};
-  \node[scr] (groups) at (3.0,2.3) {Groups\\(create, join, board)};
-  \node[scr] (detail) at (3.0,-2.0) {Deck detail};
-  \node[scr] (setup)  at (3.0,-4.0) {Quiz setup sheet};
-  \node[scr] (build)  at (7.8,-1.2) {Deck builder sheet\\(card pager)};
-  \node[scr] (study)  at (7.8,-2.8) {Study cover\\(flip, swipe to rate)};
-  \node[scr] (qrun)   at (7.8,-4.0) {Quiz cover\\(answers, XP, summary)};
-  \begin{scope}[on background layer]
-    \node[draw=gray, dashed, rounded corners=4pt, fill=gray!6, inner sep=0.25cm,
-          fit=(home)(decks)(quiz), label={[font=\sffamily\scriptsize\bfseries]below:Liquid Glass tab bar}] {};
-  \end{scope}
-  \draw[nav] (launch) -- (home);
-  \draw[nav] (launch) -- node[nl, right] {first launch (cover)} (onb);
-  \draw[nav] (home) -- node[nl, above] {avatar (sheet)} (prof);
-  \draw[nav] ([xshift=-0.5cm]home.north) |- node[nl, above, pos=0.75] {Challenge \& groups (push)} (groups.west);
-  \draw[nav] (decks) -- node[nl, above] {push} (detail);
-  \draw[nav] ([yshift=0.15cm]detail.east) -- ++(0.6,0) |- node[nl, above, pos=0.75] {Edit / New} (build.west);
-  \draw[nav] ([yshift=-0.15cm]detail.east) -- ++(0.6,0) |- node[nl, below, pos=0.75] {Study} (study.west);
-  \draw[nav] (quiz) -- node[nl, above] {topic (sheet)} (setup);
-  \draw[nav] (setup) -- node[nl, above] {Start} (qrun);
-  \draw[nav] ([xshift=0.5cm]home.north) |- (9.8,1.0) node[nl, pos=0.75, above] {Up next / Practice} |- (study.east);
-\end{tikzpicture}}
-\caption{Navigation model: tabs, sheets, and full-screen covers (a Home topic's Quiz button opens the same quiz setup sheet)}
-\label{fig:nav}
-\end{figure}
-
-\subsection{Key Interactions}\label{sec:keyint}
-\begin{itemize}
-  \item \textbf{Onboarding} (first launch only) has three steps: a welcome screen,
-        a topic picker that pins the chosen topics and their starter decks on Home,
-        and an optional Google sign-in that can be skipped.
-  \item \textbf{Deck builder.} A deck header (title with a character counter, topic
-        picker) sits above a horizontal pager of card editors shaped like the study
-        card, with a Front/Back toggle, a live Markdown preview, an optional code
-        snippet edited in a syntax-highlighting code editor, and a final ``New card''
-        page. A thumbnail strip below jumps to, reorders, duplicates, and deletes
-        cards (with undo). Validation errors appear inline after the first failed save.
-  \item \textbf{Groups.} A group list with Create (name $\to$ invite code with a share
-        button) and Join (a six-character code field that upper-cases as it is typed).
-        A board ranks members by this week's XP with avatar and name, highlights the
-        student's own row, and, when offline, shows the last fetched board with an
-        ``as of'' time. Signed-out students see a sign-in prompt.
-  \item \textbf{Profile identity and reports.} An editor sets the display name and
-        picks one of 12 avatars; the badges row shows earned and locked badges; the
-        report form counts characters up to 1,000 and keeps the text if sending
-        fails.
-  \item \textbf{Study.} The card flips in 3D on tap (or Space); after the answer has
-        been shown, a swipe rates it: left Again, down Hard, up Easy, right Good. The
-        card is tinted with the rating's color while dragging, and a caption names the
-        gestures. Keys 1--4 and VoiceOver actions on the card rate without gestures.
-        Each rating has its own haptic. Five dots on the card show its mastery score
-        (0--5, FR-18); after a rating they fill or empty with a short ``+1'', ``+2'',
-        ``Reset'', or ``No change'' label. A card rated Again comes back once at the
-        end, and the counter says so at once (``2 / 4 $\cdot$ +1 repeat''); the
-        repeated card carries a Repeat chip. The summary reports the cards reviewed,
-        the cards whose score rose (``Moved up''), and the deck's progress in points.
-  \item \textbf{Quiz.} A setup sheet shows the tier locks with their reasons (for
-        example, ``Retire 3 more Medium questions'') and offers a mixed quiz or a single
-        unlocked tier. During the quiz, a segmented progress bar, a streak chip, and a
-        rolling XP total update after each answer; the summary shows the score ring, and
-        level-ups, tier unlocks, and new badges appear as a quiet banner with a
-        haptic.
-\end{itemize}
-
-\subsection{Design System}
-Every screen is built from shared tokens and components (Table~\ref{tab:tokens}).
-The Sprint 3 facelift changed tokens, not screens: because every color, font, radius,
-and animation goes through a token, the restyle touched the token files and a few
-components, and \texttt{check-design-tokens.sh} kept passing throughout. Sprint 2
-design decisions D12 (electric-indigo brand), D13 (custom glass buttons), and D17
-(particle celebrations) are superseded, and D18 (typography) is revised.
-Screens never use raw colors, corner radii, or system fonts directly, and
-\texttt{check-design-tokens.sh} enforces this. Shared components include buttons, cards,
-chips, progress bars and rings, stat tiles, tier chips, answer rows, empty states, the
-celebration overlay, and the form-feedback elements (inline field errors, character
-counters, error outlines, and the error alert) used by every editor.
-
-\begin{table}[H]
-\centering
-\caption{Design tokens and rules (updated for Sprint 3)}
-\label{tab:tokens}
-\begin{tabularx}{\textwidth}{@{}L{2.4cm} Y@{}}
-\toprule
-\textbf{Area} & \textbf{Rule} \\
-\midrule
-Color & ``Pastel ink'': warm paper \texttt{\#F6F5F2} with raised notes \texttt{\#FFFFFF} (dark \texttt{\#141518} / \texttt{\#1D1F23}); ink accent \texttt{\#3A5578} (dark \texttt{\#A9C0DD}); pastel button fill \texttt{\#CFDCEB} with an ink label \texttt{\#1F3350}. Every status and tier color is a text color with its own pastel fill (Easy \texttt{\#2F5A3B} on \texttt{\#DDEBDF}, Medium \texttt{\#6B4C10} on \texttt{\#F3E6CC}, Hard \texttt{\#7A3045} on \texttt{\#F2DDE3}). All colors are custom assets with Dark and Increase Contrast variants, generated from one script (\texttt{scripts/palette}). The lowest text pair is 5.2:1 (NFR-12). \\
-Typography & Dynamic Type text styles throughout; SF Rounded for headings, numbers, and navigation titles; SF Pro for reading text; SF Mono for code. Nothing is smaller than the footnote style, and card prompts and answers use title3. \\
-Shape & Corner radii of 6, 10, 14, 20, and 28 points. Capsules only for single-line controls (chips, single-line buttons, progress bars); anything that can wrap uses a continuous rounded rectangle, and nested surfaces use concentric corners. \\
-Materials & Liquid Glass only where the system draws it (tab bar, toolbars, sheets). The app's own buttons, toasts, and overlays are flat pastel fills; content sits on rounded ``notes'' with a hairline edge on a dotted paper background (dots hidden under Increase Contrast). \\
-Tiers & Easy, Medium, and Hard always pair a color with a symbol and a label, never color alone. \\
-Motion & Quiet only: snaps and smooth settles, no bounce, no particles; level-ups, unlocks, and badges use a fading banner. Under Reduce Motion every animation becomes a short crossfade. \\
-Haptics & System \texttt{sensoryFeedback} for answers, ratings, saves, and celebrations. \\
-Accessibility & VoiceOver labels and actions on every control, 44-point touch targets, Dynamic Type up to the accessibility sizes, and Light, Dark, or System appearance (NFR-11). \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-% =====================================================================
 \section{UML Use Case Diagram (Updated for Sprint 3)}\label{sec:usecase}
 % =====================================================================
 Figure~\ref{fig:usecase} shows the use cases within the Codey system boundary. The
@@ -1392,7 +1180,7 @@ authenticates sessions, replicates decks across devices, and resolves write conf
 \textbf{Relationships.} \emph{Create / Edit Flashcard Deck} includes \emph{Validate
 Schema Constraints}, because no card is saved until it conforms to the JSON card schema
 (FR-09). \emph{Attach Code Snippet} extends it with an optional syntax-highlighted
-example (FR-07, FR-08). \emph{Practice by Tier} extends both \emph{Take Quiz} and
+example (FR-07, FR-62). \emph{Practice by Tier} extends both \emph{Take Quiz} and
 \emph{Study Flashcard Deck} when the student restricts a session to one unlocked tier
 (FR-29). \emph{Manage Profile} includes \emph{Authenticate User Session} for sign-in,
 and \emph{Sign Out} extends it (FR-03). \emph{Resolve Write Conflicts} extends
@@ -1492,14 +1280,14 @@ FR-04, FR-60 & UC-15 & \texttt{ProfileEditorView}, \texttt{ModelValidator.\allow
 FR-05 & UC-01 & \texttt{DeckBuilderView}, \texttt{DeckViewModel.createDeck()}, \texttt{ModelValidator.validateDeck()}, \texttt{FlashcardDeck} & TC-05 & Implemented \\
 FR-06 & UC-01 & \texttt{FlashcardFactory.createCard()}, \texttt{SwiftDataService.apply()} & TC-06 & Implemented \\
 FR-07 & UC-02 & \texttt{CodeSnippet}, \texttt{CodeEditorView}, \texttt{FlashcardFactory} & TC-07 & Implemented \\
-FR-08 & UC-02 & \texttt{CardMarkdownView} (Textual, Prism.js), \texttt{CodeEditorView} (Runestone, Tree-sitter), \texttt{SyntaxRole} & TC-08 & Implemented \\
+FR-08, FR-62 & UC-02 & \texttt{CardMarkdownView} (Textual Markdown, Prism.js highlighting), \texttt{CodeEditorView} (Runestone, Tree-sitter), \texttt{SyntaxRole} & TC-08, TC-62 & Implemented \\
 FR-09 & UC-03 & \texttt{ModelValidator.validateCard()}, \texttt{FlashcardPayload}, \texttt{flashcard.schema.json} & TC-09 & Implemented \\
 FR-10 & UC-03 & \texttt{DeckViewModel.fieldErrors}, \texttt{FieldErrorLabel}; \emph{Drafting} self-transition (Fig.~\ref{fig:state}) & TC-10 & Implemented \\
 FR-11 & UC-01 & \texttt{DeckViewModel.updateDeck()}, \texttt{FlashcardFactory.updateCard()}; \emph{Drafting} state & TC-11 & Implemented \\
 FR-12, FR-55 & UC-01 & \texttt{BackendFacade.deleteDeck()}, \texttt{DeckSyncState.onDelete()} (tombstone), delete operation in \texttt{SyncQueue}; final state ``Deck removed'' & TC-12, TC-55 & Implemented \\
 FR-13 & UC-01 & \texttt{DeckViewModel.deleteCard()} (in the builder), \texttt{BackendFacade.deleteCard()} & TC-13 & Implemented \\
-FR-14 & -- & \texttt{StarterDeckLoader}, \texttt{FlashcardFactory.createCard(from:)}, \texttt{starter-decks.json} & TC-14 & Implemented \\
-FR-15 & UC-13 & \texttt{BackendFacade.setHidden(\_:deck:)}, \texttt{DeckLibraryView}, profile sheet & TC-15 & Implemented \\
+FR-14, FR-63 & -- & \texttt{StarterDeckLoader}, \texttt{FlashcardFactory.createCard(from:)}, \texttt{starter-decks.json} (a tier on every card) & TC-14, TC-63 & Implemented \\
+FR-15, FR-64 & UC-13 & \texttt{BackendFacade.setHidden(\_:deck:)}, \texttt{DeckLibraryView}, profile sheet; \texttt{DeckOrigin.starter} (no edit or delete actions) & TC-15, TC-64 & Implemented \\
 FR-16 -- FR-18 & UC-04 & \texttt{StudySessionViewModel}, \texttt{StudyQueue} (distinct total, repeats), \texttt{Flashcard.updateMastery(rating:)}, \texttt{CardRating}, \texttt{MasteryDots}, \texttt{FlashcardDeck.progressRate}, \texttt{StudyProgressSnapshot} (V8) & TC-16 -- TC-18 & Implemented \\
 FR-19 -- FR-21 & UC-11 & \texttt{QuizViewModel}, \texttt{QuestionPool.build()}, \texttt{QuestionBankLoader} & TC-19 -- TC-21 & Implemented \\
 FR-22 -- FR-29, FR-56 -- FR-58 & UC-11, UC-12 & \texttt{QuizProgressStore}, \texttt{QuestionProgress}, \texttt{TopicProgress}, \texttt{TierGate}, \texttt{QuestionPool}, \texttt{StudyPool}, \texttt{GatingConfig} & TC-22 -- TC-29, TC-56 -- TC-58 & Implemented \\
@@ -1514,8 +1302,8 @@ FR-42, FR-52 & UC-22 & \texttt{GroupBoardView}, \texttt{BackendFacade.fetchLeade
 FR-43, FR-53 & UC-18 & \texttt{WeeklyChallenge}, \texttt{UTCWeek}, Home challenge row, \texttt{Badge.weeklyChallenge} & TC-43, TC-53 & Implemented \\
 FR-50, FR-51 & UC-20, UC-21 & \texttt{GroupsView} (create and join sheets), \texttt{BackendFacade.createGroup()}, \texttt{joinGroup(code:)}, \texttt{ModelValidator.validateGroupName()}, \texttt{validateInviteCode()}; \texttt{groups}, \texttt{group\_members}, \texttt{join\_group(code)} & TC-50, TC-51 & Implemented \\
 FR-44 & UC-09 & \texttt{BackendFacade.saveDeck()}, \texttt{SwiftDataService.apply()} & TC-44 & Implemented \\
-FR-45 & UC-07 & \texttt{SyncQueue} (coalescing), \texttt{SyncOperation} & TC-45 & Implemented \\
-FR-46 & UC-06 & \texttt{SyncEngine} (push, pull, backoff), \texttt{RemoteChangeApplier}, \texttt{NetworkMonitor} & TC-46 & Implemented \\
+FR-45, FR-65 & UC-07 & \texttt{SyncQueue} (coalescing), \texttt{SyncOperation}; \texttt{BackendFacade.\allowbreak claimGuestDecks(for:)} at first sign-in & TC-45, TC-65 & Implemented \\
+FR-46, FR-66 & UC-06 & \texttt{SyncEngine} (push, pull, exponential backoff), \texttt{RemoteChangeApplier}, \texttt{NetworkMonitor} & TC-46, TC-66 & Implemented \\
 FR-47, FR-59 & UC-10 & \texttt{ConflictResolver.merge()}, \texttt{ConflictState.onResolve()} & TC-47, TC-59 & Implemented \\
 FR-48 & UC-06 & \texttt{DeckStatusChip}, \texttt{DeckSyncStateKind.displayName}; state machine (Fig.~\ref{fig:state}) & TC-48 & Implemented \\
 FR-61 & UC-07 & Planned: progress tables with RLS, pushed and pulled through \texttt{SyncQueue} and \texttt{SyncEngine}, merged by keeping the higher score & TC-61 & Planned (Sprint 4) \\
@@ -1587,11 +1375,11 @@ TC-02 & \texttt{KeychainSessionStorageTests} \\
 TC-04, TC-60, TC-49 & \texttt{ProfileAndFeedbackTests}, \texttt{ModelValidatorTests}, \texttt{SupabaseSchemaTests} (avatar set and limits match the SQL) \\
 TC-54 & \texttt{SyncEngineTests} (sign-out keeping or removing decks) \\
 TC-05 -- TC-07, TC-11, TC-13 & \texttt{DeckViewModelTests}, \texttt{FlashcardFactoryTests}, \texttt{DeckBuilderUITests} (UI) \\
-TC-08 & \texttt{CardMarkdownCompositionTests}, \texttt{SyntaxRoleTests}, \texttt{MarkdownFormattingTests} \\
+TC-08, TC-62 & \texttt{CardMarkdownCompositionTests}, \texttt{SyntaxRoleTests}, \texttt{MarkdownFormattingTests} \\
 TC-09, TC-10 & \texttt{ModelValidatorTests}, \texttt{FlashcardSchemaFileTests}, \texttt{SupabaseSchemaTests}, \texttt{DeckViewModelTests} \\
 TC-12, TC-55 & \texttt{DeckSyncStateTests}, \texttt{SyncEngineTests} (delete tests) \\
-TC-14 & \texttt{StarterDeckLoaderTests}, \texttt{DataSeederTests} \\
-TC-15 & \texttt{DeckViewModelTests} (starter decks can be hidden, not edited or deleted) \\
+TC-14, TC-63 & \texttt{StarterDeckLoaderTests} (every deck seeded, every card has a tier), \texttt{DataSeederTests} \\
+TC-15, TC-64 & \texttt{DeckViewModelTests} (starter decks can be hidden, not edited or deleted) \\
 TC-16 -- TC-18 & \texttt{StudySessionViewModelTests}, \texttt{StudyQueueTests}, \texttt{SwipeRatingTests}, \texttt{CardRatingTests}, \texttt{FlashcardMasteryTests}, \texttt{StudySessionUITests} (UI) \\
 TC-19 -- TC-21 & \texttt{QuizViewModelTests}, \texttt{QuestionPoolTests}, \texttt{QuestionBankLoaderTests} \\
 TC-22 -- TC-29, TC-56 -- TC-58 & \texttt{QuestionProgressTests}, \texttt{TierGateTests}, \texttt{StudyPoolTests}, \texttt{QuestionPoolTests}, \texttt{QuizViewModelTests} \\
@@ -1603,8 +1391,9 @@ TC-37 & \texttt{HomeLogicTests}, \texttt{RouterTests} \\
 TC-38 & \texttt{StudyPlanBuilderTests} (ordering, ties, sparse data, week rollover) \\
 TC-42, TC-43, TC-50 -- TC-53 & \texttt{GroupsAndChallengeTests} (UTC week start, challenge rotation, invite codes, ranking ties, facade calls with mocks), \texttt{SupabaseSchemaTests} \\
 TC-44 & \texttt{DeckViewModelTests}, \texttt{SyncEngineTests} (offline save never touches the network) \\
-TC-45 & \texttt{SyncQueueTests} \\
-TC-46 & \texttt{SyncEngineTests} (push, pull, backoff, reconnect), \texttt{SupabaseDataClientTests} \\
+TC-45, TC-65 & \texttt{SyncQueueTests}, \texttt{SyncEngineTests} (sign-in claims guest decks) \\
+TC-46, TC-66 & \texttt{SyncEngineTests} (push, pull, backoff, reconnect), \texttt{SupabaseDataClientTests} \\
+TC-39 -- TC-41, TC-61 & Planned (Sprint 4): written with the code-completion exercises and the study-results sync \\
 TC-47, TC-59 & \texttt{ConflictResolverTests}, \texttt{SyncEngineTests} (concurrent edits, two devices converge) \\
 TC-48 & \texttt{DeckSyncStateTests} \\
 TC-N02 & \texttt{SyncEngineTests} (one request per table), \texttt{SupabaseIntegrationTests} (opt-in, timed) \\
@@ -1731,7 +1520,7 @@ the facade is called (FR-10).
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[font=\sffamily\scriptsize]
   \def\xS{0}\def\xV{2.9}\def\xF{5.8}\def\xC{8.7}\def\xR{11.6}\def\xP{14.5}
-  \def\ytop{0}\def\ybot{-12.6}
+  \def\ytop{0}\def\ybot{-14.3}
   \pic at (\xS,\ytop) {stickman};
   \node at (\xS,\ytop-0.65) {Student};
   \foreach \x/\n/\c in {\xV/{GroupsView /\\GroupBoardView}/teal,
@@ -1772,9 +1561,12 @@ the facade is called (FR-10).
   \gmsg{11}{\xS}{\xV-0.08}{-8.3}{Opens the group}{sync}
   \gmsg{12}{\xV+0.08}{\xF-0.08}{-8.9}{fetchLeaderboard(for:)}{sync}
   \gself{13}{\xF}{-9.3}{syncNow(): push this\\week's XP first}
-  \gmsg{14}{\xF+0.08}{\xR-0.08}{-10.3}{GET /group\_leaderboard?group\_id=eq.\ldots}{sync}
-  \gmsg{15}{\xR+0.08}{\xP-0.08}{-10.9}{view as invoker; RLS: is\_member()}{sync}
-  \gmsg{16}{\xP-0.08}{\xV+0.08}{-11.6}{members' rows only $\to$ [LeaderboardEntry] (cached)}{ret}
+  \gmsg{14}{\xF+0.08}{\xC-0.08}{-10.4}{fetchLeaderboard(groupID:)}{sync}
+  \gmsg{15}{\xC+0.08}{\xR-0.08}{-11.0}{GET /group\_leaderboard?group\_id=eq.\ldots}{sync}
+  \gmsg{16}{\xR+0.08}{\xP-0.08}{-11.6}{view as invoker; RLS: is\_member()}{sync}
+  \gmsg{17}{\xP-0.08}{\xC+0.08}{-12.2}{members' rows only}{ret}
+  \gmsg{18}{\xC-0.08}{\xF+0.08}{-12.8}{[LeaderboardEntry]}{ret}
+  \gmsg{19}{\xF-0.08}{\xV+0.08}{-13.4}{[LeaderboardEntry] (cached)}{ret}
 \end{tikzpicture}}
 \caption{UML sequence diagram: join a group by invite code, then load its weekly leaderboard (UC-21, UC-22)}
 \label{fig:sequence2}
@@ -1790,9 +1582,13 @@ and it inserts exactly one membership row for \texttt{auth.uid()} (7); the calle
 cannot pass a different user. An unknown code raises an error that the adapter maps
 to ``No group has that code'' (8). The group is returned and cached for offline display
 (9, 10). Opening the group (11, 12) first pushes the student's weekly XP so their own
-row is current (13), then reads the \texttt{group\_leaderboard} view (14). The view is
-\texttt{security\_invoker}, so the caller's Row Level Security applies: only groups the
-caller belongs to return rows (15, 16), which is what NFR-25 requires. Steps 2--16 run
+row is current (13), then asks the adapter to read the \texttt{group\_leaderboard} view
+(14, 15); like every remote call, it goes through \texttt{SupabaseDataClient}, the only
+type that talks to Supabase (risk R7). The view is \texttt{security\_invoker}, so the
+caller's Row Level Security applies: only groups the caller belongs to return rows
+(16, 17), which is what NFR-25 requires. The adapter maps the rows to
+\texttt{LeaderboardEntry} values (18), and the facade caches the board for offline
+display before returning it (19). Steps 2--19 run
 only when the student is signed in and online; otherwise the last cached board is shown
 (the flows of UC-22).
 
@@ -2121,19 +1917,25 @@ disallowed operation in Figure~\ref{fig:state} (risk R9).
   \node[cls={teal}{3.6cm}] (views) at (5.2,0) {\ctitle{\textbf{SwiftUI views}}
     \nodepart{two}\raggedright (environment object)
     \nodepart{three}~};
-  \node[cls={magenta}{7.0cm}, anchor=north] (bf) at (0,-1.7) {\ctitle{\textbf{BackendFacade}}
+  \node[cls={magenta}{9.4cm}, anchor=north] (bf) at (0,-1.7) {\ctitle{\textbf{BackendFacade}}
     \nodepart{two}\raggedright +authState: AuthState\\ +pendingCount: Int\\ +engine: SyncEngine\\ \priv auth: AuthProviding?\\ \textasciitilde context: ModelContext\\ \priv cursors: SyncCursorStore\\ \textasciitilde groupCache: GroupCache
     \nodepart{three}\raggedright \textit{core:} +start()\quad +handle(url) : Bool\quad +signInWithGoogle()\\ \quad +signOut(removingLocalDecks: Bool)\quad +syncPending()\\ \textit{+Decks:} +saveDeck(draft) : FlashcardDeck\quad +deleteDeck(deck)\\ \quad +deleteCard(card)\quad +setHidden(hidden, deck)\\ \textit{+Profile:} +updateProfile(displayName, avatarId)\\ \quad +submitFeedback(text)\quad +didResetProgress()\\ \textit{+Groups:} +fetchGroups()\quad +createGroup(name)\quad +joinGroup(code)\\ \quad +leaveGroup(group)\quad +fetchLeaderboard(for: UUID)};
-  \node[cls={orange}{4.1cm}, anchor=north] (a) at (-6.4,-8.2) {\ctitle{\textbf{SupabaseAuthProvider}\\\st{AuthProviding}}
+  % The subsystem rows hang below the facade's real bottom edge, so a longer
+  % operation list can never overlap them.
+  \path (bf.south) ++(0,-1.3) coordinate (row1);
+  \coordinate (xa) at (-6.4,0); \coordinate (xe) at (-1.9,0); \coordinate (xl) at (2.6,0);
+  \node[cls={orange}{4.1cm}, anchor=north] (a) at (row1 -| xa) {\ctitle{\textbf{SupabaseAuthProvider}\\\st{AuthProviding}}
     \nodepart{two}~\nodepart{three}\raggedright +signIn(presenting:) : AppUser?\\ +signOut()\\ +authStateStream()};
-  \node[cls={violet}{4.1cm}, anchor=north] (e) at (-1.9,-8.2) {\ctitle{\textbf{SyncEngine}}
+  \node[cls={violet}{4.1cm}, anchor=north] (e) at (row1 -| xe) {\ctitle{\textbf{SyncEngine}}
     \nodepart{two}\raggedright \priv remote: RemoteDeckStore?\\ \priv reachability: Reachability
     \nodepart{three}\raggedright +syncNow() : Bool\\ +requestSync(after:)\\ +start()\qquad +stop()};
-  \node[cls={green}{4.1cm}, anchor=north] (l) at (2.6,-8.2) {\ctitle{\textbf{SwiftDataService}, \textbf{SyncQueue}}
+  \node[cls={green}{4.1cm}, anchor=north] (l) at (row1 -| xl) {\ctitle{\textbf{SwiftDataService}, \textbf{SyncQueue}}
     \nodepart{two}~\nodepart{three}\raggedright created per call on the\\ facade's ModelContext};
-  \node[cls={cyan}{4.6cm}, anchor=north] (r) at (-4.3,-11.8) {\ctitle{\textbf{SupabaseDataClient}\\\st{RemoteDeckStore}}
+  \path (e.south) ++(0,-1.0) coordinate (row2);
+  \coordinate (xr) at (-4.3,0); \coordinate (xn) at (0.5,0);
+  \node[cls={cyan}{4.6cm}, anchor=north] (r) at (row2 -| xr) {\ctitle{\textbf{SupabaseDataClient}\\\st{RemoteDeckStore}}
     \nodepart{two}~\nodepart{three}\raggedright +upsertDecks(\_:)\qquad +upsertCards(\_:)\\ +fetchChanges(since:)\\ +fetchDeckVersions(ids:)\\ +fetchDeckSnapshot(id:)\\ +fetchProfile()\qquad +upsertProfile(\_:)\\ +appendSyncLog(\_:)\qquad +submitFeedback(\_:)\\ +fetchGroups()\qquad +createGroup(id:name:)\\ +joinGroup(code:)\qquad +leaveGroup(id:)\\ +fetchLeaderboard(groupID:)\\ +upsertWeeklyXP(weekStart:xp:)};
-  \node[cls={violet}{3.4cm}, anchor=north] (n) at (0.5,-11.8) {\ctitle{\textbf{NetworkMonitor}\\\st{Reachability}}
+  \node[cls={violet}{3.4cm}, anchor=north] (n) at (row2 -| xn) {\ctitle{\textbf{NetworkMonitor}\\\st{Reachability}}
     \nodepart{two}\raggedright +isReachable: Bool
     \nodepart{three}\raggedright +changes()};
   \draw[dep] (vm.east) -- node[lbl] {\st{use}} (db.west);
@@ -2190,7 +1992,7 @@ lifecycle, authentication, sync; 231 lines) and the extensions
 which is the cost of the split: Swift has no access level between file and module.
 
 % =====================================================================
-\subsection{Design Pattern to Source Code Mapping}\label{sec:patternmap}
+\section{Mapping of Design Patterns to Source Code}\label{sec:patternmap}
 Table~\ref{tab:pattern-lines} maps each participant of the three patterns to the file
 and line range where it is implemented, and to that file's subsection in Appendix~B,
 whose listings carry the same line numbers. The table is generated, not typed: every
@@ -2671,8 +2473,8 @@ and elements that cross a boundary.
     tb/.style={draw=red!70!black, dashed, line width=1pt, rounded corners=4pt}]
   % External entities
   \node[ent] (stu) at (-2.2,0) {Student\\(user)};
-  \node[ent] (goo) at (8.0,6.4) {Google OAuth};
-  \node[ent] (sau) at (15.0,4.2) {Supabase Auth};
+  \node[ent] (goo) at (3.2,6.4) {Google OAuth};
+  \node[ent] (sau) at (15.0,4.6) {Supabase Auth};
   % Processes (device)
   \node[proc] (p1) at (3.2,3.6) {P1\\Sign In};
   \node[proc] (p2) at (3.2,0) {P2\\Validate\\Deck};
@@ -2692,8 +2494,8 @@ and elements that cross a boundary.
     \draw[line width=0.7pt] (\d.north west) -- (\d.south west);}
   % Flows
   \draw[fl] (stu) |- node[fn, pos=0.75] {1} (p1);
-  \draw[fl] (p1) -| node[fn, pos=0.25] {2} (goo);
-  \draw[fl] (p1.20) -- ++(5.0,0) |- node[fn, pos=0.75] {3} (sau.west);
+  \draw[fl] (p1) -- node[fn, pos=0.4] {2} (goo);
+  \draw[fl] (p1.50) |- node[fn, pos=0.75] {3} (sau.west |- 0,4.75);
   \draw[fl] (p1) -- node[fn] {4} (d2);
   \draw[fl] (stu) -- node[fn] {5} (p2);
   \draw[fl] (p2) -- node[fn] {6} (p3);
@@ -2708,7 +2510,7 @@ and elements that cross a boundary.
   \draw[fl] (sau) -- node[fn] {15} (p6);
   % Trust boundaries
   \draw[tb] (0.8,-5.3) rectangle (12.6,5.0);
-  \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (0.9,5.0) {TB1: iPhone app (device)};
+  \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (4.3,5.0) {TB1: iPhone app (device)};
   \draw[tb] (13.4,-1.6) rectangle (20.2,5.3);
   \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (13.5,5.3) {TB2: Supabase cloud};
 \end{tikzpicture}}
@@ -2947,9 +2749,9 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
 \centering
 \begin{tikzpicture}
 \pgfplotstableread[col sep=comma]{perf/sprint3.csv}\perftable
-\begin{axis}[xbar, xmode=log, width=0.72\textwidth, height=8cm,
+\begin{axis}[xbar, xmode=log, log origin=infty, width=0.72\textwidth, height=8cm,
     xlabel={Time (ms, log scale)}, ylabel={Scenario},
-    ytick distance=1, yticklabels from table={\perftable}{name},
+    ytick={0,...,6}, yticklabels from table={\perftable}{name},
     yticklabel style={font=\scriptsize},
     enlarge y limits=0.08, legend style={at={(0.98,0.02)}, anchor=south east, font=\scriptsize}]
   \addplot table[x=mean_ms, y expr=\coordindex] {\perftable};
@@ -2957,7 +2759,7 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
   \legend{Mean, p95}
 \end{axis}
 \end{tikzpicture}
-\caption{Mean and p95 time per scenario. X-axis: time in milliseconds, log scale; Y-axis: scenario.}
+\caption{Mean and p95 time per scenario. X-axis: time in milliseconds, log scale; Y-axis: scenario. The TC-P08 launch (4.19~s at p95) is reported in the text.}
 \label{fig:perfchart}
 \end{figure}
 }{\tbd{run scripts/perf-report.sh and scripts/perf-launch.sh; the table and chart are
@@ -2966,7 +2768,8 @@ built from docs/source/perf/sprint3.csv}}
 Against each requirement (p95 over 9 kept runs):
 \begin{itemize}
   \item \textbf{NFR-01, launch (TC-P08): not met on the Simulator.} Home was ready
-        4.19~s after process start (mean 4.17~s, \texttt{docs/source/perf/launch.csv}) against
+        4.19~s after process start (mean 4.17~s, standard deviation 13.5~ms,
+        \texttt{docs/source/perf/launch.csv}) against
         3~s, with the TC-P08 store (the starter decks plus five 50-card user decks,
         written by the \texttt{LaunchFixtureSeed} test before timing). An Instruments App Launch trace and the
         dynamic loader's log show where the time goes: about 3.3~s pass in the
@@ -3066,6 +2869,231 @@ limit); batched, it takes 3 push requests and 6 to 7 for the whole cycle, measur
 0.41~s (TC-P07). The perf run also needed one test-only fix: two test files used the DEBUG-only
 \texttt{SupabaseTestAccounts}, so the Release test build did not compile; they are now
 inside \texttt{\#if DEBUG}.
+
+% =====================================================================
+\section{User Interface and User Experience Design (Updated for Sprint 3)}\label{sec:ui}
+% =====================================================================
+The user interface follows a native iOS 26 structure. In Sprint 3 its look was
+redone to be calm and minimal (``pastel ink''): content sits on rounded
+notes laid on warm, faintly dotted paper; a desaturated ink-blue accent replaces the
+Sprint 2 electric indigo; Liquid Glass is left to the system's own controls; and
+celebrations are quiet banners with a haptic instead of particle bursts. The
+navigation model did not change. Figure~\ref{fig:screens} shows the launch screen,
+the first onboarding step, and the Home screen in Light and Dark Mode, and
+Figure~\ref{fig:screens2} the Decks tab, the Deck Builder, a study card, a quiz
+question, the profile sheet, and the Groups sign-in prompt, all captured on an
+iPhone~17 Simulator after the facelift.
+
+\subsection{Wireframes and Storyboard (Activity 8.2)}
+Before the facelift, the team identified the app's primary screens
+(Table~\ref{tab:screens}), broke one screen (the Deck Builder) into its content and its
+behavior (Table~\ref{tab:builderreq}), and storyboarded one scenario on paper notes:
+creating a new deck, filling in its blank cards, saving it to Decks, and then
+practicing with it (Figure~\ref{fig:storyboard}). The storyboard was converted into
+digital wireframes in Canva by all three members (Figure~\ref{fig:wireframes}).
+
+\begin{table}[H]
+\centering
+\caption{Primary screens and their purpose (Activity 8.2)}
+\label{tab:screens}
+\begin{tabularx}{\textwidth}{@{}L{3.4cm} Y@{}}
+\toprule
+\textbf{Screen / View} & \textbf{Primary Purpose and User Goal} \\
+\midrule
+Sign-in (onboarding step 3, profile sheet) & Create an account or sign in with Google to sync decks and progress; optional, the app works fully as a guest. \\
+Home / Dashboard & See level, XP, streak, today's goal, the weekly challenge and plan, and per-topic progress, and pick what to study next. \\
+Quiz / Practice & Answer multiple-choice computer science questions, get immediate feedback, and earn XP for correct answers. \\
+Deck Builder & Create a deck and add cards one at a time, Quizlet-style, with an optional syntax-highlighted code block per card. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Deck Builder requirements: content and hierarchy versus behavior (Activity 8.2)}
+\label{tab:builderreq}
+\begin{tabularx}{\textwidth}{@{}Y Y@{}}
+\toprule
+\textbf{Content and Hierarchy} & \textbf{Functionality and Behavior} \\
+\midrule
+Header: Cancel, ``New Deck'', Save & Save stores the deck on the device and returns to Decks, where it shows a ``Saved locally'' badge with its card count, topic, and 0\% mastery. Cancel discards the draft. \\
+Deck info: title field and topic picker & Live character counter on the title (1--60); the topic comes from the predefined list. \\
+Card editor: Front/Back toggle, tier tag, Preview, text area with a formatting toolbar, ``+ Add code'' & Front/Back switches the side being edited; the toolbar formats the selected text; counters show 1--500 characters; ``+ Add code'' reveals a language picker and editor. \\
+Code block: language picker and a line-numbered code editor & Live syntax highlighting (Swift, Python, Java, C++); the trash icon removes the block. \\
+Bottom: card thumbnail strip and a ``+'' tile & A thumbnail shows the card's preview text and number, with a \texttt{</>} badge if it has code. Tap to jump to a card; ``+'' adds a blank card and jumps to it; long-press to duplicate or delete; ``Done'' dismisses the keyboard. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{act82-storyboard.jpg}
+\caption{Paper storyboard (Activity 8.2): Decks $\to$ deck information $\to$ create a card $\to$ add more cards $\to$ Decks $\to$ practice (front, then back)}
+\label{fig:storyboard}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{act82-wireframes.png}
+\caption{Digital wireframes made in Canva from the storyboard (Activity 8.2); the highlighted control is the one tapped to reach the next frame}
+\label{fig:wireframes}
+\end{figure}
+
+The built Deck Builder follows the wireframes with two changes found during
+implementation: the deck information and the first card share one screen, so a deck
+can be saved in fewer steps, and the rating at the end of practice uses the four
+ratings of FR-17 instead of the wireframes' ``Still learning'' and ``Got it''. A user
+test on October 30 showed that the four ratings were confusing only because the
+mastery score behind them was hidden, so Sprint 3 kept the ratings and made the score
+visible (the Study item in Section~\ref{sec:keyint}).
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.235\textwidth]{launch.png}\hfill
+\includegraphics[width=0.235\textwidth]{onboarding.png}\hfill
+\includegraphics[width=0.235\textwidth]{home-light.png}\hfill
+\includegraphics[width=0.235\textwidth]{home-dark.png}
+\caption{Screens (iOS Simulator): launch, onboarding step 1, and Home in Light and Dark Mode}
+\label{fig:screens}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.235\textwidth]{decks.png}\hfill
+\includegraphics[width=0.235\textwidth]{builder.png}\hfill
+\includegraphics[width=0.235\textwidth]{study.png}\hfill
+\includegraphics[width=0.235\textwidth]{quiz.png}\\[1ex]
+\includegraphics[width=0.235\textwidth]{profile.png}\hspace{0.02\textwidth}
+\includegraphics[width=0.235\textwidth]{groups.png}
+\caption{Screens after the facelift (iOS Simulator): Decks, Deck Builder, a study card (answer side), a quiz question after a correct answer, the profile sheet, and Groups while signed out}
+\label{fig:screens2}
+\end{figure}
+
+\subsection{Navigation Model}
+The app is organized as a Home hub with a three-tab Liquid Glass tab bar (Home, Decks,
+Quiz) that shrinks to a pill when the content scrolls (Figure~\ref{fig:nav}). Home shows
+a greeting with the display name, the level line (level, XP, streak, and today's goal
+as $n$/20), one ``Up next'' suggestion, the weekly challenge and a ``Challenge and
+groups'' entry to the leaderboards, this week's three-topic plan, and every topic as
+its own note with Cards and Quiz buttons. The suggestion is, in
+priority order: resume a saved study session, start a starter deck (new learners), or
+take a quiz on the weakest pinned topic. The avatar opens the profile sheet, an
+inset-grouped list for the account, the display name and avatar editor, badges,
+appearance (System, Light, Dark), pinned topics, hidden starter decks, the UI/UX issue
+report form, and the data reset actions. Studying and quizzing run as
+full-screen covers (``focus mode''), so the tab bar never covers their controls. A
+single router object owns every tab, sheet, and cover, so any screen can start a study
+session or a quiz the same way.
+
+\begin{figure}[!htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\sffamily\scriptsize,
+    scr/.style={rectangle, rounded corners=3pt, draw, line width=0.6pt, fill=white,
+                align=center, text width=2.6cm, minimum height=0.9cm},
+    nav/.style={line width=0.6pt, -{Stealth[length=2mm]}},
+    nl/.style={font=\sffamily\tiny, fill=white, inner sep=1pt}]
+  \node[scr] (launch) at (-6.2,0)  {Launch\\(open store, seed content)};
+  \node[scr] (onb)    at (-6.2,-2.0) {Onboarding\\(welcome, topics, sign-in)};
+  \node[scr] (home)   at (-1.6,0)  {\textbf{Home} tab};
+  \node[scr] (decks)  at (-1.6,-2.0) {\textbf{Decks} tab\\(library, search)};
+  \node[scr] (quiz)   at (-1.6,-4.0) {\textbf{Quiz} tab\\(topics, tier locks)};
+  \node[scr] (prof)   at (3.0,0)   {Profile sheet\\(edit, badges, report)};
+  \node[scr] (groups) at (3.0,2.3) {Groups\\(create, join, board)};
+  \node[scr] (detail) at (3.0,-2.0) {Deck detail};
+  \node[scr] (setup)  at (3.0,-4.0) {Quiz setup sheet};
+  \node[scr] (build)  at (7.8,-1.2) {Deck builder sheet\\(card pager)};
+  \node[scr] (study)  at (7.8,-2.8) {Study cover\\(flip, swipe to rate)};
+  \node[scr] (qrun)   at (7.8,-4.0) {Quiz cover\\(answers, XP, summary)};
+  \begin{scope}[on background layer]
+    \node[draw=gray, dashed, rounded corners=4pt, fill=gray!6, inner sep=0.25cm,
+          fit=(home)(decks)(quiz), label={[font=\sffamily\scriptsize\bfseries]below:Liquid Glass tab bar}] {};
+  \end{scope}
+  \draw[nav] (launch) -- (home);
+  \draw[nav] (launch) -- node[nl, right] {first launch (cover)} (onb);
+  \draw[nav] (home) -- node[nl, above] {avatar (sheet)} (prof);
+  \draw[nav] ([xshift=-0.5cm]home.north) |- node[nl, above, pos=0.75] {Challenge \& groups (push)} (groups.west);
+  \draw[nav] (decks) -- node[nl, above] {push} (detail);
+  \draw[nav] ([yshift=0.15cm]detail.east) -- ++(0.6,0) |- node[nl, above, pos=0.75] {Edit / New} (build.west);
+  \draw[nav] ([yshift=-0.15cm]detail.east) -- ++(0.6,0) |- node[nl, below, pos=0.75] {Study} (study.west);
+  \draw[nav] (quiz) -- node[nl, above] {topic (sheet)} (setup);
+  \draw[nav] (setup) -- node[nl, above] {Start} (qrun);
+  \draw[nav] ([xshift=0.5cm]home.north) |- (9.8,1.0) node[nl, pos=0.75, above] {Up next / Practice} |- (study.east);
+\end{tikzpicture}}
+\caption{Navigation model: tabs, sheets, and full-screen covers (a Home topic's Quiz button opens the same quiz setup sheet)}
+\label{fig:nav}
+\end{figure}
+
+\subsection{Key Interactions}\label{sec:keyint}
+\begin{itemize}
+  \item \textbf{Onboarding} (first launch only) has three steps: a welcome screen,
+        a topic picker that pins the chosen topics and their starter decks on Home,
+        and an optional Google sign-in that can be skipped.
+  \item \textbf{Deck builder.} A deck header (title with a character counter, topic
+        picker) sits above a horizontal pager of card editors shaped like the study
+        card, with a Front/Back toggle, a live Markdown preview, an optional code
+        snippet edited in a syntax-highlighting code editor, and a final ``New card''
+        page. A thumbnail strip below jumps to, reorders, duplicates, and deletes
+        cards (with undo). Validation errors appear inline after the first failed save.
+  \item \textbf{Groups.} A group list with Create (name $\to$ invite code with a share
+        button) and Join (a six-character code field that upper-cases as it is typed).
+        A board ranks members by this week's XP with avatar and name, highlights the
+        student's own row, and, when offline, shows the last fetched board with an
+        ``as of'' time. Signed-out students see a sign-in prompt.
+  \item \textbf{Profile identity and reports.} An editor sets the display name and
+        picks one of 12 avatars; the badges row shows earned and locked badges; the
+        report form counts characters up to 1,000 and keeps the text if sending
+        fails.
+  \item \textbf{Study.} The card flips in 3D on tap (or Space); after the answer has
+        been shown, a swipe rates it: left Again, down Hard, up Easy, right Good. The
+        card is tinted with the rating's color while dragging, and a caption names the
+        gestures. Keys 1--4 and VoiceOver actions on the card rate without gestures.
+        Each rating has its own haptic. Five dots on the card show its mastery score
+        (0--5, FR-18); after a rating they fill or empty with a short ``+1'', ``+2'',
+        ``Reset'', or ``No change'' label. A card rated Again comes back once at the
+        end, and the counter says so at once (``2 / 4 $\cdot$ +1 repeat''); the
+        repeated card carries a Repeat chip. The summary reports the cards reviewed,
+        the cards whose score rose (``Moved up''), and the deck's progress in points.
+  \item \textbf{Quiz.} A setup sheet shows the tier locks with their reasons (for
+        example, ``Retire 3 more Medium questions'') and offers a mixed quiz or a single
+        unlocked tier. During the quiz, a segmented progress bar, a streak chip, and a
+        rolling XP total update after each answer; the summary shows the score ring, and
+        level-ups, tier unlocks, and new badges appear as a quiet banner with a
+        haptic.
+\end{itemize}
+
+\subsection{Design System}
+Every screen is built from shared tokens and components (Table~\ref{tab:tokens}).
+The Sprint 3 facelift changed tokens, not screens: because every color, font, radius,
+and animation goes through a token, the restyle touched the token files and a few
+components, and \texttt{check-design-tokens.sh} kept passing throughout. Sprint 2
+design decisions D12 (electric-indigo brand), D13 (custom glass buttons), and D17
+(particle celebrations) are superseded, and D18 (typography) is revised.
+Screens never use raw colors, corner radii, or system fonts directly, and
+\texttt{check-design-tokens.sh} enforces this. Shared components include buttons, cards,
+chips, progress bars and rings, stat tiles, tier chips, answer rows, empty states, the
+celebration overlay, and the form-feedback elements (inline field errors, character
+counters, error outlines, and the error alert) used by every editor.
+
+\begin{table}[H]
+\centering
+\caption{Design tokens and rules (updated for Sprint 3)}
+\label{tab:tokens}
+\begin{tabularx}{\textwidth}{@{}L{2.4cm} Y@{}}
+\toprule
+\textbf{Area} & \textbf{Rule} \\
+\midrule
+Color & ``Pastel ink'': warm paper \texttt{\#F6F5F2} with raised notes \texttt{\#FFFFFF} (dark \texttt{\#141518} / \texttt{\#1D1F23}); ink accent \texttt{\#3A5578} (dark \texttt{\#A9C0DD}); pastel button fill \texttt{\#CFDCEB} with an ink label \texttt{\#1F3350}. Every status and tier color is a text color with its own pastel fill (Easy \texttt{\#2F5A3B} on \texttt{\#DDEBDF}, Medium \texttt{\#6B4C10} on \texttt{\#F3E6CC}, Hard \texttt{\#7A3045} on \texttt{\#F2DDE3}). All colors are custom assets with Dark and Increase Contrast variants, generated from one script (\texttt{scripts/palette}). The lowest text pair is 5.2:1 (NFR-12). \\
+Typography & Dynamic Type text styles throughout; SF Rounded for headings, numbers, and navigation titles; SF Pro for reading text; SF Mono for code. Nothing is smaller than the footnote style, and card prompts and answers use title3. \\
+Shape & Corner radii of 6, 10, 14, 20, and 28 points. Capsules only for single-line controls (chips, single-line buttons, progress bars); anything that can wrap uses a continuous rounded rectangle, and nested surfaces use concentric corners. \\
+Materials & Liquid Glass only where the system draws it (tab bar, toolbars, sheets). The app's own buttons, toasts, and overlays are flat pastel fills; content sits on rounded ``notes'' with a hairline edge on a dotted paper background (dots hidden under Increase Contrast). \\
+Tiers & Easy, Medium, and Hard always pair a color with a symbol and a label, never color alone. \\
+Motion & Quiet only: snaps and smooth settles, no bounce, no particles; level-ups, unlocks, and badges use a fading banner. Under Reduce Motion every animation becomes a short crossfade. \\
+Haptics & System \texttt{sensoryFeedback} for answers, ratings, saves, and celebrations. \\
+Accessibility & VoiceOver labels and actions on every control, 44-point touch targets, Dynamic Type up to the accessibility sizes, and Light, Dark, or System appearance (NFR-11). \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 % =====================================================================
 \section*{Appendix A: Build Instructions}\label{sec:appA}
@@ -3209,6 +3237,10 @@ Generated color sets and the app icon images are not source code and are omitted
 are in the full document, \texttt{Sprint3\_Documentation.pdf}, and in the repository at
 \texttt{sprint3-final}.}
 \renewcommand{\lstinputlisting}[2][]{}
+% Headings with no listing after them cannot break across pages, so the
+% reading copy lists each file as a numbered line instead.
+\renewcommand{\subsubsection}[1]{\par\penalty0\refstepcounter{subsubsection}\noindent
+  \makebox[3.2em][l]{\thesubsubsection}\texttt{#1}\par}
 \IfFileExists{generated/appendix_b.tex}{\input{generated/appendix_b.tex}}{}
 \fi
 \endgroup
