@@ -16,8 +16,11 @@ a teammate should be able to reproduce the whole backend from this page.
 | `migrations/20261008022422_sync_log.sql` | append-only push ledger (R2) |
 | `migrations/20261008022429_rls.sql` | Row Level Security on every table + owner-only policies (NFR-07) |
 | `migrations/20261008022702_lock_down_signup_trigger.sql` | revokes API access to the sign-up trigger function (Supabase security lint) |
+| `migrations/20261030200232_avatar_set_feedback_reports.sql` | FR-04 avatar CHECK to the 12-symbol set; FR-49 insert-only `feedback_reports` |
+| `migrations/20261030200303_groups_leaderboard.sql` | S3-D: `groups`, `group_members`, `weekly_xp` (max-merged), `join_group(code)` (the only RPC), `group_leaderboard` view; group mates can read each other's profile |
+| `migrations/20261030200802_s3_advisor_fixes.sql` | Advisor fixes: revoke API access to `rls_auto_enable()`, index `groups.created_by`, one profiles SELECT policy |
 | `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
-| `checks/rls_live_check.sql` | the same 30 checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
+| `checks/rls_live_check.sql` | the same checks (48) for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
 
 Rules: never edit a migration that has been pushed, add a new file instead.
 File versions must equal the remote migration versions (`list_migrations` in
@@ -106,13 +109,18 @@ update, or delete them; `anon` sees nothing; sync_log is append-only;
 `server_updated_at` is set by the server; and the length/line/language CHECKs
 match the app's validator.
 
-## Current state (2026-10-08)
+## Current state (2026-10-31)
 
-Project `<project-ref>`. Migrations applied via the Supabase MCP (the
-file names above equal the remote versions). Security advisor: clean for our
-objects; the only warning left is Supabase's own `public.rls_auto_enable()`.
-`checks/rls_live_check.sql`: **0 failed of 30**, and the database was verified
-empty afterward. Google provider: enabled with the Web + iOS client IDs, skip
+Project `<project-ref>`. All eight migrations in `migrations/` are
+applied via the Supabase MCP (the file names equal the remote versions),
+including the three Sprint 3 ones (2026-10-30): avatar set + insert-only
+`feedback_reports`, groups + `group_members` + `weekly_xp` + the
+`group_leaderboard` view + `join_group()`, and the Security Advisor fixes.
+RLS is on for 8 of 8 tables. Security Advisor: `rls_auto_enable()` revoked;
+the one remaining warning is `join_group` (SECURITY DEFINER, justified: it must
+find a group the caller cannot see yet). `checks/rls_live_check.sql`:
+**0 failed of 48**, everything rolled back. (2026-10-08: 0 of 30, before the
+Sprint 3 tables.) Google provider: enabled with the Web + iOS client IDs, skip
 nonce checks on.
 
 With the MCP you don't need steps 5–6: apply new migrations with
@@ -144,6 +152,8 @@ reports, and re-run `checks/rls_live_check.sql`.
 - Deletes are tombstones (`deleted_at`) so other devices can pull them.
 - `profiles.total_xp` is written by the client (merged as `max(local, remote)`
   except an explicit reset), so a determined user could inflate their own XP.
-  Acceptable for a class project with no leaderboards. Documented, not enforced.
+  The weekly leaderboard reads `weekly_xp`, which is capped by a CHECK
+  (22,500 per week) and can only grow; a server-computed ledger is the
+  Sprint 4 hardening (risk R13).
 - Starter decks, quiz progress, mastery, and tier unlocks never leave the
   device (D10).

@@ -42,6 +42,25 @@ struct SupabaseSchemaTests {
         #expect(sql.contains("difficulty in (\(tiers))"))
     }
 
+    /// FR-04 / FR-49 (S3-C): the profile and report limits match the app.
+    @Test func profileAndFeedbackLimitsMatchValidator() throws {
+        let all = try migrations().map(\.sql).joined(separator: "\n")
+        let limits = ModelValidator.Limits.self
+        #expect(all.contains("between \(limits.displayName.lowerBound) and \(limits.displayName.upperBound)"))
+        #expect(all.contains("btrim(description, E' \\t\\r\\n')) between \(limits.feedback.lowerBound) and \(limits.feedback.upperBound)"))
+        let avatars = ProfileAvatar.symbols.map { "'\($0)'" }.joined(separator: ", ")
+        #expect(all.contains("avatar_id in (\(avatars))"))
+    }
+
+    /// FR-42 / FR-50–51 (S3-D): group and weekly XP limits match the app.
+    @Test func groupLimitsMatchApp() throws {
+        let all = try migrations().map(\.sql).joined(separator: "\n")
+        let limits = ModelValidator.Limits.self
+        #expect(all.contains("btrim(name, E' \\t\\r\\n')) between \(limits.groupName.lowerBound) and \(limits.groupName.upperBound)"))
+        #expect(all.contains("invite_code ~ '^[A-Z0-9]{\(limits.inviteCodeLength)}$'"))
+        #expect(all.contains("xp between 0 and \(WeeklyXPStore.cap)"))
+    }
+
     /// NFR-07: every table created by a migration has RLS enabled.
     @Test func everyTableHasRowLevelSecurity() throws {
         let all = try migrations().map(\.sql).joined(separator: "\n")

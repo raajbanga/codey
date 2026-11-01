@@ -1,6 +1,7 @@
 import Testing
 @testable import codey
 
+/// The bundled questions-seed.json decodes, and malformed banks are rejected.
 struct QuestionBankLoaderTests {
 
     @Test func loadsExpectedBankFromBundle() throws {

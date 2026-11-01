@@ -2,6 +2,8 @@ import Foundation
 import SwiftData
 import os
 
+/// Builds the app's single ModelContainer (on disk, or in memory for tests
+/// and UI tests) with the current schema and CodeyMigrationPlan.
 enum ModelContainerFactory {
     /// Frozen store name. Schema changes go through CodeyMigrationPlan; never
     /// rename the store to "start fresh" (that silently drops user data).

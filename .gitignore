@@ -5,7 +5,14 @@
 .LSOverride
 
 #Docs
-/docs
+docs/build/
+docs/source/**/*.aux
+docs/source/**/*.lof
+docs/source/**/*.lot
+docs/source/**/*.out
+docs/source/**/*.toc
+docs/source/**/*.log
+
 
 # Icon must end with two
 Icon

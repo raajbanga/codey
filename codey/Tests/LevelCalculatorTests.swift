@@ -1,6 +1,7 @@
 import Testing
 @testable import codey
 
+/// FR-31 XP → level curve, boundaries and progress-to-next.
 struct LevelCalculatorTests {
 
     @Test(arguments: [

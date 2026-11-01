@@ -11,6 +11,8 @@ struct DraftSaveResult {
     let deckChanged: Bool
 }
 
+// MARK: - [Pattern: Facade] Subsystem (local store)
+// MARK: - [Pattern: Factory] Client (builder saves)
 /// Local deck storage (doc: SwiftDataService). Applies builder drafts
 /// through FlashcardFactory.
 @MainActor

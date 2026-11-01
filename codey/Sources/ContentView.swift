@@ -1,6 +1,8 @@
 import SwiftData
 import SwiftUI
 
+/// Root after boot: the tab UI (RootView) with onboarding as a full-screen
+/// cover until it's finished, and a sync nudge whenever the app becomes active.
 public struct ContentView: View {
     @AppStorage(OnboardingView.completedKey) private var hasCompletedOnboarding = false
     @Environment(BackendFacade.self) private var backend

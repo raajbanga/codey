@@ -16,12 +16,16 @@ Tokens and components for every screen. Screens use these. They never use raw
 
 ## Rules
 
-- **Glass is for the control layer only**: toolbars, floating CTAs (`CodeyButton(kind: .glassPrimary)`), and overlays. Content cards are solid `surfaceRaised`.
+- **Look (Sprint 3, S9 "pastel ink", notes on paper)**: content sits on rounded notes (`.codeyNote()`: raised fill, hairline edge, a barely-there lift) laid on warm dotted paper (`.codeyPaperBackground()`). A desaturated ink-blue accent and pastel fills. One `.primary` button per screen.
+- **Type**: headings and numbers in SF Rounded (`codeyDisplay`, `codeyTitle`, `codeyHeadline`, `codeyNumeric*`, and system navigation titles via `CodeyNavigationTitles`); reading text in SF Pro. Nothing smaller than footnote: `codeyCaption` is footnote, and secondary lines under a title use `codeySubheadline`. Flashcard and quiz prompts/answers use `codeyCardText` (title3) via `CardMarkdownView(font:)`.
+- **Glass is the system's only**: tab bar, toolbars, and sheets get Liquid Glass from iOS. Our own buttons, toasts, and overlays are flat (`CodeyFillButtonStyle`, `.codeyFloatingSurface()`). Content cards are `.codeyNote()` surfaces; the only shadow is the note's faint lift.
 - **Corners (D19)**: use `Capsule` only for single-line, fixed-height controls (`CodeyChip`, `ProgressBar`, single-line `CodeyButton`). Anything that can wrap uses `.codey(CodeyRadius.md)`. Cards use `lg`. Nested surfaces use `ConcentricRectangle` or container-relative shapes (`.containerShape`).
 - **Color is never the only signal**: tiers carry a symbol and a label (`TierStyle`), and answer states carry an icon and a VoiceOver value.
-- **Motion**: use `.codeyAnimation` / `withCodeyAnimation`. Under Reduce Motion both fall back to a short crossfade. Particles only for level-ups and tier unlocks.
+- **Motion**: use `.codeyAnimation` / `withCodeyAnimation`. Under Reduce Motion both fall back to a short crossfade. Quiet only: snaps and smooth settles, no bounce, no particles. Level-ups and unlocks use `CelebrationOverlay`, a fading banner plus a haptic.
 - **Haptics**: use `.sensoryFeedback`, not UIKit feedback generators.
-- **brand vs brandFill**: `brand` is for text, icons, and tint. `brandFill` sits behind white labels. In dark mode, no single indigo passes 4.5:1 for both uses.
+- **brand vs brandFill**: `brand` is ink for text, icons, and tint. `brandFill` is the pastel button fill, always labeled with `onBrandFill` (never white). `brandSoft` sits behind brand text.
+- **Pastel pairs**: every status/tier color has a `…Soft` fill (`CodeyColor.Soft`, or `CodeyChipVariant.softColor`). Put a color's text only on its own soft fill or on the surfaces.
+- **Backgrounds**: every page uses `.codeyPaperBackground()` (Increase Contrast hides the dots); `.codeyListBackground()` does the same for a `List`. The dots use `paperDot`, which never carries text.
 
 ## Contrast (NFR-12)
 
@@ -33,71 +37,84 @@ python3 scripts/palette/palette.py                                   # must prin
 python3 scripts/palette/gen_colors.py codey/Resources/Assets.xcassets   # regenerates the colorsets
 ```
 
-Surfaces and text use iOS semantic colors (`systemGroupedBackground`,
-`secondarySystemGroupedBackground`, `label`, `secondaryLabel`). The checks
-below use their default values: light raised `#FFFFFF`, light grouped
-`#F2F2F7`, dark raised `#1C1C1E`, dark grouped `#000000`. Soft fills are 12%
-(light) and 16% (dark) of the color over the raised surface (`CodeyColor.softFill`).
+Every color, neutrals included, is a custom asset (light, dark, and
+Increase Contrast variants for text and separators). The table is
+`palette.py`'s output: each text color on the paper `Surface`, on
+`SurfaceRaised`, and on its own pastel `…Soft` fill; `OnBrandFill` on
+`BrandFill`; syntax colors on `CodeBackground`. `ContrastTests` re-checks the
+shipped assets.
 
 | Token | Pair | Foreground | Background | Ratio |
 |---|---|---|---|---|
-| Brand | light/raised | `#4F4FE8` | `#FFFFFF` | 5.81 |
-| Brand | light/grouped | `#4F4FE8` | `#F2F2F7` | 5.20 |
-| Brand | light/own-12%-fill | `#4F4FE8` | `#eaeafc` | 4.89 |
-| Brand | dark/raised | `#9A9AFF` | `#1C1C1E` | 6.84 |
-| Brand | dark/grouped | `#9A9AFF` | `#000000` | 8.44 |
-| Brand | dark/own-16%-fill | `#9A9AFF` | `#303042` | 5.19 |
-| BrandFill | light white-label | `#FFFFFF` | `#4F4FE8` | 5.81 |
-| BrandFill | dark white-label | `#FFFFFF` | `#5656F0` | 5.27 |
-| Success | light/raised | `#1A7034` | `#FFFFFF` | 6.16 |
-| Success | light/grouped | `#1A7034` | `#F2F2F7` | 5.52 |
-| Success | light/own-12%-fill | `#1A7034` | `#e4eee7` | 5.18 |
-| Success | dark/raised | `#4ADE80` | `#1C1C1E` | 9.76 |
-| Success | dark/grouped | `#4ADE80` | `#000000` | 12.05 |
-| Success | dark/own-16%-fill | `#4ADE80` | `#233b2e` | 6.94 |
-| Warning | light/raised | `#965000` | `#FFFFFF` | 6.10 |
-| Warning | light/grouped | `#965000` | `#F2F2F7` | 5.46 |
-| Warning | light/own-12%-fill | `#965000` | `#f2eae0` | 5.12 |
-| Warning | dark/raised | `#FBBF24` | `#1C1C1E` | 10.19 |
-| Warning | dark/grouped | `#FBBF24` | `#000000` | 12.58 |
-| Warning | dark/own-16%-fill | `#FBBF24` | `#40361f` | 7.13 |
-| Danger | light/raised | `#C4202B` | `#FFFFFF` | 5.85 |
-| Danger | light/grouped | `#C4202B` | `#F2F2F7` | 5.24 |
-| Danger | light/own-12%-fill | `#C4202B` | `#f8e4e6` | 4.80 |
-| Danger | dark/raised | `#FF7A7F` | `#1C1C1E` | 6.76 |
-| Danger | dark/grouped | `#FF7A7F` | `#000000` | 8.34 |
-| Danger | dark/own-16%-fill | `#FF7A7F` | `#402b2e` | 5.20 |
-| TierEasy | light/raised | `#1A7034` | `#FFFFFF` | 6.16 |
-| TierEasy | light/grouped | `#1A7034` | `#F2F2F7` | 5.52 |
-| TierEasy | light/own-12%-fill | `#1A7034` | `#e4eee7` | 5.18 |
-| TierEasy | dark/raised | `#4ADE80` | `#1C1C1E` | 9.76 |
-| TierEasy | dark/grouped | `#4ADE80` | `#000000` | 12.05 |
-| TierEasy | dark/own-16%-fill | `#4ADE80` | `#233b2e` | 6.94 |
-| TierMedium | light/raised | `#965000` | `#FFFFFF` | 6.10 |
-| TierMedium | light/grouped | `#965000` | `#F2F2F7` | 5.46 |
-| TierMedium | light/own-12%-fill | `#965000` | `#f2eae0` | 5.12 |
-| TierMedium | dark/raised | `#FBBF24` | `#1C1C1E` | 10.19 |
-| TierMedium | dark/grouped | `#FBBF24` | `#000000` | 12.58 |
-| TierMedium | dark/own-16%-fill | `#FBBF24` | `#40361f` | 7.13 |
-| TierHard | light/raised | `#A3238F` | `#FFFFFF` | 6.57 |
-| TierHard | light/grouped | `#A3238F` | `#F2F2F7` | 5.89 |
-| TierHard | light/own-12%-fill | `#A3238F` | `#f4e5f2` | 5.43 |
-| TierHard | dark/raised | `#F27FE0` | `#1C1C1E` | 7.20 |
-| TierHard | dark/grouped | `#F27FE0` | `#000000` | 8.89 |
-| TierHard | dark/own-16%-fill | `#F27FE0` | `#3e2c3d` | 5.44 |
-| SyntaxPlain | light/code | `#1F1F24` | `#F3F3F8` | 14.84 |
-| SyntaxPlain | dark/code | `#E6E6EB` | `#17171C` | 14.36 |
-| SyntaxKeyword | light/code | `#A1258F` | `#F3F3F8` | 5.98 |
-| SyntaxKeyword | dark/code | `#FF7AB2` | `#17171C` | 7.38 |
-| SyntaxType | light/code | `#0E6B78` | `#F3F3F8` | 5.60 |
-| SyntaxType | dark/code | `#5DD8C8` | `#17171C` | 10.31 |
-| SyntaxString | light/code | `#B3261E` | `#F3F3F8` | 5.91 |
-| SyntaxString | dark/code | `#FF8170` | `#17171C` | 7.34 |
-| SyntaxNumber | light/code | `#2F38C4` | `#F3F3F8` | 7.64 |
-| SyntaxNumber | dark/code | `#D9C97C` | `#17171C` | 10.71 |
-| SyntaxComment | light/code | `#5D6B78` | `#F3F3F8` | 4.94 |
-| SyntaxComment | dark/code | `#8B99A6` | `#17171C` | 6.13 |
-| SyntaxFunction | light/code | `#356B2E` | `#F3F3F8` | 5.76 |
-| SyntaxFunction | dark/code | `#8FD07A` | `#17171C` | 9.76 |
-| SyntaxAttribute | light/code | `#8A4A00` | `#F3F3F8` | 6.20 |
-| SyntaxAttribute | dark/code | `#FFA14F` | `#17171C` | 8.90 |
+| TextPrimary | light/surface | `#1B1C1E` | `#F6F5F2` | 15.64 |
+| TextPrimary | light/raised | `#1B1C1E` | `#FFFFFF` | 17.05 |
+| TextSecondary | light/surface | `#5C5B57` | `#F6F5F2` | 6.24 |
+| TextSecondary | light/raised | `#5C5B57` | `#FFFFFF` | 6.80 |
+| Brand | light/surface | `#3A5578` | `#F6F5F2` | 7.00 |
+| Brand | light/raised | `#3A5578` | `#FFFFFF` | 7.63 |
+| Brand | light/own-soft | `#3A5578` | `#E8EEF5` | 6.54 |
+| Success | light/surface | `#2F5A3B` | `#F6F5F2` | 7.28 |
+| Success | light/raised | `#2F5A3B` | `#FFFFFF` | 7.94 |
+| Success | light/own-soft | `#2F5A3B` | `#DDEBDF` | 6.43 |
+| Warning | light/surface | `#6B4C10` | `#F6F5F2` | 7.22 |
+| Warning | light/raised | `#6B4C10` | `#FFFFFF` | 7.88 |
+| Warning | light/own-soft | `#6B4C10` | `#F3E6CC` | 6.38 |
+| Danger | light/surface | `#8E2F28` | `#F6F5F2` | 7.44 |
+| Danger | light/raised | `#8E2F28` | `#FFFFFF` | 8.12 |
+| Danger | light/own-soft | `#8E2F28` | `#F6DEDB` | 6.33 |
+| TierEasy | light/surface | `#2F5A3B` | `#F6F5F2` | 7.28 |
+| TierEasy | light/raised | `#2F5A3B` | `#FFFFFF` | 7.94 |
+| TierEasy | light/own-soft | `#2F5A3B` | `#DDEBDF` | 6.43 |
+| TierMedium | light/surface | `#6B4C10` | `#F6F5F2` | 7.22 |
+| TierMedium | light/raised | `#6B4C10` | `#FFFFFF` | 7.88 |
+| TierMedium | light/own-soft | `#6B4C10` | `#F3E6CC` | 6.38 |
+| TierHard | light/surface | `#7A3045` | `#F6F5F2` | 8.24 |
+| TierHard | light/raised | `#7A3045` | `#FFFFFF` | 8.99 |
+| TierHard | light/own-soft | `#7A3045` | `#F2DDE3` | 6.95 |
+| Brand | light/brand-soft | `#3A5578` | `#E8EEF5` | 6.54 |
+| TextPrimary | light/brand-soft | `#1B1C1E` | `#E8EEF5` | 14.60 |
+| OnBrandFill | light/brand-fill | `#1F3350` | `#CFDCEB` | 9.16 |
+| SyntaxPlain | light/code | `#1B1C1E` | `#F3F2EE` | 15.22 |
+| SyntaxKeyword | light/code | `#7A3466` | `#F3F2EE` | 7.47 |
+| SyntaxType | light/code | `#2F5F6B` | `#F3F2EE` | 6.31 |
+| SyntaxString | light/code | `#8A4B1F` | `#F3F2EE` | 6.03 |
+| SyntaxNumber | light/code | `#3A5578` | `#F3F2EE` | 6.82 |
+| SyntaxComment | light/code | `#66655F` | `#F3F2EE` | 5.22 |
+| SyntaxFunction | light/code | `#3F6A4B` | `#F3F2EE` | 5.56 |
+| SyntaxAttribute | light/code | `#6E5214` | `#F3F2EE` | 6.51 |
+| TextPrimary | dark/surface | `#ECEBE7` | `#141518` | 15.30 |
+| TextPrimary | dark/raised | `#ECEBE7` | `#1D1F23` | 13.83 |
+| TextSecondary | dark/surface | `#A3A29D` | `#141518` | 7.14 |
+| TextSecondary | dark/raised | `#A3A29D` | `#1D1F23` | 6.45 |
+| Brand | dark/surface | `#A9C0DD` | `#141518` | 9.80 |
+| Brand | dark/raised | `#A9C0DD` | `#1D1F23` | 8.86 |
+| Brand | dark/own-soft | `#A9C0DD` | `#222B37` | 7.67 |
+| Success | dark/surface | `#A9D1B3` | `#141518` | 10.83 |
+| Success | dark/raised | `#A9D1B3` | `#1D1F23` | 9.79 |
+| Success | dark/own-soft | `#A9D1B3` | `#23322A` | 7.98 |
+| Warning | dark/surface | `#E6C98E` | `#141518` | 11.40 |
+| Warning | dark/raised | `#E6C98E` | `#1D1F23` | 10.30 |
+| Warning | dark/own-soft | `#E6C98E` | `#372F20` | 8.25 |
+| Danger | dark/surface | `#F0A79E` | `#141518` | 9.33 |
+| Danger | dark/raised | `#F0A79E` | `#1D1F23` | 8.43 |
+| Danger | dark/own-soft | `#F0A79E` | `#3A2422` | 7.37 |
+| TierEasy | dark/surface | `#A9D1B3` | `#141518` | 10.83 |
+| TierEasy | dark/raised | `#A9D1B3` | `#1D1F23` | 9.79 |
+| TierEasy | dark/own-soft | `#A9D1B3` | `#23322A` | 7.98 |
+| TierMedium | dark/surface | `#E6C98E` | `#141518` | 11.40 |
+| TierMedium | dark/raised | `#E6C98E` | `#1D1F23` | 10.30 |
+| TierMedium | dark/own-soft | `#E6C98E` | `#372F20` | 8.25 |
+| TierHard | dark/surface | `#EBB1BF` | `#141518` | 10.06 |
+| TierHard | dark/raised | `#EBB1BF` | `#1D1F23` | 9.10 |
+| TierHard | dark/own-soft | `#EBB1BF` | `#3A252C` | 7.82 |
+| Brand | dark/brand-soft | `#A9C0DD` | `#222B37` | 7.67 |
+| TextPrimary | dark/brand-soft | `#ECEBE7` | `#222B37` | 11.99 |
+| OnBrandFill | dark/brand-fill | `#DCE7F4` | `#2E415A` | 8.31 |
+| SyntaxPlain | dark/code | `#E4E3DF` | `#191A1D` | 13.55 |
+| SyntaxKeyword | dark/code | `#E3A6CF` | `#191A1D` | 8.80 |
+| SyntaxType | dark/code | `#8FC6CF` | `#191A1D` | 9.24 |
+| SyntaxString | dark/code | `#E6B48A` | `#191A1D` | 9.33 |
+| SyntaxNumber | dark/code | `#A9C0DD` | `#191A1D` | 9.34 |
+| SyntaxComment | dark/code | `#8E8D88` | `#191A1D` | 5.23 |
+| SyntaxFunction | dark/code | `#A9D1B3` | `#191A1D` | 10.32 |
+| SyntaxAttribute | dark/code | `#E6C98E` | `#191A1D` | 10.86 |

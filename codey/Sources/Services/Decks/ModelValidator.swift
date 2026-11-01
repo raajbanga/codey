@@ -10,6 +10,14 @@ enum ValidationField: Hashable {
     case snippetSource(UUID)
     case snippetLanguage(UUID)
     case deckHasNoCards
+    /// FR-04 profile name.
+    case displayName
+    /// FR-49 UI/UX issue report.
+    case feedback
+    /// FR-50 group name.
+    case groupName
+    /// FR-51 invite code.
+    case inviteCode
 }
 
 struct FieldError: Hashable, Error {
@@ -21,6 +29,7 @@ struct FieldError: Hashable, Error {
         case missingLanguage
         case unsupportedLanguage(String)
         case noCards
+        case invalidInviteCode
     }
 
     let field: ValidationField
@@ -42,6 +51,8 @@ struct FieldError: Hashable, Error {
             "\"\(value)\" isn't a supported language."
         case .noCards:
             "Add at least one card."
+        case .invalidInviteCode:
+            "Codes are 6 letters or numbers."
         }
     }
 }
@@ -62,6 +73,14 @@ struct ModelValidator {
         static let answer = 1...500
         static let snippetSource = 1...2000
         static let snippetMaxLines = 80
+        /// FR-04; matches profiles.display_name.
+        static let displayName = 1...30
+        /// FR-49; matches feedback_reports.description.
+        static let feedback = 1...1000
+        /// FR-50; matches groups.name.
+        static let groupName = 1...40
+        /// FR-51; matches groups.invite_code (^[A-Z0-9]{6}$).
+        static let inviteCodeLength = 6
     }
 
     /// Raw card input, before the factory turns it into a Flashcard.
@@ -125,6 +144,33 @@ struct ModelValidator {
         return errors
     }
 
+    /// FR-04: the display name is checked like deck text (trimmed scalars).
+    func validateDisplayName(_ name: String) -> ValidationResult {
+        Self.checkLength(name, Limits.displayName, field: .displayName)
+    }
+
+    /// FR-49: an issue report's description.
+    func validateFeedback(_ text: String) -> ValidationResult {
+        Self.checkLength(text, Limits.feedback, field: .feedback)
+    }
+
+    func validateGroupName(_ name: String) -> ValidationResult {
+        Self.checkLength(name, Limits.groupName, field: .groupName)
+    }
+
+    /// Trimmed and uppercased, so "ab12cd" is accepted as "AB12CD".
+    static func normalizedInviteCode(_ code: String) -> String {
+        code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    }
+
+    func validateInviteCode(_ code: String) -> ValidationResult {
+        let normalized = Self.normalizedInviteCode(code)
+        if normalized.isEmpty { return [FieldError(field: .inviteCode, reason: .empty)] }
+        let valid = normalized.unicodeScalars.count == Limits.inviteCodeLength
+            && normalized.unicodeScalars.allSatisfy { ("A"..."Z").contains($0) || ("0"..."9").contains($0) }
+        return valid ? [] : [FieldError(field: .inviteCode, reason: .invalidInviteCode)]
+    }
+
     /// Length as the limits count it: Unicode scalars after trimming.
     static func measuredLength(_ text: String) -> Int {
         text.trimmingCharacters(in: .whitespacesAndNewlines).unicodeScalars.count
@@ -155,4 +201,10 @@ struct ModelValidator {
         }
         return []
     }
+}
+
+/// So `$actionError.attempt` alerts show "Too long (31/30 characters)."
+/// instead of a generic error.
+extension FieldError: LocalizedError {
+    var errorDescription: String? { message }
 }

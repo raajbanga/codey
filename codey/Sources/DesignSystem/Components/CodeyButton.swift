@@ -1,26 +1,26 @@
 import SwiftUI
 
+/// The three content-button roles.
 enum CodeyButtonKind {
-    /// Solid brand fill, white label. In content.
+    /// Pastel brand fill, ink label. One per screen: the main action.
     case primary
-    /// Tinted brand label on a soft fill. In content.
+    /// Brand label on the soft brand tint.
     case secondary
-    /// Liquid Glass, brand tint. Floating over content (toolbars, pinned CTAs).
-    case glassPrimary
-    /// Liquid Glass, neutral. Floating over content.
-    case glassSecondary
-    /// Danger label on a soft danger fill (white on dark-mode red fails 4.5:1).
+    /// Danger label on its pastel fill.
     case destructive
 }
 
-/// Thin wrapper over the native button styles: it only adds haptics and the
-/// Capsule shape. Labels are single-line (the
-/// Capsule rule, D19); long text scales down rather than wrapping.
+/// The app's content button. Flat pastel fills, no glass: since Sprint 3
+/// (S9) Liquid Glass is left to the system's own controls (tab bar,
+/// toolbars, sheets). Labels are single-line (the Capsule rule, D19); long
+/// text scales down rather than wrapping.
 struct CodeyButton: View {
     let title: String
     var systemImage: String?
     var kind: CodeyButtonKind = .primary
     var fullWidth = false
+    /// Smaller height and type, for buttons inside list rows.
+    var compact = false
     let action: () -> Void
 
     @State private var taps = 0
@@ -30,12 +30,14 @@ struct CodeyButton: View {
         systemImage: String? = nil,
         kind: CodeyButtonKind = .primary,
         fullWidth: Bool = false,
+        compact: Bool = false,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.systemImage = systemImage
         self.kind = kind
         self.fullWidth = fullWidth
+        self.compact = compact
         self.action = action
     }
 
@@ -52,31 +54,40 @@ struct CodeyButton: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
-            .fontWeight(.semibold)
             .frame(maxWidth: fullWidth ? .infinity : nil)
         }
-        .modifier(KindStyle(kind: kind))
-        .buttonBorderShape(.capsule)
-        .controlSize(.large)
+        .buttonStyle(CodeyFillButtonStyle(kind: kind, compact: compact))
         .sensoryFeedback(kind == .destructive ? .warning : .impact(weight: .light), trigger: taps)
     }
+}
 
-    private struct KindStyle: ViewModifier {
-        let kind: CodeyButtonKind
+/// Flat capsule with a pastel fill. Each fill/label pair is one that
+/// scripts/palette checks at 4.5:1. Pressed state dims instead of scaling.
+struct CodeyFillButtonStyle: ButtonStyle {
+    let kind: CodeyButtonKind
+    var compact = false
 
-        func body(content: Content) -> some View {
-            switch kind {
-            case .primary:
-                content.buttonStyle(.borderedProminent).tint(CodeyColor.brandFill)
-            case .secondary:
-                content.buttonStyle(.bordered).tint(CodeyColor.brand)
-            case .glassPrimary:
-                content.buttonStyle(.glassProminent).tint(CodeyColor.brandFill)
-            case .glassSecondary:
-                content.buttonStyle(.glass)
-            case .destructive:
-                content.buttonStyle(.bordered).tint(CodeyColor.danger)
-            }
+    @Environment(\.isEnabled) private var isEnabled
+    @ScaledMetric(relativeTo: .body) private var regularHeight: CGFloat = 50
+    @ScaledMetric(relativeTo: .subheadline) private var compactHeight: CGFloat = 36
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(compact ? .codeySubheadline.weight(.medium) : .codeyHeadline)
+            .foregroundStyle(colors.label)
+            .padding(.horizontal, compact ? CodeySpacing.md : CodeySpacing.lg)
+            .frame(minHeight: compact ? compactHeight : regularHeight)
+            .background(colors.fill, in: Capsule())
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.7 : (isEnabled ? 1 : 0.45))
+            .animation(CodeyMotion.snappy, value: configuration.isPressed)
+    }
+
+    private var colors: (fill: Color, label: Color) {
+        switch kind {
+        case .primary: (CodeyColor.brandFill, CodeyColor.onBrandFill)
+        case .secondary: (CodeyColor.brandSoft, CodeyColor.brand)
+        case .destructive: (CodeyColor.Soft.danger, CodeyColor.danger)
         }
     }
 }
