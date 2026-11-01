@@ -6,14 +6,14 @@
 # Each row \ref's the file's Appendix B subsection (labels from
 # gen-appendix-b.sh, same sanitising rule).
 #
-#   scripts/gen-pattern-map.sh [out]   # default docs/generated/pattern_lines.tex
+#   scripts/gen-pattern-map.sh [out]   # default docs/source/generated/pattern_lines.tex
 #
 # Run AFTER the code freeze, together with gen-appendix-b.sh, so the line
 # numbers match the Appendix B listings.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-out=${1:-docs/generated/pattern_lines.tex}
+out=${1:-docs/source/generated/pattern_lines.tex}
 mkdir -p "$(dirname "$out")"
 
 rows=$(git ls-files 'codey/Sources/*.swift' | while IFS= read -r file; do
