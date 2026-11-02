@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import os
 
 /// A deck's cards (read-only for starter decks), with Edit / Hide / Delete.
 struct DeckDetailView: View {
@@ -18,6 +17,16 @@ struct DeckDetailView: View {
     @Environment(BackendFacade.self) private var backend
 
     var body: some View {
+        // Never-synced decks are hard-deleted, and a deleted model must not
+        // be read while the pop animation is still showing this screen.
+        if deck.isDeleted || deck.modelContext == nil {
+            Color.clear
+        } else {
+            content
+        }
+    }
+
+    private var content: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: CodeySpacing.sm) {
@@ -83,16 +92,11 @@ struct DeckDetailView: View {
         }
         .confirmationDialog("Delete \"\(deck.title)\"?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Deck", role: .destructive) {
-                // Leave the screen first: a hard-deleted model must not be
-                // read by a view that's still on screen.
-                let backend = backend
-                let deck = deck
-                dismiss()
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(400))
-                    do { try backend.deleteDeck(deck) } catch {
-                        Logger.persistence.error("Deleting deck failed: \(String(describing: error))")
-                    }
+                do {
+                    try backend.deleteDeck(deck)
+                    dismiss()
+                } catch {
+                    actionError = (error as? LocalizedError)?.errorDescription ?? "Couldn't delete this deck."
                 }
             }
             .disabled(!deck.canDelete)

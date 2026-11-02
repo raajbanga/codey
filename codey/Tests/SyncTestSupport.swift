@@ -255,7 +255,8 @@ struct SyncHarness {
     init(
         user: AppUser? = SyncHarness.alice,
         remote: MockRemoteStore? = nil,
-        reachable: Bool = true
+        reachable: Bool = true,
+        now: @escaping () -> Date = Date.init
     ) throws {
         context = try TestSupport.inMemoryContext()
         auth = MockAuth(user: user)
@@ -273,6 +274,7 @@ struct SyncHarness {
             weeklyXP: weeklyXP,
             groupCache: GroupCache(defaults: suite),
             deviceID: "test-device",
+            now: now,
             sleep: sleeper.sleep
         )
     }

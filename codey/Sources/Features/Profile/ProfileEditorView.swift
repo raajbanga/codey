@@ -15,7 +15,7 @@ struct ProfileEditorView: View {
 
     private var limit: Int { ModelValidator.Limits.displayName.upperBound }
     private var length: Int { ModelValidator.measuredLength(name) }
-    private var nameError: String? { ModelValidator().validateDisplayName(name).first?.message }
+    private var nameError: String? { ModelValidator.validateDisplayName(name).first?.message }
 
     private let columns = [GridItem(.adaptive(minimum: 56), spacing: CodeySpacing.sm)]
 

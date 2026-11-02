@@ -61,6 +61,35 @@ struct BadgeEvaluatorTests {
         #expect(try BadgeEvaluator.award(context: context, now: now) == [.sevenDayStreak, .xp1000])
     }
 
+    @Test func factsGatherOnlyWhatTheBadgesNeed() throws {
+        let context = try TestSupport.inMemoryContext()
+        context.insert(UserProfile(username: "L", totalXP: 1_200))
+        let now = Date.now
+        // A 30-day streak: only the window the rule needs is read.
+        for offset in 0..<30 {
+            let date = try #require(Calendar.current.date(byAdding: .day, value: -offset, to: now))
+            let row = DailyActivity(day: DailyActivity.dayKey(for: date))
+            row.quizAnswers = 20
+            context.insert(row)
+        }
+        try context.save()
+
+        let xpOnly = try BadgeEvaluator.facts(in: context, for: [.xp1000], now: now)
+        #expect(xpOnly == BadgeFacts(totalXP: 1_200))
+        let streak = try BadgeEvaluator.facts(in: context, for: [.sevenDayStreak], now: now).streak
+        #expect(streak == BadgeEvaluator.streakTarget + 1)
+    }
+
+    @Test func nothingLeftToEarnAwardsNothing() throws {
+        let context = try TestSupport.inMemoryContext()
+        context.insert(UserProfile(username: "L", totalXP: 5_000))
+        for badge in Badge.allCases {
+            context.insert(BadgeAward(badge: badge, earnedAt: .now))
+        }
+        try context.save()
+        #expect(try BadgeEvaluator.award(context: context).isEmpty)
+    }
+
     /// The hook: a quiz answer that crosses 1,000 XP awards the badge.
     @Test func quizAnswerCrossingTheXPTargetAwardsTheBadge() throws {
         let context = try TestSupport.inMemoryContext()

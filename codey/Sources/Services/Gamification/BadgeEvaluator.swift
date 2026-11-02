@@ -67,34 +67,59 @@ enum BadgeEvaluator {
     /// Inserts a BadgeAward for each newly qualifying badge and returns
     /// them, in `Badge.allCases` order. Doesn't save: callers run this
     /// right before their own save (deck save, quiz answer, card rating).
+    /// Runs on every answer and rating, so it only gathers the facts that
+    /// unearned badges need; once all are earned it's a single fetch.
     @discardableResult
     static func award(context: ModelContext, now: Date = .now, calendar: Calendar = .current) throws -> [Badge] {
         let earned = Set(try context.fetch(FetchDescriptor<BadgeAward>()).compactMap(\.badge))
-        let qualifying = qualifying(try facts(in: context, now: now, calendar: calendar))
-        let new = Badge.allCases.filter { qualifying.contains($0) && !earned.contains($0) }
+        let unearned = Set(Badge.allCases).subtracting(earned)
+        guard !unearned.isEmpty else { return [] }
+        let qualifying = qualifying(try facts(in: context, for: unearned, now: now, calendar: calendar))
+        let new = Badge.allCases.filter { unearned.contains($0) && qualifying.contains($0) }
         for badge in new {
             context.insert(BadgeAward(badge: badge, earnedAt: now))
         }
         return new
     }
 
-    static func facts(in context: ModelContext, now: Date = .now, calendar: Calendar = .current) throws -> BadgeFacts {
-        let userOrigin = DeckOrigin.user.rawValue
-        let userDecks = try context.fetchCount(FetchDescriptor<FlashcardDeck>(
-            predicate: #Predicate { $0.originRaw == userOrigin && $0.deletedAt == nil }
-        ))
-        let activity = try context.fetch(FetchDescriptor<DailyActivity>())
-        let profile: UserProfile? = try context.first()
-        let challenge = WeeklyChallenge.status(
-            now: now,
-            topicIDs: try context.fetch(FetchDescriptor<Topic>()).map(\.id),
-            records: try context.fetch(FetchDescriptor<QuizAnswerRecord>())
-        )
-        return BadgeFacts(
-            userDeckCount: userDecks,
-            streak: StreakCalculator.currentStreak(endingOn: now, activity: activity, calendar: calendar),
-            totalXP: profile?.totalXP ?? 0,
-            weeklyChallengesCompleted: challenge?.isComplete == true ? 1 : 0
-        )
+    /// The facts behind `badges`; the others stay 0. Counts in the store
+    /// rather than loading rows. The streak only looks back far enough to
+    /// reach `streakTarget`, so a longer streak reads as `streakTarget + 1`.
+    static func facts(
+        in context: ModelContext,
+        for badges: Set<Badge> = Set(Badge.allCases),
+        now: Date = .now,
+        calendar: Calendar = .current
+    ) throws -> BadgeFacts {
+        var facts = BadgeFacts()
+        if badges.contains(.firstDeck) {
+            let userOrigin = DeckOrigin.user.rawValue
+            facts.userDeckCount = try context.fetchCount(FetchDescriptor<FlashcardDeck>(
+                predicate: #Predicate { $0.originRaw == userOrigin && $0.deletedAt == nil }
+            ))
+        }
+        if badges.contains(.sevenDayStreak) {
+            // Today (which may not count yet) plus streakTarget days before it.
+            let days = (0...streakTarget).compactMap { calendar.date(byAdding: .day, value: -$0, to: now) }
+                .map { DailyActivity.dayKey(for: $0, calendar: calendar) }
+            let recent = try context.fetch(FetchDescriptor<DailyActivity>(predicate: #Predicate { days.contains($0.day) }))
+            facts.streak = StreakCalculator.currentStreak(endingOn: now, activity: recent, calendar: calendar)
+        }
+        if badges.contains(.xp1000) {
+            let profile: UserProfile? = try context.first()
+            facts.totalXP = profile?.totalXP ?? 0
+        }
+        if badges.contains(.weeklyChallenge) {
+            var topics = FetchDescriptor<Topic>()
+            topics.propertiesToFetch = [\.id]
+            if let topic = WeeklyChallenge.topicID(for: now, topicIDs: try context.fetch(topics).map(\.id)) {
+                let start = UTCWeek.start(of: now)
+                let correct = try context.fetchCount(FetchDescriptor<QuizAnswerRecord>(
+                    predicate: #Predicate { $0.topicId == topic && $0.correct == true && $0.answeredAt >= start }
+                ))
+                facts.weeklyChallengesCompleted = correct >= WeeklyChallenge.goal ? 1 : 0
+            }
+        }
+        return facts
     }
 }

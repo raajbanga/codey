@@ -10,10 +10,12 @@ import Testing
 /// (paths, filters, upsert headers, explicit nulls) and response decoding.
 @Suite(.serialized)
 struct SupabaseDataClientTests {
-    private func makeClient() -> any RemoteDeckStore {
+    private func makeClient(pageSize: Int = 1000) -> any RemoteDeckStore {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
-        return SupabaseTestAccounts.dataClient(url: URL(string: "https://stub.supabase.co")!, key: "stub-key", configuration: configuration)
+        return SupabaseTestAccounts.dataClient(
+            url: URL(string: "https://stub.supabase.co")!, key: "stub-key", configuration: configuration, pageSize: pageSize
+        )
     }
 
     private let deckID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
@@ -94,6 +96,27 @@ struct SupabaseDataClientTests {
         #expect(changes.cursor == Date(timeIntervalSince1970: 1_791_428_401))
     }
 
+    @Test func fetchChangesReadsEveryPage() async throws {
+        // A server that caps responses at 2 rows: 3 changed decks need 2 pages.
+        func deck(_ n: Int) -> String {
+            #"{"id":"00000000-0000-0000-0000-00000000000\#(n)","title":"T","topic_id":"t","created_at":"2026-10-01T00:00:00+00:00","updated_at":"2026-10-01T00:00:00+00:00","deleted_at":null,"server_updated_at":"2026-10-08T03:00:0\#(n)+00:00"}"#
+        }
+        StubURLProtocol.reset { url in
+            guard url.path.hasSuffix("/decks") else { return "[]" }
+            let offset = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                .queryItems?.first { $0.name == "offset" }?.value
+            return offset == "0" ? "[\(deck(1)),\(deck(2))]" : "[\(deck(3))]"
+        }
+        let changes = try await makeClient(pageSize: 2).fetchChanges(since: nil)
+
+        let deckRequests = StubURLProtocol.requests.filter { $0.url.path.hasSuffix("/decks") }
+        #expect(deckRequests.map { $0.query["offset"] } == ["0", "2"])
+        #expect(deckRequests.allSatisfy { $0.query["limit"] == "2" })
+        #expect(deckRequests.allSatisfy { $0.query["order"]?.contains("id.asc") == true }, "ties need a stable order")
+        #expect(changes.decks.count == 3)
+        #expect(changes.cursor == Date(timeIntervalSince1970: 1_791_428_403))
+    }
+
     @Test func deckVersionsUseAnInFilter() async throws {
         StubURLProtocol.reset(responseJSON: "[]")
         _ = try await makeClient().fetchDeckVersions(ids: [deckID])
@@ -122,6 +145,25 @@ struct SupabaseDataClientTests {
         #expect(try await client.fetchProfile() == nil)
         try await client.upsertProfile(ProfilePayload(displayName: "x", avatarId: nil, totalXP: 1))
         #expect(StubURLProtocol.requests.isEmpty)
+    }
+
+    /// The row types rely on the client's snake_case coders, not
+    /// CodingKeys. An all-caps acronym (`totalXP`) would not survive decoding.
+    @Test func databaseCodersMapSnakeCase() throws {
+        struct Row: Codable, Equatable {
+            var avatarId: String?
+            var totalXp: Int
+            var serverUpdatedAt: Date
+        }
+        struct Acronym: Decodable { var totalXP: Int }
+        let options = SupabaseDataClient.databaseOptions
+        let json = Data(#"{"avatar_id":"fox","total_xp":120,"server_updated_at":"2026-10-08T03:00:00.123456+00:00"}"#.utf8)
+
+        let row = try options.decoder.decode(Row.self, from: json)
+        #expect(row.avatarId == "fox" && row.totalXp == 120)
+        let encoded = try #require(JSONSerialization.jsonObject(with: options.encoder.encode(row)) as? [String: Any])
+        #expect(Set(encoded.keys) == ["avatar_id", "total_xp", "server_updated_at"])
+        #expect(throws: DecodingError.self) { try options.decoder.decode(Acronym.self, from: json) }
     }
 
     @Test func serverErrorsThrow() async throws {

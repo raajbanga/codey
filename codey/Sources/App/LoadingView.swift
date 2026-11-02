@@ -12,9 +12,12 @@ struct LoadingView: View {
     @State private var container: ModelContainer?
     @State private var backend: BackendFacade?
     @State private var showResetConfirmation = false
+    @State private var showsProgress = false
 
-    /// Keeps the launch screen up at least this long so it doesn't flash.
-    private let minimumDuration: Duration = .milliseconds(400)
+    /// The glyph and progress bar appear only if boot takes longer than
+    /// this. A fast boot shows just the paper, then Home: no flash, and no
+    /// minimum wait.
+    private let revealDelay: Duration = .milliseconds(300)
 
     var body: some View {
         Group {
@@ -32,6 +35,17 @@ struct LoadingView: View {
     }
 
     private var loadingContent: some View {
+        loadingStack
+            .opacity(showsProgress || errorMessage != nil ? 1 : 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .codeyPaperBackground()
+            .task {
+                try? await Task.sleep(for: revealDelay)
+                withAnimation(CodeyMotion.snappy) { showsProgress = true }
+            }
+    }
+
+    private var loadingStack: some View {
         VStack(spacing: CodeySpacing.lg) {
             Spacer()
             AppGlyph(size: 88)
@@ -63,8 +77,6 @@ struct LoadingView: View {
             Spacer()
             Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .codeyPaperBackground()
         .confirmationDialog(
             "Reset local data?",
             isPresented: $showResetConfirmation,
@@ -98,22 +110,30 @@ struct LoadingView: View {
     private func runBootSequence() async {
         guard container == nil, errorMessage == nil else { return }
 
-        let started = ContinuousClock.now
         do {
             let bootContainer = try ModelContainerFactory.make(inMemory: AppLaunchOptions.usesInMemoryStore)
             progress = 0.25
 
-            let bank = try QuestionBankLoader.loadBank()
-            progress = 0.50
+            let context = bootContainer.mainContext
+            let stamp = BundledContentStamp.current()
+            if let stamp, BundledContentStamp.isSeeded(stamp, context: context) {
+                // Same bundle as last launch: nothing to upsert.
+                DataSeeder.ensureProfile(context: context)
+                Logger.seeding.info("Bundled content unchanged; seeding skipped")
+            } else {
+                let bank = try QuestionBankLoader.loadBank()
+                progress = 0.50
 
-            try DataSeeder.seed(context: bootContainer.mainContext, bank: bank)
-            progress = 0.75
+                try DataSeeder.seed(context: context, bank: bank)
+                progress = 0.75
 
-            do {
-                try StarterDeckLoader.seed(context: bootContainer.mainContext)
-            } catch {
-                // Starter decks are optional content: log, don't block boot.
-                Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
+                do {
+                    try StarterDeckLoader.seed(context: context)
+                    if let stamp { BundledContentStamp.record(stamp) }
+                } catch {
+                    // Starter decks are optional content: log, don't block boot.
+                    Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
+                }
             }
             do {
                 // Catches up badges already qualified for (an upgrade from a
@@ -124,10 +144,6 @@ struct LoadingView: View {
                 Logger.seeding.error("Badge catch-up failed: \(String(describing: error))")
             }
             progress = 1.0
-            let elapsed = ContinuousClock.now - started
-            if elapsed < minimumDuration {
-                try await Task.sleep(for: minimumDuration - elapsed)
-            }
 
             let facade = AppLaunchOptions.usesInMemoryStore
                 ? BackendFacade.localOnly(context: bootContainer.mainContext)

@@ -22,7 +22,7 @@ enum StudyPool {
     /// Tiers a picker can offer for this deck: tagged tiers that are present,
     /// in Easy → Hard order. Empty means "no picker" (untagged user deck).
     static func taggedTiers(in deck: FlashcardDeck) -> [Difficulty] {
-        let present = Set(deck.activeCards.compactMap(\.difficulty))
+        let present = Set(deck.unorderedActiveCards.compactMap(\.difficulty))
         return Difficulty.allCases.filter(present.contains)
     }
 }

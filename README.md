@@ -8,7 +8,8 @@
 Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderboards
 
 ![iOS 26+](https://img.shields.io/badge/iOS-26%2B-black?logo=apple)
-![Swift](https://img.shields.io/badge/Swift-SwiftUI%20%2B%20SwiftData-F05138?logo=swift&logoColor=white)
+![Swift 6](https://img.shields.io/badge/Swift%206-SwiftUI%20%2B%20SwiftData-F05138?logo=swift&logoColor=white)
+[![Tests](https://github.com/raajbanga/codey/actions/workflows/test.yml/badge.svg)](https://github.com/raajbanga/codey/actions/workflows/test.yml)
 ![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase&logoColor=white)
 ![Tuist](https://img.shields.io/badge/Build-Tuist-6236FF)
 
@@ -73,6 +74,11 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
   xcodebuild test -workspace codey.xcworkspace -scheme codey -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:codeyTests
   ```
 - UI tests → same command with `-only-testing:codeyUITests` (run suites one at a time)
+- Database (pgTAP: RLS, constraints, weekly-XP pace limit; needs Docker)
+  ```bash
+  supabase test db
+  ```
+- CI → [`.github/workflows/test.yml`](.github/workflows/test.yml) runs the unit tests + accessibility audit on every push and PR to `main`
 - Repo checks
   ```bash
   scripts/check-imports.sh
@@ -83,6 +89,10 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
   ```bash
   scripts/check-secrets.sh
   ```
+  ```bash
+  scripts/check-release-build.sh
+  ```
+  (Release build has no test accounts or component gallery)
 
 ## Project layout
 
@@ -92,6 +102,7 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 | `codey/Tests`, `codey/UITests` | Unit + UI tests |
 | `supabase/` | Database migrations, RLS policies, tests |
 | `scripts/` | Repo checks, perf + backup tools |
+| `.github/workflows/` | CI (tests) + Supabase keep-alive |
 | `docs/` | Sprint reports (PDF); LaTeX sources in `docs/source/` |
 
 ## Docs

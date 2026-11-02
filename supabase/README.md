@@ -19,6 +19,7 @@ a teammate should be able to reproduce the whole backend from this page.
 | `migrations/20261030200232_avatar_set_feedback_reports.sql` | FR-04 avatar CHECK to the 12-symbol set; FR-49 insert-only `feedback_reports` |
 | `migrations/20261030200303_groups_leaderboard.sql` | S3-D: `groups`, `group_members`, `weekly_xp` (max-merged), `join_group(code)` (the only RPC), `group_leaderboard` view; group mates can read each other's profile |
 | `migrations/20261030200802_s3_advisor_fixes.sql` | Advisor fixes: revoke API access to `rls_auto_enable()`, index `groups.created_by`, one profiles SELECT policy |
+| `migrations/20261102182604_weekly_xp_rate_limit.sql` | Clamps `weekly_xp` growth to 600 XP per minute of server time (30 minutes' worth on a week's first write); clamped, never rejected |
 | `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
 | `checks/rls_live_check.sql` | the same checks (48) for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
 
@@ -99,7 +100,7 @@ which needs Docker (OrbStack or Docker Desktop) running:
 ```sh
 supabase start        # first run downloads the images
 supabase db reset     # applies migrations to the local database
-supabase test db      # expect: All tests successful, 30 tests
+supabase test db      # expect: All tests successful, 51 tests
 supabase stop
 ```
 

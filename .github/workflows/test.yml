@@ -1,0 +1,45 @@
+# Unit tests plus the accessibility audit on every push and pull request to
+# main. Local-only build: no backend secrets, so Secrets.xcconfig is absent
+# (Base.xcconfig includes it optionally) and the Supabase integration tests
+# skip themselves.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tuist (same version as local)
+        run: |
+          brew tap tuist/tuist
+          brew install --formula tuist@4.214.1
+
+      - name: Generate the workspace
+        run: |
+          tuist install
+          tuist generate --no-open
+
+      - name: Unit tests and accessibility audit
+        run: |
+          xcodebuild test \
+            -workspace codey.xcworkspace \
+            -scheme codey \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -only-testing:codeyTests \
+            -only-testing:codeyUITests/AccessibilityAuditUITests

@@ -22,7 +22,7 @@ extension BackendFacade {
     /// FR-50. The server makes the invite code.
     func createGroup(name: String) async throws -> GroupSummary {
         let remote = try groupRemote()
-        if let error = ModelValidator().validateGroupName(name).first { throw error }
+        if let error = ModelValidator.validateGroupName(name).first { throw error }
         let group = try await remote.createGroup(id: UUID(), name: name.trimmingCharacters(in: .whitespacesAndNewlines))
         groupCache.upsert(group, at: now())
         return group
@@ -31,7 +31,7 @@ extension BackendFacade {
     /// FR-51. Codes are case-insensitive.
     func joinGroup(code: String) async throws -> GroupSummary {
         let remote = try groupRemote()
-        if let error = ModelValidator().validateInviteCode(code).first { throw error }
+        if let error = ModelValidator.validateInviteCode(code).first { throw error }
         let group = try await remote.joinGroup(code: ModelValidator.normalizedInviteCode(code))
         groupCache.upsert(group, at: now())
         return group

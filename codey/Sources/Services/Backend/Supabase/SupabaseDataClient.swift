@@ -7,12 +7,24 @@ import Supabase
 struct SupabaseDataClient: RemoteDeckStore {
     let client: SupabaseClient
 
+    /// Rows per pull request. Must not exceed the project's PostgREST
+    /// max-rows (1000 on Supabase), or a full page reads as the last one.
+    var pageSize = 1000
+
+    /// PostgREST's own coders (its date handling) plus snake_case keys, so
+    /// the row types below need no CodingKeys. Pass to `SupabaseClientOptions(db:)`.
+    static let databaseOptions: SupabaseClientOptions.DatabaseOptions = {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = PostgrestClient.Configuration.jsonEncoder.dateEncodingStrategy
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = PostgrestClient.Configuration.jsonDecoder.dateDecodingStrategy
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return .init(encoder: encoder, decoder: decoder)
+    }()
+
     /// ISO 8601 with milliseconds, for the server_updated_at filter.
-    private static var timestampFormatter: ISO8601DateFormatter {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }
+    private static let timestampStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 
     func upsertDecks(_ decks: [DeckPayload]) async throws -> [UUID: Date] {
         guard !decks.isEmpty else { return [:] }
@@ -32,17 +44,35 @@ struct SupabaseDataClient: RemoteDeckStore {
     }
 
     func fetchChanges(since cursor: Date?) async throws -> RemoteChanges {
-        var decksQuery = client.from("decks").select(DeckRow.columns)
-        var cardsQuery = client.from("flashcards").select(CardRow.columns)
-        if let cursor {
-            let since = Self.timestampFormatter.string(from: cursor)
-            decksQuery = decksQuery.gt("server_updated_at", value: since)
-            cardsQuery = cardsQuery.gt("server_updated_at", value: since)
-        }
-        let decks: [DeckRow] = try await decksQuery.order("server_updated_at").execute().value
-        let cards: [CardRow] = try await cardsQuery.order("server_updated_at").execute().value
+        let since = cursor?.formatted(Self.timestampStyle)
+        async let deckRows: [DeckRow] = fetchAll("decks", columns: DeckRow.columns, since: since)
+        async let cardRows: [CardRow] = fetchAll("flashcards", columns: CardRow.columns, since: since)
+        let (decks, cards) = try await (deckRows, cardRows)
+        // Both tables are read to the end, so the newest row of either is a
+        // safe next cursor.
         let cursor = (decks.map(\.serverUpdatedAt) + cards.map(\.serverUpdatedAt)).compactMap { $0 }.max()
         return RemoteChanges(decks: decks.map(\.payload), cards: cards.map(\.remoteCard), cursor: cursor)
+    }
+
+    /// Every row changed after `since`, a page at a time. PostgREST caps each
+    /// response at max-rows, so a single request can silently truncate.
+    /// Ordered by (server_updated_at, id) so offsets are stable across pages.
+    private func fetchAll<Row: Decodable & Sendable>(_ table: String, columns: String, since: String?) async throws -> [Row] {
+        var rows: [Row] = []
+        while true {
+            var query = client.from(table).select(columns)
+            if let since {
+                query = query.gt("server_updated_at", value: since)
+            }
+            let page: [Row] = try await query
+                .order("server_updated_at")
+                .order("id")
+                .range(from: rows.count, to: rows.count + pageSize - 1)
+                .execute()
+                .value
+            rows += page
+            if page.count < pageSize { return rows }
+        }
     }
 
     func fetchDeckVersions(ids: [UUID]) async throws -> [UUID: Date] {
@@ -77,7 +107,7 @@ struct SupabaseDataClient: RemoteDeckStore {
             .eq("id", value: userID.uuidString)
             .execute()
             .value
-        return rows.first.map { ProfilePayload(displayName: $0.displayName, avatarId: $0.avatarId, totalXP: $0.totalXP) }
+        return rows.first.map { ProfilePayload(displayName: $0.displayName, avatarId: $0.avatarId, totalXP: $0.totalXp) }
     }
 
     /// The row is created by the sign-up trigger, so this is an update (RLS
@@ -85,7 +115,7 @@ struct SupabaseDataClient: RemoteDeckStore {
     func upsertProfile(_ profile: ProfilePayload) async throws {
         guard let userID = client.auth.currentUser?.id else { return }
         try await client.from("profiles")
-            .update(ProfileRow(displayName: profile.displayName, avatarId: profile.avatarId, totalXP: profile.totalXP), returning: .minimal)
+            .update(ProfileRow(displayName: profile.displayName, avatarId: profile.avatarId, totalXp: profile.totalXP), returning: .minimal)
             .eq("id", value: userID.uuidString)
             .execute()
     }
@@ -179,10 +209,6 @@ private struct GroupRow: Decodable {
     var name: String
     var inviteCode: String
 
-    enum CodingKeys: String, CodingKey {
-        case id, name
-        case inviteCode = "invite_code"
-    }
 
     var summary: GroupSummary { GroupSummary(id: id, name: name, inviteCode: inviteCode) }
 }
@@ -199,12 +225,6 @@ private struct LeaderboardRow: Decodable {
     var avatarId: String?
     var xp: Int
 
-    enum CodingKeys: String, CodingKey {
-        case xp
-        case userId = "user_id"
-        case displayName = "display_name"
-        case avatarId = "avatar_id"
-    }
 }
 
 private struct WeeklyXPRow: Encodable {
@@ -212,14 +232,9 @@ private struct WeeklyXPRow: Encodable {
     var weekStart: String
     var xp: Int
 
-    enum CodingKeys: String, CodingKey {
-        case xp
-        case ownerId = "owner_id"
-        case weekStart = "week_start"
-    }
 }
 
-// MARK: - Rows (snake_case, matching the migrations)
+// MARK: - Rows (camelCase here, snake_case on the wire via `databaseOptions`)
 
 /// owner_id is left to the column default, auth.uid().
 private struct FeedbackReportRow: Encodable {
@@ -228,11 +243,6 @@ private struct FeedbackReportRow: Encodable {
     var appVersion: String?
     var osVersion: String?
 
-    enum CodingKeys: String, CodingKey {
-        case id, description
-        case appVersion = "app_version"
-        case osVersion = "os_version"
-    }
 
     init(_ payload: FeedbackReportPayload) {
         id = payload.id
@@ -254,14 +264,6 @@ private struct DeckRow: Codable {
     /// Never sent: the server sets it.
     var serverUpdatedAt: Date?
 
-    enum CodingKeys: String, CodingKey {
-        case id, title
-        case topicId = "topic_id"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case deletedAt = "deleted_at"
-        case serverUpdatedAt = "server_updated_at"
-    }
 
     init(_ payload: DeckPayload) {
         id = payload.id
@@ -293,10 +295,6 @@ private struct DeckVersionRow: Decodable {
     var id: UUID
     var serverUpdatedAt: Date
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case serverUpdatedAt = "server_updated_at"
-    }
 }
 
 /// Mastery isn't synced (D10: progress stays local), so it has no column.
@@ -316,17 +314,6 @@ private struct CardRow: Codable {
     var deletedAt: Date?
     var serverUpdatedAt: Date?
 
-    enum CodingKeys: String, CodingKey {
-        case id, prompt, answer, difficulty
-        case deckId = "deck_id"
-        case codeLanguage = "code_language"
-        case codeSource = "code_source"
-        case sortIndex = "sort_index"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case deletedAt = "deleted_at"
-        case serverUpdatedAt = "server_updated_at"
-    }
 
     init(_ remote: RemoteCard) {
         let card = remote.card
@@ -371,13 +358,9 @@ private struct CardRow: Codable {
 private struct ProfileRow: Codable {
     var displayName: String
     var avatarId: String?
-    var totalXP: Int
+    /// Not `totalXP`: the snake-case decoder maps total_xp to `totalXp`.
+    var totalXp: Int
 
-    enum CodingKeys: String, CodingKey {
-        case displayName = "display_name"
-        case avatarId = "avatar_id"
-        case totalXP = "total_xp"
-    }
 }
 
 private struct SyncLogRow: Encodable {
@@ -387,12 +370,6 @@ private struct SyncLogRow: Encodable {
     var clientTs: Date
     var deviceId: String?
 
-    enum CodingKeys: String, CodingKey {
-        case entity, op
-        case entityId = "entity_id"
-        case clientTs = "client_ts"
-        case deviceId = "device_id"
-    }
 
     init(_ entry: SyncLogEntry) {
         entity = entry.entity.rawValue

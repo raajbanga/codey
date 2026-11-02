@@ -14,16 +14,16 @@ final class CodeyRunestoneTheme: Runestone.Theme {
     }
 
     let textColor = color(.plain)
-    let gutterBackgroundColor = UIColor(named: "CodeBackground") ?? .secondarySystemBackground
+    let gutterBackgroundColor = UIColor(resource: .codeBackground)
     let gutterHairlineColor = UIColor.separator
     let lineNumberColor = UIColor.secondaryLabel
-    let selectedLineBackgroundColor = UIColor(named: "BrandSoft") ?? .systemFill
+    let selectedLineBackgroundColor = UIColor(resource: .brandSoft)
     let selectedLinesLineNumberColor = UIColor.label
     let selectedLinesGutterBackgroundColor = UIColor.clear
     let invisibleCharactersColor = UIColor.tertiaryLabel
     let pageGuideHairlineColor = UIColor.separator
     let pageGuideBackgroundColor = UIColor.clear
-    let markedTextBackgroundColor = UIColor(named: "BrandSoft") ?? .systemFill
+    let markedTextBackgroundColor = UIColor(resource: .brandSoft)
 
     func textColor(for highlightName: String) -> UIColor? {
         SyntaxRole(treeSitterCapture: highlightName).map(Self.color)
@@ -34,6 +34,6 @@ final class CodeyRunestoneTheme: Runestone.Theme {
     }
 
     private static func color(_ role: SyntaxRole) -> UIColor {
-        UIColor(named: role.assetName) ?? .label
+        UIColor(resource: role.resource)
     }
 }

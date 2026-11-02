@@ -10,7 +10,7 @@ let project = Project(
         automaticSchemesOptions: .enabled(codeCoverageEnabled: true)
     ),
     settings: .settings(
-        base: ["SWIFT_VERSION": "5"],
+        base: ["SWIFT_VERSION": "6"],
         configurations: [
             .debug(name: .debug, xcconfig: "Config/Base.xcconfig"),
             .release(name: .release, xcconfig: "Config/Base.xcconfig"),
@@ -86,5 +86,8 @@ let project = Project(
             ],
             dependencies: [.target(name: "codey")]
         ),
-    ]
+    ],
+    // Xcode already generates typed asset symbols (Color(.brand)); Tuist's
+    // copy (Derived/Sources/TuistAssets+Codey.swift) went unused.
+    resourceSynthesizers: []
 )

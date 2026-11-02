@@ -54,8 +54,10 @@ extension CodeySchemaV6 {
 }
 
 extension SyncOperation {
-    var entity: SyncEntity {
-        SyncEntity(rawValue: entityRaw) ?? .deck
+    /// nil for a raw value this build doesn't know (written by a newer
+    /// one). Such operations match no push filter and are never sent.
+    var entity: SyncEntity? {
+        SyncEntity(rawValue: entityRaw)
     }
 
     var op: SyncOperationKind {

@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 /// What to study, for `.fullScreenCover(item:)`.
@@ -19,27 +18,6 @@ struct StudyRequest: Identifiable, Equatable {
 ///
 /// Rating is swipe-only (D14 revised): no floating buttons. Keyboard 1–4
 /// and VoiceOver actions on the card cover non-gesture use.
-/// Builds the session's view model once. SwiftUI can re-run a view's init
-/// whenever its parent updates (e.g. while the cover is dismissed), and a
-/// view model built there starts a fresh session, which deletes the saved
-/// snapshot that "Continue" relies on.
-struct StudySessionHost: View {
-    let request: StudyRequest
-    let context: ModelContext
-
-    @State private var viewModel: StudySessionViewModel?
-
-    var body: some View {
-        if let viewModel {
-            StudySessionView(viewModel: viewModel)
-        } else {
-            Color.clear.onAppear {
-                viewModel = StudySessionViewModel(deck: request.deck, start: request.start, context: context)
-            }
-        }
-    }
-}
-
 struct StudySessionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
