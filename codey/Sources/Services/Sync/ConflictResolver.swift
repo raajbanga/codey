@@ -89,14 +89,19 @@ struct RemoteChangeApplier {
     func apply(_ changes: RemoteChanges, ownerId: UUID, isClean: (FlashcardDeck) -> Bool) throws -> Int {
         let store = SwiftDataService(context: context, factory: factory, now: now)
         var touched = 0
+        // Two fetches for the whole pull instead of 2–3 per row; kept in
+        // step with the inserts and deletes below.
+        var decks = try store.fetchDecks(ids: Set(changes.decks.map(\.id) + changes.cards.map(\.deckId)))
+        var cards = try store.fetchCards(ids: changes.cards.compactMap(\.card.id))
 
         for remote in changes.decks {
-            if let deck = try store.fetch(id: remote.id) {
+            if let deck = decks[remote.id] {
                 guard deck.origin == .user, isClean(deck) else { continue }
                 if let local = deck.serverUpdatedAt, let incoming = remote.serverUpdatedAt,
                    !ConflictResolver.isLater(incoming, than: local) { continue }
                 if remote.deletedAt != nil {
                     context.delete(deck)
+                    decks[remote.id] = nil
                 } else {
                     deck.title = remote.title
                     deck.topicId = remote.topicId
@@ -120,22 +125,24 @@ struct RemoteChangeApplier {
                 deck.serverUpdatedAt = remote.serverUpdatedAt
                 deck.lastSyncedAt = now()
                 context.insert(deck)
+                decks[remote.id] = deck
                 touched += 1
             }
         }
 
         for remote in changes.cards {
             guard let id = remote.card.id else { continue }
-            guard let deck = try store.fetch(id: remote.deckId), deck.deletedAt == nil else {
-                if (try? store.fetchCard(id: id)) == nil {
+            guard let deck = decks[remote.deckId], deck.deletedAt == nil else {
+                if cards[id] == nil {
                     Logger.sync.debug("Pulled card skipped: its deck isn't on this device")
                 }
                 continue
             }
             guard deck.origin == .user, isClean(deck) else { continue }
-            if let card = try store.fetchCard(id: id) {
+            if let card = cards[id] {
                 if remote.card.deletedAt != nil {
                     context.delete(card)
+                    cards[id] = nil
                 } else if abs(ConflictResolver.changeTime(remote.card.updatedAt, remote.card.deletedAt)
                     .timeIntervalSince(ConflictResolver.changeTime(card.updatedAt, card.deletedAt))) > 0.001 {
                     try factory.applyRemote(remote.card, to: card)
@@ -144,6 +151,7 @@ struct RemoteChangeApplier {
                 let card = try factory.createCard(from: remote.card)
                 context.insert(card)
                 card.deck = deck
+                cards[id] = card
             }
         }
         return touched

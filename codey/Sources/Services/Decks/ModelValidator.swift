@@ -66,7 +66,7 @@ typealias ValidationResult = [FieldError]
 /// Lengths are counted in Unicode scalars after trimming whitespace, to match
 /// Postgres char_length() and JSON Schema maxLength. Markdown syntax counts.
 /// Code fences inside prompt/answer are allowed (D2 r2).
-struct ModelValidator {
+enum ModelValidator {
     enum Limits {
         static let deckTitle = 1...60
         static let prompt = 1...500
@@ -93,7 +93,7 @@ struct ModelValidator {
         var codeSource: String?
     }
 
-    func validateCard(_ card: CardFields) -> ValidationResult {
+    static func validateCard(_ card: CardFields) -> ValidationResult {
         var errors: ValidationResult = []
         errors += Self.checkLength(card.prompt, Limits.prompt, field: .cardPrompt(card.id))
         errors += Self.checkLength(card.answer, Limits.answer, field: .cardAnswer(card.id))
@@ -125,7 +125,7 @@ struct ModelValidator {
 
     /// A deck needs a valid title, a known topic, and at least one valid card
     /// (UC-01).
-    func validateDeck(
+    static func validateDeck(
         title: String,
         topicId: String,
         cards: [CardFields],
@@ -145,16 +145,16 @@ struct ModelValidator {
     }
 
     /// FR-04: the display name is checked like deck text (trimmed scalars).
-    func validateDisplayName(_ name: String) -> ValidationResult {
+    static func validateDisplayName(_ name: String) -> ValidationResult {
         Self.checkLength(name, Limits.displayName, field: .displayName)
     }
 
     /// FR-49: an issue report's description.
-    func validateFeedback(_ text: String) -> ValidationResult {
+    static func validateFeedback(_ text: String) -> ValidationResult {
         Self.checkLength(text, Limits.feedback, field: .feedback)
     }
 
-    func validateGroupName(_ name: String) -> ValidationResult {
+    static func validateGroupName(_ name: String) -> ValidationResult {
         Self.checkLength(name, Limits.groupName, field: .groupName)
     }
 
@@ -163,7 +163,7 @@ struct ModelValidator {
         code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
     }
 
-    func validateInviteCode(_ code: String) -> ValidationResult {
+    static func validateInviteCode(_ code: String) -> ValidationResult {
         let normalized = Self.normalizedInviteCode(code)
         if normalized.isEmpty { return [FieldError(field: .inviteCode, reason: .empty)] }
         let valid = normalized.unicodeScalars.count == Limits.inviteCodeLength

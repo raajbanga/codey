@@ -53,6 +53,7 @@ extension View {
 
 extension Binding {
     /// True while the optional is set; setting false clears it.
+    @MainActor
     func isPresent<Wrapped>() -> Binding<Bool> where Value == Wrapped? {
         Binding<Bool>(get: { wrappedValue != nil }, set: { if !$0 { wrappedValue = nil } })
     }
@@ -67,6 +68,18 @@ extension Binding where Value == String? {
         } catch {
             Logger.persistence.error("Action failed: \(String(describing: error))")
             wrappedValue = error.localizedDescription
+        }
+    }
+
+    /// For backend calls: a thrown error shows its own message if it has
+    /// one (validation, invalid code), otherwise `fallback`.
+    @MainActor
+    func attempt(_ fallback: String, _ action: @MainActor () async throws -> Void) async {
+        do {
+            try await action()
+        } catch {
+            Logger.persistence.error("Action failed: \(String(describing: error))")
+            wrappedValue = (error as? LocalizedError)?.errorDescription ?? fallback
         }
     }
 }

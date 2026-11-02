@@ -26,6 +26,7 @@ extension Font {
 /// System navigation titles in SF Rounded, to match codeyDisplay /
 /// codeyHeadline. SwiftUI has no modifier for this, so it goes through the
 /// UIKit appearance proxy once at launch.
+@MainActor
 enum CodeyNavigationTitles {
     static func apply() {
         let bar = UINavigationBar.appearance()

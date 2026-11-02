@@ -27,6 +27,20 @@ struct SyncEngineTests {
         #expect(h.remote.log.allSatisfy { $0.deviceId == "test-device" })
     }
 
+    /// Save, ack and delete all read the facade's injected clock.
+    @Test func stateTransitionsUseTheInjectedClock() async throws {
+        let t = Date(timeIntervalSince1970: 1_700_000_000)
+        let h = try SyncHarness(now: { t })
+        let deck = try h.saveNewDeck()
+        #expect(deck.updatedAt == t)
+
+        #expect(await h.engine.syncNow())
+        #expect(deck.lastSyncedAt == t)
+
+        try h.facade.deleteDeck(deck)
+        #expect(deck.deletedAt == t)
+    }
+
     @Test func pushTimeoutFallsBackToLocallyPersistedAndBacksOff() async throws {
         let h = try SyncHarness()
         let deck = try h.saveNewDeck()
@@ -229,6 +243,28 @@ struct SyncEngineTests {
 
         #expect(await h.engine.syncNow())
         #expect(try h.decks().isEmpty)
+    }
+
+    /// One pull with a deck's tombstone and an edit to one of its cards:
+    /// the deck goes, and the card edit doesn't bring anything back.
+    @Test func deckTombstoneAndCardEditInOnePull() async throws {
+        let h = try SyncHarness()
+        let deck = try h.saveNewDeck()
+        #expect(await h.engine.syncNow())
+        let deckID = deck.id
+        var deckPayload = deck.toPayload()
+        deckPayload.deletedAt = .now
+        deckPayload.serverUpdatedAt = .distantFuture
+        var cardPayload = try #require(deck.activeCards.first).toPayload()
+        cardPayload.prompt = "Edited remotely"
+        cardPayload.updatedAt = .now.addingTimeInterval(60)
+
+        let changes = RemoteChanges(decks: [deckPayload], cards: [RemoteCard(deckId: deckID, card: cardPayload)], cursor: nil)
+        try RemoteChangeApplier(context: h.context).apply(changes, ownerId: SyncHarness.alice.id) { _ in true }
+        try h.context.save()
+
+        #expect(try h.decks().isEmpty)
+        #expect(try h.context.fetchCount(FetchDescriptor<Flashcard>()) == 0)
     }
 
     @Test func pullSkipsDecksWithUnpushedChanges() async throws {

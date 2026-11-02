@@ -16,8 +16,13 @@ import os
 @MainActor
 @Observable
 final class BackendFacade: DeckBackend {
-    private(set) var authState: AuthState = .signedOut
+    private(set) var authState: AuthState = .signedOut {
+        didSet { if authState.user?.id != oldValue.user?.id { refreshLastSyncedAt() } }
+    }
     private(set) var pendingCount = 0
+    /// This account's last good sync. Kept as state (refreshed on account
+    /// change and after each cycle), so views don't read UserDefaults.
+    private(set) var lastSyncedAt: Date?
 
     let engine: SyncEngine
     // Internal, not private: the BackendFacade+*.swift extensions use them.
@@ -27,6 +32,8 @@ final class BackendFacade: DeckBackend {
     @ObservationIgnored private let cursors: SyncCursorStore
     @ObservationIgnored let groupCache: GroupCache
     @ObservationIgnored let now: () -> Date
+    @ObservationIgnored let queue: SyncQueue
+    @ObservationIgnored let store: SwiftDataService
     @ObservationIgnored private var authTask: Task<Void, Never>?
     @ObservationIgnored private var started = false
 
@@ -48,6 +55,8 @@ final class BackendFacade: DeckBackend {
         self.cursors = cursors
         self.groupCache = groupCache
         self.now = now
+        queue = SyncQueue(context: context, now: now)
+        store = SwiftDataService(context: context, now: now)
         weak let weakAuth = auth
         engine = SyncEngine(
             context: context, remote: remote, reachability: reachability, cursors: cursors,
@@ -55,7 +64,11 @@ final class BackendFacade: DeckBackend {
         )
         authState = auth?.currentUser().map(AuthState.signedIn) ?? .signedOut
         refreshPendingCount()
-        engine.onCycleFinished = { [weak self] in self?.refreshPendingCount() }
+        refreshLastSyncedAt()
+        engine.onCycleFinished = { [weak self] in
+            self?.refreshPendingCount()
+            self?.refreshLastSyncedAt()
+        }
     }
 
     /// The app's facade: Supabase-backed when the build has backend keys,
@@ -81,10 +94,6 @@ final class BackendFacade: DeckBackend {
 
     var currentUser: AppUser? { authState.user }
 
-    var lastSyncedAt: Date? { engine.lastSyncedAt ?? currentUser.flatMap { cursors.lastSyncedAt(for: $0.id) } }
-
-    var queue: SyncQueue { SyncQueue(context: context, now: now) }
-    var store: SwiftDataService { SwiftDataService(context: context, now: now) }
     var userID: UUID? { currentUser?.id }
 
     // MARK: Lifecycle
@@ -119,9 +128,10 @@ final class BackendFacade: DeckBackend {
     /// Syncing → LocallyPersisted; persisted Drafting → LocallyPersisted (9.2).
     func recoverDecks() {
         let decks = (try? context.fetch(FetchDescriptor<FlashcardDeck>())) ?? []
-        let recovered = decks.filter { $0.recoverAfterLaunch() }
+        let recovered = decks.filter { $0.recoverAfterLaunch(at: now()) }
         guard !recovered.isEmpty else { return }
-        for deck in recovered where !queue.hasPending(.deck, id: deck.id) {
+        let pending = (try? queue.pendingIDs(.deck)) ?? []
+        for deck in recovered where !pending.contains(deck.id) {
             try? queue.enqueue(.deck, id: deck.id, op: SyncOperationKind(deletedAt: deck.deletedAt), ownerId: deck.ownerId)
         }
         saveLoggingErrors()
@@ -180,6 +190,10 @@ final class BackendFacade: DeckBackend {
         pendingCount = queue.pendingCount(ownerId: userID)
     }
 
+    private func refreshLastSyncedAt() {
+        lastSyncedAt = currentUser.flatMap { cursors.lastSyncedAt(for: $0.id) }
+    }
+
     // MARK: Private
 
     private func saveLoggingErrors() {
@@ -202,14 +216,16 @@ final class BackendFacade: DeckBackend {
             predicate: #Predicate { $0.originRaw == user && $0.ownerId == guest }
         ))
         try queue.claimGuestOperations(for: ownerId)
+        let pendingDecks = try queue.pendingIDs(.deck)
+        let pendingCards = try queue.pendingIDs(.card)
         for deck in decks {
             deck.ownerId = ownerId
-            if deck.syncState == .synced { deck.editAndSave() }
+            if deck.syncState == .synced { deck.editAndSave(at: now()) }
             guard deck.deletedAt == nil || deck.hasEverSynced else { continue }
-            if !queue.hasPending(.deck, id: deck.id) {
+            if !pendingDecks.contains(deck.id) {
                 try queue.enqueue(.deck, id: deck.id, op: SyncOperationKind(deletedAt: deck.deletedAt), ownerId: ownerId)
             }
-            for card in deck.cards where !queue.hasPending(.card, id: card.id) {
+            for card in deck.cards where !pendingCards.contains(card.id) {
                 try queue.enqueue(.card, id: card.id, op: SyncOperationKind(deletedAt: card.deletedAt), ownerId: ownerId)
             }
         }

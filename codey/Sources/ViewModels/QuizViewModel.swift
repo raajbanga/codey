@@ -44,6 +44,7 @@ final class QuizViewModel {
     private let now: () -> Date
     private let weeklyXP: WeeklyXPStore
     private var generator: AnyRandomGenerator
+    @ObservationIgnored private var cachedProfile: UserProfile?
 
     init(
         topic: Topic,
@@ -171,5 +172,11 @@ final class QuizViewModel {
         isFinished = questions.isEmpty
     }
 
-    private var profile: UserProfile { DataSeeder.ensureProfile(context: context) }
+    /// Fetched once; fetched again only if the row went away (sign-out wipe).
+    private var profile: UserProfile {
+        if let cachedProfile, cachedProfile.modelContext != nil, !cachedProfile.isDeleted { return cachedProfile }
+        let profile = DataSeeder.ensureProfile(context: context)
+        cachedProfile = profile
+        return profile
+    }
 }

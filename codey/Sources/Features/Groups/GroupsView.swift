@@ -5,10 +5,7 @@ import SwiftUI
 struct GroupsView: View {
     @Environment(BackendFacade.self) private var backend
 
-    @State private var groups: [GroupSummary] = []
-    @State private var fetchedAt: Date?
-    @State private var isLoading = false
-    @State private var loadError: String?
+    @State private var list = CachedList<GroupSummary>()
     @State private var sheet: GroupSheet?
 
     var body: some View {
@@ -19,19 +16,19 @@ struct GroupsView: View {
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
             } else {
-                if let loadError {
+                if let error = list.error {
                     Section {
-                        StaleNotice(message: loadError, fetchedAt: fetchedAt)
+                        StaleNotice(message: error, fetchedAt: list.fetchedAt)
                     }
                 }
-                if groups.isEmpty, !isLoading {
+                if list.items.isEmpty, !list.isLoading {
                     Section {
                         Text("Groups rank members by XP earned this week. Create one and share its code, or join with a friend's code.")
                             .foregroundStyle(CodeyColor.textSecondary)
                     }
                 } else {
                     Section {
-                        ForEach(groups) { group in
+                        ForEach(list.items) { group in
                             NavigationLink {
                                 GroupBoardView(group: group)
                             } label: {
@@ -64,7 +61,7 @@ struct GroupsView: View {
             }
         }
         .overlay {
-            if isLoading, groups.isEmpty { ProgressView() }
+            if list.isLoading, list.items.isEmpty { ProgressView() }
         }
         .refreshable { await load() }
         .task { await load() }
@@ -80,30 +77,49 @@ struct GroupsView: View {
 
     private func load() async {
         guard backend.currentUser != nil else { return }
-        if groups.isEmpty, let cached = backend.cachedGroups {
-            groups = cached.groups
-            fetchedAt = cached.fetchedAt
-        }
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            groups = try await backend.fetchGroups()
-            fetchedAt = .now
-            loadError = nil
-        } catch {
-            loadError = "Couldn't refresh groups."
-        }
+        await list.load(
+            cached: backend.cachedGroups.map { ($0.groups, $0.fetchedAt) },
+            failure: "Couldn't refresh groups.",
+            fetch: backend.fetchGroups
+        )
     }
 
     private func add(_ group: GroupSummary) {
-        groups.removeAll { $0.id == group.id }
-        groups.append(group)
+        list.items.removeAll { $0.id == group.id }
+        list.items.append(group)
     }
 }
 
 private enum GroupSheet: String, Identifiable {
     case create, join
     var id: String { rawValue }
+}
+
+/// A fetched list with the FR-42 offline fallback: the cached copy shows
+/// until the fetch lands, and stays (with `error` set) if it fails.
+@MainActor
+@Observable
+final class CachedList<Item> {
+    var items: [Item] = []
+    private(set) var fetchedAt: Date?
+    private(set) var isLoading = false
+    private(set) var error: String?
+
+    func load(cached: ([Item], Date)?, failure: String, fetch: () async throws -> [Item]) async {
+        if items.isEmpty, let (cachedItems, date) = cached {
+            items = cachedItems
+            fetchedAt = date
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            items = try await fetch()
+            fetchedAt = .now
+            error = nil
+        } catch {
+            self.error = failure
+        }
+    }
 }
 
 /// "Couldn't refresh. Showing results as of 2:14 PM."
@@ -141,7 +157,7 @@ struct CreateGroupView: View {
 
     private var limit: Int { ModelValidator.Limits.groupName.upperBound }
     private var length: Int { ModelValidator.measuredLength(name) }
-    private var isValid: Bool { ModelValidator().validateGroupName(name).isEmpty }
+    private var isValid: Bool { ModelValidator.validateGroupName(name).isEmpty }
 
     var body: some View {
         Form {
@@ -200,13 +216,10 @@ struct CreateGroupView: View {
         isSaving = true
         Task {
             defer { isSaving = false }
-            do {
+            await $actionError.attempt("Couldn't create the group. Check your connection and try again.") {
                 let group = try await backend.createGroup(name: name)
                 onCreated(group)
                 withAnimation(CodeyMotion.smooth) { created = group }
-            } catch {
-                actionError = (error as? LocalizedError)?.errorDescription
-                    ?? "Couldn't create the group. Check your connection and try again."
             }
         }
     }
@@ -222,7 +235,7 @@ struct JoinGroupView: View {
     @State private var isJoining = false
     @State private var actionError: String?
 
-    private var isValid: Bool { ModelValidator().validateInviteCode(code).isEmpty }
+    private var isValid: Bool { ModelValidator.validateInviteCode(code).isEmpty }
 
     var body: some View {
         Form {
@@ -268,12 +281,9 @@ struct JoinGroupView: View {
         isJoining = true
         Task {
             defer { isJoining = false }
-            do {
+            await $actionError.attempt("Couldn't join. Check your connection and try again.") {
                 onJoined(try await backend.joinGroup(code: code))
                 dismiss()
-            } catch {
-                actionError = (error as? LocalizedError)?.errorDescription
-                    ?? "Couldn't join. Check your connection and try again."
             }
         }
     }

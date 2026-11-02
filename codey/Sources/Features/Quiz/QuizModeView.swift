@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 /// Focus-mode quiz (D8). Presented as a .fullScreenCover.
@@ -13,8 +12,9 @@ struct QuizModeView: View {
     @State private var viewModel: QuizViewModel
     @State private var toastLevel: Int?
 
-    init(request: QuizRequest, context: ModelContext) {
-        _viewModel = State(initialValue: QuizViewModel(topic: request.topic, mode: request.mode, context: context))
+    /// Build `viewModel` in a `ViewModelHost`: its init starts the quiz.
+    init(viewModel: QuizViewModel) {
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {

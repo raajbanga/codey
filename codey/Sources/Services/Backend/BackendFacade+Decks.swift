@@ -17,15 +17,16 @@ extension BackendFacade {
         }
         let deck = result.deck
         if result.deckChanged {
-            deck.editAndSave()
+            deck.editAndSave(at: now())
             try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
+            // Changed cards are the deck's own: read them off the relationship.
+            let cards = deck.cards.keyed(by: \.id)
             for id in result.changedCardIDs {
-                let card = try? store.fetchCard(id: id)
-                try queue.enqueue(.card, id: id, op: SyncOperationKind(deletedAt: card?.deletedAt), ownerId: deck.ownerId)
+                try queue.enqueue(.card, id: id, op: SyncOperationKind(deletedAt: cards[id]?.deletedAt), ownerId: deck.ownerId)
             }
             try queue.remove(.card, ids: result.hardDeletedCardIDs)
         } else if deck.syncState == .drafting {
-            deck.save()
+            deck.save(at: now())
         }
         // The first saved user deck earns a badge (FR-35).
         try BadgeEvaluator.award(context: context)
@@ -39,7 +40,7 @@ extension BackendFacade {
         }
         try queue.remove(.card, ids: deck.cards.map(\.id))
         if deck.hasEverSynced {
-            deck.delete()
+            deck.delete(at: now())
             try queue.enqueue(.deck, id: deck.id, op: .delete, ownerId: deck.ownerId)
         } else {
             try queue.remove(.deck, ids: [deck.id])
@@ -60,7 +61,7 @@ extension BackendFacade {
             try queue.remove(.card, ids: [card.id])
             context.delete(card)
         }
-        deck.save()
+        deck.save(at: now())
         try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
         try persist()
     }

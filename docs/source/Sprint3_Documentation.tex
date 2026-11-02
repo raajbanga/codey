@@ -608,7 +608,7 @@ Advisor warnings and static-analyzer warnings.
 \endhead
 \bottomrule
 \endfoot
-Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & Not measured & 4.19 s on the Simulator (about 1.0 s after the app's code starts) \\
+Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & Not measured & 3.82 s on the Simulator (about 0.6 s after the app's code starts) \\
 Performance & 100-card deck sync & Mock with 50 ms per request (TC-P07); live opt-in test & $\le$ 5 s & 2 data requests; time not measured & 0.41 s \\
 Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & Not measured & 270.6 MB whole process on the Simulator: not met (the session adds 1.2 MB); device check Sprint 4 \\
 Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & Not measured & 0.39 / 57.9 / 15.1 ms \\
@@ -650,7 +650,7 @@ Primary test target & Xcode iOS Simulator (iOS 27 runtime) with three device pro
 Network simulation & None was needed in Sprint 3: launch makes no network request, the sync tests use a mock backend that waits 50 ms per request, and unit tests simulate connectivity with a mock reachability monitor. Network Link Conditioner (Additional Tools for Xcode), planned in Activity~9.2, is used for the live LTE and Wi-Fi tests in Sprint 4. \\
 Physical device & Raaj Banga's iPhone 16 Pro Max (128 GB, iOS 27), for the on-device checks scheduled for Sprint 4 (NFR-01, NFR-28, TC-S10). The app is installed from Xcode with a free Apple ID (personal team). No paid Apple Developer Program membership is required, but builds signed this way expire after seven days and must be reinstalled. \\
 Cloud backend & Supabase project on the Free plan (AWS region) providing GoTrue Auth, the PostgREST API, and a managed PostgreSQL database. Clients connect over HTTPS on port 443. The backend connects to PostgreSQL over SSL on port 5432. \\
-Source control and tracking & GitHub repository with a GitHub Actions keep-alive workflow (Section~\ref{sec:vc}); tasks are tracked in the project plan (\texttt{todo.txt}) in the repository. \\
+Source control and tracking & GitHub repository with GitHub Actions workflows for tests and the Supabase keep-alive (Section~\ref{sec:vc}); tasks are tracked in the project plan (\texttt{todo.txt}) in the repository. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1045,7 +1045,7 @@ R9 & A sync-state transition is missed when adding a state (Design) & M & M & Ke
 R10 & Leaked session tokens or OAuth misconfiguration (Security) & L & H & Store tokens only in the Keychain and exclude them from logs, enable RLS on every table, and permit only TLS 1.3 connections. & A security checklist item fails before a merge to \texttt{main}, or \texttt{check-secrets.sh} reports a finding. & Monitoring \\
 R11 & Supabase free-tier limits or inactivity pausing (Operational) & L & M & A GitHub Actions workflow pings the project every 3 days to prevent inactivity pausing. Export the database with \texttt{pg\_dump} (\texttt{scripts/backup.sh}) before schema changes, because the Free plan has no automated backups. Keep the schema as migrations in the repository, and run the app in local-only mode when no backend keys are configured. & The project is paused, or usage exceeds 80\% of a tier limit. & Mitigated \\
 R12 & A third-party UI library (Textual, pre-1.0; Runestone) is abandoned or stops building on a new Xcode (Technology) & M & M & Pin exact versions and wrap each library in a single file (\texttt{CardMarkdownView}, \texttt{CodeEditorView}), enforced by \texttt{check-design-tokens.sh}, so a replacement changes one file. Fallbacks: MarkdownUI (\texttt{swift-markdown-ui}) for Textual, and a plain \texttt{TextEditor} with autocorrect, smart quotes, and smart dashes disabled for Runestone. & The project fails to build on a new Xcode release for more than two days. & Monitoring \\
-R13 & A tampering user inflates their own weekly XP on the leaderboard, because the client reports it (Security) & M & L & Row Level Security lets a user write only their own row; a CHECK caps a week at 22,500 XP (45 XP $\times$ 500 answers); the server keeps the higher of the old and new value, so a row cannot be lowered to hide tampering. A server-computed XP ledger is the Sprint 4 hardening. & A board shows a weekly total that is not a sum of valid answers. & Accepted (Sprint 4 fix) \\
+R13 & A tampering user inflates their own weekly XP on the leaderboard, because the client reports it (Security) & M & L & Row Level Security lets a user write only their own row; a CHECK caps a week at 22,500 XP (45 XP $\times$ 500 answers); the server keeps the higher of the old and new value, so a row cannot be lowered to hide tampering; a trigger clamps growth to 600 XP per minute of server time (one 45 XP answer every 4.5 s; at most 30 minutes' worth on a week's first write). A server-computed XP ledger is the Sprint 4 hardening. & A board shows a weekly total that is not a sum of valid answers. & Accepted (Sprint 4 fix) \\
 R14 & Schedule compression: four feature stages and the document in the final week (Schedule) & H & M & Fixed decision log (S1--S28) from the start of the week; strict stage order; automated generators for Appendix~B and the pattern map; deferred items labeled ``Sprint 4'' instead of being rushed. & A stage is not done by its planned day. & Occurred; contained \\
 R15 & The UI-test runner is refused by macOS, so UI tests and XCTest's launch metric cannot run (Technology) & H & M & Measure launch from an in-app log line and a Simulator relaunch script (\texttt{perf-launch.sh}); keep the UI tests in the repository and retry on each Xcode update. & The runner still fails on the current Xcode. & Occurred; resolved on Xcode 27.2 \\
 R16 & The facelift introduces contrast or layout regressions (Quality) & M & M & Colors change only through tokens; \texttt{ContrastTests} checks every text/background pair in Light, Dark, and Increase Contrast; Simulator walkthrough on three sizes in both modes. & A contrast test fails or a screen clips. & Mitigated \\
@@ -1327,8 +1327,8 @@ satisfies it (component, deployment node, or class) and to its verification test
 \endhead
 \bottomrule
 \endfoot
-NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & Not met on the Simulator (4.19 s); device check Sprint 4 \\
-NFR-02 & 100-card sync $\le$ 5 s & \texttt{SyncEngine} batched push (one request per table, up to 500 operations); PostgREST (Fig.~\ref{fig:deploy}) & TC-N02, TC-P07 & Met with mock latency (0.41 s); live test Sprint 4 \\
+NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & Not met on the Simulator (3.82 s); device check Sprint 4 \\
+NFR-02 & 100-card sync $\le$ 5 s & \texttt{SyncEngine} batched push (one request per table, up to 500 operations); pulls paged at PostgREST's 1,000-row cap, decks and cards in parallel; PostgREST (Fig.~\ref{fig:deploy}) & TC-N02, TC-P07 & Met with mock latency (0.41 s); live test Sprint 4 \\
 NFR-03 & Latest iOS, target iOS 26 & Client node (Fig.~\ref{fig:deploy}); Xcode deployment target & TC-N03 & Implemented \\
 NFR-04 & Local encryption at rest & SwiftData store with \emph{complete unless open} protection; Keychain item \emph{this device only} (Fig.~\ref{fig:deploy}) & TC-N04 & Implemented \\
 NFR-05 & Cloud encryption at rest & Data tier node: managed PostgreSQL instance (Fig.~\ref{fig:deploy}) & TC-N05 & Implemented \\
@@ -1861,7 +1861,7 @@ the factory's source file can create one.
     \nodepart{three}\raggedright +save()\quad +edit()\quad +push()\quad +resolve()\\ +receive(result: RemoteResult)\\ +delete() : Bool\quad +editAndSave()\\ +recoverAfterLaunch() : Bool\\ +setState(state: DeckSyncState)};
   \node[cls={teal}{7.4cm}, anchor=north] (ds) at (0,-4.3) {\ctitle{\st{interface}\\\textbf{DeckSyncState}}
     \nodepart{two}\raggedright +kind: DeckSyncStateKind\\ +name: String
-    \nodepart{three}\raggedright +onSave(deck) : DeckSyncState\\ +onEdit(deck) : DeckSyncState\\ +onPush(deck) : DeckSyncState\\ +onRemoteResponse(deck, result) : DeckSyncState\\ +onResolve(deck) : DeckSyncState\\ +onDelete(deck) : DeckSyncState?\\ (default for every event: no transition, return self)};
+    \nodepart{three}\raggedright +onSave(deck, at) : DeckSyncState\\ +onEdit(deck) : DeckSyncState\\ +onPush(deck) : DeckSyncState\\ +onRemoteResponse(deck, result, at) : DeckSyncState\\ +onResolve(deck, at) : DeckSyncState\\ +onDelete(deck, at) : DeckSyncState?\\ (default for every event: no transition, return self)};
   \node[cls={orange}{2.25cm}, anchor=north] (s3) at ([yshift=-1.1cm]ds.south) {\ctitle{\textbf{SyncingState}}\nodepart{two}~\nodepart{three}~};
   \node[cls={cyan}{3.05cm}, left=0.35cm of s3]  (s2) {\ctitle{\textbf{LocallyPersistedState}}\nodepart{two}~\nodepart{three}~};
   \node[cls={orange}{2.25cm}, left=0.35cm of s2] (s1) {\ctitle{\textbf{DraftingState}}\nodepart{two}~\nodepart{three}~};
@@ -2233,7 +2233,8 @@ artifacts each node hosts.
 \textbf{Operations.} A GitHub Actions workflow (\texttt{supabase-keepalive.yml}) on
 GitHub's hosted runners pings the REST API every three days so the Free-plan project is
 not paused (risk R11). It uses only the public anon key, stored as a repository
-secret.
+secret. A second workflow (\texttt{test.yml}) runs the unit tests and the accessibility
+audit on a macOS runner for every push and pull request to \texttt{main}.
 
 \textbf{Communication paths.} Components on the client communicate through in-process
 calls and, for the Keychain, through the Security framework. The client communicates
@@ -2546,7 +2547,7 @@ Flows 2, 3, 15 & Spoofing & A forged ID token or session is presented. & Supabas
 Flows 11, 14 & Tampering, Information disclosure & A network attacker reads or alters traffic (public Wi-Fi). & TLS 1.3 minimum, no ATS exceptions (NFR-06); Proxyman confirmation in Sprint 4. \\
 P6 / D3 & Elevation of privilege, Information disclosure & A user reads or writes another user's rows, or a non-member reads a group board. & RLS on all 8 tables; group policies via \texttt{private.is\_member()}; 48 live checks, 0 failures (TC-S01). \\
 Flow 14 & Elevation of privilege & \texttt{join\_group} (definer rights) is abused to add another user or read other groups. & Inserts only \texttt{auth.uid()}; empty \texttt{search\_path}; returns only the joined group; revoked from anon. \\
-D3 (\texttt{weekly\_xp}) & Tampering & A user writes an inflated weekly XP. & Own row only, CHECK $\le$ 22,500, server keeps the maximum; accepted residual risk R13. \\
+D3 (\texttt{weekly\_xp}) & Tampering & A user writes an inflated weekly XP. & Own row only, CHECK $\le$ 22,500, server keeps the maximum, growth clamped to 600 XP per minute; accepted residual risk R13. \\
 D2, flow 10 & Information disclosure & The session token leaks from storage or logs. & Keychain, this device only; logging audit: the 7 public log values are a launch duration, starter-deck keys and card IDs, sync event, state, and entity names, and tier names (NFR-21). \\
 D1 & Information disclosure & A lost phone exposes progress and decks. & iOS Data Protection (\emph{complete unless open}). The offline group cache (group names, invite codes, member names) is in \texttt{UserDefaults}, which has the default protection, and is cleared on sign-out. \\
 P2, flow 5 & Tampering, Denial of service & Oversized or malformed input crashes the app or the server. & Validator limits (title 60, text 500, code 2,000 characters and 80 lines), errors as values; CHECK constraints server-side. \\
@@ -2759,7 +2760,7 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
   \legend{Mean, p95}
 \end{axis}
 \end{tikzpicture}
-\caption{Mean and p95 time per scenario. X-axis: time in milliseconds, log scale; Y-axis: scenario. The TC-P08 launch (4.19~s at p95) is reported in the text.}
+\caption{Mean and p95 time per scenario. X-axis: time in milliseconds, log scale; Y-axis: scenario. The TC-P08 launch (3.82~s at p95) is reported in the text.}
 \label{fig:perfchart}
 \end{figure}
 }{\tbd{run scripts/perf-report.sh and scripts/perf-launch.sh; the table and chart are
@@ -2768,7 +2769,7 @@ built from docs/source/perf/sprint3.csv}}
 Against each requirement (p95 over 9 kept runs):
 \begin{itemize}
   \item \textbf{NFR-01, launch (TC-P08): not met on the Simulator.} Home was ready
-        4.19~s after process start (mean 4.17~s, standard deviation 13.5~ms,
+        3.82~s after process start (mean 3.80~s, standard deviation 17.7~ms,
         \texttt{docs/source/perf/launch.csv}) against
         3~s, with the TC-P08 store (the starter decks plus five 50-card user decks,
         written by the \texttt{LaunchFixtureSeed} test before timing). An Instruments App Launch trace and the
@@ -2776,7 +2777,9 @@ Against each requirement (p95 over 9 kept runs):
         Simulator's loader (\texttt{dyld\_sim}) before any Codey code runs, loading
         about 1{,}600 iOS system images (counted with \texttt{DYLD\_PRINT\_LIBRARIES}).
         Codey's own work, from \texttt{main} to Home's first appearance, is about
-        1.0~s, of which 0.4~s is the loading screen's deliberate minimum. For scale,
+        about 0.6~s: down from 1.0~s after the loading screen's 0.4~s minimum was
+        removed and boot began skipping the starter-content reseed when the bundled
+        content is unchanged (a SHA-256 stamp, \texttt{BundledContentStamp}). For scale,
         a one-view SwiftUI app reached its first view in 1.2--1.9~s on the same
         Simulator. On an iPhone those system images come from the shared cache, so
         the Simulator figure overstates launch; the requirement stays open until it
@@ -2854,13 +2857,15 @@ failed two checks, and both were traced with that plan:
         measured 1.2~MB. NFR-28 itself names the peak, so it stays open for the
         device measurement.
   \item \textbf{TC-P08 (launch).} 4.61~s against 3~s in the first run, with a smaller
-        store; 4.19~s in the re-run with the full TC-P08 store. The Instruments trace placed
+        store; 4.19~s in the re-run with the full TC-P08 store; 3.82~s after the two
+        fixes below. The Instruments trace placed
         about 3.3~s before \texttt{main}, in the Simulator's loader; updating the
         Simulator runtime's shared cache and rebooting the Simulator did not change
-        it. The app's own 1.0~s already meets the requirement with room to spare.
-        If the device measurement in Sprint 4 is over 3~s, the next steps are to
-        drop the loading screen's 0.4~s minimum and to skip seeding when the bundled
-        content is unchanged (a content hash).
+        it. Two fixes then cut the app's own share from about 1.0~s to about 0.6~s:
+        the loading screen's 0.4~s minimum was dropped, and boot skips seeding when
+        the bundled content is unchanged (a content hash). The remaining gap to 3~s
+        is the Simulator's loader, so the device measurement in Sprint 4 decides
+        NFR-01.
 \end{itemize}
 The one optimization that the measurements have confirmed so far is from Sprint 2:
 batching the push into one request per table. With per-card requests, a 100-card

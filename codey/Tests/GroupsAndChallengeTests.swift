@@ -146,19 +146,18 @@ struct GroupsAndChallengeTests {
     // MARK: Validation
 
     @Test func groupNameAndInviteCodeRules() {
-        let validator = ModelValidator()
-        #expect(validator.validateGroupName(String(repeating: "g", count: 40)).isEmpty)
-        #expect(validator.validateGroupName(String(repeating: "g", count: 41)).first?.reason == .tooLong(max: 40, actual: 41))
-        #expect(validator.validateGroupName("   ").first?.reason == .empty)
+        #expect(ModelValidator.validateGroupName(String(repeating: "g", count: 40)).isEmpty)
+        #expect(ModelValidator.validateGroupName(String(repeating: "g", count: 41)).first?.reason == .tooLong(max: 40, actual: 41))
+        #expect(ModelValidator.validateGroupName("   ").first?.reason == .empty)
 
-        #expect(validator.validateInviteCode("AB12CD").isEmpty)
-        #expect(validator.validateInviteCode(" ab12cd ").isEmpty)
+        #expect(ModelValidator.validateInviteCode("AB12CD").isEmpty)
+        #expect(ModelValidator.validateInviteCode(" ab12cd ").isEmpty)
         #expect(ModelValidator.normalizedInviteCode(" ab12cd ") == "AB12CD")
-        #expect(validator.validateInviteCode("AB12C").first?.reason == .invalidInviteCode)
-        #expect(validator.validateInviteCode("AB12CD7").first?.reason == .invalidInviteCode)
-        #expect(validator.validateInviteCode("AB-2CD").first?.reason == .invalidInviteCode)
-        #expect(validator.validateInviteCode("ÀB12CD").first?.reason == .invalidInviteCode)
-        #expect(validator.validateInviteCode("").first?.reason == .empty)
+        #expect(ModelValidator.validateInviteCode("AB12C").first?.reason == .invalidInviteCode)
+        #expect(ModelValidator.validateInviteCode("AB12CD7").first?.reason == .invalidInviteCode)
+        #expect(ModelValidator.validateInviteCode("AB-2CD").first?.reason == .invalidInviteCode)
+        #expect(ModelValidator.validateInviteCode("ÀB12CD").first?.reason == .invalidInviteCode)
+        #expect(ModelValidator.validateInviteCode("").first?.reason == .empty)
     }
 
     // MARK: Facade
@@ -211,6 +210,18 @@ struct GroupsAndChallengeTests {
         h.remote.isOffline = true
         await #expect(throws: (any Error).self) { try await h.facade.fetchLeaderboard(for: group.id) }
         #expect(h.facade.cachedLeaderboard(for: group.id)?.entries == entries)
+    }
+
+    /// Reads come from memory, writes still reach UserDefaults.
+    @Test func groupCacheWritesThroughAndClears() throws {
+        let defaults = try #require(UserDefaults(suiteName: "groupCache.\(UUID())"))
+        let cache = GroupCache(defaults: defaults)
+        let group = GroupSummary(id: UUID(), name: "Mine", inviteCode: "ABC123")
+        cache.setGroups([group], at: .now)
+        #expect(GroupCache(defaults: defaults).groups()?.groups == [group])
+        cache.clear()
+        #expect(cache.groups() == nil)
+        #expect(GroupCache(defaults: defaults).groups() == nil)
     }
 
     @Test func signOutClearsTheGroupCache() async throws {
