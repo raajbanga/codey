@@ -1,6 +1,6 @@
 ## Summary
 
-<!-- What changed and why. Link the todo.txt stage / FR IDs. -->
+<!-- What changed and why. Link the FR/NFR IDs. Commit titles use `type(scope): summary`. -->
 
 ## Checklist
 
@@ -10,5 +10,5 @@
 - [ ] `scripts/check-imports.sh` passes: Supabase/GoogleSignIn are imported only under `Services/Backend/Supabase/` (R7)
 - [ ] Validation limits changed? `ModelValidator`, `flashcard.schema.json`, and the SQL CHECKs in `supabase/migrations` still match (SupabaseSchemaTests)
 - [ ] New table? It has `enable row level security` + owner policies, and `supabase test db` passes (R10)
-- [ ] Migrations are new files only (never edit one that has been pushed with `supabase db push`)
+- [ ] Migrations are new files only (never edit one that has been applied)
 - [ ] SwiftData model changed? Added a new `CodeySchemaV*` + migration stage (never edit a shipped schema)
