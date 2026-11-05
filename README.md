@@ -37,7 +37,7 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 
 - Apple Silicon Mac, **macOS 27+**
 - **Xcode 27.2** + iOS Simulator runtime
-- **Tuist** (`brew install tuist`)
+- **Tuist** (`brew install tuist`; tested with 4.214.1)
 
 ## Quick start
 
@@ -74,8 +74,10 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
   xcodebuild test -workspace codey.xcworkspace -scheme codey -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:codeyTests
   ```
 - UI tests → same command with `-only-testing:codeyUITests` (run suites one at a time)
-- Database (pgTAP: RLS, constraints, weekly-XP pace limit; needs Docker)
+- Database (pgTAP: RLS, constraints, weekly-XP pace limit; needs the Supabase CLI + Docker)
   ```bash
+  supabase init   # once per clone; config.toml isn't committed
+  supabase start && supabase db reset
   supabase test db
   ```
 - CI → [`.github/workflows/test.yml`](.github/workflows/test.yml) runs the unit tests + accessibility audit on every push and PR to `main`
@@ -103,7 +105,7 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 | `supabase/` | Database migrations, RLS policies, tests |
 | `scripts/` | Repo checks, perf + backup tools |
 | `.github/workflows/` | CI (tests) + Supabase keep-alive |
-| `docs/` | Sprint reports (PDF); LaTeX sources in `docs/source/` |
+| `docs/` | Sprint reports (PDF); LaTeX sources in `docs/source/`; course material in `docs/course/` |
 
 ## Docs
 

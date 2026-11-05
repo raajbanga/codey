@@ -79,7 +79,7 @@
 % leaves the Appendix B listings out (the full PDF keeps them).
 \newif\ifcodelistings \codelistingstrue
 \ifdefined\readingcopy \codelistingsfalse \fi
-% Every \tbd must be replaced before submission (todo.txt H.22).
+% Every \tbd must be replaced before submission.
 \newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
 
 \newcommand{\st}[1]{\guillemotleft#1\guillemotright}   % <<stereotype>>
@@ -820,7 +820,7 @@ of the sprint and the feature chosen for the live demonstration.
 \textbf{Item} & \textbf{Evidence} & \textbf{Status} \\
 \midrule
 Version control & All code committed and pushed; \texttt{dev} squash-merged into \texttt{main} (Section~\ref{sec:vc}). & Done \\
-Build integrity & \texttt{main} builds and runs from a fresh clone (Appendix~A); 342 of 342 unit tests pass. & Done \\
+Build integrity & \texttt{main} builds and runs from a fresh clone (Appendix~A); the 354-test unit run passes (Nov 5, 2026), with the opt-in performance and live Supabase tests skipped. & Done \\
 Documentation & UML diagrams, threat model, and performance tests match the submitted code (Sections~\ref{sec:security} and~\ref{sec:performance}). & Done \\
 Demo preparation & Feature: build a deck with a code card, save it, then study it (UC-01, UC-04). Presenter: Raaj Banga. & Done \\
 \bottomrule
@@ -2224,7 +2224,7 @@ artifacts each node hosts.
         \texttt{group\_members}, and \texttt{weekly\_xp} tables, the
         \texttt{group\_leaderboard} view, and the \texttt{join\_group} function. Helper
         functions live in a \texttt{private} schema that PostgREST does not expose. The
-        schema is versioned as eight migration files in \texttt{supabase/migrations}. Stored data is
+        schema is versioned as nine migration files in \texttt{supabase/migrations}. Stored data is
         encrypted at rest (NFR-05). The Free plan includes no automated backups, so
         the team exports the database with \texttt{pg\_dump}
         (\texttt{scripts/backup.sh}) before schema changes (risk R11).
@@ -2278,14 +2278,14 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
   \item \textbf{Branches.} Two long-lived branches: \texttt{dev} for day-to-day work
         and \texttt{main} for working states merged at the end of each stage or sprint. At the end of a stage or sprint,
         \texttt{dev} is squash-merged into \texttt{main} (one commit per stage, for
-        example ``Stage 12: Sprint 2 doc reconciliation''), and \texttt{main} is merged
+        example ``docs: reconcile Sprint 2 notes and design system (squash of dev)''), and \texttt{main} is merged
         back into \texttt{dev} so the two never diverge. Feature branches are not used:
         in Sprint 2 they drifted from \texttt{main} after squash merges.
   \item \textbf{The \texttt{activity8\_1} branch.} Activity~8.1 required each member to
         clone the repository, edit the README, commit, push, and pull. That work was
         done on a separate \texttt{activity8\_1} branch so the exercise could not
         disturb \texttt{dev}, which already held Sprint 2 code. The branch was merged
-        into \texttt{dev} (merge commit \texttt{fab9181}) and then deleted, because
+        into \texttt{dev} (merge commit \texttt{0b4deae}) and then deleted, because
         everything on it is preserved in \texttt{dev}'s history. The branch no longer
         exists locally or on \texttt{origin} (checked Oct 30).
   \item \textbf{Pull request checklist.} \texttt{.github/pull\_request\_template.md}
@@ -2294,10 +2294,15 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
         imports confined (\texttt{check-imports.sh}), validation limits in sync, RLS on
         every new table, migrations added and never edited, and a new schema version
         for any model change.
-  \item \textbf{Commit messages.} A short summary, with a body that says what changed
-        and why. Stage commits name their stage (``Sprint 3: groups, weekly
-        leaderboard and challenge (S3-D)''); the requirement identifiers of each task
-        are recorded in the project plan.
+  \item \textbf{Commit messages.} A conventional title (\texttt{type(scope): summary},
+        for example ``feat(groups): add groups, weekly leaderboard and challenge''), a
+        bulleted summary of what changed, then any trailers. The requirement identifiers
+        of each task are recorded in the project plan.
+  \item \textbf{History cleanup.} On Nov 5, 2026 the history of every branch and tag was
+        rewritten with \texttt{git filter-repo} and force-pushed. Commit messages were
+        moved to the format above and \texttt{Co-authored-by} trailers were added. File
+        contents, authors, and dates did not change, but every commit hash did. Hashes
+        in this document are the new ones, unless marked as original.
   \item \textbf{Versioned infrastructure.} The Tuist manifests (\texttt{Project.swift},
         \texttt{Tuist/Package.swift}) generate the Xcode project, so no
         \texttt{.xcodeproj} is committed. The database schema is versioned as SQL
@@ -2310,20 +2315,21 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
 \subsection{Evidence}
 Table~\ref{tab:act81commits} lists the commits each member made and pulled in
 Activity~8.1, and Figures~\ref{fig:act81commits} and~\ref{fig:act81history} show
-them in GitHub Desktop. Table~\ref{tab:shortlog} counts commits by author over the
-whole history.
+them in GitHub Desktop. The figures were taken before the history cleanup, so they show
+the original messages and hashes; Table~\ref{tab:act81commits} gives both hashes.
+Table~\ref{tab:shortlog} counts commits by author over the whole history.
 
 \begin{table}[H]
 \centering
-\caption{Activity 8.1 commits: each member's README change, pushed and pulled by all}
+\caption{Activity 8.1 commits: each member's change, pushed and pulled by all}
 \label{tab:act81commits}
-\begin{tabularx}{\textwidth}{@{}L{3.2cm} L{1.7cm} Y L{2.6cm}@{}}
+\begin{tabularx}{\textwidth}{@{}L{2.9cm} L{1.5cm} L{1.5cm} Y L{1.6cm}@{}}
 \toprule
-\textbf{Member} & \textbf{Commit} & \textbf{Message} & \textbf{Pushed / pulled} \\
+\textbf{Member} & \textbf{Commit} & \textbf{Original} & \textbf{Message} & \textbf{Pushed / pulled} \\
 \midrule
-Raaj Banga & \texttt{cd70ab0} & Update README.md (basic structure and outline of the project) & Yes / Yes \\
-Elnad Salcinovic & \texttt{8d33cb5} & Todo List Was Updated To Date \ldots & Yes / Yes \\
-Arnav Bawankule & \texttt{30b5b0e} & update README.md (how the app works) & Yes / Yes \\
+Raaj Banga & \texttt{5bfbed6} & \texttt{cd70ab0} & docs(readme): add second Activity 8.1 edit & Yes / Yes \\
+Elnad Salcinovic & \texttt{76bbb41} & \texttt{8d33cb5} & docs(todo): restore scripts entry in file layout & Yes / Yes \\
+Arnav Bawankule & \texttt{d75166e} & \texttt{30b5b0e} & docs(readme): add third Activity 8.1 edit & Yes / Yes \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -2331,14 +2337,14 @@ Arnav Bawankule & \texttt{30b5b0e} & update README.md (how the app works) & Yes 
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.75\textwidth]{act81-commits.png}
-\caption{Activity 8.1: each member's commit in GitHub Desktop}
+\caption{Activity 8.1: each member's commit in GitHub Desktop (original messages and hashes)}
 \label{fig:act81commits}
 \end{figure}
 
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{act81-history.png}
-\caption{Activity 8.1: the History view on each member's machine after the pull, showing all three members' commits}
+\caption{Activity 8.1: the History view on each member's machine after the pull, showing all three members' commits (original messages)}
 \label{fig:act81history}
 \end{figure}
 
@@ -2360,7 +2366,11 @@ AI-authored commits & 7 & Authored by an AI coding assistant in cloud sessions, 
 
 Most code was committed from one machine during pair-programming sessions, so the
 commit counts understate the other members' share; the owner column of the Gantt
-charts records who did each task.
+charts records who did each task. At the \texttt{sprint3-final} tag, 24 commits carry a
+\texttt{Co-authored-by} trailer for Elnad Salcinovic and 17 for Arnav Bawankule. These
+trailers were added in the history cleanup according to the files each commit touches
+(UI/UX and QA paths for Elnad, backend and systems paths for Arnav), so they show the
+area of the work rather than who wrote each commit.
 
 % =====================================================================
 \section{Program Files and Configuration Files}\label{sec:files}
@@ -2719,7 +2729,8 @@ A profile is one user-facing path with the resources it is measured on:
 Measurements were taken on the iOS Simulator on the machine recorded in
 Table~\ref{tab:hardware}, with the Release configuration (testability enabled) on an
 iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Oct 31, 2026 at the
-\texttt{sprint3-final} commit (\texttt{957c971}).
+\texttt{sprint3-final} commit (\texttt{e12c8b6}; originally \texttt{957c971}). The final
+TC-P08 launch figure was re-measured later, after the two fixes described below.
 
 \subsection{Results}
 \IfFileExists{perf/sprint3.csv}{%
