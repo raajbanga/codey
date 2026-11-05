@@ -28,6 +28,7 @@ jobs:
       - name: Install Tuist (same version as local)
         run: |
           brew tap tuist/tuist
+          brew trust tuist/tuist
           brew install --formula tuist@4.214.1
 
       - name: Generate the workspace
