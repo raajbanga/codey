@@ -143,6 +143,8 @@ final class LatencyRemoteStore: RemoteDeckStore {
     func leaveGroup(id: UUID) async throws { try await wait(); try await base.leaveGroup(id: id) }
     func fetchLeaderboard(groupID: UUID) async throws -> [LeaderboardEntry] { try await wait(); return try await base.fetchLeaderboard(groupID: groupID) }
     func upsertWeeklyXP(weekStart: String, xp: Int) async throws { try await wait(); try await base.upsertWeeklyXP(weekStart: weekStart, xp: xp) }
+    func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges { try await wait(); return try await base.fetchProgressChanges(since: cursor) }
+    func upsertProgress(_ batch: ProgressBatch) async throws { try await wait(); try await base.upsertProgress(batch) }
 }
 
 /// TC-P08 fixture (Activity 9_2): writes 5 user decks of 50 cards into the

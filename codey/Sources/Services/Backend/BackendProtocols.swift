@@ -111,6 +111,60 @@ enum GroupError: LocalizedError, Equatable {
     }
 }
 
+/// FR-61: one card's study progress (card_progress). Latest review wins.
+struct CardProgressPayload: Equatable, Sendable {
+    var cardId: UUID
+    var masteryScore: Int
+    var lastReviewedAt: Date
+    var retiredAt: Date?
+}
+
+/// FR-61: one quiz question's progress (question_progress). Latest answer wins.
+struct QuestionProgressPayload: Equatable, Sendable {
+    var questionId: String
+    var topicId: String
+    var difficulty: Difficulty
+    var consecutiveCorrect: Int
+    var totalAttempts: Int
+    var totalCorrect: Int
+    var retiredAt: Date?
+    var isReview: Bool
+    var lastAnsweredAt: Date
+}
+
+/// FR-61: tier unlocks for one topic (topic_progress). Sticky: earliest wins.
+struct TopicProgressPayload: Equatable, Sendable {
+    var topicId: String
+    var mediumUnlockedAt: Date?
+    var hardUnlockedAt: Date?
+}
+
+/// FR-61: progress rows going up or coming down in one sync cycle.
+struct ProgressBatch: Equatable, Sendable {
+    var cards: [CardProgressPayload] = []
+    var questions: [QuestionProgressPayload] = []
+    var topics: [TopicProgressPayload] = []
+
+    var isEmpty: Bool { cards.isEmpty && questions.isEmpty && topics.isEmpty }
+    var count: Int { cards.count + questions.count + topics.count }
+
+    /// Rows not already in `other` (drops echoes of what was just pulled).
+    func subtracting(_ other: ProgressBatch) -> ProgressBatch {
+        ProgressBatch(
+            cards: cards.filter { !other.cards.contains($0) },
+            questions: questions.filter { !other.questions.contains($0) },
+            topics: topics.filter { !other.topics.contains($0) }
+        )
+    }
+}
+
+/// FR-61: progress changed on the server since a cursor.
+struct RemoteProgressChanges: Equatable, Sendable {
+    var progress: ProgressBatch
+    /// The largest server_updated_at seen; the next progress cursor.
+    var cursor: Date?
+}
+
 /// One sync_log row (R2 audit ledger).
 struct SyncLogEntry: Equatable, Sendable {
     var entity: SyncEntity
@@ -148,6 +202,12 @@ protocol RemoteDeckStore: Sendable {
     func fetchLeaderboard(groupID: UUID) async throws -> [LeaderboardEntry]
     /// Max-merged on the server (weekly_xp trigger).
     func upsertWeeklyXP(weekStart: String, xp: Int) async throws
+
+    // FR-61: study progress.
+    /// Progress rows changed after `cursor` (all of them when nil).
+    func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges
+    /// Merged on the server: older reviews are skipped, unlocks are sticky.
+    func upsertProgress(_ batch: ProgressBatch) async throws
 }
 
 /// Network reachability (NWPathMonitor in the app).

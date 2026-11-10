@@ -19,4 +19,23 @@ struct SyncCursorStore {
     func setLastSyncedAt(_ date: Date?, for userID: UUID) {
         defaults.set(date, forKey: "codey.sync.lastSyncedAt.\(userID.uuidString)")
     }
+
+    // FR-61: study progress has its own pull cursor and a push marker
+    // (local rows reviewed after it haven't been pushed yet).
+
+    func progressCursor(for userID: UUID) -> Date? {
+        defaults.object(forKey: "codey.sync.progressCursor.\(userID.uuidString)") as? Date
+    }
+
+    func setProgressCursor(_ date: Date?, for userID: UUID) {
+        defaults.set(date, forKey: "codey.sync.progressCursor.\(userID.uuidString)")
+    }
+
+    func progressPushedAt(for userID: UUID) -> Date? {
+        defaults.object(forKey: "codey.sync.progressPushedAt.\(userID.uuidString)") as? Date
+    }
+
+    func setProgressPushedAt(_ date: Date?, for userID: UUID) {
+        defaults.set(date, forKey: "codey.sync.progressPushedAt.\(userID.uuidString)")
+    }
 }

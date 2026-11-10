@@ -71,4 +71,30 @@ struct SupabaseSchemaTests {
             #expect(all.contains(enabled), "\(table) has no RLS")
         }
     }
+
+    /// FR-61: progress limits match the app, and every bundled question and
+    /// topic id fits the 100-character id columns.
+    @Test func progressLimitsMatchApp() throws {
+        let sql = try #require(try migrations().first { $0.name.hasSuffix("_study_progress.sql") }?.sql)
+        #expect(sql.contains("mastery_score     integer not null check (mastery_score between 0 and \(Flashcard.maxMastery))"))
+        let tiers = Difficulty.allCases.map { "'\($0.rawValue)'" }.joined(separator: ", ")
+        #expect(sql.contains("difficulty in (\(tiers))"))
+        #expect(sql.contains("char_length(question_id) between 1 and 100"))
+        #expect(sql.contains("char_length(topic_id) between 1 and 100"))
+
+        let url = try #require(Bundle.main.url(forResource: "questions-seed", withExtension: "json"))
+        let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+        var ids: [String] = []
+        func collect(_ value: Any) {
+            if let object = value as? [String: Any] {
+                if let id = object["id"] as? String { ids.append(id) }
+                object.values.forEach(collect)
+            } else if let array = value as? [Any] {
+                array.forEach(collect)
+            }
+        }
+        collect(json)
+        #expect(!ids.isEmpty)
+        #expect(ids.allSatisfy { (1...100).contains($0.count) })
+    }
 }

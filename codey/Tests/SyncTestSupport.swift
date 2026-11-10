@@ -144,6 +144,66 @@ final class MockRemoteStore: RemoteDeckStore {
         weeklyXP[me] = max(weeklyXP[me] ?? 0, xp)
     }
 
+    // MARK: Study progress (FR-61), merged like the SQL triggers
+
+    private(set) var cardProgress: [UUID: CardProgressPayload] = [:]
+    private(set) var questionProgress: [String: QuestionProgressPayload] = [:]
+    private(set) var topicProgress: [String: TopicProgressPayload] = [:]
+    private var progressTimes: [String: Date] = [:]
+
+    func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges {
+        try record("fetchProgressChanges")
+        let since = cursor ?? .distantPast
+        func changed(_ key: String) -> Bool { (progressTimes[key] ?? .distantPast) > since }
+        let batch = ProgressBatch(
+            cards: cardProgress.values.filter { changed("c:\($0.cardId)") },
+            questions: questionProgress.values.filter { changed("q:\($0.questionId)") },
+            topics: topicProgress.values.filter { changed("t:\($0.topicId)") }
+        )
+        let keys = batch.cards.map { "c:\($0.cardId)" } + batch.questions.map { "q:\($0.questionId)" } + batch.topics.map { "t:\($0.topicId)" }
+        return RemoteProgressChanges(progress: batch, cursor: keys.compactMap { progressTimes[$0] }.max())
+    }
+
+    private(set) var pushedProgress: [ProgressBatch] = []
+
+    func upsertProgress(_ batch: ProgressBatch) async throws {
+        try record("upsertProgress")
+        pushedProgress.append(batch)
+        for row in batch.cards { storeCardProgress(row) }
+        for row in batch.questions { storeQuestionProgress(row) }
+        for row in batch.topics { storeTopicProgress(row) }
+    }
+
+    private func storeCardProgress(_ row: CardProgressPayload) {
+        if let old = cardProgress[row.cardId], row.lastReviewedAt <= old.lastReviewedAt { return }
+        cardProgress[row.cardId] = row
+        progressTimes["c:\(row.cardId)"] = tick()
+    }
+
+    private func storeQuestionProgress(_ row: QuestionProgressPayload) {
+        if let old = questionProgress[row.questionId], row.lastAnsweredAt <= old.lastAnsweredAt { return }
+        questionProgress[row.questionId] = row
+        progressTimes["q:\(row.questionId)"] = tick()
+    }
+
+    private func storeTopicProgress(_ row: TopicProgressPayload) {
+        var merged = row
+        if let old = topicProgress[row.topicId] {
+            merged.mediumUnlockedAt = ProgressSync.earliest(old.mediumUnlockedAt, row.mediumUnlockedAt)
+            merged.hardUnlockedAt = ProgressSync.earliest(old.hardUnlockedAt, row.hardUnlockedAt)
+            if merged == old { return }
+        }
+        topicProgress[row.topicId] = merged
+        progressTimes["t:\(row.topicId)"] = tick()
+    }
+
+    /// Progress written by another device.
+    func otherDeviceUpsert(progress batch: ProgressBatch) {
+        batch.cards.forEach(storeCardProgress)
+        batch.questions.forEach(storeQuestionProgress)
+        batch.topics.forEach(storeTopicProgress)
+    }
+
     /// Another user's membership and XP, as if they'd joined elsewhere.
     func addMember(_ user: UUID, name: String, xp: Int, to groupID: UUID) {
         members[groupID, default: []].insert(user)

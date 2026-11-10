@@ -120,6 +120,7 @@ final class SyncEngine {
             do {
                 try await push(remote: remote, userID: userID)
                 try await pull(remote: remote, userID: userID)
+                try await syncProgress(remote: remote, userID: userID)
                 try await syncProfile(remote: remote, userID: userID)
                 try await syncWeeklyXP(remote: remote, userID: userID)
                 consecutiveFailures = 0
@@ -272,6 +273,33 @@ final class SyncEngine {
         if let cursor = changes.cursor {
             cursors.setCursor(max(cursor, cursors.cursor(for: userID) ?? cursor), for: userID)
         }
+    }
+
+    // MARK: Study progress (FR-61)
+
+    /// Runs after the deck pull, so pulled cards exist before their progress.
+    /// Pull → merge (ProgressSync) → push local rows reviewed after the last
+    /// push, minus echoes of what was just pulled. The push marker only moves
+    /// after a successful push, so a failed cycle resends next time.
+    private func syncProgress(remote: any RemoteDeckStore, userID: UUID) async throws {
+        let progress = ProgressSync(context: context)
+
+        let since = cursors.progressCursor(for: userID).map { $0.addingTimeInterval(-Self.pullOverlap) }
+        let changes = try await remote.fetchProgressChanges(since: since)
+        try progress.apply(changes.progress)
+        try context.save()
+        if let cursor = changes.cursor {
+            cursors.setProgressCursor(max(cursor, cursors.progressCursor(for: userID) ?? cursor), for: userID)
+        }
+
+        let pushStartedAt = now()
+        let local = try progress.localChanges(since: cursors.progressPushedAt(for: userID))
+            .subtracting(changes.progress)
+        if !local.isEmpty {
+            try await remote.upsertProgress(local)
+            Logger.sync.notice("Pushed \(local.count) progress row(s)")
+        }
+        cursors.setProgressPushedAt(pushStartedAt, for: userID)
     }
 
     // MARK: Profile (D10)

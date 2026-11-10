@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 extension CodeySchemaV4 {
-    /// Per-question quiz progress (FR-23/24/28). Local only (D10).
+    /// Per-question quiz progress (FR-23/24/28). Synced per account (FR-61).
     @Model
     final class QuestionProgress {
         @Attribute(.unique) var questionId: String

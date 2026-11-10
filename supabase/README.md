@@ -20,8 +20,10 @@ a teammate should be able to reproduce the whole backend from this page.
 | `migrations/20261030200303_groups_leaderboard.sql` | `groups`, `group_members`, `weekly_xp` (max-merged), `join_group(code)` (the only RPC), `group_leaderboard` view; group mates can read each other's profile |
 | `migrations/20261030200802_s3_advisor_fixes.sql` | Advisor fixes: revoke API access to `rls_auto_enable()`, index `groups.created_by`, one profiles SELECT policy |
 | `migrations/20261102182604_weekly_xp_rate_limit.sql` | Clamps `weekly_xp` growth to 600 XP per minute of server time (30 minutes' worth on a week's first write); clamped, never rejected |
+| `migrations/20261110034534_study_progress.sql` | FR-61 `card_progress`, `question_progress`, `topic_progress`: owner-only RLS, CHECKs that mirror the app, merge triggers (latest review wins; tier unlocks are sticky) |
 | `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
-| `checks/rls_live_check.sql` | 48 of the same checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
+| `tests/progress.sql` | pgTAP tests for the FR-61 progress tables: RLS, CHECKs, and both merge rules |
+| `checks/rls_live_check.sql` | 57 of the same checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
 
 Rules: never edit a migration that has been pushed, add a new file instead.
 File versions must equal the remote migration versions (`list_migrations` in
@@ -58,10 +60,10 @@ Authentication → Sign In / Providers → **Google**:
 - Enable it. Paste the **Web** client ID and secret.
 - Add the **iOS** client ID under *Authorized Client IDs* (Supabase accepts
   ID tokens issued to any listed client).
-- *Skip nonce check*: the native flow (GoogleSignIn-iOS →
-  `supabase.auth.signInWithIdToken`) historically needed this **on**. Check the
-  current Supabase "Login with Google → iOS" docs when you do this and follow
-  them. The current project has it **on**.
+- *Skip nonce check*: leave it **off**. GoogleSignIn 10 always puts a nonce in
+  the ID token, so the app sends one too (`SignInNonce`: Google gets the SHA-256
+  hash, Supabase gets the raw value). Without that, Supabase answers "Passed
+  nonce and nonce in id_token should either both exist or not" (BUG-02).
 
 ## 4. App secrets
 
@@ -101,7 +103,7 @@ which needs Docker (OrbStack or Docker Desktop) running:
 ```sh
 supabase start        # first run downloads the images
 supabase db reset     # applies migrations to the local database
-supabase test db      # expect: All tests successful, 51 tests
+supabase test db      # expect: All tests successful, 75 tests
 supabase stop
 ```
 
@@ -111,20 +113,22 @@ update, or delete them; `anon` sees nothing; sync_log is append-only;
 `server_updated_at` is set by the server; and the length/line/language CHECKs
 match the app's validator.
 
-## Current state (2026-11-05)
+## Current state (2026-11-10)
 
-Project `<project-ref>`. All nine migrations in `migrations/` are
+Project `<project-ref>`. All ten migrations in `migrations/` are
 applied via the Supabase MCP (the file names equal the remote versions),
 including the three from 2026-10-30 (avatar set + insert-only
 `feedback_reports`, groups + `group_members` + `weekly_xp` + the
 `group_leaderboard` view + `join_group()`, and the Security Advisor fixes) and
-the weekly-XP rate limit from 2026-11-02.
-RLS is on for 8 of 8 tables. Security Advisor: `rls_auto_enable()` revoked;
+the weekly-XP rate limit from 2026-11-02, and the FR-61 study-progress tables
+from 2026-11-10.
+RLS is on for 11 of 11 tables. Security Advisor: `rls_auto_enable()` revoked;
 the one remaining warning is `join_group` (SECURITY DEFINER, justified: it must
 find a group the caller cannot see yet). `checks/rls_live_check.sql`, last run
-2026-10-30, before the rate limit: **0 failed of 48**, everything rolled back.
+2026-11-10, after the study-progress migration: **0 failed of 57**, everything
+rolled back. (2026-10-30: 0 of 48, before the rate limit.)
 (2026-10-08: 0 of 30, before the groups and feedback tables.) Google provider:
-enabled with the Web + iOS client IDs, skip nonce checks on.
+enabled with the Web + iOS client IDs; the app sends a nonce (BUG-02, Nov 9).
 
 With the MCP you don't need steps 5–6: apply new migrations with
 `apply_migration`, then rename the repo file to the version `list_migrations`
