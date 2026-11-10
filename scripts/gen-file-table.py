@@ -71,7 +71,7 @@ GROUPS = [
     (".github/pull_request_template.md", "Doc", "Merge checklist with the security items (Activity 10.1, SSC item 1)."),
 ]
 DOC_FILES = {g[0] for g in GROUPS if g[1] == "Doc"}
-SKIP = ("docs/*", "todo.txt", "*.md", "*.png", "*Assets.xcassets/*")
+SKIP = ("docs/*", "todo.md", "*.md", "*.png", "*Assets.xcassets/*")
 
 
 def tex(text):

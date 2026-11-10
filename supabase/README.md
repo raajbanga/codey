@@ -157,6 +157,6 @@ reports, and re-run `checks/rls_live_check.sql`.
   except an explicit reset), so a determined user could inflate their own XP.
   The weekly leaderboard reads `weekly_xp`, which is capped by a CHECK
   (22,500 per week), clamped to 600 XP per minute of server time, and can only
-  grow; a server-computed ledger is the Sprint 4 hardening (risk R13).
+  grow. A server-computed ledger is left as future work (risk R13, accepted).
 - Starter decks, quiz progress, mastery, and tier unlocks never leave the
   device.
