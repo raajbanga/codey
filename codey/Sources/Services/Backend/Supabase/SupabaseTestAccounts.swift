@@ -15,8 +15,8 @@ enum SupabaseTestAccounts {
 
     /// A signed-out data client on a custom session (unit tests stub the
     /// network with a URLProtocol).
-    static func dataClient(url: URL, key: String, configuration: URLSessionConfiguration) -> any RemoteDeckStore {
-        SupabaseDataClient(client: makeClient(url: url, key: key, configuration: configuration))
+    static func dataClient(url: URL, key: String, configuration: URLSessionConfiguration, pageSize: Int = 1000) -> any RemoteDeckStore {
+        SupabaseDataClient(client: makeClient(url: url, key: key, configuration: configuration), pageSize: pageSize)
     }
 
     static func signIn(url: URL, key: String, email: String, password: String) async throws -> Session {
@@ -38,6 +38,7 @@ enum SupabaseTestAccounts {
             supabaseURL: url,
             supabaseKey: key,
             options: SupabaseClientOptions(
+                db: SupabaseDataClient.databaseOptions,
                 auth: .init(
                     storage: KeychainSessionStorage(service: "edu.wku.cs360.codey.tests.\(UUID().uuidString)"),
                     autoRefreshToken: false,

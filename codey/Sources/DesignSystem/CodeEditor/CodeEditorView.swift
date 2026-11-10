@@ -23,7 +23,7 @@ struct CodeEditorView: UIViewRepresentable {
     func makeUIView(context: Context) -> TextView {
         let textView = TextView()
         textView.editorDelegate = context.coordinator
-        textView.backgroundColor = UIColor(named: "CodeBackground")
+        textView.backgroundColor = UIColor(resource: .codeBackground)
         textView.showLineNumbers = true
         textView.lineSelectionDisplayType = .line
         textView.isLineWrappingEnabled = false
@@ -65,7 +65,7 @@ struct CodeEditorView: UIViewRepresentable {
             coordinator.colorScheme = colorScheme
             // Runestone caches resolved colors; a new theme re-highlights.
             textView.theme = CodeyRunestoneTheme(traits: textView.traitCollection)
-            textView.backgroundColor = UIColor(named: "CodeBackground")
+            textView.backgroundColor = UIColor(resource: .codeBackground)
         }
     }
 
@@ -77,7 +77,8 @@ struct CodeEditorView: UIViewRepresentable {
         CodePair(leading: "'", trailing: "'"),
     ]
 
-    final class Coordinator: NSObject, TextViewDelegate {
+    @MainActor
+    final class Coordinator: NSObject, @preconcurrency TextViewDelegate {
         private let text: Binding<String>
         var language: CodeLanguage?
         var colorScheme: ColorScheme?

@@ -165,16 +165,7 @@ enum StarterDeckLoader {
             kept.insert(id)
             do {
                 if let card = existing[id] {
-                    let changed = try factory.updateCard(
-                        card,
-                        prompt: payload.prompt,
-                        answer: payload.answer,
-                        code: seed.code.flatMap { code in
-                            CodeLanguage(rawValue: code.language).map { CodeSnippet(language: $0, source: code.source) }
-                        },
-                        difficulty: payload.difficulty,
-                        sortIndex: index
-                    )
+                    let changed = try factory.updateCard(card, from: payload)
                     if changed { report.updated += 1 }
                 } else {
                     let card = try factory.createCard(from: payload)

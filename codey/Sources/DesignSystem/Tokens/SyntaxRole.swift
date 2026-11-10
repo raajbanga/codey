@@ -7,10 +7,24 @@ import SwiftUI
 enum SyntaxRole: String, CaseIterable {
     case plain, keyword, type, string, number, comment, function, attribute
 
-    /// Asset-catalog name ("SyntaxKeyword"), also used by UIKit (Runestone).
+    /// Asset-catalog name ("SyntaxKeyword"); the contrast tests pair by it.
     var assetName: String { "Syntax" + rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
 
-    var color: Color { Color(assetName) }
+    /// The generated asset symbol, for SwiftUI and UIKit (Runestone).
+    var resource: ColorResource {
+        switch self {
+        case .plain: .syntaxPlain
+        case .keyword: .syntaxKeyword
+        case .type: .syntaxType
+        case .string: .syntaxString
+        case .number: .syntaxNumber
+        case .comment: .syntaxComment
+        case .function: .syntaxFunction
+        case .attribute: .syntaxAttribute
+        }
+    }
+
+    var color: Color { Color(resource) }
 
     /// Prism token type → role. Unknown tokens render plain.
     static let prismTokens: [String: SyntaxRole] = [

@@ -16,12 +16,23 @@ enum UTCWeek {
 
     /// "yyyy-MM-dd" of the UTC Monday (weekly_xp.week_start).
     static func key(for date: Date) -> String {
-        DailyActivity.dayKey(for: start(of: date), calendar: calendar)
+        calendar.mondayKey(for: date)
     }
 
     /// ISO 8601 week number, 1–53.
     static func isoWeek(of date: Date) -> Int {
         calendar.component(.weekOfYear, from: date)
+    }
+}
+
+extension Calendar {
+    /// "yyyy-MM-dd" of the Monday that starts `date`'s week, in this
+    /// calendar's time zone: UTC for groups (UTCWeek), local for the study plan.
+    func mondayKey(for date: Date) -> String {
+        var mondayFirst = self
+        mondayFirst.firstWeekday = 2
+        let start = mondayFirst.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+        return DailyActivity.dayKey(for: start, calendar: self)
     }
 }
 

@@ -3,7 +3,14 @@
 -- rls_auto_enable() is the dashboard's "enable RLS on new tables" event
 -- trigger. Event triggers don't need EXECUTE, so revoking API access keeps it
 -- working (Supabase lint 0028/0029; same as lock_down_signup_trigger).
-revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+-- Only the hosted project has it, so a local `supabase start` skips this.
+do $$
+begin
+    if to_regprocedure('public.rls_auto_enable()') is not null then
+        revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+    end if;
+end;
+$$;
 
 -- Covering index for groups.created_by (lint 0001).
 create index groups_created_by_idx on public.groups (created_by);

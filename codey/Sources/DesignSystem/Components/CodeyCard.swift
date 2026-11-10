@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Content card: a rounded note on the dotted paper (`.codeyNote`). An
 /// optional tint replaces the hairline with a 1pt colored outline to mark
@@ -67,32 +68,26 @@ extension View {
 struct PaperBackground: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
-    private static let pitch: CGFloat = 20
-    private static let dot: CGFloat = 1.6
-
     var body: some View {
         CodeyColor.surface
             .overlay {
                 if contrast == .standard {
-                    Canvas { context, size in
-                        let dots = Path { path in
-                            var y = Self.pitch / 2
-                            while y < size.height {
-                                var x = Self.pitch / 2
-                                while x < size.width {
-                                    path.addEllipse(in: CGRect(
-                                        x: x - Self.dot / 2, y: y - Self.dot / 2,
-                                        width: Self.dot, height: Self.dot
-                                    ))
-                                    x += Self.pitch
-                                }
-                                y += Self.pitch
-                            }
-                        }
-                        context.fill(dots, with: .color(CodeyColor.paperDot))
-                    }
+                    Image(uiImage: Self.tile)
+                        .renderingMode(.template)
+                        .resizable(resizingMode: .tile)
+                        .foregroundStyle(CodeyColor.paperDot)
                 }
             }
             .accessibilityHidden(true)
     }
+
+    /// One 20 pt cell with a 1.6 pt dot, drawn once and tiled. A template
+    /// image, so the dot takes PaperDot's light/dark color at render time.
+    private static let tile: UIImage = {
+        let pitch: CGFloat = 20, dot: CGFloat = 1.6
+        return UIGraphicsImageRenderer(size: CGSize(width: pitch, height: pitch)).image { _ in
+            UIBezierPath(ovalIn: CGRect(x: (pitch - dot) / 2, y: (pitch - dot) / 2, width: dot, height: dot)).fill()
+        }
+        .withRenderingMode(.alwaysTemplate)
+    }()
 }

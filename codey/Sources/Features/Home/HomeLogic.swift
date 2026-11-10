@@ -60,3 +60,44 @@ enum HomeLogic {
         return .none
     }
 }
+
+/// Everything Home derives from its queries, built once per render and
+/// passed to each section, instead of recomputed per row and per topic.
+struct HomeStats {
+    /// FR-36 accuracy over each topic's newest `window` answers.
+    let accuracyByTopic: [String: Double]
+    /// Answers per topic, capped at `window` (the ones accuracy covers).
+    let answerCounts: [String: Int]
+    /// Each topic's visible decks: starter decks first, then the user's, by title.
+    let decksByTopic: [String: [FlashcardDeck]]
+    let deckByID: [UUID: FlashcardDeck]
+    let snapshotDeckIDs: Set<UUID>
+
+    /// `records` must be newest first.
+    init(
+        records: [QuizAnswerRecord],
+        decks: [FlashcardDeck],
+        snapshots: [StudyProgressSnapshot],
+        window: Int = GatingConfig.standard.accuracyWindow
+    ) {
+        var counts: [String: Int] = [:]
+        var correct: [String: Int] = [:]
+        for record in records where counts[record.topicId, default: 0] < window {
+            counts[record.topicId, default: 0] += 1
+            if record.correct { correct[record.topicId, default: 0] += 1 }
+        }
+        answerCounts = counts
+        accuracyByTopic = counts.reduce(into: [:]) { result, entry in
+            result[entry.key] = Double(correct[entry.key] ?? 0) / Double(entry.value)
+        }
+        decksByTopic = Dictionary(grouping: decks.filter { !$0.isHidden && $0.cardCount > 0 }, by: \.topicId)
+            .mapValues { decks in
+                decks.sorted { lhs, rhs in
+                    if lhs.origin != rhs.origin { return lhs.origin == .starter }
+                    return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+                }
+            }
+        deckByID = decks.keyed(by: \.id)
+        snapshotDeckIDs = Set(snapshots.map(\.deckId))
+    }
+}

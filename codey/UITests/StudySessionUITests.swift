@@ -1,10 +1,11 @@
 import XCTest
 
 /// Stage 5: study a starter deck (tap to flip, swipe to rate), leave, and resume.
+@MainActor
 final class StudySessionUITests: XCTestCase {
     private var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["-UITestInMemoryStore"]

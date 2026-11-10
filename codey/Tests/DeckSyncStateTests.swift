@@ -97,6 +97,23 @@ struct DeckSyncStateTests {
         #expect(deck.updatedAt > .distantPast)
     }
 
+    /// Every transition that stamps the deck uses the time it's given.
+    @Test func transitionsStampTheGivenTime() throws {
+        let t = Date(timeIntervalSince1970: 1_234_567_890)
+        let (syncing, _) = try deck(.syncing)
+        syncing.receive(.ack(serverUpdatedAt: .now), at: t)
+        #expect(syncing.lastSyncedAt == t)
+
+        let (conflicted, _) = try deck(.conflict)
+        conflicted.resolve(at: t)
+        #expect(conflicted.updatedAt == t)
+
+        let (synced, _) = try deck(.synced)
+        #expect(synced.delete(at: t))
+        #expect(synced.deletedAt == t && synced.updatedAt == t)
+        #expect(synced.cards.allSatisfy { $0.deletedAt == t })
+    }
+
     @Test func syncedEditGoesToDrafting() throws {
         let (deck, _) = try deck(.synced)
         deck.edit()

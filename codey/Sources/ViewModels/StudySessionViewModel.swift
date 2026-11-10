@@ -98,8 +98,10 @@ final class StudySessionViewModel {
     /// Nothing to study at all (e.g. every unlocked starter card is retired).
     var wasEmpty: Bool { isFinished && reviewedCount == 0 && queue.total == 0 }
 
-    /// Current open tiers for this deck (starter decks are gated, D9).
-    var unlockedTiers: Set<Difficulty> { TierGate.unlockedTiers(for: deck, level: currentLevel, config: config) }
+    /// Open tiers for this deck (starter decks are gated, D9), as of the
+    /// session's start or finish. Tiers only change on a rating, and only
+    /// the summary reports them, so they aren't recomputed per access.
+    private(set) var unlockedTiers: Set<Difficulty> = []
 
     // MARK: Actions
 
@@ -164,6 +166,7 @@ final class StudySessionViewModel {
         self.tierFilter = tierFilter
         deleteSnapshot()
         refreshCardIndex()
+        refreshUnlockedTiers()
         let pool = StudyPool.cards(in: deck, unlockedTiers: unlockedTiers, tierFilter: tierFilter)
         queue = StudyQueue(cardIDs: pool.map(\.id))
         resetStats()
@@ -187,6 +190,7 @@ final class StudySessionViewModel {
         startScores = snapshot.startScoresByCard
         startProgressRate = snapshot.startProgressRate
         startUnlockedTiers = Set(snapshot.startUnlockedTiersRaw.compactMap(Difficulty.init(rawValue:)))
+        refreshUnlockedTiers()
         isRevealed = false
         hasRevealedCurrent = false
         summary = nil
@@ -205,6 +209,7 @@ final class StudySessionViewModel {
     }
 
     private func finish() {
+        refreshUnlockedTiers()
         let endUnlocked = unlockedTiers
         // Compared with the start score, so a card raised and then reset by
         // "Again" counts as neither moved up nor mastered.
@@ -261,11 +266,11 @@ final class StudySessionViewModel {
     }
 
     private func refreshCardIndex() {
-        cardsByID = deck.activeCards.keyed(by: \.id)
+        cardsByID = deck.unorderedActiveCards.keyed(by: \.id)
     }
 
-    private var currentLevel: Int {
+    private func refreshUnlockedTiers() {
         let profile: UserProfile? = try? context.first()
-        return profile?.level ?? 1
+        unlockedTiers = TierGate.unlockedTiers(for: deck, level: profile?.level ?? 1, config: config)
     }
 }

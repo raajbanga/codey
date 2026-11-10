@@ -1,8 +1,9 @@
 import Foundation
 
 /// The last fetched groups and boards (FR-42 offline state: show the last
-/// board with an "as of" time). UserDefaults JSON; cleared on sign-out.
-struct GroupCache {
+/// board with an "as of" time). UserDefaults JSON, decoded once and then
+/// written through; cleared on sign-out.
+final class GroupCache {
     struct Groups: Codable, Equatable {
         var groups: [GroupSummary]
         var fetchedAt: Date
@@ -21,14 +22,16 @@ struct GroupCache {
     private static let key = "groups.cache"
 
     let defaults: UserDefaults
+    private lazy var stored: Stored = defaults.data(forKey: Self.key)
+        .flatMap { try? JSONDecoder().decode(Stored.self, from: $0) } ?? Stored()
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
-    func groups() -> Groups? { load().groups }
+    func groups() -> Groups? { stored.groups }
 
-    func board(for groupID: UUID) -> Board? { load().boards[groupID] }
+    func board(for groupID: UUID) -> Board? { stored.boards[groupID] }
 
     func setGroups(_ groups: [GroupSummary], at date: Date) {
         update { stored in
@@ -60,15 +63,11 @@ struct GroupCache {
     }
 
     func clear() {
+        stored = Stored()
         defaults.removeObject(forKey: Self.key)
     }
 
-    private func load() -> Stored {
-        defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode(Stored.self, from: $0) } ?? Stored()
-    }
-
     private func update(_ change: (inout Stored) -> Void) {
-        var stored = load()
         change(&stored)
         if let data = try? JSONEncoder().encode(stored) {
             defaults.set(data, forKey: Self.key)
