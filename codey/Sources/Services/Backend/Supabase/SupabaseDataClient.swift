@@ -57,7 +57,9 @@ struct SupabaseDataClient: RemoteDeckStore {
     /// Every row changed after `since`, a page at a time. PostgREST caps each
     /// response at max-rows, so a single request can silently truncate.
     /// Ordered by (server_updated_at, id) so offsets are stable across pages.
-    private func fetchAll<Row: Decodable & Sendable>(_ table: String, columns: String, since: String?) async throws -> [Row] {
+    private func fetchAll<Row: Decodable & Sendable>(
+        _ table: String, columns: String, since: String?, key: String = "id"
+    ) async throws -> [Row] {
         var rows: [Row] = []
         while true {
             var query = client.from(table).select(columns)
@@ -66,7 +68,7 @@ struct SupabaseDataClient: RemoteDeckStore {
             }
             let page: [Row] = try await query
                 .order("server_updated_at")
-                .order("id")
+                .order(key)
                 .range(from: rows.count, to: rows.count + pageSize - 1)
                 .execute()
                 .value
@@ -125,6 +127,46 @@ struct SupabaseDataClient: RemoteDeckStore {
         try await client.from("sync_log")
             .insert(entries.map(SyncLogRow.init), returning: .minimal)
             .execute()
+    }
+}
+
+// MARK: - FR-61 study progress
+
+extension SupabaseDataClient {
+    func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges {
+        let since = cursor?.formatted(Self.timestampStyle)
+        async let cardRows: [CardProgressRow] = fetchAll("card_progress", columns: CardProgressRow.columns, since: since, key: "card_id")
+        async let questionRows: [QuestionProgressRow] = fetchAll("question_progress", columns: QuestionProgressRow.columns, since: since, key: "question_id")
+        async let topicRows: [TopicProgressRow] = fetchAll("topic_progress", columns: TopicProgressRow.columns, since: since, key: "topic_id")
+        let (cards, questions, topics) = try await (cardRows, questionRows, topicRows)
+        // All three are read to the end, so the newest row of any is a safe cursor.
+        let cursor = (cards.map(\.serverUpdatedAt) + questions.map(\.serverUpdatedAt) + topics.map(\.serverUpdatedAt))
+            .compactMap { $0 }.max()
+        return RemoteProgressChanges(
+            progress: ProgressBatch(cards: cards.map(\.payload), questions: questions.map(\.payload), topics: topics.map(\.payload)),
+            cursor: cursor
+        )
+    }
+
+    /// One request per table (NFR-02). owner_id is sent so the conflict
+    /// target (owner_id, key) matches; RLS rejects any other owner.
+    func upsertProgress(_ batch: ProgressBatch) async throws {
+        guard let userID = client.auth.currentUser?.id else { return }
+        if !batch.cards.isEmpty {
+            try await client.from("card_progress")
+                .upsert(batch.cards.map { CardProgressRow($0, ownerId: userID) }, onConflict: "owner_id,card_id", returning: .minimal)
+                .execute()
+        }
+        if !batch.questions.isEmpty {
+            try await client.from("question_progress")
+                .upsert(batch.questions.map { QuestionProgressRow($0, ownerId: userID) }, onConflict: "owner_id,question_id", returning: .minimal)
+                .execute()
+        }
+        if !batch.topics.isEmpty {
+            try await client.from("topic_progress")
+                .upsert(batch.topics.map { TopicProgressRow($0, ownerId: userID) }, onConflict: "owner_id,topic_id", returning: .minimal)
+                .execute()
+        }
     }
 }
 
@@ -297,7 +339,7 @@ private struct DeckVersionRow: Decodable {
 
 }
 
-/// Mastery isn't synced (D10: progress stays local), so it has no column.
+/// Mastery isn't a flashcards column: it syncs per user in card_progress (FR-61).
 private struct CardRow: Codable {
     static let columns = "id,deck_id,prompt,answer,code_language,code_source,difficulty,sort_index,created_at,updated_at,deleted_at,server_updated_at"
 
@@ -377,5 +419,123 @@ private struct SyncLogRow: Encodable {
         op = entry.op.rawValue
         clientTs = entry.clientTimestamp
         deviceId = entry.deviceId
+    }
+}
+
+// MARK: - FR-61 progress rows
+// Optional columns are encoded as explicit nulls: an upsert that leaves a
+// column out keeps the old value, so "Again" after retirement must send
+// retired_at = null to clear it.
+
+private struct CardProgressRow: Codable {
+    static let columns = "card_id,mastery_score,last_reviewed_at,retired_at,server_updated_at"
+
+    var ownerId: UUID?
+    var cardId: UUID
+    var masteryScore: Int
+    var lastReviewedAt: Date
+    var retiredAt: Date?
+    var serverUpdatedAt: Date?
+
+    init(_ payload: CardProgressPayload, ownerId: UUID) {
+        self.ownerId = ownerId
+        cardId = payload.cardId
+        masteryScore = payload.masteryScore
+        lastReviewedAt = payload.lastReviewedAt
+        retiredAt = payload.retiredAt
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(ownerId, forKey: .ownerId)
+        try container.encode(cardId, forKey: .cardId)
+        try container.encode(masteryScore, forKey: .masteryScore)
+        try container.encode(lastReviewedAt, forKey: .lastReviewedAt)
+        try container.encode(retiredAt, forKey: .retiredAt)
+    }
+
+    var payload: CardProgressPayload {
+        CardProgressPayload(cardId: cardId, masteryScore: masteryScore, lastReviewedAt: lastReviewedAt, retiredAt: retiredAt)
+    }
+}
+
+private struct QuestionProgressRow: Codable {
+    static let columns = "question_id,topic_id,difficulty,consecutive_correct,total_attempts,total_correct,retired_at,is_review,last_answered_at,server_updated_at"
+
+    var ownerId: UUID?
+    var questionId: String
+    var topicId: String
+    var difficulty: Difficulty
+    var consecutiveCorrect: Int
+    var totalAttempts: Int
+    var totalCorrect: Int
+    var retiredAt: Date?
+    var isReview: Bool
+    var lastAnsweredAt: Date
+    var serverUpdatedAt: Date?
+
+    init(_ payload: QuestionProgressPayload, ownerId: UUID) {
+        self.ownerId = ownerId
+        questionId = payload.questionId
+        topicId = payload.topicId
+        difficulty = payload.difficulty
+        consecutiveCorrect = payload.consecutiveCorrect
+        totalAttempts = payload.totalAttempts
+        totalCorrect = payload.totalCorrect
+        retiredAt = payload.retiredAt
+        isReview = payload.isReview
+        lastAnsweredAt = payload.lastAnsweredAt
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(ownerId, forKey: .ownerId)
+        try container.encode(questionId, forKey: .questionId)
+        try container.encode(topicId, forKey: .topicId)
+        try container.encode(difficulty, forKey: .difficulty)
+        try container.encode(consecutiveCorrect, forKey: .consecutiveCorrect)
+        try container.encode(totalAttempts, forKey: .totalAttempts)
+        try container.encode(totalCorrect, forKey: .totalCorrect)
+        try container.encode(retiredAt, forKey: .retiredAt)
+        try container.encode(isReview, forKey: .isReview)
+        try container.encode(lastAnsweredAt, forKey: .lastAnsweredAt)
+    }
+
+    var payload: QuestionProgressPayload {
+        QuestionProgressPayload(
+            questionId: questionId, topicId: topicId, difficulty: difficulty,
+            consecutiveCorrect: consecutiveCorrect, totalAttempts: totalAttempts, totalCorrect: totalCorrect,
+            retiredAt: retiredAt, isReview: isReview, lastAnsweredAt: lastAnsweredAt
+        )
+    }
+}
+
+private struct TopicProgressRow: Codable {
+    static let columns = "topic_id,medium_unlocked_at,hard_unlocked_at,server_updated_at"
+
+    var ownerId: UUID?
+    var topicId: String
+    var mediumUnlockedAt: Date?
+    var hardUnlockedAt: Date?
+    var serverUpdatedAt: Date?
+
+    init(_ payload: TopicProgressPayload, ownerId: UUID) {
+        self.ownerId = ownerId
+        topicId = payload.topicId
+        mediumUnlockedAt = payload.mediumUnlockedAt
+        hardUnlockedAt = payload.hardUnlockedAt
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(ownerId, forKey: .ownerId)
+        try container.encode(topicId, forKey: .topicId)
+        // Null is safe here: the server keeps the earliest non-null unlock.
+        try container.encode(mediumUnlockedAt, forKey: .mediumUnlockedAt)
+        try container.encode(hardUnlockedAt, forKey: .hardUnlockedAt)
+    }
+
+    var payload: TopicProgressPayload {
+        TopicProgressPayload(topicId: topicId, mediumUnlockedAt: mediumUnlockedAt, hardUnlockedAt: hardUnlockedAt)
     }
 }

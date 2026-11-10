@@ -68,6 +68,14 @@ extension CodeySchemaV2 {
             }
         }
 
+        /// FR-61: takes another device's newer review. The caller checks it
+        /// is newer; the score is clamped to 0...5.
+        func applyRemoteProgress(score: Int, lastReviewedAt: Date, retiredAt: Date?) {
+            masteryScore = min(max(score, 0), Flashcard.maxMastery)
+            self.lastReviewedAt = lastReviewedAt
+            self.retiredAt = retiredAt
+        }
+
         func resetMastery() {
             masteryScore = 0
             lastReviewedAt = nil

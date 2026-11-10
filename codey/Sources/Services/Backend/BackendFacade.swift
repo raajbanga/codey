@@ -120,6 +120,12 @@ final class BackendFacade: DeckBackend {
         engine.requestSync(after: .zero)
     }
 
+    /// FR-61: study and quiz progress isn't queued, so push it when the app
+    /// leaves the foreground (the end of most study sessions).
+    func appDidEnterBackground() {
+        engine.requestSync(after: .zero)
+    }
+
     @discardableResult
     func handle(_ url: URL) -> Bool {
         auth?.handle(url) ?? false
@@ -170,6 +176,9 @@ final class BackendFacade: DeckBackend {
                 removeDecks(ownedBy: signedOutUser)
             }
             cursors.setCursor(nil, for: signedOutUser)
+            // FR-61: the next sign-in pulls and pushes all progress again.
+            cursors.setProgressCursor(nil, for: signedOutUser)
+            cursors.setProgressPushedAt(nil, for: signedOutUser)
         }
         groupCache.clear()
         authState = .signedOut

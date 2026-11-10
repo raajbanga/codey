@@ -56,7 +56,7 @@ Still in force from Sprint 3: S1 (LaTeX → PDF via tectonic, 12 pt, double-spac
 
 - **S30** Sprint 4 scope = finish and test. Only new code: FR-39–41 (minimal), FR-61, and the BUG-01 fix.
 - **S31** FR-39–41 are code-completion exercises loaded from a bundled `exercises.json`. Not stored in SwiftData (no new schema version), not synced, no XP. Each blank is one "test case": the answer passes if it matches an accepted solution after whitespace normalization.
-- **S32** (revised Nov 9) FR-61 is built after all: the schema addition is small once sign-in works. It reuses the deck sync design (tables with RLS, changes queued in `SyncQueue`, merge keeps the higher mastery score and the later retirement). It replaces D10 ("progress stays local") for mastery and quiz progress only.
+- **S32** (revised Nov 9) FR-61 is built after all: the schema addition is small once sign-in works. As built (Nov 10): tables with RLS, a per-cycle progress step instead of `SyncQueue` entries, and "latest review wins" instead of "higher mastery wins" (mastery can go down); see §5.1b. It replaces D10 ("progress stays local") for mastery and quiz progress only.
 - **S33** No live Supabase test accounts. NFR-02 stays verified against the mock backend (TC-P07, 0.41 s). NFR-32 (leaderboard ≤ 1.5 s live) is retired because it cannot be verified in scope.
 - **S34** No peer usability test. The "task success rate" metric and tier tuning are removed. Acceptance tests are scripted walkthroughs of each client mandate, run by a member who did not build that feature (ES for most), and repeated as the Expo demo.
 - **S35** Code freeze: **Sun Nov 22**. After the freeze only doc work and bug fixes; regenerate Appendix B, the pattern map and the file table after the freeze.
@@ -75,21 +75,42 @@ Owners in brackets. Dates are targets.
 
 Symptom: tapping the Google sign-in button crashes the app, so the signed-in flow (sync, groups, leaderboard) has never been tested by hand. Config looks right on paper: `GIDClientID`, `GIDServerClientID` and the reversed-client-ID URL scheme are in `Project.swift`, filled from `Config/Secrets.xcconfig`.
 
-- [ ] [AB] Reproduce in the Simulator (Profile sheet and Onboarding buttons) and capture the crash log / exception message.
-- [ ] [AB] Check the built `Info.plist` has the real values (not empty `$(...)` placeholders) for `GIDClientID` and `CFBundleURLSchemes`; GoogleSignIn throws an exception when the URL scheme is missing.
-- [ ] [AB] Check the presenter: `UIApplication.topViewController` when the button sits inside the Profile *sheet*, and that sign-in runs on the main actor.
-- [ ] [AB] Fix the root cause; add a regression test where possible (e.g. a test that the Info.plist scheme matches the reversed client ID).
+- [x] [AB] Reproduce in the Simulator (Profile sheet and Onboarding buttons) and capture the crash log / exception message. *(Nov 9: `NSInvalidArgumentException: +[OIDAuthorizationService presentAuthorizationRequest:presentingViewController:callback:]: unrecognized selector`)*
+- [x] [AB] Check the built `Info.plist` has the real values (not empty `$(...)` placeholders) for `GIDClientID` and `CFBundleURLSchemes`; GoogleSignIn throws an exception when the URL scheme is missing.
+- [x] [AB] Check the presenter: `UIApplication.topViewController` when the button sits inside the Profile *sheet*, and that sign-in runs on the main actor.
+- [x] [AB] Fix the root cause; add a regression test where possible (e.g. a test that the Info.plist scheme matches the reversed client ID). *(Cause: packages link statically and the linker dropped AppAuth's ObjC category; fix: `-ObjC` in OTHER_LDFLAGS on the app target. `GoogleSignInLinkTests` fails without the flag and passes with it; the Google consent prompt now appears in the Simulator.)*
 - [ ] [ES] Verify by hand: sign in, sync a deck, create/join a group, open the leaderboard, sign out (keep and remove decks). Record the result as a system test (§5.4).
 - [ ] [RB] Log BUG-01 in the doc's defect table (found by, cause, fix commit).
 
+**BUG-02 (Nov 9): signed in on Google's side but not in Codey.** Two causes, found one after the other in the app log (`Auth: Sign-in failed`):
+1. The free-tier Supabase project was paused for inactivity (status INACTIVE), so `signInWithIdToken` failed with `NSURLErrorDomain -1003` (host not found).
+2. Once restored, Supabase returned 400 "Passed nonce and nonce in id_token should either both exist or not": GoogleSignIn 10 always adds a nonce to the ID token and the app sent none.
+
+- [x] [AB] Diagnose from the app log and the project status.
+- [x] [AB] Restore the project (Supabase MCP, Nov 9).
+- [x] [AB] Fix: `SignInNonce` (random raw value; Google gets its SHA-256, Supabase gets the raw one) in `SupabaseAuthProvider`; `SignInNonceTests` (SHA-256 test vector, uniqueness, URL-safe). Supabase README updated (skip nonce check off).
+- [x] [AB] Verify: Simulator sign-in completes, Profile shows the account, "Last synced now", 0 pending.
+- [ ] [AB] Keep-alive so it doesn't pause before the Expo demo (e.g. a scheduled CI job that calls the REST endpoint every few days).
+- [ ] [AB] Could: say "Codey's server isn't reachable" instead of "check your connection" for host-not-found errors.
+- [ ] [AB] Could: move the Google OAuth clients (consent screen says "Munnin") to a Codey project before the demo.
+- [ ] [RB] Log BUG-02 in the doc's defect table.
+
 ### 5.1b FR-61 Study-results sync (after BUG-01)
 
-- [ ] [AB] Design: which local models sync (card mastery + retirement, `QuestionProgress`, tier unlocks), table shapes, merge rules (higher mastery, later retirement, sticky unlocks). Write it here before coding.
-- [ ] [AB] Migration: progress tables with RLS (owner only), CHECK limits, `server_updated_at` trigger; pgTAP tests in `supabase/tests/`; apply via MCP; re-run the live RLS check and Security Advisor.
-- [ ] [AB] Client: queue progress changes in `SyncQueue`, push/pull in `SyncEngine`, merge on pull; `SupabaseDataClient` calls behind the existing protocols.
-- [ ] [AB] Unit tests: merge rules, queueing, offline then reconnect (mock backend); `SupabaseSchemaTests` for the new limits.
+- [x] [AB] Design: which local models sync (card mastery + retirement, `QuestionProgress`, tier unlocks), table shapes, merge rules (higher mastery, later retirement, sticky unlocks). Write it here before coding.
+
+  **FR-61 design (Nov 9).**
+  - *What syncs:* card mastery (`Flashcard.masteryScore`, `lastReviewedAt`, `retiredAt`), quiz progress (`QuestionProgress`), tier unlocks (`TopicProgress`). Not synced: `QuizAnswerRecord`, `DailyActivity`, `BadgeAward`, `StudyProgressSnapshot` (history/session state, re-derivable or device-local).
+  - *Keys:* card IDs are the same on every device (starter cards use `StableID`, user cards share the server ID), question and topic IDs are bundle strings. Rows are keyed `(owner_id, card_id | question_id | topic_id)`.
+  - *Tables:* `card_progress`, `question_progress`, `topic_progress`; owner-only RLS (select/insert/update, no delete); CHECKs mirror the app (mastery 0–5, counters ≥ 0 and ≤ 100 000, correct ≤ attempts, ids ≤ 100 chars); `server_updated_at` trigger as the pull cursor.
+  - *Merge (changed from "higher mastery wins"):* **latest review wins** for cards and questions, compared on the client timestamp (`last_reviewed_at` / `last_answered_at`). Mastery can go down ("Again"), so "higher wins" would undo real ratings from the other device. Same rule on both sides: a BEFORE UPDATE trigger skips an incoming row that isn't newer, and pull only applies a remote row that is newer than the local one. **Tier unlocks are sticky:** the server keeps the earliest non-null unlock date per tier (`least`), and pull fills a local nil.
+  - *Transport:* not queued (no new SwiftData schema version). Like weekly XP, each sync cycle runs a progress step after the deck pull: pull progress changed since a progress cursor → merge locally → push local rows whose timestamp is after the last progress push (first sync of an account pushes everything). Cursor and push marker live in `UserDefaults` per account.
+  - *Known limits (doc):* Reset Progress isn't propagated (a reset row has no newer timestamp), so progress comes back from the server, the same as XP's max-merge. Client clocks decide ties, as for decks.
+- [x] [AB] Migration: progress tables with RLS (owner only), CHECK limits, `server_updated_at` trigger; pgTAP tests in `supabase/tests/`; apply via MCP; re-run the live RLS check and Security Advisor. *(Nov 10: `20261110034534_study_progress.sql`; `tests/progress.sql` 24 tests, 75/75 locally; live check 0 failed of 57; Advisor: nothing new.)*
+- [x] [AB] Client: queue progress changes in `SyncQueue`, push/pull in `SyncEngine`, merge on pull; `SupabaseDataClient` calls behind the existing protocols. *(Not queued, per the design: `ProgressSync` + a `syncProgress` step in each cycle; the app also syncs when it goes to the background. Verified live: a quiz answer reached `question_progress` 4 s after backgrounding.)*
+- [x] [AB] Unit tests: merge rules, queueing, offline then reconnect (mock backend); `SupabaseSchemaTests` for the new limits. *(`ProgressSyncTests` 13 tests incl. two simulated devices; `progressLimitsMatchApp`; 373 unit tests pass.)*
 - [ ] [ES] Manual two-device check (two Simulators, same account): mastery and quiz progress converge.
-- [ ] [RB] Doc: FR-61 → Implemented; FR-45 parenthetical removed; traceability + TC-61; R18 closed; D10 note updated; Supabase README tables list.
+- [ ] [RB] Doc: FR-61 → Implemented; FR-45 parenthetical removed; traceability + TC-61; R18 closed; D10 note updated. *(Supabase README tables list done Nov 10.)*
 - [ ] [AB] Add `dev` to the CI `push` branches in `.github/workflows/test.yml`, so Sprint 4 work is tested before the merge to `main`.
 - [ ] [AB] `scripts/perf-report.sh`: take the output name as an argument (default `sprint4.csv`) so the Sprint 3 results in `docs/source/perf/sprint3.csv` are kept.
 

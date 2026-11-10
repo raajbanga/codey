@@ -20,7 +20,11 @@ public struct ContentView: View {
             }
             .onOpenURL { backend.handle($0) }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { backend.appDidBecomeActive() }
+                switch phase {
+                case .active: backend.appDidBecomeActive()
+                case .background: backend.appDidEnterBackground()
+                default: break
+                }
             }
     }
 }

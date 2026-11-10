@@ -2,9 +2,9 @@
 -- through the Supabase MCP (execute_sql) or the SQL editor, without pgTAP.
 --
 -- It ALWAYS ends with an error whose message holds the results, e.g.
---   "RLS TESTS: 0 failed of 48. ok 1 … | ok 48 …"
+--   "RLS TESTS: 0 failed of 57. ok 1 … | ok 57 …"
 -- Raising it rolls back every test user and row, so nothing persists.
--- Last run: 2026-10-30, 0 failed of 48 (after the S3-C/S3-D migrations).
+-- Last run: 2026-11-10, see supabase/README.md (after the FR-61 study_progress migration).
 
 do $test$
 declare
@@ -235,6 +235,46 @@ begin
     select n + count(*) - 1 into n from public.profiles;
     if n = 0 then results := results || 'ok 47 after leaving, B sees 0 groups and only own profile'::text; else failed := failed + 1; results := results || ('FAIL 47 rows=' || n); end if;
 
+    -- FR-61 study progress (2026-11-10): owner-only, latest review wins, sticky unlocks
+    perform set_config('request.jwt.claims', claims_a, true);
+    begin
+        insert into public.card_progress (card_id, mastery_score, last_reviewed_at) values (deck_a, 3, '2026-11-01');
+        insert into public.question_progress (question_id, topic_id, difficulty, consecutive_correct, total_attempts, total_correct, last_answered_at)
+        values ('q-live', 'topic-swift', 'easy', 1, 2, 1, '2026-11-01');
+        insert into public.topic_progress (topic_id, medium_unlocked_at) values ('topic-swift', '2026-11-02');
+        results := results || 'ok 49 A inserts progress rows'::text;
+    exception when others then failed := failed + 1; results := results || ('FAIL 49 ' || sqlstate || ' ' || sqlerrm); end;
+    insert into public.card_progress (card_id, mastery_score, last_reviewed_at) values (deck_a, 5, '2026-10-01')
+        on conflict (owner_id, card_id) do update set mastery_score = excluded.mastery_score, last_reviewed_at = excluded.last_reviewed_at;
+    select mastery_score into n from public.card_progress where owner_id = a;
+    if n = 3 then results := results || 'ok 50 older review skipped'::text; else failed := failed + 1; results := results || ('FAIL 50 mastery=' || coalesce(n::text, 'null')); end if;
+    insert into public.card_progress (card_id, mastery_score, last_reviewed_at) values (deck_a, 0, '2026-11-03')
+        on conflict (owner_id, card_id) do update set mastery_score = excluded.mastery_score, last_reviewed_at = excluded.last_reviewed_at;
+    select mastery_score into n from public.card_progress where owner_id = a;
+    if n = 0 then results := results || 'ok 51 newer review wins (even lower)'::text; else failed := failed + 1; results := results || ('FAIL 51 mastery=' || coalesce(n::text, 'null')); end if;
+    insert into public.topic_progress (topic_id, medium_unlocked_at) values ('topic-swift', null)
+        on conflict (owner_id, topic_id) do update set medium_unlocked_at = excluded.medium_unlocked_at;
+    select medium_unlocked_at into ts from public.topic_progress where owner_id = a;
+    if ts = '2026-11-02'::timestamptz then results := results || 'ok 52 unlocks are sticky'::text; else failed := failed + 1; results := results || ('FAIL 52 ts=' || coalesce(ts::text, 'null')); end if;
+    begin
+        insert into public.card_progress (card_id, mastery_score, last_reviewed_at) values (b, 6, now());
+        failed := failed + 1; results := results || 'FAIL 53 mastery 6 accepted'::text;
+    exception when check_violation then results := results || 'ok 53 mastery over 5 rejected'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 53 ' || sqlstate || ' ' || sqlerrm); end;
+
+    perform set_config('request.jwt.claims', claims_b, true);
+    select (select count(*) from public.card_progress) + (select count(*) from public.question_progress)
+         + (select count(*) from public.topic_progress) into n;
+    if n = 0 then results := results || 'ok 54 B sees 0 of A''s progress'::text; else failed := failed + 1; results := results || ('FAIL 54 rows=' || n); end if;
+    update public.card_progress set mastery_score = 5, last_reviewed_at = now() where owner_id = a;
+    get diagnostics n = row_count;
+    if n = 0 then results := results || 'ok 55 B updates 0 of A''s progress'::text; else failed := failed + 1; results := results || ('FAIL 55 updated=' || n); end if;
+    begin
+        insert into public.card_progress (owner_id, card_id, mastery_score, last_reviewed_at) values (a, b, 1, now());
+        failed := failed + 1; results := results || 'FAIL 56 B inserted for A'::text;
+    exception when insufficient_privilege then results := results || 'ok 56 B can''t insert A''s progress'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 56 ' || sqlstate || ' ' || sqlerrm); end;
+
     -- anon can't call the RPC
     execute 'set local role anon';
     perform set_config('request.jwt.claims', '{"role": "anon"}', true);
@@ -243,6 +283,11 @@ begin
         failed := failed + 1; results := results || 'FAIL 48 anon called join_group'::text;
     exception when insufficient_privilege then results := results || 'ok 48 anon can''t call join_group'::text;
               when others then failed := failed + 1; results := results || ('FAIL 48 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        select (select count(*) from public.card_progress) + (select count(*) from public.question_progress)
+             + (select count(*) from public.topic_progress) into n;
+        if n = 0 then results := results || 'ok 57 anon sees no progress'::text; else failed := failed + 1; results := results || ('FAIL 57 rows=' || n); end if;
+    exception when insufficient_privilege then results := results || 'ok 57 anon sees no progress (no grant)'::text; end;
 
     raise exception 'RLS TESTS: % failed of %. %', failed, coalesce(array_length(results, 1), 0), array_to_string(results, ' | ');
 end

@@ -60,7 +60,13 @@ let project = Project(
                 .external(name: "TreeSitterCPPRunestone"),
                 .external(name: "Supabase"),
                 .external(name: "GoogleSignIn"),
-            ]
+            ],
+            // BUG-01: packages link as static frameworks, and the linker drops
+            // Objective-C categories from static code unless -ObjC is set.
+            // GoogleSignIn presents its sign-in page through an AppAuth category
+            // (OIDAuthorizationService+IOS); without it the Google button
+            // crashed with "unrecognized selector".
+            settings: .settings(base: ["OTHER_LDFLAGS": "$(inherited) -ObjC"])
         ),
         .target(
             name: "codeyTests",
