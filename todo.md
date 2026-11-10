@@ -15,7 +15,7 @@ Everything still open in the old `todo.txt` (as of `main`, Nov 5), with its Spri
 | Item | Decision | Where |
 |---|---|---|
 | FR-39–41 coding challenges (client mandate) | **Build, minimal** | §5.1 |
-| FR-61 sync of study results (client mandate) | **Build** once Google sign-in works (BUG-01) | §5.0a, §5.1b |
+| FR-61 sync of study results (client mandate) | **Done** Nov 10, after BUG-01/02 | §5.0a, §5.0b |
 | NFR-01 launch, NFR-28 memory on iPhone | **Keep**. LoadingView minimum and repeat seeding are already gone (3.82 s p95 on the Simulator) | §5.3 |
 | TC-S10 file protection on device (NFR-04) | **Keep** | §5.3 |
 | TC-S09 Proxyman capture (NFR-24) | **Keep** | §5.3 |
@@ -26,7 +26,7 @@ Everything still open in the old `todo.txt` (as of `main`, Nov 5), with its Spri
 | CodeyCard audit, component restyles, Icon Composer `.icon` | **Dropped** (cosmetic) | — |
 | RB content review of starter decks | **Could**: only if time allows | §5.5 |
 
-Already done on `main` after the Sprint 3 doc, so **not** open: pgTAP database tests (`supabase test db`, 51 tests), CI test workflow (`.github/workflows/test.yml`), launch fixes (`BundledContentStamp`, no LoadingView minimum), weekly-XP rate limit migration.
+Already done on `main` after the Sprint 3 doc, so **not** open: pgTAP database tests (`supabase test db`, 51 tests; 75 with FR-61), CI test workflow (`.github/workflows/test.yml`), launch fixes (`BundledContentStamp`, no LoadingView minimum), weekly-XP rate limit migration.
 
 ---
 
@@ -56,7 +56,7 @@ Still in force from Sprint 3: S1 (LaTeX → PDF via tectonic, 12 pt, double-spac
 
 - **S30** Sprint 4 scope = finish and test. Only new code: FR-39–41 (minimal), FR-61, and the BUG-01 fix.
 - **S31** FR-39–41 are code-completion exercises loaded from a bundled `exercises.json`. Not stored in SwiftData (no new schema version), not synced, no XP. Each blank is one "test case": the answer passes if it matches an accepted solution after whitespace normalization.
-- **S32** (revised Nov 9) FR-61 is built after all: the schema addition is small once sign-in works. As built (Nov 10): tables with RLS, a per-cycle progress step instead of `SyncQueue` entries, and "latest review wins" instead of "higher mastery wins" (mastery can go down); see §5.1b. It replaces D10 ("progress stays local") for mastery and quiz progress only.
+- **S32** (revised Nov 9) FR-61 is built after all: the schema addition is small once sign-in works. As built (Nov 10): tables with RLS, a per-cycle progress step instead of `SyncQueue` entries, and "latest review wins" instead of "higher mastery wins" (mastery can go down); see §5.0a. It replaces D10 ("progress stays local") for mastery and quiz progress only.
 - **S33** No live Supabase test accounts. NFR-02 stays verified against the mock backend (TC-P07, 0.41 s). NFR-32 (leaderboard ≤ 1.5 s live) is retired because it cannot be verified in scope.
 - **S34** No peer usability test. The "task success rate" metric and tier tuning are removed. Acceptance tests are scripted walkthroughs of each client mandate, run by a member who did not build that feature (ES for most), and repeated as the Expo demo.
 - **S35** Code freeze: **Sun Nov 22**. After the freeze only doc work and bug fixes; regenerate Appendix B, the pattern map and the file table after the freeze.
@@ -70,49 +70,33 @@ Owners in brackets. Dates are targets.
 
 - [x] [RB] Merge `main` into `dev` (dev had stopped at the Sprint 3 squash; Nov 2–5 work was only on `main`).
 - [ ] [RB] Ask the client (instructor) to approve retiring NFR-32 and the live test-account checks, and record the answer here and in the doc (Scope says any scope change needs client approval).
-
-### 5.0a Bug tracking: Google sign-in crash (BUG-01, now)
-
-Symptom: tapping the Google sign-in button crashes the app, so the signed-in flow (sync, groups, leaderboard) has never been tested by hand. Config looks right on paper: `GIDClientID`, `GIDServerClientID` and the reversed-client-ID URL scheme are in `Project.swift`, filled from `Config/Secrets.xcconfig`.
-
-- [x] [AB] Reproduce in the Simulator (Profile sheet and Onboarding buttons) and capture the crash log / exception message. *(Nov 9: `NSInvalidArgumentException: +[OIDAuthorizationService presentAuthorizationRequest:presentingViewController:callback:]: unrecognized selector`)*
-- [x] [AB] Check the built `Info.plist` has the real values (not empty `$(...)` placeholders) for `GIDClientID` and `CFBundleURLSchemes`; GoogleSignIn throws an exception when the URL scheme is missing.
-- [x] [AB] Check the presenter: `UIApplication.topViewController` when the button sits inside the Profile *sheet*, and that sign-in runs on the main actor.
-- [x] [AB] Fix the root cause; add a regression test where possible (e.g. a test that the Info.plist scheme matches the reversed client ID). *(Cause: packages link statically and the linker dropped AppAuth's ObjC category; fix: `-ObjC` in OTHER_LDFLAGS on the app target. `GoogleSignInLinkTests` fails without the flag and passes with it; the Google consent prompt now appears in the Simulator.)*
-- [ ] [ES] Verify by hand: sign in, sync a deck, create/join a group, open the leaderboard, sign out (keep and remove decks). Record the result as a system test (§5.4).
-- [ ] [RB] Log BUG-01 in the doc's defect table (found by, cause, fix commit).
-
-**BUG-02 (Nov 9): signed in on Google's side but not in Codey.** Two causes, found one after the other in the app log (`Auth: Sign-in failed`):
-1. The free-tier Supabase project was paused for inactivity (status INACTIVE), so `signInWithIdToken` failed with `NSURLErrorDomain -1003` (host not found).
-2. Once restored, Supabase returned 400 "Passed nonce and nonce in id_token should either both exist or not": GoogleSignIn 10 always adds a nonce to the ID token and the app sent none.
-
-- [x] [AB] Diagnose from the app log and the project status.
-- [x] [AB] Restore the project (Supabase MCP, Nov 9).
-- [x] [AB] Fix: `SignInNonce` (random raw value; Google gets its SHA-256, Supabase gets the raw one) in `SupabaseAuthProvider`; `SignInNonceTests` (SHA-256 test vector, uniqueness, URL-safe). Supabase README updated (skip nonce check off).
-- [x] [AB] Verify: Simulator sign-in completes, Profile shows the account, "Last synced now", 0 pending.
-- [ ] [AB] Keep-alive so it doesn't pause before the Expo demo (e.g. a scheduled CI job that calls the REST endpoint every few days).
-- [ ] [AB] Could: say "Codey's server isn't reachable" instead of "check your connection" for host-not-found errors.
-- [ ] [AB] Could: move the Google OAuth clients (consent screen says "Munnin") to a Codey project before the demo.
-- [ ] [RB] Log BUG-02 in the doc's defect table.
-
-### 5.1b FR-61 Study-results sync (after BUG-01)
-
-- [x] [AB] Design: which local models sync (card mastery + retirement, `QuestionProgress`, tier unlocks), table shapes, merge rules (higher mastery, later retirement, sticky unlocks). Write it here before coding.
-
-  **FR-61 design (Nov 9).**
-  - *What syncs:* card mastery (`Flashcard.masteryScore`, `lastReviewedAt`, `retiredAt`), quiz progress (`QuestionProgress`), tier unlocks (`TopicProgress`). Not synced: `QuizAnswerRecord`, `DailyActivity`, `BadgeAward`, `StudyProgressSnapshot` (history/session state, re-derivable or device-local).
-  - *Keys:* card IDs are the same on every device (starter cards use `StableID`, user cards share the server ID), question and topic IDs are bundle strings. Rows are keyed `(owner_id, card_id | question_id | topic_id)`.
-  - *Tables:* `card_progress`, `question_progress`, `topic_progress`; owner-only RLS (select/insert/update, no delete); CHECKs mirror the app (mastery 0–5, counters ≥ 0 and ≤ 100 000, correct ≤ attempts, ids ≤ 100 chars); `server_updated_at` trigger as the pull cursor.
-  - *Merge (changed from "higher mastery wins"):* **latest review wins** for cards and questions, compared on the client timestamp (`last_reviewed_at` / `last_answered_at`). Mastery can go down ("Again"), so "higher wins" would undo real ratings from the other device. Same rule on both sides: a BEFORE UPDATE trigger skips an incoming row that isn't newer, and pull only applies a remote row that is newer than the local one. **Tier unlocks are sticky:** the server keeps the earliest non-null unlock date per tier (`least`), and pull fills a local nil.
-  - *Transport:* not queued (no new SwiftData schema version). Like weekly XP, each sync cycle runs a progress step after the deck pull: pull progress changed since a progress cursor → merge locally → push local rows whose timestamp is after the last progress push (first sync of an account pushes everything). Cursor and push marker live in `UserDefaults` per account.
-  - *Known limits (doc):* Reset Progress isn't propagated (a reset row has no newer timestamp), so progress comes back from the server, the same as XP's max-merge. Client clocks decide ties, as for decks.
-- [x] [AB] Migration: progress tables with RLS (owner only), CHECK limits, `server_updated_at` trigger; pgTAP tests in `supabase/tests/`; apply via MCP; re-run the live RLS check and Security Advisor. *(Nov 10: `20261110034534_study_progress.sql`; `tests/progress.sql` 24 tests, 75/75 locally; live check 0 failed of 57; Advisor: nothing new.)*
-- [x] [AB] Client: queue progress changes in `SyncQueue`, push/pull in `SyncEngine`, merge on pull; `SupabaseDataClient` calls behind the existing protocols. *(Not queued, per the design: `ProgressSync` + a `syncProgress` step in each cycle; the app also syncs when it goes to the background. Verified live: a quiz answer reached `question_progress` 4 s after backgrounding.)*
-- [x] [AB] Unit tests: merge rules, queueing, offline then reconnect (mock backend); `SupabaseSchemaTests` for the new limits. *(`ProgressSyncTests` 13 tests incl. two simulated devices; `progressLimitsMatchApp`; 373 unit tests pass.)*
-- [ ] [ES] Manual two-device check (two Simulators, same account): mastery and quiz progress converge.
-- [ ] [RB] Doc: FR-61 → Implemented; FR-45 parenthetical removed; traceability + TC-61; R18 closed; D10 note updated. *(Supabase README tables list done Nov 10.)*
 - [ ] [AB] Add `dev` to the CI `push` branches in `.github/workflows/test.yml`, so Sprint 4 work is tested before the merge to `main`.
 - [ ] [AB] `scripts/perf-report.sh`: take the output name as an argument (default `sprint4.csv`) so the Sprint 3 results in `docs/source/perf/sprint3.csv` are kept.
+- [ ] [AB] Supabase keep-alive so the free project doesn't pause again before the Expo (BUG-02 cause 1), e.g. a scheduled CI job that calls the REST endpoint every few days.
+- [ ] [AB] Could: say "Codey's server isn't reachable" instead of "check your connection" for host-not-found sign-in errors.
+- [ ] [AB] Could: move the Google OAuth clients (consent screen says "Munnin") to a Codey project before the demo.
+
+### 5.0a Done: sign-in fixes and FR-61 (Nov 9–10, commit `1949cfe`)
+
+All built, unit-tested and verified by hand (signed-in flow and the two-Simulator progress check, Nov 10). Kept here as the source for the doc (§5.0b).
+
+- **BUG-01** Tapping "Sign in with Google" crashed: `+[OIDAuthorizationService presentAuthorizationRequest:presentingViewController:callback:]: unrecognized selector`. Cause: packages link statically and the linker dropped AppAuth's Objective-C category. Fix: `-ObjC` in OTHER_LDFLAGS on the app target (`Project.swift`). Test: `GoogleSignInLinkTests` (fails without the flag).
+- **BUG-02** Signed in on Google's side but not in Codey. Cause 1: the free Supabase project had paused for inactivity (host not found); restored via MCP. Cause 2: GoogleSignIn 10 always puts a nonce in the ID token and the app sent none (Supabase 400 "Passed nonce and nonce in id_token…"). Fix: `SignInNonce` (SHA-256 to Google, raw value to Supabase). Test: `SignInNonceTests`. Supabase README: "skip nonce check" stays off.
+- **FR-61** Card mastery, quiz progress (`QuestionProgress`) and tier unlocks (`TopicProgress`) sync per account. Not synced: quiz history, daily activity, badges, paused sessions.
+  - *Server:* `20261110034534_study_progress.sql`: `card_progress`, `question_progress`, `topic_progress`; owner-only RLS (no delete); CHECKs mirror the app (mastery 0–5, counters 0–100 000, correct ≤ attempts, ids ≤ 100 chars); merge triggers.
+  - *Merge:* latest review wins by client timestamp (changed from "higher mastery wins", because "Again" lowers mastery); tier unlocks are sticky (earliest date kept). Same rules on pull (`ProgressSync`) and on push (triggers).
+  - *Transport:* not queued, no new SwiftData schema; a progress step in each sync cycle (pull → merge → push rows changed since the last push), plus a sync when the app goes to the background.
+  - *Known limits:* Reset Progress isn't propagated; device clocks decide which review is latest.
+  - *Tests:* `ProgressSyncTests` (13, incl. two simulated devices), `progressLimitsMatchApp`; pgTAP `tests/progress.sql` (24; 75/75 locally); live RLS check 0 failed of 57; Security Advisor nothing new; 373 unit tests pass.
+
+### 5.0b Document what's done (RB, by Wed Nov 18)
+
+- [ ] [RB] Defect table: BUG-01 and BUG-02 (found by, cause, fix, commit `1949cfe`, regression test). BUG-02 lesson for Risks: free-tier projects pause after ~7 days idle.
+- [ ] [RB] FR-61 → Implemented; FR-45 parenthetical removed; traceability + TC-61 (`ProgressSyncTests`, `tests/progress.sql`); R18 closed; D10 note: progress now syncs except history, activity, badges and sessions.
+- [ ] [RB] Decision log: S32 as built (per-cycle step, latest review wins) with the reason.
+- [ ] [RB] Database/deployment sections and diagrams: the three progress tables, their RLS and merge triggers; sync path gains the progress step (Supabase README already updated).
+- [ ] [RB] Record the Nov 10 hand checks as system tests in §18e: Google sign-in → sync → groups → leaderboard → sign-out; two Simulators converge on mastery and quiz progress.
+- [ ] [RB] Known limits of FR-61 (Reset Progress, client clocks) in the requirements notes or Future Work.
 
 ### 5.1 FR-39–41 Coding challenges: minimal build (by Sun Nov 15)
 
@@ -130,7 +114,7 @@ Symptom: tapping the Google sign-in button crashes the app, so the signed-in flo
 - [ ] [RB] Remove the peer-usability metric row and "tier tuning after a peer test" (S34).
 - [ ] [RB] R13 → "Accepted" with the 600 XP/min pace limit as mitigation; DFD threat P6 says the pace limit exists instead of "Sprint 4 hardening".
 - [ ] [RB] Remove every other "Sprint 4" promise that is dropped; open-ended problems and the XP ledger → Future Work.
-- [ ] [RB] Re-count FRs/NFRs and fix every count in the text (FR total, NFR total, security/performance counts, test count now 359+).
+- [ ] [RB] Re-count FRs/NFRs and fix every count in the text (FR total, NFR total, security/performance counts, test count now 373+).
 - [ ] [AB] `grep -n "Sprint 4\|Planned" docs/source/Sprint4_Documentation.tex` returns only things actually done in Sprint 4.
 
 ### 5.3 Measurements and re-runs (new measurements by Fri Nov 20; re-runs after the freeze)
@@ -144,7 +128,7 @@ New measurements:
 
 Re-runs for the Sprint 4 column (every sprint, NFR-17–19; after the freeze):
 - [ ] [AB] `CODEY_PERF=1 scripts/perf-report.sh` → `sprint4.csv`; `scripts/perf-launch.sh` on the Simulator.
-- [ ] [AB] Security: TC-S01 live RLS check (not re-run since the Nov 2 rate-limit migration), TC-S02 Security Advisor, TC-S03 `check-secrets.sh --history`, TC-S04 `xcodebuild analyze`, TC-S05 `check-release-build.sh`, TC-S11 `check-imports.sh`; `supabase test db` (51 pgTAP tests, needs Docker).
+- [ ] [AB] Security: TC-S01 live RLS check (last run Nov 10: 0 failed of 57), TC-S02 Security Advisor, TC-S03 `check-secrets.sh --history`, TC-S04 `xcodebuild analyze`, TC-S05 `check-release-build.sh`, TC-S11 `check-imports.sh`; `supabase test db` (75 pgTAP tests, needs Docker/OrbStack).
 - [ ] [ES] UI: layout pass on 3 sizes × Light/Dark including the new exercise screens; `ContrastTests`; `AccessibilityAuditUITests`.
 - [ ] [AB] Supabase Usage page vs Free-plan limits (TC-N20) and a `scripts/backup.sh` dump before the Expo.
 - [ ] [RB] Every result goes in the metrics table (new Sprint 4 column), the security test table and the performance sections, with the environment stated (S11). Rewrite the "Simulator versus device" bottleneck paragraph with the device numbers.
@@ -165,7 +149,7 @@ Re-runs for the Sprint 4 column (every sprint, NFR-17–19; after the freeze):
 - [ ] [RB] Changes Since Sprint 3 (what was built, cut, measured; the Nov 2–5 fixes: Swift 6, CI, rate limit, content stamp).
 - [ ] [RB] Process section: Sprint 4 timeline row and task status; decision log S30–S36; `todo.md` replaces `todo.txt` wherever the doc names the project plan; CI in the workflow description.
 - [ ] [RB] Sprint 4 Gantt chart (rubric 5d) from this task list's dates.
-- [ ] [RB] Risks: close R1, R17, R18; R13 accepted; add BUG-01 lessons; add any new testing risks; update monitoring.
+- [ ] [RB] Risks: close R1, R17, R18; R13 accepted; add BUG-01/02 lessons (static-link -ObjC, nonce, paused free project); add any new testing risks; update monitoring.
 - [ ] [RB] UML updates only where the code changed: exercise use case + traceability; component diagram gets the exercise loader/validator; deployment/class diagrams get the FR-61 progress tables and sync path.
 - [ ] [AB] Version control section: Sprint 4 commits/merges, the Nov 5 history rewrite (S29), the main → dev merge.
 - [ ] [AB] After the freeze: `scripts/gen-file-table.py`, `scripts/gen-pattern-map.sh`, `scripts/gen-appendix-b.sh` (update their "Sprint 3 doc" headers); new files have header comments.
@@ -187,7 +171,7 @@ Re-runs for the Sprint 4 column (every sprint, NFR-17–19; after the freeze):
 
 | Week | Dates | Focus |
 |---|---|---|
-| 12 | Nov 9 – 15 | Housekeeping; BUG-01 sign-in crash; FR-61 design + migration; FR-39–41 build; Activity 12.1 (unit) ✔, 12.2 (integration) |
+| 12 | Nov 9 – 15 | Housekeeping; BUG-01/02 ✔; FR-61 ✔; document them; FR-39–41 build; Activity 12.1 (unit) ✔, 12.2 (integration) |
 | 13 | Nov 16 – 22 | Doc cuts; device/Proxyman/fps measurements; test plans + runs; Activities 13.1, 13.2; **code freeze Sun Nov 22** |
 | 14 | Nov 23 – 29 | Re-runs for the Sprint 4 column; doc writing, generators, Gantt, conclusion (Thanksgiving Wed–Fri) |
 | 15 | Nov 30 – Dec 1 | Final checks, merge to main, submit, Expo |
