@@ -30,6 +30,20 @@ struct SwiftDataService {
         try context.first(#Predicate<Flashcard> { $0.id == id })
     }
 
+    /// Decks by id, in one fetch (missing ids are absent).
+    func fetchDecks(ids: some Collection<UUID>) throws -> [UUID: FlashcardDeck] {
+        guard !ids.isEmpty else { return [:] }
+        let ids = Array(ids)
+        return try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { ids.contains($0.id) })).keyed(by: \.id)
+    }
+
+    /// Cards by id, in one fetch (missing ids are absent).
+    func fetchCards(ids: some Collection<UUID>) throws -> [UUID: Flashcard] {
+        guard !ids.isEmpty else { return [:] }
+        let ids = Array(ids)
+        return try context.fetch(FetchDescriptor<Flashcard>(predicate: #Predicate { ids.contains($0.id) })).keyed(by: \.id)
+    }
+
     /// Writes a builder draft into a new or existing deck (no save, no state
     /// change). Throws DeckBackendError.
     func apply(_ draft: DeckDraft, ownerId: UUID?) throws -> DraftSaveResult {

@@ -19,6 +19,7 @@ enum SupabaseServices {
             supabaseURL: url,
             supabaseKey: config.supabaseAnonKey,
             options: SupabaseClientOptions(
+                db: SupabaseDataClient.databaseOptions,
                 auth: .init(
                     storage: KeychainSessionStorage(),
                     // Restore the stored session at launch even if it needs a

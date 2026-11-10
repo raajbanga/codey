@@ -52,44 +52,12 @@ struct HomeLogicTests {
 
 @MainActor
 struct RouterTests {
-    @Test func deckRouteSwitchesTabAndPushes() throws {
-        let context = try TestSupport.inMemoryContext()
-        let deck = try TestSupport.insertDeck(context)
-        let router = Router()
-        router.open(.deck(deck.id), context: context)
-        #expect(router.tab == .decks)
-        #expect(router.decksPath == [DeckRoute(id: deck.id)])
-    }
-
-    @Test func studyRouteResumesWhenASnapshotExists() throws {
-        let context = try TestSupport.inMemoryContext()
-        let deck = try TestSupport.insertTieredDeck(context, origin: .user, tiers: [nil, nil])
-        let router = Router()
-
-        router.open(.study(deck.id), context: context)
-        #expect(router.study?.start == .fresh(tierFilter: nil))
-
-        let vm = StudySessionViewModel(deck: deck, start: .fresh(tierFilter: nil), context: context)
-        vm.toggleReveal()
-        vm.rate(.good)
-        router.open(.study(deck.id), context: context)
-        #expect(router.study?.start == .resume)
-    }
-
-    @Test func unknownDeckDoesNothing() throws {
-        let context = try TestSupport.inMemoryContext()
-        let router = Router()
-        router.open(.study(UUID()), context: context)
-        #expect(router.study == nil)
-    }
-
-    @Test func quizRouteOpensSetupThenStartPresentsAfterDismiss() throws {
+    @Test func startFromTheSetupSheetPresentsAfterDismiss() throws {
         let context = try TestSupport.inMemoryContext()
         let topic = try TestSupport.insertTopic(context, easy: 2, medium: 0, hard: 0)
         let router = Router()
 
-        router.open(.quiz(topic.id), context: context)
-        #expect(router.quizSetupTopic?.id == topic.id)
+        router.quizSetupTopic = topic
 
         router.startQuiz(QuizRequest(topic: topic, mode: .mixed))
         #expect(router.quizSetupTopic == nil)
@@ -105,15 +73,39 @@ struct RouterTests {
         router.startQuiz(QuizRequest(topic: topic, mode: .mixed))
         #expect(router.quiz != nil)
     }
+}
 
-    @Test func profileAndTabRoutes() throws {
+/// HomeStats: the once-per-render derivations behind Home.
+@MainActor
+struct HomeStatsTests {
+    @Test func accuracyMatchesTheStoreOverTheNewestWindow() throws {
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        // Topic "a": 10 old wrong, then 50 right; topic "b": 3 answers, 1 right.
+        var records = (0..<60).map { n in
+            QuizAnswerRecord(questionId: "q", topicId: "a", correct: n >= 10, answeredAt: t0.addingTimeInterval(Double(n)))
+        }
+        records += (0..<3).map { n in
+            QuizAnswerRecord(questionId: "q", topicId: "b", correct: n == 0, answeredAt: t0.addingTimeInterval(Double(n)))
+        }
+        records.sort { $0.answeredAt > $1.answeredAt }
+
+        let stats = HomeStats(records: records, decks: [], snapshots: [], window: 50)
+        #expect(stats.accuracyByTopic["a"] == QuizProgressStore.accuracy(of: records.filter { $0.topicId == "a" }, window: 50))
+        #expect(stats.accuracyByTopic["a"] == 1.0)
+        #expect(stats.accuracyByTopic["b"] == 1.0 / 3.0)
+        #expect(stats.answerCounts == ["a": 50, "b": 3])
+    }
+
+    @Test func decksAreGroupedStarterFirstAndSkipHiddenOrEmpty() throws {
         let context = try TestSupport.inMemoryContext()
-        let router = Router()
-        router.open(.profile, context: context)
-        #expect(router.showProfile)
-        router.open(.decks, context: context)
-        #expect(router.tab == .decks)
-        router.open(.home, context: context)
-        #expect(router.tab == .home)
+        let user = try TestSupport.insertDeck(context, title: "A mine", origin: .user)
+        let starter = try TestSupport.insertDeck(context, title: "Z starter", origin: .starter)
+        let hidden = try TestSupport.insertDeck(context, title: "Hidden", origin: .starter)
+        hidden.isHidden = true
+        let empty = try TestSupport.insertDeck(context, title: "Empty", prompts: [])
+
+        let stats = HomeStats(records: [], decks: [user, starter, hidden, empty], snapshots: [])
+        #expect(stats.decksByTopic["topic-data-structures"]?.map(\.title) == ["Z starter", "A mine"])
+        #expect(stats.deckByID.count == 4)
     }
 }

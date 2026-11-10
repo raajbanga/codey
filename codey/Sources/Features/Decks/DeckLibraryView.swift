@@ -10,11 +10,15 @@ struct DeckLibraryView: View {
         var id: String { rawValue }
     }
 
-    @Query(
-        filter: #Predicate<FlashcardDeck> { $0.deletedAt == nil },
-        sort: [SortDescriptor(\FlashcardDeck.updatedAt, order: .reverse)]
+    /// Live decks, newest edit first. A typed static keeps the #Predicate
+    /// out of the property-wrapper expression, which took ~400 ms to
+    /// type-check inline (and again in every #Preview that builds this view).
+    private static let liveDecks = FetchDescriptor<FlashcardDeck>(
+        predicate: #Predicate { $0.deletedAt == nil },
+        sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
     )
-    private var decks: [FlashcardDeck]
+
+    @Query(liveDecks) private var decks: [FlashcardDeck]
     @Query(sort: \Topic.title) private var topics: [Topic]
     @Query private var profiles: [UserProfile]
 
@@ -27,9 +31,9 @@ struct DeckLibraryView: View {
 
     @Environment(BackendFacade.self) private var backend
 
-    private var topicsByID: [String: Topic] { topics.keyed(by: \.id) }
-
     var body: some View {
+        let topicsByID = topics.keyed(by: \.id)
+        let sections = deckSections(topicsByID: topicsByID)
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
                 Picker("Show", selection: $filter) {
@@ -46,16 +50,16 @@ struct DeckLibraryView: View {
                         action: { builder = .new }
                     )
                     .padding(.top, CodeySpacing.xl)
-                } else if userDecks.isEmpty && starterDecks.isEmpty {
+                } else if sections.user.isEmpty && sections.starter.isEmpty {
                     ContentUnavailableView.search(text: searchText)
                 } else {
-                    if filter != .starter, !userDecks.isEmpty {
-                        section(filter == .all ? "My Decks" : nil, decks: userDecks)
+                    if filter != .starter, !sections.user.isEmpty {
+                        section(filter == .all ? "My Decks" : nil, decks: sections.user, topicsByID: topicsByID)
                     }
-                    if filter != .mine, !starterDecks.isEmpty {
-                        section(filter == .all ? "Starter Decks" : nil, decks: starterDecks)
+                    if filter != .mine, !sections.starter.isEmpty {
+                        section(filter == .all ? "Starter Decks" : nil, decks: sections.starter, topicsByID: topicsByID)
                     }
-                    if filter == .mine, userDecks.isEmpty {
+                    if filter == .mine, sections.user.isEmpty {
                         EmptyStateView(
                             systemImage: "rectangle.stack.badge.plus",
                             title: "No decks of your own yet",
@@ -119,7 +123,7 @@ struct DeckLibraryView: View {
 
     // MARK: Sections
 
-    private func section(_ title: String?, decks: [FlashcardDeck]) -> some View {
+    private func section(_ title: String?, decks: [FlashcardDeck], topicsByID: [String: Topic]) -> some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
             if let title {
                 Text(title)
@@ -160,30 +164,32 @@ struct DeckLibraryView: View {
 
     // MARK: Filtering
 
-    private var visibleDecks: [FlashcardDeck] {
+    /// The search/filter result, split by origin, in one pass per render.
+    /// Starter decks of pinned topics come first (onboarding, D16), in pin order.
+    private func deckSections(topicsByID: [String: Topic]) -> (user: [FlashcardDeck], starter: [FlashcardDeck]) {
         let query = searchText.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return decks }
-        return decks.filter { deck in
-            deck.title.localizedStandardContains(query)
-                || (topicsByID[deck.topicId]?.title.localizedStandardContains(query) ?? false)
-        }
-    }
-
-    private var userDecks: [FlashcardDeck] {
-        visibleDecks.filter { $0.origin == .user }
-    }
-
-    private var starterDecks: [FlashcardDeck] {
-        visibleDecks
-            .filter { $0.origin == .starter && (showHiddenStarters || !$0.isHidden) }
-            .sorted { lhs, rhs in
-                // Pinned topics' starter decks first (onboarding, D16), in pin order.
-                let pins = profiles.first?.pinnedTopicIds ?? []
-                let l = pins.firstIndex(of: lhs.topicId) ?? Int.max
-                let r = pins.firstIndex(of: rhs.topicId) ?? Int.max
-                if l != r { return l < r }
-                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+        var user: [FlashcardDeck] = []
+        var starter: [FlashcardDeck] = []
+        for deck in decks {
+            if !query.isEmpty,
+               !deck.title.localizedStandardContains(query),
+               topicsByID[deck.topicId]?.title.localizedStandardContains(query) != true {
+                continue
             }
+            switch deck.origin {
+            case .user: user.append(deck)
+            case .starter: if showHiddenStarters || !deck.isHidden { starter.append(deck) }
+            }
+        }
+        let pins = profiles.first?.pinnedTopicIds ?? []
+        let pinRank = Dictionary(pins.enumerated().map { ($1, $0) }, uniquingKeysWith: min)
+        starter.sort { lhs, rhs in
+            let l = pinRank[lhs.topicId] ?? Int.max
+            let r = pinRank[rhs.topicId] ?? Int.max
+            if l != r { return l < r }
+            return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+        }
+        return (user, starter)
     }
 
     private var hasHiddenStarters: Bool {

@@ -27,10 +27,18 @@ struct RootView: View {
         // Study and Quiz covers show their own banner (FR-35).
         .badgeBanner(isActive: router.study == nil && router.quiz == nil)
         .fullScreenCover(item: $router.study) { request in
-            StudySessionHost(request: request, context: modelContext)
+            ViewModelHost {
+                StudySessionViewModel(deck: request.deck, start: request.start, context: modelContext)
+            } content: {
+                StudySessionView(viewModel: $0)
+            }
         }
         .fullScreenCover(item: $router.quiz) { request in
-            QuizModeView(request: request, context: modelContext)
+            ViewModelHost {
+                QuizViewModel(topic: request.topic, mode: request.mode, context: modelContext)
+            } content: {
+                QuizModeView(viewModel: $0)
+            }
         }
         .sheet(item: $router.quizSetupTopic, onDismiss: router.presentPendingQuiz) { topic in
             QuizSetupView(topic: topic) { mode in

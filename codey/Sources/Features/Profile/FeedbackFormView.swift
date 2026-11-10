@@ -14,7 +14,7 @@ struct FeedbackFormView: View {
 
     private var limit: Int { ModelValidator.Limits.feedback.upperBound }
     private var length: Int { ModelValidator.measuredLength(text) }
-    private var isValid: Bool { ModelValidator().validateFeedback(text).isEmpty }
+    private var isValid: Bool { ModelValidator.validateFeedback(text).isEmpty }
 
     var body: some View {
         Form {
@@ -73,12 +73,9 @@ struct FeedbackFormView: View {
         isSending = true
         Task {
             defer { isSending = false }
-            do {
+            await $actionError.attempt("Couldn't send the report. Check your connection and try again.") {
                 try await backend.submitFeedback(text)
                 withAnimation(CodeyMotion.smooth) { sent = true }
-            } catch {
-                actionError = (error as? LocalizedError)?.errorDescription
-                    ?? "Couldn't send the report. Check your connection and try again."
             }
         }
     }

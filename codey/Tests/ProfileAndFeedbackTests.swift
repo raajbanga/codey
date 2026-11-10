@@ -10,19 +10,17 @@ struct ProfileAndFeedbackTests {
     // MARK: Validator limits (±1)
 
     @Test func displayNameLimits() {
-        let validator = ModelValidator()
-        #expect(validator.validateDisplayName(String(repeating: "a", count: 30)).isEmpty)
-        #expect(validator.validateDisplayName(String(repeating: "a", count: 31)).first?.reason == .tooLong(max: 30, actual: 31))
-        #expect(validator.validateDisplayName("   ").first?.reason == .empty)
+        #expect(ModelValidator.validateDisplayName(String(repeating: "a", count: 30)).isEmpty)
+        #expect(ModelValidator.validateDisplayName(String(repeating: "a", count: 31)).first?.reason == .tooLong(max: 30, actual: 31))
+        #expect(ModelValidator.validateDisplayName("   ").first?.reason == .empty)
         // Counted after trimming, in Unicode scalars (matches char_length).
-        #expect(validator.validateDisplayName("  " + String(repeating: "é", count: 30) + "  ").isEmpty)
+        #expect(ModelValidator.validateDisplayName("  " + String(repeating: "é", count: 30) + "  ").isEmpty)
     }
 
     @Test func feedbackLimits() {
-        let validator = ModelValidator()
-        #expect(validator.validateFeedback(String(repeating: "x", count: 1_000)).isEmpty)
-        #expect(validator.validateFeedback(String(repeating: "x", count: 1_001)).first?.reason == .tooLong(max: 1_000, actual: 1_001))
-        #expect(validator.validateFeedback("\n").first?.reason == .empty)
+        #expect(ModelValidator.validateFeedback(String(repeating: "x", count: 1_000)).isEmpty)
+        #expect(ModelValidator.validateFeedback(String(repeating: "x", count: 1_001)).first?.reason == .tooLong(max: 1_000, actual: 1_001))
+        #expect(ModelValidator.validateFeedback("\n").first?.reason == .empty)
     }
 
     // MARK: FR-04

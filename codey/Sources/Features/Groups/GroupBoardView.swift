@@ -7,22 +7,19 @@ struct GroupBoardView: View {
     @Environment(BackendFacade.self) private var backend
     let group: GroupSummary
 
-    @State private var entries: [LeaderboardEntry] = []
-    @State private var fetchedAt: Date?
-    @State private var isLoading = false
-    @State private var loadError: String?
+    @State private var board = CachedList<LeaderboardEntry>()
     @State private var confirmLeave = false
     @State private var actionError: String?
 
     private var rows: [LeaderboardRanking.Row] {
-        LeaderboardRanking.rank(entries, me: backend.currentUser?.id)
+        LeaderboardRanking.rank(board.items, me: backend.currentUser?.id)
     }
 
     var body: some View {
         List {
-            if let loadError {
+            if let error = board.error {
                 Section {
-                    StaleNotice(message: loadError, fetchedAt: fetchedAt)
+                    StaleNotice(message: error, fetchedAt: board.fetchedAt)
                 }
             }
             Section {
@@ -47,7 +44,7 @@ struct GroupBoardView: View {
         .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
-            if isLoading, entries.isEmpty { ProgressView() }
+            if board.isLoading, board.items.isEmpty { ProgressView() }
         }
         .refreshable { await load() }
         .task { await load() }
@@ -61,29 +58,17 @@ struct GroupBoardView: View {
     }
 
     private func load() async {
-        if entries.isEmpty, let cached = backend.cachedLeaderboard(for: group.id) {
-            entries = cached.entries
-            fetchedAt = cached.fetchedAt
-        }
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            entries = try await backend.fetchLeaderboard(for: group.id)
-            fetchedAt = .now
-            loadError = nil
-        } catch {
-            loadError = "Couldn't refresh the board."
-        }
+        await board.load(
+            cached: backend.cachedLeaderboard(for: group.id).map { ($0.entries, $0.fetchedAt) },
+            failure: "Couldn't refresh the board."
+        ) { try await backend.fetchLeaderboard(for: group.id) }
     }
 
     private func leave() {
         Task {
-            do {
+            await $actionError.attempt("Couldn't leave the group. Check your connection and try again.") {
                 try await backend.leaveGroup(group)
                 dismiss()
-            } catch {
-                actionError = (error as? LocalizedError)?.errorDescription
-                    ?? "Couldn't leave the group. Check your connection and try again."
             }
         }
     }

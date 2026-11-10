@@ -63,12 +63,20 @@ struct SyncQueue {
 
     /// The still-queued operations among `ids` (some may have been coalesced away).
     func operations(ids: [UUID]) throws -> [SyncOperation] {
-        let wanted = Set(ids)
-        return try context.fetch(FetchDescriptor<SyncOperation>()).filter { wanted.contains($0.id) }
+        try context.fetch(FetchDescriptor<SyncOperation>(predicate: #Predicate { ids.contains($0.id) }))
     }
 
     func hasPending(_ entity: SyncEntity, id: UUID) -> Bool {
         ((try? pendingOperation(entity, id: id)) ?? nil) != nil
+    }
+
+    /// Ids of every `entity` with a queued operation, in one fetch. Loops
+    /// check this set instead of calling `hasPending` once per row.
+    func pendingIDs(_ entity: SyncEntity) throws -> Set<UUID> {
+        let raw = entity.rawValue
+        var descriptor = FetchDescriptor<SyncOperation>(predicate: #Predicate { $0.entityRaw == raw })
+        descriptor.propertiesToFetch = [\.entityId]
+        return Set(try context.fetch(descriptor).map(\.entityId))
     }
 
     func pendingCount(ownerId: UUID?) -> Int {
@@ -79,10 +87,13 @@ struct SyncQueue {
     /// Drops every pending operation for these entities (hard-deleted rows
     /// the server never saw).
     func remove(_ entity: SyncEntity, ids: [UUID]) throws {
-        for id in ids {
-            if let pending = try pendingOperation(entity, id: id) {
-                context.delete(pending)
-            }
+        guard !ids.isEmpty else { return }
+        let raw = entity.rawValue
+        let pending = try context.fetch(FetchDescriptor<SyncOperation>(
+            predicate: #Predicate { $0.entityRaw == raw && ids.contains($0.entityId) }
+        ))
+        for operation in pending {
+            context.delete(operation)
         }
     }
 

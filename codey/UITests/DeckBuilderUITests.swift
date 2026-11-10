@@ -2,10 +2,11 @@ import XCTest
 
 /// 3.4: create a deck with 2 cards (one with a Python snippet) and see it in
 /// the library as "Saved locally".
+@MainActor
 final class DeckBuilderUITests: XCTestCase {
     private var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["-UITestInMemoryStore"]
@@ -21,8 +22,7 @@ final class DeckBuilderUITests: XCTestCase {
 
         let title = app.textFields["builder.title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
-        title.tap()
-        title.typeText("UI Test Deck")
+        enter("UI Test Deck", into: title)
 
         // Card 1: prompt + answer.
         fill(prompt: "What does `let` declare?", answer: "A constant.")
@@ -56,6 +56,58 @@ final class DeckBuilderUITests: XCTestCase {
         XCTAssertTrue(tile.waitForExistence(timeout: 15))
         XCTAssertTrue(tile.staticTexts["Saved locally"].exists || tile.label.contains("Saved locally"))
         XCTAssertTrue(tile.label.contains("2 cards"))
+    }
+
+    /// A guest deck has never synced, so deleting it is a hard delete. The
+    /// detail screen must survive its own pop animation without reading it.
+    func testDeleteUnsyncedDeckFromDetail() throws {
+        let decksTab = app.tabBars.buttons["Decks"]
+        XCTAssertTrue(decksTab.waitForExistence(timeout: 15))
+        decksTab.tap()
+
+        app.buttons["decks.add"].tap()
+        let title = app.textFields["builder.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        enter("Doomed Deck", into: title)
+        fill(prompt: "Q?", answer: "A.")
+        app.buttons["builder.save"].tap()
+
+        let tile = app.buttons["deckTile.Doomed Deck"].firstMatch
+        XCTAssertTrue(tile.waitForExistence(timeout: 15))
+        tile.tap()
+
+        // Secondary toolbar items sit in the overflow menu, where identifiers
+        // don't carry over; the menu item and the dialog share the label.
+        let more = app.navigationBars.buttons["OverflowBarButtonItem"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        more.tap()
+        let menuItem = app.buttons["Delete Deck"].firstMatch
+        XCTAssertTrue(menuItem.waitForExistence(timeout: 5))
+        menuItem.tap()
+        let confirm = app.buttons["Delete Deck"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+
+        XCTAssertTrue(app.buttons["decks.add"].waitForExistence(timeout: 10))
+        XCTAssertTrue(tile.waitForNonExistence(timeout: 5))
+        XCTAssertEqual(app.state, .runningForeground)
+    }
+
+    /// Types into a text field and checks it took: a busy Simulator can drop
+    /// keystrokes ("UI Test Deck" was once saved as "UIest Dec"), and the
+    /// tile lookup by title then fails 15 s later with no hint why.
+    private func enter(_ text: String, into field: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        for _ in 0..<3 {
+            field.tap()
+            _ = app.keyboards.firstMatch.waitForExistence(timeout: 5)
+            let current = field.value as? String ?? ""
+            if !current.isEmpty, current != field.placeholderValue {
+                field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count))
+            }
+            field.typeText(text)
+            if field.value as? String == text { return }
+        }
+        XCTFail("\(field) holds \"\(field.value as? String ?? "")\", not \"\(text)\"", file: file, line: line)
     }
 
     private func fill(prompt: String, answer: String) {

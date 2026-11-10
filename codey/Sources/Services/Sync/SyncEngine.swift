@@ -13,7 +13,6 @@ import os
 @Observable
 final class SyncEngine {
     private(set) var isSyncing = false
-    private(set) var lastSyncedAt: Date?
     private(set) var lastError: String?
     private(set) var consecutiveFailures = 0
     /// Called after every cycle, successful or not (the facade refreshes its
@@ -29,6 +28,8 @@ final class SyncEngine {
     @ObservationIgnored private let deviceID: String?
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let sleep: (Duration) async throws -> Void
+    @ObservationIgnored private let queue: SyncQueue
+    @ObservationIgnored private let store: SwiftDataService
     @ObservationIgnored private var scheduled: Task<Void, Never>?
     @ObservationIgnored private var reachabilityTask: Task<Void, Never>?
     @ObservationIgnored private var rerunRequested = false
@@ -38,9 +39,6 @@ final class SyncEngine {
     /// Re-pull this much before the cursor, in case a slow transaction
     /// committed a row with an earlier server timestamp. Applying is idempotent.
     static let pullOverlap: TimeInterval = 2
-
-    private var queue: SyncQueue { SyncQueue(context: context, now: now) }
-    private var store: SwiftDataService { SwiftDataService(context: context, now: now) }
 
     init(
         context: ModelContext,
@@ -61,6 +59,8 @@ final class SyncEngine {
         self.deviceID = deviceID
         self.now = now
         self.sleep = sleep
+        queue = SyncQueue(context: context, now: now)
+        store = SwiftDataService(context: context, now: now)
         self.currentUserID = currentUserID
     }
 
@@ -124,8 +124,7 @@ final class SyncEngine {
                 try await syncWeeklyXP(remote: remote, userID: userID)
                 consecutiveFailures = 0
                 lastError = nil
-                lastSyncedAt = now()
-                cursors.setLastSyncedAt(lastSyncedAt, for: userID)
+                cursors.setLastSyncedAt(now(), for: userID)
             } catch {
                 failCycle(error)
                 return false
@@ -151,9 +150,11 @@ final class SyncEngine {
         var cardIDs: [UUID] = []
         var obsolete: [SyncOperation] = []
         var waiting: Set<UUID> = []
+        let decksByID = try store.fetchDecks(ids: operations.filter { $0.entity == .deck }.map(\.entityId))
+        let cardsByID = try store.fetchCards(ids: operations.filter { $0.entity == .card }.map(\.entityId))
 
         for operation in operations where operation.entity == .deck {
-            guard let deck = try store.fetch(id: operation.entityId), deck.origin == .user else {
+            guard let deck = decksByID[operation.entityId], deck.origin == .user else {
                 obsolete.append(operation)
                 continue
             }
@@ -161,11 +162,11 @@ final class SyncEngine {
                 waiting.insert(deck.id)
                 continue
             }
-            if deck.syncState == .synced { deck.editAndSave() }
+            if deck.syncState == .synced { deck.editAndSave(at: now()) }
             decks.append(deck)
         }
         for operation in operations where operation.entity == .card {
-            guard let card = try store.fetchCard(id: operation.entityId), let deck = card.deck, deck.origin == .user else {
+            guard let card = cardsByID[operation.entityId], let deck = card.deck, deck.origin == .user else {
                 obsolete.append(operation)
                 continue
             }
@@ -180,7 +181,7 @@ final class SyncEngine {
         do {
             cardIDs += try await resolveConflicts(decks, remote: remote)
             let versions = try await remote.upsertDecks(decks.map { $0.toPayload() })
-            let cards = Set(cardIDs).compactMap { try? store.fetchCard(id: $0) }.compactMap { card -> RemoteCard? in
+            let cards = try store.fetchCards(ids: Set(cardIDs)).values.compactMap { card -> RemoteCard? in
                 guard let deckID = card.deck?.id else { return nil }
                 return RemoteCard(deckId: deckID, card: card.toPayload())
             }
@@ -192,19 +193,20 @@ final class SyncEngine {
             // Done with exactly the operations we sent; anything enqueued
             // while we were waiting stays queued.
             try queue.markDone(try queue.operations(ids: operationIDs))
+            let stillPending = try queue.pendingIDs(.deck)
             for deck in decks {
-                deck.receive(.ack(serverUpdatedAt: versions[deck.id] ?? now()))
+                deck.receive(.ack(serverUpdatedAt: versions[deck.id] ?? now()), at: now())
                 if deck.deletedAt != nil {
                     // Fig. 7 final state: the delete reached the server.
                     context.delete(deck)
-                } else if queue.hasPending(.deck, id: deck.id) {
-                    deck.editAndSave()
+                } else if stillPending.contains(deck.id) {
+                    deck.editAndSave(at: now())
                 }
             }
             try context.save()
         } catch {
             for deck in decks where deck.syncState == .syncing || deck.syncState == .conflict {
-                if deck.syncState == .conflict { deck.resolve() } else { deck.receive(.networkFailure) }
+                if deck.syncState == .conflict { deck.resolve(at: now()) } else { deck.receive(.networkFailure, at: now()) }
             }
             try? queue.markFailed((try? queue.operations(ids: operationIDs)) ?? [], error: String(describing: error))
             throw error
@@ -225,14 +227,14 @@ final class SyncEngine {
             } ?? false
             // A deck left in Conflict by a killed app merges again too.
             guard remoteMoved || deck.syncState == .conflict else { continue }
-            deck.receive(.timestampMismatch)
+            deck.receive(.timestampMismatch, at: now())
             guard let snapshot = try await remote.fetchDeckSnapshot(id: deck.id) else {
-                deck.resolve()
+                deck.resolve(at: now())
                 deck.push()
                 continue
             }
             let outcome = try ConflictResolver(context: context).merge(deck, with: snapshot)
-            deck.resolve()
+            deck.resolve(at: now())
             deck.push()
             extraCards += outcome.cardsToPush
             Logger.sync.notice("Merged a conflicting deck (\(outcome.cardsTakenFromRemote.count) remote card changes)")
@@ -243,7 +245,11 @@ final class SyncEngine {
 
     private func appendLog(operationIDs: [UUID], remote: any RemoteDeckStore) async {
         let entries = ((try? queue.operations(ids: operationIDs)) ?? [])
-            .map { SyncLogEntry(entity: $0.entity, entityId: $0.entityId, op: $0.op, clientTimestamp: $0.enqueuedAt, deviceId: deviceID) }
+            .compactMap { operation in
+                operation.entity.map {
+                    SyncLogEntry(entity: $0, entityId: operation.entityId, op: operation.op, clientTimestamp: operation.enqueuedAt, deviceId: deviceID)
+                }
+            }
         guard !entries.isEmpty else { return }
         do {
             try await remote.appendSyncLog(entries)
@@ -258,9 +264,9 @@ final class SyncEngine {
     private func pull(remote: any RemoteDeckStore, userID: UUID) async throws {
         let since = cursors.cursor(for: userID).map { $0.addingTimeInterval(-Self.pullOverlap) }
         let changes = try await remote.fetchChanges(since: since)
-        let queue = queue
+        let pending = try queue.pendingIDs(.deck)
         try RemoteChangeApplier(context: context, now: now).apply(changes, ownerId: userID) { deck in
-            deck.syncState == .synced && !queue.hasPending(.deck, id: deck.id)
+            deck.syncState == .synced && !pending.contains(deck.id)
         }
         try context.save()
         if let cursor = changes.cursor {

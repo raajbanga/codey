@@ -5,12 +5,13 @@ import XCTest
 /// Type, clipped text, traits) on every main screen, in Light and Dark.
 /// Every raw finding prints one `A11Y` line; the test fails on the ones
 /// that aren't known false positives (see `isKnownFalsePositive`).
+@MainActor
 final class AccessibilityAuditUITests: XCTestCase {
     private var app: XCUIApplication!
     private var issues: [String] = []
     private var rawCount = 0
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
     }
 
@@ -96,9 +97,11 @@ final class AccessibilityAuditUITests: XCTestCase {
         card.swipeRight()
         // Rate until the summary shows: under load a swipe can land before
         // the flip finishes and is ignored (FR-16), so don't count swipes.
+        // The summary takes ~1 s to appear after the last rating, so wait
+        // for it before deciding there's another card to rate.
         let done = app.buttons["study.done"]
-        for _ in 0..<8 where !done.exists {
-            sleep(1)
+        for _ in 0..<8 {
+            if done.waitForExistence(timeout: 2) { break }
             card.tap()
             sleep(1)
             card.swipeRight()
