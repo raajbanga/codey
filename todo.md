@@ -61,6 +61,7 @@ Still in force from Sprint 3: S1 (LaTeX → PDF via tectonic, 12 pt, double-spac
 - **S34** No peer usability test. The "task success rate" metric and tier tuning are removed. Acceptance tests are scripted walkthroughs of each client mandate, run by a member who did not build that feature (ES for most), and repeated as the Expo demo.
 - **S35** Code freeze: **Sun Nov 22**. After the freeze only doc work and bug fixes; regenerate Appendix B, the pattern map and the file table after the freeze.
 - **S36** Control-flow-graph test design (rubric 18c) uses `StudyQueue.record(_:)` from Activity 12.1 (`docs/course/Activity12_1.pdf`) plus one new method, `ExerciseValidator`'s check. Graphs are drawn in Mermaid (`.mmd` source kept with the figures).
+- **S37** Integration test design (rubric 18d) uses Activity 12.2 (`docs/course/Activity12_2.pdf`): SyncEngine → SupabaseDataClient progress sync (FR-61), **sandwich** strategy. Stubs: `MockRemoteStore`, `MockAuth`. Drivers: `SyncHarness` + `ProgressSyncTests`, `supabase/tests/progress.sql`, `rls_live_check.sql`. Interface fault: nil `retiredAt` dropped from the JSON, so the upsert leaves `retired_at` set (mitigated by explicit nulls); BUG-02 (sign-in nonce) as the real example of the same kind. Gap: no `SupabaseDataClientTests` case yet asserts `retired_at: null` for progress rows. CI: GitHub Actions for the Swift tests; pgTAP and the live check by hand. Entry/exit criteria are copied from the activity.
 
 ## 5. Task list
 
@@ -138,7 +139,7 @@ Re-runs for the Sprint 4 column (every sprint, NFR-17–19; after the freeze):
 - [ ] [RB] **18a Testing checklist / test plan**: scope, levels (unit, integration, system, acceptance), environment (S22), entry/exit criteria (all pass, ≥ 70 % coverage NFR-16), roles, schedule, CI. Follow the IEEE 1008 phases from the Week 12 reading.
 - [ ] [AB] **18b Unit tests**: run `xcodebuild test` with coverage; table of suites by layer → count, pass/fail, coverage for Model/ViewModel/Service. Reuse the test-case map (traceability section).
 - [ ] [ES] **18c Flow-graph coverage**: Activity 12.1 (`StudyQueue.record`, V(G) = 4, 4 basis-path tests, all in `StudyQueueTests`) + `ExerciseValidator` CFG → basis paths → tests. Mermaid figures + node/edge/V(G) table.
-- [ ] [AB] **18d Integration tests**: plan + results table for components tested together: SyncEngine + SyncQueue + ConflictResolver + mock backend; SwiftData store + `MigrationTests`; `DataSeeder` / `StarterDeckLoader` / `BundledContentStamp` + store; `SupabaseDataClient` with stubbed responses; database via pgTAP (`supabase test db`) and the live RLS check; schema limits (`SupabaseSchemaTests`). Activity 12.2 (Thu Nov 12) feeds this.
+- [ ] [AB] **18d Integration tests**: plan + results table for components tested together: SyncEngine + SyncQueue + ConflictResolver + mock backend; SwiftData store + `MigrationTests`; `DataSeeder` / `StarterDeckLoader` / `BundledContentStamp` + store; `SupabaseDataClient` with stubbed responses; database via pgTAP (`supabase test db`) and the live RLS check; schema limits (`SupabaseSchemaTests`). Copy Activity 12.2 in (S37): interface table, sandwich strategy with stubs/drivers, nil-vs-null interface fault (+ BUG-02 as a real example), CI + entry/exit criteria. Export the filled activity to `docs/course/Activity12_2.pdf`.
 - [ ] [ES] **18e System tests**: end-to-end scripted cases on the Simulator (new user → onboarding → build deck → study → quiz → XP/streak/badge; offline create/study/quiz with Wi-Fi off; sign in → sync; groups/leaderboard; coding exercise). Include the 3 XCUITest suites. Record pass/fail per case. Activity 13.1 (Tue Nov 17) feeds this.
 - [ ] [ES] **18f V&V and acceptance**: verification = traceability check (every remaining FR/NFR → test → result); validation/acceptance = one scripted acceptance test per client mandate (ProjectDetails list), run by a non-author (S34), results table. Activity 13.2 (Thu Nov 19) feeds this.
 - [ ] [AB] Fix any defect found by these runs; log each defect (ID, found by which test, fix commit) in the doc.
@@ -171,7 +172,7 @@ Re-runs for the Sprint 4 column (every sprint, NFR-17–19; after the freeze):
 
 | Week | Dates | Focus |
 |---|---|---|
-| 12 | Nov 9 – 15 | Housekeeping; BUG-01/02 ✔; FR-61 ✔; document them; FR-39–41 build; Activity 12.1 (unit) ✔, 12.2 (integration) |
+| 12 | Nov 9 – 15 | Housekeeping; BUG-01/02 ✔; FR-61 ✔; document them; FR-39–41 build; Activity 12.1 (unit) ✔, 12.2 (integration) ✔ |
 | 13 | Nov 16 – 22 | Doc cuts; device/Proxyman/fps measurements; test plans + runs; Activities 13.1, 13.2; **code freeze Sun Nov 22** |
 | 14 | Nov 23 – 29 | Re-runs for the Sprint 4 column; doc writing, generators, Gantt, conclusion (Thanksgiving Wed–Fri) |
 | 15 | Nov 30 – Dec 1 | Final checks, merge to main, submit, Expo |
