@@ -131,47 +131,48 @@ Kept as the source for the doc (§5.0b).
 
 ### 5.0b Document what's done (RB, by Wed Nov 18)
 
-- [ ] [RB] Defect table: BUG-01 and BUG-02 (found by, cause, fix, commit `1949cfe`, regression test). Risk lesson: free-tier projects pause after ~7 days idle.
-- [ ] [RB] FR-61 → Implemented; FR-45 parenthetical removed; traceability + TC-61; R18 closed; D10 note.
-- [ ] [RB] Decision log: S32 as built, S33, S38.
-- [ ] [RB] Database/deployment sections and diagrams: three progress tables, RLS, merge triggers; sync path gains the progress step.
-- [ ] [RB] Nov 10 hand checks as system tests in §18e (sign-in → sync → groups → leaderboard → sign-out; two Simulators converge).
-- [ ] [RB] FR-61 known limits in requirements notes or Future Work.
+- [x] [RB] Defect table: BUG-01 and BUG-02 (found by, cause, fix, commit `1949cfe`, regression test). Risk lesson: free-tier projects pause after ~7 days idle.
+- [x] [RB] FR-61 → Implemented; FR-45 parenthetical removed; traceability + TC-61; R18 closed; D10 note.
+- [x] [RB] Decision log: S32 as built, S33, S38.
+- [x] [RB] Database/deployment sections and diagrams: three progress tables, RLS, merge triggers; sync path gains the progress step.
+- [x] [RB] Nov 10 hand checks as system tests in §18e (sign-in → sync → groups → leaderboard → sign-out; two Simulators converge).
+- [x] [RB] FR-61 known limits in requirements notes or Future Work.
 
 ### 5.1 FR-39–41 Coding challenges: minimal build (by Sun Nov 15) — **top priority**
 
-- [ ] [AB] `codey/Resources/exercises.json`: 10–15 exercises (Swift Basics, Python Basics, Algorithms, Data Structures). Fields: id, topic, title, language, code with `___` blanks, `blanks[].accepted[]`, explanation.
-- [ ] [AB] `ExerciseLoader` (decode + validate, like `QuestionBankLoader`) and pure `ExerciseValidator` (normalize whitespace, compare each blank, pass/fail per blank).
-- [ ] [ES] `ExerciseListView` + `ExerciseView` on the Quiz tab: syntax-highlighted code, one monospaced field per blank, Submit shows pass/fail per blank + explanation. Design tokens only.
-- [ ] [AB] `ExerciseLoaderTests`, `ExerciseValidatorTests` (one test per CFG basis path, §5.4).
-- [ ] [ES] Exercise screens on iPhone 17e / 17 / 18 Pro Max, Light and Dark; add to `AccessibilityAuditUITests`.
-- [ ] [RB] Doc: FR-39–41 → Implemented; scope + MoSCoW; R1, R17 closed; traceability + TC-39–41.
+- [x] [AB] `codey/Resources/exercises.json`: 10–15 exercises (Swift Basics, Python Basics, Algorithms, Data Structures). Fields: id, topic, title, language, code with `___` blanks, `blanks[].accepted[]`, explanation.
+- [x] [AB] `ExerciseLoader` (decode + validate, like `QuestionBankLoader`) and pure `ExerciseValidator` (normalize whitespace, compare each blank, pass/fail per blank).
+- [x] [ES] `ExerciseListView` + `ExerciseView` on the Quiz tab: syntax-highlighted code, one monospaced field per blank, Submit shows pass/fail per blank + explanation. Design tokens only.
+- [x] [AB] `ExerciseLoaderTests`, `ExerciseValidatorTests` (one test per CFG basis path, §5.4).
+- [x] [ES] Exercise screens on iPhone 17e / 17 / 18 Pro Max, Light and Dark; add to `AccessibilityAuditUITests`.
+- [x] [RB] Doc: FR-39–41 → Implemented; scope + MoSCoW; R1, R17 closed; traceability + TC-39–41.
 
 ### 5.2 Close promises in the doc (by Wed Nov 18)
 
-- [ ] [RB] NFR-02: "Met against the mock backend (0.41 s); not measured live". Remove Network Link Conditioner / test-account wording.
-- [ ] [RB] Retire NFR-32 / TC-P09 everywhere (NFR table, perf reqs, perf test cases, traceability, metrics); note in Changes Since Sprint 3.
-- [ ] [RB] Remove the peer-usability metric row and "tier tuning" (S34).
-- [ ] [RB] R13 → Accepted (600 XP/min pace limit); DFD threat P6 says the limit exists.
-- [ ] [RB] Every other dropped "Sprint 4" promise → removed or Future Work.
-- [ ] [RB] Re-count FRs/NFRs and every count in the text (tests now ≈ 375 unit + UI + 75 pgTAP).
-- [ ] [AB] `grep -n "Sprint 4\|Planned" docs/source/Sprint4_Documentation.tex` returns only things actually done in Sprint 4.
+- [x] [RB] NFR-02: "Met against the mock backend (0.41 s); not measured live". Remove Network Link Conditioner / test-account wording.
+- [x] [RB] Retire NFR-32 / TC-P09 everywhere (NFR table, perf reqs, perf test cases, traceability, metrics); note in Changes Since Sprint 3.
+- [x] [RB] Remove the peer-usability metric row and "tier tuning" (S34).
+- [x] [RB] R13 → Accepted (600 XP/min pace limit); DFD threat P6 says the limit exists.
+- [x] [RB] Every other dropped "Sprint 4" promise → removed or Future Work.
+- [x] [RB] Re-count FRs/NFRs and every count in the text (tests now ≈ 375 unit + UI + 75 pgTAP).
+- [x] [AB] `grep -n "Sprint 4\|Planned" docs/source/Sprint4_Documentation.tex` returns only things actually done in Sprint 4.
 
 ### 5.2a Debloat the doc (RB, while creating the Sprint 4 file; by Nov 25)
 
 Rule (S38): keep every rubric section's explanations and justification; cut what the rubric doesn't ask for or what repeats another section. Expect the reading copy to land around 20–24k words, well over the 6,000 minimum. Rough savings in brackets.
 
 **Cut**
-- [ ] UI/UX Design section (not in the Sprint 4 rubric) [≈ 2,000]. Keep 1 paragraph + the screenshot figure in §1 Overview; the design-token check moves to §18 (UI tests).
-- [ ] "Changes Since Sprint 1" and "Changes Since Sprint 2" [≈ 670]. Replace with one "Changes Since Sprint 3"; earlier history lives in the earlier docs.
-- [ ] §4 "Estimation", "Sprint Readiness and Demonstration" [≈ 220]. One sentence each folded into the process text.
+- [x] UI/UX Design section (not in the Sprint 4 rubric) [≈ 2,000]. Keep 1 paragraph + the screenshot figure in §1 Overview; the design-token check moves to §18 (UI tests).
+- [x] "Changes Since Sprint 1" and "Changes Since Sprint 2" [≈ 670]. Replace with one "Changes Since Sprint 3"; earlier history lives in the earlier docs.
+- [x] §4 "Estimation", "Sprint Readiness and Demonstration" [≈ 220]. One sentence each folded into the process text.
 
 **Condense (keep the point, drop the restatement)**
-- [ ] §4 "Sprint N Status of Critical Tasks", "Technical Debt", "Input Validation" → one status table + short paragraphs [≈ 300].
-- [ ] "Adaptive Practice Rationale" → one paragraph under Requirements [≈ 150].
-- [ ] Use case section (≈ 1,800 words): one-line description per use case in a table; keep full narrative only for the 2–3 core flows [≈ 600].
-- [ ] Traceability + requirements tables: remove "how" detail duplicated from the component/sequence sections; keep ID → design → test → result [≈ 500].
-- [ ] Metrics plan narrative: the table says it; keep 2–3 sentences [≈ 300].
+- [x] §4 "Sprint N Status of Critical Tasks", "Technical Debt", "Input Validation" → one status table + short paragraphs [≈ 300].
+- [x] "Adaptive Practice Rationale" → one paragraph under Requirements [≈ 150].
+- [x] Use case section (≈ 1,800 words): one-line description per use case in a table; keep full narrative only for the 2–3 core flows [≈ 600].
+- [x] Traceability + requirements tables: remove "how" detail duplicated from the component/sequence sections; keep ID → design → test → result [≈ 500].  
+  _Nov 14:_ checked; the matrix is already ID → use case → design → test → status (≈ 650 words for 66 rows). Nothing to cut.
+- [x] Metrics plan narrative: the table says it; keep 2–3 sentences [≈ 300].
 - [ ] Sweep: hedges, "as described in Section X" repeats, sprint-by-sprint backstory in captions.
 
 **Do not cut:** performance justification (§17), security threat model and test cases (§16), pattern documentation (§11), Appendix A steps, any testing content (§18).
@@ -186,34 +187,39 @@ New measurements:
 - [ ] [ES] Could: scroll fps on the deck library (Instruments, Animation Hitches); else "not measured".
 
 Re-runs for the Sprint 4 column (after the freeze):
-- [ ] [AB] `CODEY_PERF=1 scripts/perf-report.sh` → `sprint4.csv`; `scripts/perf-launch.sh` → `sprint4-launch.csv`.
-- [ ] [AB] Security: TC-S01 live RLS check, TC-S02 Security Advisor, TC-S03 `check-secrets.sh --history`, TC-S04 `xcodebuild analyze`, TC-S05 `check-release-build.sh`, TC-S11 `check-imports.sh`; `supabase test db` (75 pgTAP, needs Docker/OrbStack).
+- [x] [AB] `CODEY_PERF=1 scripts/perf-report.sh` → `sprint4.csv`; `scripts/perf-launch.sh` → `sprint4-launch.csv`.
+- [ ] [AB] Security: TC-S01 live RLS check, TC-S02 Security Advisor, TC-S03 `check-secrets.sh --history`, TC-S04 `xcodebuild analyze`, TC-S05 `check-release-build.sh`, TC-S11 `check-imports.sh`; `supabase test db` (75 pgTAP, needs Docker/OrbStack).  
+  _Nov 14:_ S03, S04 (0 in Codey's sources), S05, S11 and pgTAP 75/75 re-run (CI). Left: S01 live + S02 Advisor (need the live project; doc shows `\tbd`).
 - [ ] [ES] UI: 3 sizes × Light/Dark incl. exercise screens; `ContrastTests`; `AccessibilityAuditUITests`.
 - [ ] [AB] Supabase Usage vs Free-plan limits (TC-N20) and a `scripts/backup.sh` dump before the Expo.
-- [ ] [RB] Results into the metrics table (Sprint 4 column), security table and performance sections, with environment (S11). Rewrite "Simulator versus device" bottleneck paragraph with device numbers.
+- [ ] [RB] Results into the metrics table (Sprint 4 column), security table and performance sections, with environment (S11). Rewrite "Simulator versus device" bottleneck paragraph with device numbers.  
+  _Nov 14:_ Simulator values in (perf sprint4.csv: launch 4.23 s p95 = 3.56 s pre-main + 0.62 s app; save 38.7 ms). Device values are `\tbd` in the doc.
 
 ### 5.4 Software Testing section: rubric §18 (plans by Nov 18, executed by the freeze Nov 22)
 
-- [ ] [RB] **18a Test plan / checklist**: scope, levels, environment (S22), entry/exit criteria (all pass, ≥ 70 % coverage NFR-16), roles, schedule, CI (main + dev). IEEE 1008 phases.
-- [ ] [AB] **18b Unit tests**: `xcodebuild test` with coverage; suites by layer → count, pass/fail, coverage for Model/ViewModel/Service.
-- [ ] [ES] **18c Flow-graph coverage**: `StudyQueue.record` (V(G) = 4, 4 basis-path tests in `StudyQueueTests`) + `ExerciseValidator` CFG → basis paths → tests. Mermaid figures + node/edge/V(G) table.
-- [ ] [AB] **18d Integration tests**: SyncEngine + SyncQueue + ConflictResolver + mock backend; SwiftData + `MigrationTests`; seeding/`BundledContentStamp` + store; `SupabaseDataClient` with stubbed responses; pgTAP + live RLS check; `SupabaseSchemaTests`. Bring in Activity 12.2 (S37). Add the missing `retired_at: null` assertion for progress rows.
-- [ ] [ES] **18e System tests**: scripted end-to-end cases on the Simulator (onboarding → deck → study → quiz → XP/streak/badge; offline; sign in → sync; groups/leaderboard; coding exercise) + the 3 XCUITest suites. Pass/fail per case. Activity 13.1 feeds this.
-- [ ] [ES] **18f V&V and acceptance**: verification = traceability check; acceptance = one scripted test per client mandate, run by a non-author (S34). Activity 13.2 feeds this.
-- [ ] [AB] Fix any defect found; log each (ID, found by, fix commit) in the doc.
+- [x] [RB] **18a Test plan / checklist**: scope, levels, environment (S22), entry/exit criteria (all pass, ≥ 70 % coverage NFR-16), roles, schedule, CI (main + dev). IEEE 1008 phases.
+- [x] [AB] **18b Unit tests**: `xcodebuild test` with coverage; suites by layer → count, pass/fail, coverage for Model/ViewModel/Service.
+- [x] [ES] **18c Flow-graph coverage**: `StudyQueue.record` (V(G) = 4, 4 basis-path tests in `StudyQueueTests`) + `ExerciseValidator` CFG → basis paths → tests. Mermaid figures + node/edge/V(G) table.
+- [x] [AB] **18d Integration tests**: SyncEngine + SyncQueue + ConflictResolver + mock backend; SwiftData + `MigrationTests`; seeding/`BundledContentStamp` + store; `SupabaseDataClient` with stubbed responses; pgTAP + live RLS check; `SupabaseSchemaTests`. Bring in Activity 12.2 (S37). Add the missing `retired_at: null` assertion for progress rows.
+- [ ] [ES] **18e System tests**: scripted end-to-end cases on the Simulator (onboarding → deck → study → quiz → XP/streak/badge; offline; sign in → sync; groups/leaderboard; coding exercise) + the 3 XCUITest suites. Pass/fail per case. Activity 13.1 feeds this.  
+  _Nov 14:_ Written (§18e, ST-01–07). ST-01/02/05/06 automated and passing; ST-03, ST-04 and ST-07 re-run are `\tbd` for the Nov 17 walkthrough.
+- [ ] [ES] **18f V&V and acceptance**: verification = traceability check; acceptance = one scripted test per client mandate, run by a non-author (S34). Activity 13.2 feeds this.  
+  _Nov 14:_ Written (§18f, AT-01–07, one per mandate). Results `\tbd` for the Nov 19 run by a non-author.
+- [x] [AB] Fix any defect found; log each (ID, found by, fix commit) in the doc.
 
 ### 5.5 Sprint 4 document (Nov 22 – Nov 30)
 
-- [ ] [RB] Create `docs/source/Sprint4_Documentation.tex` (+ reading copy) from Sprint 3; cover page "Sprint 4", date; every "(Updated for Sprint 3)" → Sprint 4. Apply §5.2a while doing this.
-- [ ] [RB] Changes Since Sprint 3 (built, cut, measured; Nov 2–5 fixes: Swift 6, CI, rate limit, content stamp).
-- [ ] [RB] Process section: Sprint 4 timeline row and status; decision log S30–S38; `todo.md` as the project plan; CI.
-- [ ] [RB] Sprint 4 Gantt chart (rubric 5d) from this list's dates.
-- [ ] [RB] Risks: close R1, R17, R18; R13 accepted; BUG-01/02 lessons; new testing risks; monitoring.
-- [ ] [RB] UML updates only where code changed: exercise use case; component diagram (exercise loader/validator); deployment/class diagrams (FR-61 tables, sync path).
-- [ ] [AB] Version control: Sprint 4 commits/merges, Nov 5 history rewrite (S29), main → dev merge, CI on dev.
-- [ ] [AB] After the freeze: `gen-file-table.py`, `gen-pattern-map.sh`, `gen-appendix-b.sh` (update "Sprint 3 doc" headers); new files have header comments.
-- [ ] [RB] New §19 Concluding Remarks / Future Work: delivered, lessons learned; Future Work = open-ended coding problems, server-side XP ledger (R13), peer usability study, live performance tests (NFR-32).
-- [ ] [RB] Appendix A: exercises (nothing to configure), CI/pgTAP test commands, `PERF_TAG`.
+- [x] [RB] Create `docs/source/Sprint4_Documentation.tex` (+ reading copy) from Sprint 3; cover page "Sprint 4", date; every "(Updated for Sprint 3)" → Sprint 4. Apply §5.2a while doing this.
+- [x] [RB] Changes Since Sprint 3 (built, cut, measured; Nov 2–5 fixes: Swift 6, CI, rate limit, content stamp).
+- [x] [RB] Process section: Sprint 4 timeline row and status; decision log S30–S38; `todo.md` as the project plan; CI.
+- [x] [RB] Sprint 4 Gantt chart (rubric 5d) from this list's dates.
+- [x] [RB] Risks: close R1, R17, R18; R13 accepted; BUG-01/02 lessons; new testing risks; monitoring.
+- [x] [RB] UML updates only where code changed: exercise use case; component diagram (exercise loader/validator); deployment/class diagrams (FR-61 tables, sync path).
+- [x] [AB] Version control: Sprint 4 commits/merges, Nov 5 history rewrite (S29), main → dev merge, CI on dev.
+- [ ] [AB] After the freeze: `gen-file-table.py`, `gen-pattern-map.sh`, `gen-appendix-b.sh` (update "Sprint 3 doc" headers); new files have header comments.  
+  _Nov 14:_ Pre-freeze run done Nov 14 (doc compiles); re-run after the freeze.
+- [x] [RB] New §19 Concluding Remarks / Future Work: delivered, lessons learned; Future Work = open-ended coding problems, server-side XP ledger (R13), peer usability study, live performance tests (NFR-32).
+- [x] [RB] Appendix A: exercises (nothing to configure), CI/pgTAP test commands, `PERF_TAG`.
 - [ ] [RB] Build both PDFs (tectonic); check TOC page refs, labels, axis labels; word count ≥ 6,000 (body); copy to `docs/`.
 - [ ] [RB] README "Docs": link the Sprint 4 report; build guide → Appendix A of Sprint 4.
 - [ ] [RB] Could: proofread starter decks and question bank.

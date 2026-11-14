@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# H.21: Appendix B for the Sprint 3 doc. Every tracked source/config file
+# H.21: Appendix B for the sprint docs (Sprint 3 onward). Every tracked source/config file
 # gets its own \subsection (labelled appB:<path>, the label gen-pattern-map.sh
 # refers to) and a line-numbered \lstinputlisting.
 #

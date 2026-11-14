@@ -251,6 +251,31 @@ Elnad Salcinovic & iOS UI/UX \& QA Lead & SwiftUI components, offline caching (S
 \end{tabularx}
 \end{table}
 
+\subsection{User Interface}\label{sec:ui}
+The app uses a native iOS 26 structure: a Liquid Glass tab bar with Home, Decks, and
+Quiz; sheets for setup and editing; and full-screen covers for study and quiz sessions.
+Its look, redone in Sprint 3, is calm and minimal: content sits on rounded notes on
+warm, faintly dotted paper with one desaturated ink-blue accent, and celebrations are
+quiet banners with a haptic. Every color, font, spacing, and radius comes from the
+design-system tokens, which a CI check enforces (Section~\ref{sec:vc}). Sprint 4 added
+one screen family, the coding exercises, reached from the top of the Quiz tab.
+Figure~\ref{fig:screens} shows the main screens on an iPhone~17 Simulator; the
+storyboard, wireframes, and navigation diagram are in the Sprint 3 document.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.235\textwidth]{home-light.png}\hfill
+\includegraphics[width=0.235\textwidth]{decks.png}\hfill
+\includegraphics[width=0.235\textwidth]{study.png}\hfill
+\includegraphics[width=0.235\textwidth]{quiz.png}\\[1ex]
+\includegraphics[width=0.235\textwidth]{exercise-list.png}\hfill
+\includegraphics[width=0.235\textwidth]{exercise.png}\hfill
+\includegraphics[width=0.235\textwidth]{profile.png}\hfill
+\includegraphics[width=0.235\textwidth]{groups.png}
+\caption{Main screens (iOS Simulator). Top: Home, Decks, a study card (answer side), and a quiz question after a correct answer. Bottom: the coding-exercise list and an exercise after Check with one blank passed and one failed (Dark Mode, FR-39 to FR-41), the profile sheet, and Groups while signed out.}
+\label{fig:screens}
+\end{figure}
+
 \subsection{Changes Since Sprint 3}
 Sprint 4 was the testing sprint. It added no feature beyond the two client mandates
 that were still open, and spent the rest of its time planning, running, and
@@ -527,42 +552,41 @@ NFR-32 & Performance & \emph{Retired in Sprint 4 (S33).} A group leaderboard sha
 \subsection{Metrics Plan}
 NFR-17 through NFR-19 require performance, security, and user interface metrics to be
 collected and optimized. Table~\ref{tab:metrics} defines each metric, its measurement
-method, and its target, and reports the Sprint 2 baseline next to the Sprint 3 value
-so the effect of each change can be assessed. Sprint 3 replaced the manual Instruments
-measurements planned in Sprint 2 with automated, repeatable tests
-(Section~\ref{sec:performance}), and added two security metrics: open Security
-Advisor warnings and static-analyzer warnings.
+method, and its target, and reports the Sprint 3 value next to the Sprint 4 value so
+the effect of each change can be assessed. Every metric is measured by a repeatable
+tool run; the Sprint 4 values come from the runs of Nov 14 described in
+Sections~\ref{sec:security}, \ref{sec:performance}, and \ref{sec:testing}. The peer
+usability metric was dropped with the usability study (S34).
 
-\begin{xltabular}{\textwidth}{@{}L{1.8cm} L{3.0cm} Y L{1.6cm} L{1.9cm} L{2.1cm}@{}}
-\caption{Metrics plan with Sprint 2 baseline and Sprint 3 values}\label{tab:metrics}\\
+\begin{xltabular}{\textwidth}{@{}L{1.8cm} L{3.0cm} Y L{1.6cm} L{2.0cm} L{2.2cm}@{}}
+\caption{Metrics plan with Sprint 3 and Sprint 4 values}\label{tab:metrics}\\
 \toprule
-\textbf{Category} & \textbf{Metric} & \textbf{Tool / Method} & \textbf{Target} & \textbf{Sprint 2} & \textbf{Sprint 3} \\
+\textbf{Category} & \textbf{Metric} & \textbf{Tool / Method} & \textbf{Target} & \textbf{Sprint 3} & \textbf{Sprint 4} \\
 \midrule
 \endfirsthead
 \multicolumn{6}{@{}l}{\small\itshape Table \thetable\ continued} \\
 \toprule
-\textbf{Category} & \textbf{Metric} & \textbf{Tool / Method} & \textbf{Target} & \textbf{Sprint 2} & \textbf{Sprint 3} \\
+\textbf{Category} & \textbf{Metric} & \textbf{Tool / Method} & \textbf{Target} & \textbf{Sprint 3} & \textbf{Sprint 4} \\
 \midrule
 \endhead
 \bottomrule
 \endfoot
-Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & Not measured & 3.82 s on the Simulator (about 0.6 s after the app's code starts) \\
-Performance & 100-card deck sync & Mock with 50 ms per request (TC-P07); live opt-in test & $\le$ 5 s & 2 data requests; time not measured & 0.41 s \\
-Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & Not measured & 270.6 MB whole process on the Simulator: not met (the session adds 1.2 MB); device check Sprint 4 \\
-Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & Not measured & 0.39 / 57.9 / 15.1 ms \\
-Performance & Frame rate while scrolling the deck library & Instruments (Animation Hitches) & $\ge$ 60 fps & Not measured & Sprint 4 \\
-Security & Tables with RLS enabled & Schema unit test and live SQL check & 100\% & 100\% (4 of 4) & 100\% (8 of 8) \\
-Security & Cross-account or non-member reads/writes that succeed & Live RLS check (48 checks) & 0 & 0 (30 checks) & 0 (48 checks) \\
+Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & 3.82 s (Simulator) & 4.23 s (Simulator; 0.62 s is Codey's code); iPhone \tbd{value} \\
+Performance & 100-card deck sync & Mock with 50 ms per request (TC-P07) & $\le$ 5 s & 0.41 s & 0.42 s \\
+Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & 270.6 MB (Simulator; session +1.2 MB) & 282.9 MB (Simulator; session +1.5 MB); iPhone \tbd{value} \\
+Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & 0.39 / 57.9 / 15.1 ms & 0.37 / 38.7 / 13.8 ms \\
+Performance & Frame rate while scrolling the deck library & Instruments (Animation Hitches) & $\ge$ 60 fps & Not measured & \tbd{value or ``not measured''} \\
+Security & Tables with RLS enabled & Schema unit test, pgTAP, live SQL check & 100\% & 100\% (8 of 8) & 100\% (11 of 11) \\
+Security & Cross-account or non-member reads/writes that succeed & Live RLS check; pgTAP & 0 & 0 (48 checks) & 0 (57 live checks; 75 pgTAP tests pass) \\
 Security & Backend requests not using TLS 1.3 & URL session minimum protocol (unit test) & 0 & 0 & 0 \\
-Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 \\
-Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1 (fixed) & 1, justified (\texttt{join\_group}) \\
-Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & Not measured & 0 \\
-Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{xcodebuild test} with \texttt{xccov} & All pass; $\ge$ 70\% & 278 of 278; 89.3\% & 342 of 342; 89.4\% \\
-User interface & Screens passing the layout pass (3 sizes, Light and Dark) & Simulator walkthrough & 100\% & Not measured & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) \\
+Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 (in CI on every push) \\
+Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1, justified (\texttt{join\_group}) & \tbd{re-run} \\
+Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & 0 & 0 \\
+Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{scripts/test.sh} with \texttt{xccov} & All pass; $\ge$ 70\% & 342 of 342; 89.4\% & 388 of 388; 89.8\% \\
+User interface & Screens passing the layout pass (3 sizes, Light and Dark) & UI tests on 3 Simulators; walkthrough & 100\% & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) & \tbd{count incl.\ exercise screens} \\
 User interface & Text/background pairs below 4.5:1 & \texttt{ContrastTests} (Light, Dark, Increase Contrast) & 0 & 0 & 0 \\
-User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}, the Accessibility Inspector checks) over 16 screens, Light and Dark & 0 & Not measured & 0 open (1 fixed; 251 heuristic findings triaged) \\
+User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}) over every main screen, Light and Dark & 0 & 0 open over 16 screens & 0 open over 19 screens (1 fixed, BUG-03) \\
 User interface & Taps to start a study session from launch & Task walkthrough & $\le$ 3 & 1 & 1 (Home ``Up next'') \\
-User interface & Task success rate in peer usability test & 3--5 classmates, scripted tasks & $\ge$ 90\% & Not measured & Sprint 4 \\
 \end{xltabular}
 
 % =====================================================================
@@ -2520,7 +2544,7 @@ the documentation files has its own subsection in Appendix~B.
 Codey stores student progress on the phone and, for signed-in students, decks,
 profiles, group memberships, weekly XP, and defect reports in Supabase. This section
 summarizes the security requirements, the threat model (Activity~10.1), the design
-principles applied, and the security tests run in Sprint 3.
+principles applied, and the security tests re-run at the end of Sprint 4.
 
 \subsection{Security Requirements}
 The security non-functional requirements are NFR-04 to NFR-07 (encryption at rest on
@@ -2536,7 +2560,7 @@ NFR-04 needs one clarification. The Activity~10.1 checklist listed a gap under i
 earlier version of NFR-04 asked for \emph{complete}. NFR-04 was amended in Sprint 2 to
 \emph{complete unless open} on purpose (a sync in progress must be able to finish after
 the device locks), so no gap remains; only the on-device check of the attribute is
-outstanding (TC-S10, Sprint 4).
+outstanding (TC-S10, Table~\ref{tab:sectests}).
 
 \subsection{Trust Boundary Analysis}
 The critical trust boundary is between the iPhone app and the Supabase cloud (the
@@ -2544,7 +2568,7 @@ PostgREST API and PostgreSQL), crossed over the public internet. Everything on t
 device side, including the app's own validation, must be assumed to be bypassable:
 the public anon key ships inside the app and can be extracted to call the API
 directly. Table~\ref{tab:boundary} records the main threat at this boundary and its
-mitigations, updated for the Sprint 3 tables and function.
+mitigations, updated for the Sprint 3 tables and function and the Sprint 4 progress tables.
 
 \begin{table}[H]
 \centering
@@ -2677,28 +2701,31 @@ Supabase Auth.
 \bottomrule
 \endfoot
 Flows 2, 3, 15 & Spoofing & A forged ID token or session is presented. & Supabase Auth verifies Google's token signature; PostgREST verifies the JWT on every request. \\
-Flows 11, 14 & Tampering, Information disclosure & A network attacker reads or alters traffic (public Wi-Fi). & TLS 1.3 minimum, no ATS exceptions (NFR-06); Proxyman confirmation in Sprint 4. \\
-P6 / D3 & Elevation of privilege, Information disclosure & A user reads or writes another user's rows, or a non-member reads a group board. & RLS on all 8 tables; group policies via \texttt{private.is\_member()}; 48 live checks, 0 failures (TC-S01). \\
+Flows 11, 14 & Tampering, Information disclosure & A network attacker reads or alters traffic (public Wi-Fi). & TLS 1.3 minimum, no ATS exceptions (NFR-06); traffic capture TC-S09. \\
+P6 / D3 & Elevation of privilege, Information disclosure & A user reads or writes another user's rows, or a non-member reads a group board. & RLS on all 11 tables; group policies via \texttt{private.is\_member()}; 48 live checks, 0 failures (TC-S01). \\
 Flow 14 & Elevation of privilege & \texttt{join\_group} (definer rights) is abused to add another user or read other groups. & Inserts only \texttt{auth.uid()}; empty \texttt{search\_path}; returns only the joined group; revoked from anon. \\
 D3 (\texttt{weekly\_xp}) & Tampering & A user writes an inflated weekly XP. & Own row only, CHECK $\le$ 22,500, server keeps the maximum, growth clamped to 600 XP per minute; accepted residual risk R13. \\
 D2, flow 10 & Information disclosure & The session token leaks from storage or logs. & Keychain, this device only; logging audit: the 7 public log values are a launch duration, starter-deck keys and card IDs, sync event, state, and entity names, and tier names (NFR-21). \\
 D1 & Information disclosure & A lost phone exposes progress and decks. & iOS Data Protection (\emph{complete unless open}). The offline group cache (group names, invite codes, member names) is in \texttt{UserDefaults}, which has the default protection, and is cleared on sign-out. \\
 P2, flow 5 & Tampering, Denial of service & Oversized or malformed input crashes the app or the server. & Validator limits (title 60, text 500, code 2,000 characters and 80 lines), errors as values; CHECK constraints server-side. \\
 Flow 11 & Repudiation & A user denies having pushed a change. & Append-only \texttt{sync\_log} with no update or delete policies. \\
-P6 & Denial of service & Request flooding exhausts the Free plan. & Every write needs a signed-in session and passes RLS and CHECK constraints; usage is reviewed monthly against the Free-plan limits (NFR-20, R11). No per-user rate limit is configured yet (Sprint 4 hardening). \\
+P6 & Denial of service & Request flooding exhausts the Free plan. & Every write needs a signed-in session and passes RLS and CHECK constraints; usage is reviewed monthly against the Free-plan limits (NFR-20, R11). Weekly XP writes are pace-limited by a trigger (at most 600 XP per minute of server time, clamped rather than rejected; migration \texttt{weekly\_xp\_rate\_limit}). Other tables have no per-user rate limit, accepted for a class-sized user base (R11). \\
 \end{xltabular}
 
 \subsection{Security Test Cases}
 Table~\ref{tab:sectests} lists the security test cases, built from the automated
-checks of Activity~10.1, with the result of the Sprint 3 run. Activity~10.1 chose
+checks of Activity~10.1, with the result of the Sprint 4 run. Activity~10.1 chose
 tool-based analysis: each check is an automated, repeatable tool run, so results can
 be compared sprint to sprint (NFR-18). The checks run on every change that touches
 the backend and in full at the end of each sprint, and a failed check blocks the merge
-to \texttt{main} until it is fixed and run again. Two checks need tools or hardware
-outside the automated pipeline and are scheduled for Sprint 4.
+to \texttt{main} until it is fixed and run again. Since Sprint 4, TC-S03, TC-S05,
+TC-S11, TC-S12 and the unit tests behind TC-S06 and TC-S08 run in GitHub Actions on
+every push to \texttt{main} and \texttt{dev} (Section~\ref{sec:vc}). TC-S01 and TC-S02
+need the live project and are run by hand after each migration; TC-S09 and TC-S10
+need Proxyman and a physical iPhone.
 
 \begin{xltabular}{\textwidth}{@{}L{1.2cm} L{2.4cm} Y L{2.4cm} L{2.4cm} L{1.5cm}@{}}
-\caption{Security test cases and Sprint 3 results}\label{tab:sectests}\\
+\caption{Security test cases and Sprint 4 results}\label{tab:sectests}\\
 \toprule
 \textbf{ID} & \textbf{Item} & \textbf{Steps} & \textbf{Expected} & \textbf{Actual (date)} & \textbf{Status} \\
 \midrule
@@ -2710,51 +2737,52 @@ outside the automated pipeline and are scheduled for Sprint 4.
 \endhead
 \bottomrule
 \endfoot
-TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} in the Supabase SQL editor (or through the Supabase MCP server); two simulated users and a non-member try to read, change, and delete each other's rows on all 8 tables; everything rolls back. & 0 of 48 checks fail & 0 of 48 failed (Oct 30) & Pass \\
-TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after the Sprint 3 migrations; fix or justify each warning. & 0 unjustified warnings & 1 fixed (\texttt{rls\_auto\_enable}); 1 justified (\texttt{join\_group}) (Oct 30) & Pass \\
-TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings, 0 real values (Oct 30) & Pass \\
-TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 0 in Codey's sources (Oct 30) & Pass \\
-TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & None found (Oct 30) & Pass \\
-TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 342-test run (Oct 31) & Pass \\
+TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} in the Supabase SQL editor (or through the Supabase MCP server); two simulated users and a non-member try to read, change, and delete each other's rows on all 11 tables; everything rolls back. & 0 of 57 checks fail & 0 of 57 failed (Nov 9) & Pass \\
+TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after each migration; fix or justify each warning. & 0 unjustified warnings & 1 fixed (\texttt{rls\_auto\_enable}); 1 justified (\texttt{join\_group}) (Oct 30); \tbd{re-run after the progress migration} & \tbd{status} \\
+TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings, 0 real values (CI, Nov 14) & Pass \\
+TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 22 warnings, all in third-party packages, 0 in Codey's sources (Nov 14) & Pass \\
+TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & None found (CI, Nov 14) & Pass \\
+TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 402-test run (Nov 14) & Pass \\
 TC-S07 & Token storage and logging (NFR-21) & \texttt{KeychainSessionStorageTests}; search the source for public log values and \texttt{UserDefaults} writes of tokens. & Keychain only; no token logged & 7 public log values, none sensitive; no token in \texttt{UserDefaults} (Oct 30) & Pass \\
-TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 342-test run (Oct 31) & Pass \\
-TC-S09 & Hosts and TLS on the wire (NFR-24) & Capture Simulator traffic with Proxyman during sign-in, sync, and a leaderboard load. & Only Supabase and Google, all TLS 1.3 & Not run & Sprint 4 \\
-TC-S10 & File protection on device (NFR-04) & Install on an iPhone, read the store files' protection attribute. & \emph{complete unless open} & Not run & Sprint 4 \\
-TC-S11 & SDK confinement (R7) & \texttt{scripts/check-imports.sh}. & Pass & Pass (Oct 30) & Pass \\
+TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 402-test run (Nov 14) & Pass \\
+TC-S09 & Hosts and TLS on the wire (NFR-24) & Capture Simulator traffic with Proxyman during sign-in, sync, and a leaderboard load. & Only Supabase and Google, all TLS 1.3 & \tbd{result and date} & \tbd{status} \\
+TC-S10 & File protection on device (NFR-04) & Install on an iPhone, read the store files' protection attribute. & \emph{complete unless open} & \tbd{result and date} & \tbd{status} \\
+TC-S11 & SDK confinement (R7) & \texttt{scripts/check-imports.sh}. & Pass & Pass (CI, Nov 14) & Pass \\
+TC-S12 & Database policies and triggers (NFR-07, NFR-25, FR-61) & \texttt{supabase test db}: pgTAP suites \texttt{rls.sql} and \texttt{progress.sql} against a fresh local database built from the 10 migrations. & 75 of 75 pass & 75 of 75 passed (CI, Nov 14) & Pass \\
 \end{xltabular}
 
 \subsection{Software Security Checklist}
 Table~\ref{tab:ssc} is the project's security checklist from Activity~10.1 (items 1--5
 and 21 of the course table, plus items 12, 13, 18, and 22), with the result at the end
-of Sprint 3.
+of Sprint 4.
 
 \begin{xltabular}{\textwidth}{@{}l L{2.5cm} Y L{4.2cm}@{}}
-\caption{Software security checklist with Sprint 3 results}\label{tab:ssc}\\
+\caption{Software security checklist with Sprint 4 results}\label{tab:ssc}\\
 \toprule
-\textbf{\#} & \textbf{Item} & \textbf{Team approach} & \textbf{Actual result (Sprint 3)} \\
+\textbf{\#} & \textbf{Item} & \textbf{Team approach} & \textbf{Actual result (Sprint 4)} \\
 \midrule
 \endfirsthead
 \multicolumn{4}{@{}l}{\small\itshape Table \thetable\ continued} \\
 \toprule
-\textbf{\#} & \textbf{Item} & \textbf{Team approach} & \textbf{Actual result (Sprint 3)} \\
+\textbf{\#} & \textbf{Item} & \textbf{Team approach} & \textbf{Actual result (Sprint 4)} \\
 \midrule
 \endhead
 \bottomrule
 \endfoot
-1 & Security review in every phase & Security items in the PR template, checked before each merge to \texttt{main}; security walkthrough at each sprint review. & In use since Sprint 2; the three Sprint 3 migrations were checked against it before they were applied (Oct 30). \\
-2 & Security metrics and trace matrix & Security metrics compared sprint to sprint; security NFRs traced to test cases. & Sprint 2 vs Sprint 3 values in Table~\ref{tab:metrics}; NFR-21--27 traced to TC-S01--S11. \\
+1 & Security review in every phase & Security items in the PR template, checked before each merge to \texttt{main}; security walkthrough at each sprint review. & In use since Sprint 2; the Sprint 4 progress migration was checked against it before it was applied (Nov 9), and CI now runs the automated checks on every push. \\
+2 & Security metrics and trace matrix & Security metrics compared sprint to sprint; security NFRs traced to test cases. & Sprint 3 vs Sprint 4 values in Table~\ref{tab:metrics}; NFR-21--27 traced to TC-S01--S12. \\
 3 & Stakeholders and their security needs & Students: private, encrypted progress; client: no cost, team-written code; team: no leaked keys. & Complete; group mates see only name, avatar, and weekly XP. \\
 4 & Usage context and operating environment & iPhone app, offline-capable, Supabase Free plan over the public internet, possibly public Wi-Fi. & Complete; NFR-03 to NFR-06. \\
 5 & Language and OS risks shared before design & Swift is memory-safe; known risks: secrets in logs, ATS exceptions, tokens in \texttt{UserDefaults}, RLS off by default. & Complete; documented in \texttt{supabase/README.md}, the PR template, and the secrets template. \\
-21 & Data from app server to database & RLS on every table; server-assigned owner; CHECK constraints; parameterized queries; SSL to Postgres; AES-256 at rest. & RLS on 8 of 8 tables; 48 live checks, 0 failed. \\
-12 & No backdoors or bypass paths & Test sign-in compiled only in DEBUG; no admin screens; internal functions revoked from the API. & DEBUG guard in place; Release check found none of the DEBUG-only names (TC-S05, Oct 30). \\
+21 & Data from app server to database & RLS on every table; server-assigned owner; CHECK constraints; parameterized queries; SSL to Postgres; AES-256 at rest. & RLS on 11 of 11 tables; 57 live checks, 0 failed; 75 pgTAP tests pass in CI. \\
+12 & No backdoors or bypass paths & Test sign-in compiled only in DEBUG; no admin screens; internal functions revoked from the API. & DEBUG guard in place; Release check finds none of the DEBUG-only names on every CI run (TC-S05). \\
 13 & No secrets in code; no weak encryption & Keys only in the gitignored \texttt{Secrets.xcconfig}; secret scan; Keychain; Apple and Supabase encryption, no custom crypto. & Pattern scan 0 findings. The Sprint 2 ``gap'' is closed: NFR-04 was amended to \emph{complete unless open}. \\
-18 & Secure connections & TLS 1.3 minimum in code; no ATS exceptions; traffic capture. & Code and tests pass; capture in Sprint 4. \\
-22 & No default or improper configuration & RLS on every table; anon has no table access; Security Advisor each sprint; Google OAuth in Testing mode. & Advisor: 1 warning fixed, 1 justified. \\
+18 & Secure connections & TLS 1.3 minimum in code; no ATS exceptions; traffic capture. & Code and tests pass; capture \tbd{TC-S09 result}. \\
+22 & No default or improper configuration & RLS on every table; anon has no table access; Security Advisor each sprint; Google OAuth in Testing mode. & Advisor: 1 warning fixed, 1 justified (Oct 30); \tbd{re-run}. \\
 \end{xltabular}
 
 % =====================================================================
-\section{System Performance}\label{sec:performance}
+\section{System Performance (Updated for Sprint 4)}\label{sec:performance}
 % =====================================================================
 This section defines the performance requirements, the test cases and profiles that
 measure them, the results, and the bottlenecks. Every number states how it was
@@ -2766,7 +2794,8 @@ kept run, which makes it a conservative bound.
 \subsection{Performance Requirements}
 Table~\ref{tab:perfreq} collects the performance requirements. NFR-01 and NFR-02 come
 from the client's mandatory list and Activity~9.2; NFR-28 to NFR-32 were added in
-Sprint 3 for the paths a student waits on. The thresholds are not arbitrary: each is
+Sprint 3 for the paths a student waits on. NFR-32 (leaderboard load) was retired in Sprint 4
+(decision S33): it needed live test accounts, which were dropped. The thresholds are not arbitrary: each is
 set from what the student experiences (a quiz or a save should feel instant, under
 the roughly 100 ms at which a delay becomes noticeable), and each was checked against a
 first baseline run before it was published.
@@ -2780,12 +2809,11 @@ first baseline run before it was published.
 \textbf{ID} & \textbf{Requirement} & \textbf{Threshold} & \textbf{Test case} \\
 \midrule
 NFR-01 & Home dashboard ready after a cold launch & $\le$ 3 s (p95) & TC-P08 \\
-NFR-02 & 100-card deck pushed to Supabase on Wi-Fi & $\le$ 5 s & TC-P07 (mock), live opt-in test \\
+NFR-02 & 100-card deck pushed to Supabase on Wi-Fi & $\le$ 5 s & TC-P07 (mock) \\
 NFR-28 & Peak memory footprint, 100-card study session & $\le$ 150 MB & TC-P03 \\
 NFR-29 & Build a 10-question quiz & $\le$ 50 ms (p95) & TC-P01 \\
 NFR-30 & Validate and save a 100-card deck locally & $\le$ 250 ms (p95) & TC-P02 \\
 NFR-31 & First render of a card with an 80-line snippet & $\le$ 100 ms (p95) & TC-P06 \\
-NFR-32 & Load a group leaderboard on Wi-Fi & $\le$ 1.5 s (p95) & TC-P09 (Sprint 4) \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -2798,7 +2826,8 @@ prompts and answers; every third card carries a 12-line Swift snippet, and tiers
 rotate Easy, Medium, Hard. The suite is \texttt{codey/Tests/Performance}; it is
 skipped in normal test runs and enabled with \texttt{CODEY\_PERF=1}, and
 \texttt{scripts/perf-report.sh} runs it and writes the results to
-\texttt{docs/source/perf/sprint3.csv}.
+\texttt{docs/source/perf/<tag>.csv} (\texttt{PERF\_TAG}, default \texttt{sprint4}), so
+each sprint's results stay next to the earlier ones.
 
 \textbf{Testing approach (Activity 9.2).} The team chose a hybrid approach. Internal
 resources run inside the app or its test host: the XCTest-hosted
@@ -2806,9 +2835,10 @@ resources run inside the app or its test host: the XCTest-hosted
 own \texttt{LaunchTimer}, and Instruments for diagnosis. External resources observe
 from outside: \texttt{perf-launch.sh} relaunches the app with \texttt{simctl} and
 reads its log. Network Link Conditioner and the Supabase dashboard logs, also planned
-in Activity~9.2, serve the live network tests (NFR-02, TC-P09), which run in Sprint 4
-with the test accounts. Every Sprint 3 run used the iOS Simulator
-(Table~\ref{tab:hardware}).
+in Activity~9.2, were for live network tests; those were dropped with the test
+accounts (S33), so the network profile is measured against a mock with a fixed
+latency. Every run used the iOS Simulator (Table~\ref{tab:hardware}); the device
+checks are listed separately.
 
 \begin{xltabular}{\textwidth}{@{}L{1.3cm} L{2.6cm} Y L{2.3cm} L{1.9cm}@{}}
 \caption{Performance test cases}\label{tab:perftests}\\
@@ -2831,7 +2861,6 @@ TC-P05 & Starter-deck seeding (\texttt{starterDeckSeed}) & Store with topics; de
 TC-P06 & Snippet render (\texttt{highlight80LineSnippet}) & Render a card with an 80-line Swift snippet off-screen (\texttt{ImageRenderer}, 390 pt wide): Markdown parse, Prism highlighting, layout. & Time & p95 $\le$ 100 ms \\
 TC-P07 & Sync push (\texttt{syncPush100CardsMockRTT}) & Signed-in facade on a mock backend that waits 50 ms per request; save a 100-card deck, then one full sync cycle. & Time & $\le$ 5 s \\
 TC-P08 & Cold launch (\texttt{perf-launch.sh}) & App installed on the booted Simulator, onboarding done, store with the starter decks and 5 user decks of 50 cards; terminate and relaunch 10 times; read \texttt{home-ready} from the log. & Time & p95 $\le$ 3 s \\
-TC-P09 & Leaderboard load & Two test accounts in one group; time \texttt{fetchLeaderboard} 10 times on Wi-Fi. & Time & p95 $\le$ 1.5 s \\
 \end{xltabular}
 
 \subsection{Performance Profile Definitions}
@@ -2846,17 +2875,18 @@ A profile is one user-facing path with the resources it is measured on:
   \item \textbf{Practice profile} (TC-P01): starting a quiz. Measured: wall time.
   \item \textbf{Authoring profile} (TC-P02): saving a large deck. Measured: wall time
         on the main actor, where the save runs.
-  \item \textbf{Network profile} (TC-P07, TC-P09, and the live NFR-02 test): pushing
+  \item \textbf{Network profile} (TC-P07): pushing
         and pulling changes. Measured: wall time and the number of requests.
 \end{itemize}
 Measurements were taken on the iOS Simulator on the machine recorded in
 Table~\ref{tab:hardware}, with the Release configuration (testability enabled) on an
-iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Oct 31, 2026 at the
-\texttt{sprint3-final} commit (\texttt{e12c8b6}; originally \texttt{957c971}). The final
-TC-P08 launch figure was re-measured later, after the two fixes described below.
+iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Nov 14, 2026 at commit
+\texttt{535911e} (\texttt{perf/sprint4-environment.txt}). The Sprint 3 run (Oct 31,
+\texttt{e12c8b6}) used the same Mac, Xcode, and runtime on macOS 27.2; its files are
+kept for the comparison in Table~\ref{tab:perfcompare}.
 
 \subsection{Results}
-\IfFileExists{perf/sprint3.csv}{%
+\IfFileExists{perf/sprint4.csv}{%
 Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
 
 \begin{table}[H]
@@ -2877,13 +2907,13 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
   columns/stddev_ms/.style={column name=Std.\ dev.},
   columns/peak_mb/.style={column name=Peak MB},
   columns/growth_mb/.style={column name=Growth MB},
-  columns/threshold_ms/.style={column name=Threshold}]{perf/sprint3.csv}}
+  columns/threshold_ms/.style={column name=Threshold}]{perf/sprint4.csv}}
 \end{table}
 
 \begin{figure}[!htbp]
 \centering
 \begin{tikzpicture}
-\pgfplotstableread[col sep=comma]{perf/sprint3.csv}\perftable
+\pgfplotstableread[col sep=comma]{perf/sprint4.csv}\perftable
 \begin{axis}[xbar, xmode=log, log origin=infty, width=0.72\textwidth, height=8cm,
     xlabel={Time (ms, log scale)}, ylabel={Scenario},
     ytick={0,...,6}, yticklabels from table={\perftable}{name},
@@ -2894,46 +2924,82 @@ Table~\ref{tab:perfresults} and Figure~\ref{fig:perfchart} report the results.
   \legend{Mean, p95}
 \end{axis}
 \end{tikzpicture}
-\caption{Mean and p95 time per scenario. X-axis: time in milliseconds, log scale; Y-axis: scenario. The TC-P08 launch (3.82~s at p95) is reported in the text.}
+\caption{Mean and p95 time per scenario. X-axis: time in milliseconds, log scale; Y-axis: scenario. The TC-P08 launch (4.23~s at p95) is reported in the text.}
 \label{fig:perfchart}
 \end{figure}
 }{\tbd{run scripts/perf-report.sh and scripts/perf-launch.sh; the table and chart are
-built from docs/source/perf/sprint3.csv}}
+built from docs/source/perf/sprint4.csv}}
 
 Against each requirement (p95 over 9 kept runs):
 \begin{itemize}
   \item \textbf{NFR-01, launch (TC-P08): not met on the Simulator.} Home was ready
-        3.82~s after process start (mean 3.80~s, standard deviation 17.7~ms,
-        \texttt{docs/source/perf/launch.csv}) against
+        4.23~s after process start (mean 4.20~s, standard deviation 22.5~ms,
+        \texttt{docs/source/perf/sprint4-launch.csv}) against
         3~s, with the TC-P08 store (the starter decks plus five 50-card user decks,
         written by the \texttt{LaunchFixtureSeed} test before timing). An Instruments App Launch trace and the
         dynamic loader's log show where the time goes: about 3.3~s pass in the
         Simulator's loader (\texttt{dyld\_sim}) before any Codey code runs, loading
         about 1{,}600 iOS system images (counted with \texttt{DYLD\_PRINT\_LIBRARIES}).
         Codey's own work, from \texttt{main} to Home's first appearance, is about
-        about 0.6~s: down from 1.0~s after the loading screen's 0.4~s minimum was
+        0.6~s: down from 1.0~s after the loading screen's 0.4~s minimum was
         removed and boot began skipping the starter-content reseed when the bundled
-        content is unchanged (a SHA-256 stamp, \texttt{BundledContentStamp}). For scale,
+        content is unchanged (a SHA-256 stamp, \texttt{BundledContentStamp}).
+        Sprint~4 is 0.41~s slower than Sprint~3 (3.82~s). A probe that logged the
+        time at \texttt{main} split the Sprint~4 launch into 3.56~s before Codey's
+        code and 0.62~s after it (means of 9 runs), so the app's own share did not
+        change; the time before \texttt{main} grew by about 0.26~s. Of that,
+        about 60~ms is the \texttt{-ObjC} linker flag added for BUG-01, which loads
+        every Objective-C class of the statically linked packages (measured by
+        launching a build without it: 4.17~s); the rest coincides with the macOS
+        27.2.1 update of the Mac that hosts the Simulator. For scale,
         a one-view SwiftUI app reached its first view in 1.2--1.9~s on the same
         Simulator. On an iPhone those system images come from the shared cache, so
         the Simulator figure overstates launch; the requirement stays open until it
-        is measured on a device (Sprint 4).
-  \item \textbf{NFR-02, 100-card sync (TC-P07): met with a mock.} 0.41~s against
-        5~s, with 50~ms of latency per request. The live two-account test waits on
-        the Supabase test users.
+        is measured on a device: \tbd{iPhone cold-launch p95 and date}.
+  \item \textbf{NFR-02, 100-card sync (TC-P07): met against the mock backend.} 0.42~s
+        against 5~s, with 50~ms of latency per request; not measured live (S33).
   \item \textbf{NFR-28, memory (TC-P03): not met on the Simulator.} The whole test
-        process peaked at 270.6~MB against 150~MB, while a full 100-card session
-        added at most 1.2~MB to the footprint. About 205~MB of an idle Codey process on the
+        process peaked at 282.9~MB against 150~MB, while a full 100-card session
+        added at most 1.5~MB to the footprint. About 205~MB of an idle Codey process on the
         Simulator is iOS framework data (\texttt{\_\_DATA\_CONST}, \texttt{\_\_DATA}, and
         mapped files) that a device keeps in the shared cache; the heap was about
         31~MB. So the session itself is cheap, but the requirement names the peak
-        footprint, so it stays open until it is measured on the iPhone 16 Pro Max in
-        Sprint 4. The test gates on the session's growth, which it can control on the
+        footprint, so it stays open until it is measured on the iPhone 16 Pro Max:
+        \tbd{device peak footprint and date}. The test gates on the session's growth, which it can control on the
         Simulator, and reports both numbers.
-  \item \textbf{NFR-29, quiz build (TC-P01): met.} 0.39~ms against 50~ms.
-  \item \textbf{NFR-30, deck save (TC-P02): met.} 57.9~ms against 250~ms.
-  \item \textbf{NFR-31, 80-line render (TC-P06): met.} 15.1~ms against 100~ms.
+  \item \textbf{NFR-29, quiz build (TC-P01): met.} 0.37~ms against 50~ms.
+  \item \textbf{NFR-30, deck save (TC-P02): met.} 38.7~ms against 250~ms, a third
+        faster than in Sprint~3 (57.9~ms): the Nov~2 refactor (\texttt{d549198}) replaced
+        one store fetch per changed card (100 for this deck) with a lookup in the
+        deck's own cards when the save queues them for sync.
+  \item \textbf{NFR-31, 80-line render (TC-P06): met.} 13.8~ms against 100~ms.
 \end{itemize}
+
+Table~\ref{tab:perfcompare} compares the two sprints (p95, same Mac, Simulator, and
+runtime). Two changes are real and explained above: the faster deck save and the
+slower launch. The rest are small in absolute terms (the snippet render moved by
+1.3~ms); the peak footprint rose by 12~MB while the session's own growth stayed at
+1.5~MB, so the rise is in the process before the session starts, not in studying.
+
+\begin{table}[H]
+\centering
+\caption{Performance, Sprint 3 vs Sprint 4 (p95 of 9 kept runs; peak is the whole Simulator process)}
+\label{tab:perfcompare}
+\begin{tabular}{@{}l l r r r@{}}
+\toprule
+\textbf{TC} & \textbf{Scenario} & \textbf{Sprint 3} & \textbf{Sprint 4} & \textbf{Change} \\
+\midrule
+TC-P01 & Quiz build & 0.39 ms & 0.37 ms & $-5\%$ \\
+TC-P02 & Deck save, 100 cards & 57.9 ms & 38.7 ms & $-33\%$ \\
+TC-P03 & Study session, 100 cards (peak) & 270.6 MB & 282.9 MB & $+5\%$ \\
+TC-P04 & Question-bank seeding & 16.6 ms & 16.2 ms & $-3\%$ \\
+TC-P05 & Starter-deck seeding & 15.3 ms & 15.0 ms & $-2\%$ \\
+TC-P06 & 80-line snippet render & 15.1 ms & 13.8 ms & $-9\%$ \\
+TC-P07 & Sync push, mock 50 ms & 407 ms & 422 ms & $+4\%$ \\
+TC-P08 & Cold launch to Home & 3.82 s & 4.23 s & $+11\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Hardware and Software Bottlenecks}\label{sec:bottlenecks}
 The analysis below separates what the code costs from what the platform costs. The
@@ -2950,17 +3016,17 @@ the times come from the results above.
         about 0.35 s, an order of magnitude under the 5 s limit. Sprint 2's batching
         (one request per table instead of one per card) is what keeps this flat as the
         deck grows; per-card requests would have needed 100 round trips, about 5 s at
-        50 ms. TC-P07 measured 0.41 s at p95 (mean 0.40 s).
+        50 ms. TC-P07 measured 0.42 s at p95 (mean 0.40 s).
   \item \textbf{Launch work is seeding plus the first Home queries (software).} Every
         launch decodes 83 KB of questions and 66 KB of starter decks and upserts them
         by ID (176 questions, 144 cards through the factory). TC-P04 and TC-P05 put
-        this at 16.6~ms and 15.3~ms (p95), about 3\% of the 1.0~s the app's own code
+        this at 16.2~ms and 15.0~ms (p95), about 5\% of the 0.6~s the app's own code
         takes and under 1\% of the 4.2~s TC-P08 measured. Because seeding is idempotent, an unchanged bundle could
         skip it with a content hash; that is the first optimization if NFR-01 is ever
         at risk.
   \item \textbf{First render of code is the most expensive UI path (software,
         third-party).} Highlighting runs Prism (JavaScript) through Textual on first
-        display; an 80-line snippet measured 15.1~ms at p95 (TC-P06). The validator caps a
+        display; an 80-line snippet measured 13.8~ms at p95 (TC-P06). The validator caps a
         snippet at 80 lines and 2,000 characters, which bounds this cost.
   \item \textbf{Simulator versus device (hardware).} All numbers come from the iOS
         Simulator, which runs the app natively on the Mac's Apple Silicon CPU with the
@@ -2971,8 +3037,8 @@ the times come from the results above.
         (848 in an idle Codey process) instead of sharing them as a device does,
         which cost about 3.3~s per launch before \texttt{main} and about 200~MB of
         every process's footprint; this is what NFR-01 and the absolute TC-P03
-        number measure on this setup. These are the reasons the on-device check of
-        NFR-01 and NFR-28 remains in Sprint 4.
+        number measure on this setup. These are the reasons NFR-01 and NFR-28 are
+        decided by the on-device check, \tbd{device results}.
 \end{itemize}
 
 \subsection{Corrective Actions}
@@ -2998,252 +3064,442 @@ failed two checks, and both were traced with that plan:
         it. Two fixes then cut the app's own share from about 1.0~s to about 0.6~s:
         the loading screen's 0.4~s minimum was dropped, and boot skips seeding when
         the bundled content is unchanged (a content hash). The remaining gap to 3~s
-        is the Simulator's loader, so the device measurement in Sprint 4 decides
-        NFR-01.
+        is the Simulator's loader, so the device measurement decides NFR-01.
 \end{itemize}
 The one optimization that the measurements have confirmed so far is from Sprint 2:
 batching the push into one request per table. With per-card requests, a 100-card
 deck would take about 100 round trips (about 5~s at 50~ms each, right at the NFR-02
 limit); batched, it takes 3 push requests and 6 to 7 for the whole cycle, measured at
-0.41~s (TC-P07). The perf run also needed one test-only fix: two test files used the DEBUG-only
-\texttt{SupabaseTestAccounts}, so the Release test build did not compile; they are now
-inside \texttt{\#if DEBUG}.
+0.41~s (TC-P07). The perf run also needed one test-only fix: two test files used a DEBUG-only test
+helper (now \texttt{SupabaseTestClient}), so the Release test build did not compile;
+they are now inside \texttt{\#if DEBUG}.
 
 % =====================================================================
-\section{User Interface and User Experience Design (Updated for Sprint 4)}\label{sec:ui}
+\section{Software Testing}\label{sec:testing}
 % =====================================================================
-The user interface follows a native iOS 26 structure. In Sprint 3 its look was
-redone to be calm and minimal (``pastel ink''): content sits on rounded
-notes laid on warm, faintly dotted paper; a desaturated ink-blue accent replaces the
-Sprint 2 electric indigo; Liquid Glass is left to the system's own controls; and
-celebrations are quiet banners with a haptic instead of particle bursts. The
-navigation model did not change. Figure~\ref{fig:screens} shows the launch screen,
-the first onboarding step, and the Home screen in Light and Dark Mode, and
-Figure~\ref{fig:screens2} the Decks tab, the Deck Builder, a study card, a quiz
-question, the profile sheet, and the Groups sign-in prompt, all captured on an
-iPhone~17 Simulator after the facelift.
+This section is Codey's test plan and its results. It follows the levels of the
+course (unit, integration, system, acceptance) and the phases of IEEE~1008 (plan,
+design the test set, implement it, execute it, check termination, evaluate the
+effort). Sprint~4 was the testing sprint: Activities~12.1, 12.2, 13.1, and 13.2 each
+fed one subsection, and the defects found are listed in Section~\ref{sec:defects}.
 
-\subsection{Wireframes and Storyboard (Activity 8.2)}
-Before the facelift, the team identified the app's primary screens
-(Table~\ref{tab:screens}), broke one screen (the Deck Builder) into its content and its
-behavior (Table~\ref{tab:builderreq}), and storyboarded one scenario on paper notes:
-creating a new deck, filling in its blank cards, saving it to Decks, and then
-practicing with it (Figure~\ref{fig:storyboard}). The storyboard was converted into
-digital wireframes in Canva by all three members (Figure~\ref{fig:wireframes}).
+\subsection{Test Plan and Checklist}\label{sec:testplan}
+\textbf{Scope.} Everything in the app target and the database: the 66 functional
+requirements (Table~\ref{tab:fr}) and the 31 active non-functional requirements
+(Table~\ref{tab:nfr}). Out of scope: Apple's and Supabase's own code (SwiftUI,
+SwiftData, PostgREST, Google Sign-In), which is exercised only through Codey's use of
+it, and the retired NFR-32.
+
+\textbf{Levels and tools.} Table~\ref{tab:testlevels} lists what each level tests,
+with which tool, and where it runs. Every automated level runs with one command
+(\texttt{scripts/test.sh}, Appendix~A), which prints each test's name, result, and
+time, then the failures and the totals, and writes the per-suite counts to
+\texttt{docs/source/tests/unit.csv}.
+
+\begin{xltabular}{\textwidth}{@{}L{2.2cm} Y L{3.6cm} L{2.6cm}@{}}
+\caption{Test levels, tools, and where they run}\label{tab:testlevels}\\
+\toprule
+\textbf{Level} & \textbf{What is tested} & \textbf{Tool} & \textbf{Runs} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Level} & \textbf{What is tested} & \textbf{Tool} & \textbf{Runs} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Unit & One type in isolation: models, rules, view models, loaders, validators. & Swift Testing (\texttt{codeyTests}), in-memory SwiftData & Every push (CI) and before each commit \\
+Flow graph & Basis paths of two methods with branches and a loop. & Swift Testing, one test per path & With the unit tests \\
+Integration & Two or more real components together with stubs at the edge: sync engine with the store and a mock backend; client with stubbed HTTP; the database's policies and triggers. & Swift Testing; pgTAP (\texttt{supabase test db}); live SQL check & Swift and pgTAP on every push (CI); live check after each migration \\
+System & The whole app driven through its UI on a Simulator. & XCUITest (\texttt{codeyUITests}); scripted walkthroughs & UI tests in CI; walkthroughs at the end of the sprint \\
+Acceptance & One scripted scenario per client mandate. & Scripted walkthrough by a non-author & Before the demonstration \\
+Non-functional & Security (Section~\ref{sec:security}) and performance (Section~\ref{sec:performance}). & Scripts, analyzer, \texttt{PerformanceTests} & Per sprint \\
+\end{xltabular}
+
+\textbf{Environment.} A MacBook with Apple Silicon, Xcode~27 and the iOS~27
+Simulator (iPhone~17, iPhone~17e, iPhone~18 Pro Max), the Supabase CLI~3.1.0 with
+Docker (OrbStack) for the local database, and GitHub Actions (\texttt{macos-26} for
+the app, Ubuntu for the database and repository checks) for CI
+(Table~\ref{tab:hardware}). Tests use an in-memory store and never a real account;
+the backend is replaced by \texttt{MockRemoteStore} or a stubbed URL session.
+
+\textbf{Entry criteria.} The change builds without warnings in Codey's sources; the
+repository checks pass (imports, design tokens, secrets); and the test cases for a new
+requirement are written into the traceability matrix (Section~\ref{sec:trace}) before
+its code is merged.
+
+\textbf{Exit criteria.} All automated tests pass in CI on \texttt{dev} and on
+\texttt{main}; line coverage of Models, ViewModels, and Services is at least 70\%
+(NFR-16); 75 of 75 pgTAP tests and 0 of 57 live RLS checks fail; every Must
+requirement has at least one passing test; every major defect is fixed, retested, and
+has a regression test; and the acceptance scenarios pass.
+
+\textbf{Roles and schedule.} AB owns the unit, integration, and security runs; ES owns
+the system and acceptance runs and the UI audits; RB owns the plan and this section.
+The tests were planned by Nov~18 and run by the code freeze on Nov~22
+(Figure~\ref{fig:gantt4}). Table~\ref{tab:testchecklist} is the checklist the team
+used.
+
+\begin{xltabular}{\textwidth}{@{}L{0.6cm} Y L{4.2cm}@{}}
+\caption{Software testing checklist}\label{tab:testchecklist}\\
+\toprule
+\textbf{\#} & \textbf{Item} & \textbf{Status (Nov 14)} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{\#} & \textbf{Item} & \textbf{Status (Nov 14)} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+1 & Test plan written: scope, levels, environment, entry and exit criteria, roles. & Done (this section) \\
+2 & Every requirement traced to a test case and a suite (Tables~\ref{tab:rtm}, \ref{tab:tcmap}). & Done; 66 of 66 FRs traced \\
+3 & Unit tests for every model, rule, view model, loader, and validator. & Done; 388 pass \\
+4 & Basis-path tests for the two flow-graph methods. & Done; 8 of 8 paths covered \\
+5 & Integration tests with stubs and drivers (Activity 12.2). & Done; Swift, pgTAP, live check \\
+6 & UI tests on three screen sizes, Light and Dark, with the accessibility audit. & Done; 19 screens, 0 open issues \\
+7 & Scripted system tests (Activity 13.1). & \tbd{results of the Nov 17 run} \\
+8 & Acceptance tests by a non-author (Activity 13.2). & \tbd{results of the Nov 19 run} \\
+9 & Security and performance re-runs. & Done on the Simulator; device checks \tbd{status} \\
+10 & Defects logged with cause, fix, and regression test (Table~\ref{tab:defects}). & Done \\
+11 & CI runs every automated level on \texttt{main} and \texttt{dev}. & Done since Nov 14 \\
+\end{xltabular}
+
+\subsection{Unit Tests}\label{sec:unittests}
+Each unit test sets up one type with in-memory data, calls it, and checks the result
+or state change; nothing touches the network, and SwiftData runs in memory. Tests are
+named for the behavior they check (for example
+\texttt{againRequeuesAtTheEndOnlyOnce}), and many are parameterized, so one test
+function covers several inputs. Table~\ref{tab:unitresults} groups the 55 unit
+suites by layer; the per-suite counts are in \texttt{docs/source/tests/unit.csv}.
 
 \begin{table}[H]
 \centering
-\caption{Primary screens and their purpose (Activity 8.2)}
-\label{tab:screens}
-\begin{tabularx}{\textwidth}{@{}L{3.4cm} Y@{}}
+\caption{Unit test results by layer (iPhone~17 Simulator, Nov 14)}
+\label{tab:unitresults}
+\begin{tabularx}{\textwidth}{@{}L{3.4cm} Y r r@{}}
 \toprule
-\textbf{Screen / View} & \textbf{Primary Purpose and User Goal} \\
+\textbf{Layer} & \textbf{Suites (examples)} & \textbf{Tests} & \textbf{Failed} \\
 \midrule
-Sign-in (onboarding step 3, profile sheet) & Create an account or sign in with Google to sync decks and progress; optional, the app works fully as a guest. \\
-Home / Dashboard & See level, XP, streak, today's goal, the weekly challenge and plan, and per-topic progress, and pick what to study next. \\
-Quiz / Practice & Answer multiple-choice computer science questions, get immediate feedback, and earn XP for correct answers. \\
-Deck Builder & Create a deck and add cards one at a time, Quizlet-style, with an optional syntax-highlighted code block per card. \\
+Domain rules and models & \texttt{StudyQueueTests}, \texttt{TierGateTests}, \texttt{QuestionPoolTests}, \texttt{ModelValidatorTests}, \texttt{ExerciseValidatorTests}, \texttt{StreakCalculatorTests} (19 suites) & 128 & 0 \\
+View models and navigation & \texttt{StudySessionViewModelTests}, \texttt{QuizViewModelTests}, \texttt{DeckViewModelTests}, \texttt{RouterTests} (4) & 51 & 0 \\
+Content and persistence & \texttt{ExerciseLoaderTests}, \texttt{StarterDeckLoaderTests}, \texttt{DataSeederTests}, \texttt{MigrationTests} (9) & 51 & 0 \\
+Sync and backend & \texttt{SyncEngineTests}, \texttt{DeckSyncStateTests}, \texttt{ProgressSyncTests}, \texttt{SupabaseDataClientTests}, \texttt{GroupsAndChallengeTests} (9) & 119 & 0 \\
+Security and configuration & \texttt{KeychainSessionStorageTests}, \texttt{TransportSecurityTests}, \texttt{SignInNonceTests}, \texttt{AppConfigTests} (5) & 14 & 0 \\
+Design system & \texttt{ContrastTests}, \texttt{ColorTokenTests}, \texttt{MarkdownFormattingTests} (7) & 25 & 0 \\
+\midrule
+\textbf{Total} & 53 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{388} & \textbf{0} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\begin{table}[H]
-\centering
-\caption{Deck Builder requirements: content and hierarchy versus behavior (Activity 8.2)}
-\label{tab:builderreq}
-\begin{tabularx}{\textwidth}{@{}Y Y@{}}
-\toprule
-\textbf{Content and Hierarchy} & \textbf{Functionality and Behavior} \\
-\midrule
-Header: Cancel, ``New Deck'', Save & Save stores the deck on the device and returns to Decks, where it shows a ``Saved locally'' badge with its card count, topic, and 0\% mastery. Cancel discards the draft. \\
-Deck info: title field and topic picker & Live character counter on the title (1--60); the topic comes from the predefined list. \\
-Card editor: Front/Back toggle, tier tag, Preview, text area with a formatting toolbar, ``+ Add code'' & Front/Back switches the side being edited; the toolbar formats the selected text; counters show 1--500 characters; ``+ Add code'' reveals a language picker and editor. \\
-Code block: language picker and a line-numbered code editor & Live syntax highlighting (Swift, Python, Java, C++); the trash icon removes the block. \\
-Bottom: card thumbnail strip and a ``+'' tile & A thumbnail shows the card's preview text and number, with a \texttt{</>} badge if it has code. Tap to jump to a card; ``+'' adds a blank card and jumps to it; long-press to duplicate or delete; ``Done'' dismisses the keyboard. \\
-\bottomrule
-\end{tabularx}
-\end{table}
+Line coverage of the app, measured with \texttt{xccov} over the unit and UI tests
+together, is 79.6\%: Models 97.8\%, ViewModels 94.1\%, Services 88.2\% (89.8\% for
+the three layers NFR-16 names, against 70\%). The least covered folders are
+DesignSystem (72.9\%) and Features (75.6\%): SwiftUI views, which the UI tests and
+the audit walk reach only along their main paths. Compared with Sprint~3 (342 tests,
+89.4\%), Sprint~4 added 46 unit tests, mostly for FR-61 and the coding exercises.
+
+\subsection{Flow-Graph Coverage}\label{sec:flowgraph}
+Two methods with real branching were drawn as control flow graphs, and each basis
+path was given its own test. The cyclomatic complexity $V(G) = E - N + 2$ gives the
+number of independent paths, and so the number of tests that cover every statement
+and every branch. Both graphs are in Figure~\ref{fig:cfg}; shaded nodes are
+decisions.
+
+\textbf{StudyQueue.record(\_:)} (Activity~12.1) records a rating for the card on
+screen and moves on; ``Again'' also re-queues the card at the end, but only once per
+session (\texttt{Services/Study/StudyQueue.swift}, lines 45--52). Decisions: is there
+a card on screen (node 1), is the rating Again (3), and has this card not been
+repeated yet (4). \textbf{ExerciseValidator.check(answer:accepted:)} (FR-41) grades
+one blank: an empty answer is reported as such, and otherwise the answer passes if it
+matches any accepted answer after whitespace normalization. Decisions: is the answer
+empty (1), is there another accepted answer to try (3, the loop), and does it match
+(4).
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.55\textwidth]{act82-storyboard.jpg}
-\caption{Paper storyboard (Activity 8.2): Decks $\to$ deck information $\to$ create a card $\to$ add more cards $\to$ Decks $\to$ practice (front, then back)}
-\label{fig:storyboard}
-\end{figure}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\textwidth]{act82-wireframes.png}
-\caption{Digital wireframes made in Canva from the storyboard (Activity 8.2); the highlighted control is the one tapped to reach the next frame}
-\label{fig:wireframes}
-\end{figure}
-
-The built Deck Builder follows the wireframes with two changes found during
-implementation: the deck information and the first card share one screen, so a deck
-can be saved in fewer steps, and the rating at the end of practice uses the four
-ratings of FR-17 instead of the wireframes' ``Still learning'' and ``Got it''. A user
-test on October 30 showed that the four ratings were confusing only because the
-mastery score behind them was hidden, so Sprint 3 kept the ratings and made the score
-visible (the Study item in Section~\ref{sec:keyint}).
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=0.235\textwidth]{launch.png}\hfill
-\includegraphics[width=0.235\textwidth]{onboarding.png}\hfill
-\includegraphics[width=0.235\textwidth]{home-light.png}\hfill
-\includegraphics[width=0.235\textwidth]{home-dark.png}
-\caption{Screens (iOS Simulator): launch, onboarding step 1, and Home in Light and Dark Mode}
-\label{fig:screens}
-\end{figure}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=0.235\textwidth]{decks.png}\hfill
-\includegraphics[width=0.235\textwidth]{builder.png}\hfill
-\includegraphics[width=0.235\textwidth]{study.png}\hfill
-\includegraphics[width=0.235\textwidth]{quiz.png}\\[1ex]
-\includegraphics[width=0.235\textwidth]{profile.png}\hspace{0.02\textwidth}
-\includegraphics[width=0.235\textwidth]{groups.png}
-\caption{Screens after the facelift (iOS Simulator): Decks, Deck Builder, a study card (answer side), a quiz question after a correct answer, the profile sheet, and Groups while signed out}
-\label{fig:screens2}
-\end{figure}
-
-\subsection{Navigation Model}
-The app is organized as a Home hub with a three-tab Liquid Glass tab bar (Home, Decks,
-Quiz) that shrinks to a pill when the content scrolls (Figure~\ref{fig:nav}). Home shows
-a greeting with the display name, the level line (level, XP, streak, and today's goal
-as $n$/20), one ``Up next'' suggestion, the weekly challenge and a ``Challenge and
-groups'' entry to the leaderboards, this week's three-topic plan, and every topic as
-its own note with Cards and Quiz buttons. The suggestion is, in
-priority order: resume a saved study session, start a starter deck (new learners), or
-take a quiz on the weakest pinned topic. The avatar opens the profile sheet, an
-inset-grouped list for the account, the display name and avatar editor, badges,
-appearance (System, Light, Dark), pinned topics, hidden starter decks, the UI/UX issue
-report form, and the data reset actions. Studying and quizzing run as
-full-screen covers (``focus mode''), so the tab bar never covers their controls. A
-single router object owns every tab, sheet, and cover, so any screen can start a study
-session or a quiz the same way.
-
-\begin{figure}[!htbp]
-\centering
-\resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[font=\sffamily\scriptsize,
-    scr/.style={rectangle, rounded corners=3pt, draw, line width=0.6pt, fill=white,
-                align=center, text width=2.6cm, minimum height=0.9cm},
-    nav/.style={line width=0.6pt, -{Stealth[length=2mm]}},
-    nl/.style={font=\sffamily\tiny, fill=white, inner sep=1pt}]
-  \node[scr] (launch) at (-6.2,0)  {Launch\\(open store, seed content)};
-  \node[scr] (onb)    at (-6.2,-2.0) {Onboarding\\(welcome, topics, sign-in)};
-  \node[scr] (home)   at (-1.6,0)  {\textbf{Home} tab};
-  \node[scr] (decks)  at (-1.6,-2.0) {\textbf{Decks} tab\\(library, search)};
-  \node[scr] (quiz)   at (-1.6,-4.0) {\textbf{Quiz} tab\\(topics, tier locks)};
-  \node[scr] (prof)   at (3.0,0)   {Profile sheet\\(edit, badges, report)};
-  \node[scr] (groups) at (3.0,2.3) {Groups\\(create, join, board)};
-  \node[scr] (detail) at (3.0,-2.0) {Deck detail};
-  \node[scr] (setup)  at (3.0,-4.0) {Quiz setup sheet};
-  \node[scr] (build)  at (7.8,-1.2) {Deck builder sheet\\(card pager)};
-  \node[scr] (study)  at (7.8,-2.8) {Study cover\\(flip, swipe to rate)};
-  \node[scr] (qrun)   at (7.8,-4.0) {Quiz cover\\(answers, XP, summary)};
-  \begin{scope}[on background layer]
-    \node[draw=gray, dashed, rounded corners=4pt, fill=gray!6, inner sep=0.25cm,
-          fit=(home)(decks)(quiz), label={[font=\sffamily\scriptsize\bfseries]below:Liquid Glass tab bar}] {};
+\begin{tikzpicture}[
+    cfg/.style={circle, draw, minimum size=7mm, inner sep=0pt, font=\small},
+    dec/.style={cfg, fill=black!12},
+    lab/.style={font=\scriptsize, fill=white, inner sep=1pt},
+    >=Stealth, node distance=9mm]
+  % StudyQueue.record
+  \node[dec] (a1) {1};
+  \node[cfg, below left=7mm and 10mm of a1] (a2) {2};
+  \node[dec, below=of a1] (a3) {3};
+  \node[dec, below=of a3] (a4) {4};
+  \node[cfg, below=of a4] (a5) {5};
+  \node[cfg, below=of a5] (a6) {6};
+  \node[cfg, below=of a6] (a7) {7};
+  \draw[->] (a1) -- node[lab] {nil} (a2);
+  \draw[->] (a1) -- node[lab] {card} (a3);
+  \draw[->] (a3) -- node[lab] {Again} (a4);
+  \draw[->] (a3) to[bend left=50] node[lab] {other} (a6);
+  \draw[->] (a4) -- node[lab] {new} (a5);
+  \draw[->] (a4) to[bend left=40] node[lab] {repeated} (a6);
+  \draw[->] (a5) -- (a6);
+  \draw[->] (a6) -- (a7);
+  \draw[->] (a2) |- (a7);
+  \node[below=4mm of a7, font=\small, align=center] {\texttt{StudyQueue.record(\_:)}\\$E=9$, $N=7$, $V(G)=4$};
+  % ExerciseValidator.check
+  \begin{scope}[xshift=7.5cm]
+  \node[dec] (b1) {1};
+  \node[cfg, below left=7mm and 10mm of b1] (b2) {2};
+  \node[dec, below=of b1] (b3) {3};
+  \node[dec, below=of b3] (b4) {4};
+  \node[cfg, below right=7mm and 10mm of b4] (b5) {5};
+  \node[cfg, below=of b4] (b6) {6};
+  \node[cfg, below=18mm of b6] (b7) {7};
+  \draw[->] (b1) -- node[lab] {empty} (b2);
+  \draw[->] (b1) -- node[lab] {text} (b3);
+  \draw[->] (b3) -- node[lab] {next} (b4);
+  \draw[->] (b3.west) to[bend right=60] node[lab] {done} (b6.west);
+  \draw[->] (b4) -- node[lab] {match} (b5);
+  \draw[->] (b4.east) to[bend right=70] node[lab] {no} (b3.east);
+  \draw[->] (b6) -- (b7);
+  \draw[->] (b5) |- (b7);
+  \draw[->] (b2) |- (b7);
+  \node[below=4mm of b7, font=\small, align=center] {\texttt{ExerciseValidator.check}\\$E=9$, $N=7$, $V(G)=4$};
   \end{scope}
-  \draw[nav] (launch) -- (home);
-  \draw[nav] (launch) -- node[nl, right] {first launch (cover)} (onb);
-  \draw[nav] (home) -- node[nl, above] {avatar (sheet)} (prof);
-  \draw[nav] ([xshift=-0.5cm]home.north) |- node[nl, above, pos=0.75] {Challenge \& groups (push)} (groups.west);
-  \draw[nav] (decks) -- node[nl, above] {push} (detail);
-  \draw[nav] ([yshift=0.15cm]detail.east) -- ++(0.6,0) |- node[nl, above, pos=0.75] {Edit / New} (build.west);
-  \draw[nav] ([yshift=-0.15cm]detail.east) -- ++(0.6,0) |- node[nl, below, pos=0.75] {Study} (study.west);
-  \draw[nav] (quiz) -- node[nl, above] {topic (sheet)} (setup);
-  \draw[nav] (setup) -- node[nl, above] {Start} (qrun);
-  \draw[nav] ([xshift=0.5cm]home.north) |- (9.8,1.0) node[nl, pos=0.75, above] {Up next / Practice} |- (study.east);
-\end{tikzpicture}}
-\caption{Navigation model: tabs, sheets, and full-screen covers (a Home topic's Quiz button opens the same quiz setup sheet)}
-\label{fig:nav}
+\end{tikzpicture}
+\caption{Control flow graphs (shaded = decision). Left, \texttt{StudyQueue.record}: 1 card on screen?, 2 return, 3 rating is Again?, 4 not repeated yet?, 5 append and mark, 6 advance, 7 exit. Right, \texttt{ExerciseValidator.check}: 1 answer empty?, 2 return \texttt{.empty}, 3 another accepted answer?, 4 matches?, 5 return \texttt{.passed}, 6 return \texttt{.failed}, 7 exit.}
+\label{fig:cfg}
 \end{figure}
 
-\subsection{Key Interactions}\label{sec:keyint}
-\begin{itemize}
-  \item \textbf{Onboarding} (first launch only) has three steps: a welcome screen,
-        a topic picker that pins the chosen topics and their starter decks on Home,
-        and an optional Google sign-in that can be skipped.
-  \item \textbf{Deck builder.} A deck header (title with a character counter, topic
-        picker) sits above a horizontal pager of card editors shaped like the study
-        card, with a Front/Back toggle, a live Markdown preview, an optional code
-        snippet edited in a syntax-highlighting code editor, and a final ``New card''
-        page. A thumbnail strip below jumps to, reorders, duplicates, and deletes
-        cards (with undo). Validation errors appear inline after the first failed save.
-  \item \textbf{Groups.} A group list with Create (name $\to$ invite code with a share
-        button) and Join (a six-character code field that upper-cases as it is typed).
-        A board ranks members by this week's XP with avatar and name, highlights the
-        student's own row, and, when offline, shows the last fetched board with an
-        ``as of'' time. Signed-out students see a sign-in prompt.
-  \item \textbf{Profile identity and reports.} An editor sets the display name and
-        picks one of 12 avatars; the badges row shows earned and locked badges; the
-        report form counts characters up to 1,000 and keeps the text if sending
-        fails.
-  \item \textbf{Study.} The card flips in 3D on tap (or Space); after the answer has
-        been shown, a swipe rates it: left Again, down Hard, up Easy, right Good. The
-        card is tinted with the rating's color while dragging, and a caption names the
-        gestures. Keys 1--4 and VoiceOver actions on the card rate without gestures.
-        Each rating has its own haptic. Five dots on the card show its mastery score
-        (0--5, FR-18); after a rating they fill or empty with a short ``+1'', ``+2'',
-        ``Reset'', or ``No change'' label. A card rated Again comes back once at the
-        end, and the counter says so at once (``2 / 4 $\cdot$ +1 repeat''); the
-        repeated card carries a Repeat chip. The summary reports the cards reviewed,
-        the cards whose score rose (``Moved up''), and the deck's progress in points.
-  \item \textbf{Quiz.} A setup sheet shows the tier locks with their reasons (for
-        example, ``Retire 3 more Medium questions'') and offers a mixed quiz or a single
-        unlocked tier. During the quiz, a segmented progress bar, a streak chip, and a
-        rolling XP total update after each answer; the summary shows the score ring, and
-        level-ups, tier unlocks, and new badges appear as a quiet banner with a
-        haptic.
-\end{itemize}
-
-\subsection{Design System}
-Every screen is built from shared tokens and components (Table~\ref{tab:tokens}).
-The Sprint 3 facelift changed tokens, not screens: because every color, font, radius,
-and animation goes through a token, the restyle touched the token files and a few
-components, and \texttt{check-design-tokens.sh} kept passing throughout. Sprint 2
-design decisions D12 (electric-indigo brand), D13 (custom glass buttons), and D17
-(particle celebrations) are superseded, and D18 (typography) is revised.
-Screens never use raw colors, corner radii, or system fonts directly, and
-\texttt{check-design-tokens.sh} enforces this. Shared components include buttons, cards,
-chips, progress bars and rings, stat tiles, tier chips, answer rows, empty states, the
-celebration overlay, and the form-feedback elements (inline field errors, character
-counters, error outlines, and the error alert) used by every editor.
-
-\begin{table}[H]
-\centering
-\caption{Design tokens and rules (updated for Sprint 3)}
-\label{tab:tokens}
-\begin{tabularx}{\textwidth}{@{}L{2.4cm} Y@{}}
+\begin{xltabular}{\textwidth}{@{}L{1.0cm} L{2.0cm} Y L{3.6cm} L{1.0cm}@{}}
+\caption{Basis paths, inputs, and the tests that cover them}\label{tab:basispaths}\\
 \toprule
-\textbf{Area} & \textbf{Rule} \\
+\textbf{Path} & \textbf{Nodes} & \textbf{Input and expected result} & \textbf{Test} & \textbf{Result} \\
 \midrule
-Color & ``Pastel ink'': warm paper \texttt{\#F6F5F2} with raised notes \texttt{\#FFFFFF} (dark \texttt{\#141518} / \texttt{\#1D1F23}); ink accent \texttt{\#3A5578} (dark \texttt{\#A9C0DD}); pastel button fill \texttt{\#CFDCEB} with an ink label \texttt{\#1F3350}. Every status and tier color is a text color with its own pastel fill (Easy \texttt{\#2F5A3B} on \texttt{\#DDEBDF}, Medium \texttt{\#6B4C10} on \texttt{\#F3E6CC}, Hard \texttt{\#7A3045} on \texttt{\#F2DDE3}). All colors are custom assets with Dark and Increase Contrast variants, generated from one script (\texttt{scripts/palette}). The lowest text pair is 5.2:1 (NFR-12). \\
-Typography & Dynamic Type text styles throughout; SF Rounded for headings, numbers, and navigation titles; SF Pro for reading text; SF Mono for code. Nothing is smaller than the footnote style, and card prompts and answers use title3. \\
-Shape & Corner radii of 6, 10, 14, 20, and 28 points. Capsules only for single-line controls (chips, single-line buttons, progress bars); anything that can wrap uses a continuous rounded rectangle, and nested surfaces use concentric corners. \\
-Materials & Liquid Glass only where the system draws it (tab bar, toolbars, sheets). The app's own buttons, toasts, and overlays are flat pastel fills; content sits on rounded ``notes'' with a hairline edge on a dotted paper background (dots hidden under Increase Contrast). \\
-Tiers & Easy, Medium, and Hard always pair a color with a symbol and a label, never color alone. \\
-Motion & Quiet only: snaps and smooth settles, no bounce, no particles; level-ups, unlocks, and badges use a fading banner. Under Reduce Motion every animation becomes a short crossfade. \\
-Haptics & System \texttt{sensoryFeedback} for answers, ratings, saves, and celebrations. \\
-Accessibility & VoiceOver labels and actions on every control, 44-point touch targets, Dynamic Type up to the accessibility sizes, and Light, Dark, or System appearance (NFR-11). \\
+\endfirsthead
+\toprule
+\textbf{Path} & \textbf{Nodes} & \textbf{Input and expected result} & \textbf{Test} & \textbf{Result} \\
+\midrule
+\endhead
 \bottomrule
-\end{tabularx}
-\end{table}
+\endfoot
+\multicolumn{5}{@{}l}{\textit{StudyQueue.record(\_:)} (\texttt{StudyQueueTests})} \\
+Q1 & 1, 2, 7 & Finished queue $[a]$, \texttt{record(.again)}: nothing changes (position 1, cards $[a]$). & \texttt{recordingAfterFinishIsANoOp} & Pass \\
+Q2 & 1, 3, 6, 7 & Queue $[a]$, \texttt{record(.good)}: position 1, no repeat, finished. Also Hard and Easy. & \texttt{goodRatingsWalkTheQueueAndFinish}, \texttt{onlyAgainRequeues} & Pass \\
+Q3 & 1, 3, 4, 5, 6, 7 & Queue $[a, b]$, \texttt{record(.again)}: cards $[a, b, a]$, $a$ marked repeated, position 1. & \texttt{againRequeuesAtTheEndOnlyOnce} & Pass \\
+Q4 & 1, 3, 4, 6, 7 & Same queue at the repeat of $a$, \texttt{record(.again)} again: cards stay $[a, b, a]$, finished. & \texttt{againRequeuesAtTheEndOnlyOnce} & Pass \\
+\multicolumn{5}{@{}l}{\textit{ExerciseValidator.check(answer:accepted:)} (\texttt{ExerciseValidatorTests})} \\
+V1 & 1, 2, 7 & Answer \texttt{""}, \texttt{"   "}, or only tabs and newlines: \texttt{.empty}. & \texttt{pathEmptyAnswer} (3 inputs) & Pass \\
+V2 & 1, 3, 6, 7 & Answer \texttt{guard}, no accepted answers: \texttt{.failed}. & \texttt{pathNoAcceptedAnswers} & Pass \\
+V3 & 1, 3, 4, 5, 7 & Answer \texttt{guard}, accepted \texttt{[guard]}: \texttt{.passed} on the first try. & \texttt{pathFirstAcceptedMatches} & Pass \\
+V4 & 1, 3, 4, 3, 6, 7 & Answer \texttt{then}, accepted \texttt{[else]}: the loop ends with no match, \texttt{.failed}. & \texttt{pathNoMatchAfterLoop} & Pass \\
+\end{xltabular}
+
+The paths cover every node and every edge of both graphs, so statement and branch
+coverage of the two methods is 100\%. Path coverage was not the only goal: further
+tests check the cases the paths do not distinguish, such as a later accepted answer
+matching (\texttt{laterAcceptedAnswerMatches}), spaces around operators
+(\texttt{mid+1} accepted for \texttt{mid + 1}), and case sensitivity
+(\texttt{Guard} fails).
+
+\subsection{Integration Tests}\label{sec:integration}
+\textbf{Plan (Activity~12.2).} The riskiest interface in Sprint~4 is the new progress
+sync (FR-61): \texttt{SyncEngine} sends a \texttt{ProgressBatch} through
+\texttt{SupabaseDataClient} to the \texttt{card\_progress},
+\texttt{question\_progress}, and \texttt{topic\_progress} tables and pulls other
+devices' rows back (Figure~\ref{fig:sequence3}). Both ends already existed, so the
+team used the \emph{sandwich} strategy. The top half (the engine with the real
+SwiftData store) runs against a stub, \texttt{MockRemoteStore}, which merges rows the
+way the SQL triggers do and can fake a lost connection or a second device;
+\texttt{MockAuth} stands in for a signed-in user. The bottom half (tables, triggers,
+policies) is driven by SQL acting as the app: the pgTAP suite and the live RLS check.
+The two halves meet in the client tests with a stubbed network and in a two-device
+check on two Simulators. If something breaks, the layer that broke is known.
+
+\textbf{Interface fault considered.} Swift's default encoder leaves a \texttt{nil}
+field out of the JSON, and a Supabase upsert changes only the columns it receives.
+When a card is un-retired, \texttt{retiredAt} is \texttt{nil}, so the server would keep
+the old \texttt{retired\_at} and the other device would pull the card back as retired.
+Each side passes its own unit tests; only the two together fail. Mitigation: the
+progress row types encode every column, sending \texttt{nil} as an explicit JSON
+\texttt{null}, and an integration test checks the request body
+(\texttt{progressRowsSendRetiredAtAsExplicitNull}, added in Sprint~4 when the plan
+showed it was missing).
+
+\textbf{Entry criteria.} Unit tests of both sides pass with no open major defect; the
+local Supabase stack runs with all 10 migrations; the stubs and drivers exist.
+\textbf{Exit criteria.} All cases in Table~\ref{tab:inttests} pass; every defect found
+is fixed and has a regression test; the known limits are written down (Reset Progress
+is not sent to other devices; device clocks decide which review is the latest).
+
+\begin{xltabular}{\textwidth}{@{}L{1.1cm} Y L{3.4cm} L{2.2cm}@{}}
+\caption{Integration test cases and results}\label{tab:inttests}\\
+\toprule
+\textbf{ID} & \textbf{Components and check} & \textbf{Driver / stub} & \textbf{Result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Components and check} & \textbf{Driver / stub} & \textbf{Result} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+IT-01 & \texttt{SyncEngine} + \texttt{SyncQueue} + \texttt{ConflictResolver} + SwiftData: push, pull, retry, conflict merge, offline queueing for decks and cards. & \texttt{SyncHarness}; \texttt{MockRemoteStore} & 25 of 25 pass \\
+IT-02 & \texttt{SyncEngine} + \texttt{ProgressSync} + SwiftData: progress from a second device merges (newest review wins, unlocks never relock), offline then online. & \texttt{SyncHarness}; \texttt{MockRemoteStore.otherDeviceUpsert} & 13 of 13 pass \\
+IT-03 & \texttt{SupabaseDataClient} + Supabase SDK: request bodies, explicit nulls, paging, error mapping. & Stubbed \texttt{URLProtocol} (\texttt{SupabaseTestClient}) & 11 of 11 pass \\
+IT-04 & SwiftData schema V1--V8 + migration plan: each older store opens and keeps its data. & \texttt{MigrationTests} & 9 of 9 pass \\
+IT-05 & Bundled content + store: seeding, the content stamp, starter decks, exercises. & \texttt{DataSeederTests}, \texttt{BundledContentStampTests} & 10 of 10 pass \\
+IT-06 & App limits + database CHECK constraints agree. & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests} & 10 of 10 pass \\
+IT-07 & Database tables + RLS + merge and rate-limit triggers, as a signed-in user. & pgTAP \texttt{rls.sql}, \texttt{progress.sql} & 75 of 75 pass (CI, Nov 14) \\
+IT-08 & Live project: two users and a non-member against all 11 tables. & \texttt{rls\_live\_check.sql} & 0 of 57 fail (Nov 9) \\
+IT-09 & Two Simulators, one account: a review on one shows on the other after one sync; sign-in with Google end to end. & By hand & Pass (Nov 10) \\
+\end{xltabular}
+
+IT-09 found BUG-02, a real fault of the kind the plan describes: both sides worked
+alone, but together the sign-in failed (Table~\ref{tab:defects}).
+
+\subsection{System Tests}\label{sec:systemtests}
+System tests run the built app as a student would, on a Simulator, end to end.
+Five are automated as XCUITests and run in CI; the rest are scripted walkthroughs
+from Activity~13.1. The automated ones were run on the iPhone~17e, iPhone~17, and
+iPhone~18 Pro Max Simulators; the audit walk (ST-06) runs in Light and Dark Mode.
+\textbf{Entry:} unit and integration exit criteria met. \textbf{Exit:} every case
+passes or has a logged defect with a decision.
+
+\begin{xltabular}{\textwidth}{@{}L{1.0cm} L{3.0cm} Y L{2.4cm}@{}}
+\caption{System test cases and results}\label{tab:systests}\\
+\toprule
+\textbf{ID} & \textbf{Scenario (FRs)} & \textbf{Steps and expected result} & \textbf{Result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Scenario (FRs)} & \textbf{Steps and expected result} & \textbf{Result} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+ST-01 & Study a deck and resume (FR-16 to FR-18) & \texttt{StudySessionUITests}: open a starter deck, flip, rate by swipe, close mid-session, reopen; the session resumes on the same card. & Pass (automated) \\
+ST-02 & Author and delete a deck (FR-05 to FR-13) & \texttt{DeckBuilderUITests}: create a deck with a Python snippet, save, find its tile; delete an unsynced deck from its detail screen. & Pass (automated) \\
+ST-03 & Quiz with tiers, XP, streak, badge (FR-19 to FR-38) & New learner: onboarding, a 10-question quiz, then Home shows the XP, the streak, and the first badge; Medium unlocks after the retire threshold. & \tbd{result} \\
+ST-04 & Offline use (FR-44 to FR-46, NFR-09) & Signed in, network off: study, answer a quiz, create a deck; network on: everything syncs, nothing is lost or duplicated. & \tbd{result} \\
+ST-05 & Coding exercise (FR-39 to FR-41) & \texttt{ExerciseUITests}: Quiz tab, Coding Exercises, ``Exit early with guard''; one right and one wrong blank give Passed and Failed with the accepted answer; Try Again with both right gives ``All 2 tests passed''. & Pass (automated) \\
+ST-06 & Every main screen is accessible (NFR-10 to NFR-12) & \texttt{AccessibilityAuditUITests}: walk 19 screens from onboarding to an answered question, run the system audit on each, in Light and Dark. & Pass, 0 open issues (automated) \\
+ST-07 & Account, sync, groups (FR-01 to FR-03, FR-42, FR-50 to FR-53, FR-61) & Sign in with Google, sync, create a group, join it from a second account by code, see both on the weekly leaderboard, sign out. & Pass (Nov 10, by hand); \tbd{re-run} \\
+\end{xltabular}
+
+\subsection{Verification, Validation, and Acceptance}\label{sec:acceptance}
+\textbf{Verification} asks whether the product was built right, against its
+specification. Codey's verification is the traceability check: every requirement
+names a test case, every test case names the suite that runs it
+(Tables~\ref{tab:rtm}, \ref{tab:rtm-nfr}, \ref{tab:tcmap}), and the suites above
+pass. All 66 functional requirements are implemented and traced to a passing test;
+of the 31 active non-functional requirements, NFR-01 and NFR-28 wait on the device
+measurement and NFR-24 on the traffic capture (Sections~\ref{sec:security} and
+\ref{sec:performance}). Design reviews of each migration against the security
+checklist (Table~\ref{tab:ssc}) are the other verification activity.
+
+\textbf{Validation} asks whether the right product was built, for the client.
+Following decision S34, it is done through acceptance tests rather than a peer
+usability study: one scripted scenario per client mandate (Table~\ref{tab:accept}),
+written from the mandate's wording, not from the code, and run by a team member who
+did not build that feature, on a fresh install, as the demonstration will run.
+\textbf{Plan:} run on Nov~19 (Activity~13.2); a scenario passes only if every
+expected result is seen without help. \textbf{Exit:} all seven pass, or the client is
+told which do not and why.
+
+\begin{xltabular}{\textwidth}{@{}L{1.0cm} L{3.0cm} Y L{2.0cm}@{}}
+\caption{Acceptance tests, one per client mandate}\label{tab:accept}\\
+\toprule
+\textbf{ID} & \textbf{Client mandate} & \textbf{Scenario and acceptance criterion} & \textbf{Result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Client mandate} & \textbf{Scenario and acceptance criterion} & \textbf{Result} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+AT-01 & Adaptive tier rotation & Answer Easy questions in one topic until Medium unlocks; the next quiz mixes in Medium, and retired questions stop appearing. & \tbd{result} \\
+AT-02 & XP, daily streaks, badges & Finish a study session and a quiz; XP and the streak rise on Home, and the first badge is awarded once. & \tbd{result} \\
+AT-03 & Progress analytics and study plan & After two sessions, Home shows accuracy per topic and a study plan that names the weakest topic. & \tbd{result} \\
+AT-04 & Offline use with cloud sync of decks & Create a deck in airplane mode; after reconnecting, it appears on a second device signed in to the same account. & \tbd{result} \\
+AT-05 & Code-completion exercises & Open three exercises in different languages; wrong blanks show Failed and the accepted answer, right ones Passed, with an explanation. & \tbd{result} \\
+AT-06 & Leaderboards and weekly challenges & Two accounts join one group; both appear on the weekly leaderboard with their XP, and the weekly challenge shows progress. & \tbd{result} \\
+AT-07 & Offline sync of study results & Study on device A offline, reconnect; device B shows the same mastery and unlocks after one sync. & \tbd{result} \\
+\end{xltabular}
+
+\subsection{Defects Found}\label{sec:defects}
+Table~\ref{tab:defects} lists the defects found in Sprint~4, how, and their fixes.
+Each fix has a regression test, so the defect cannot return unnoticed. Three of the
+entries are faults in the tests rather than the app; they are listed because a flaky
+or blind test is a defect in the test plan.
+
+\begin{xltabular}{\textwidth}{@{}L{1.1cm} Y L{2.4cm} Y L{2.2cm}@{}}
+\caption{Defects found in Sprint 4}\label{tab:defects}\\
+\toprule
+\textbf{ID} & \textbf{Defect and cause} & \textbf{Found by} & \textbf{Fix} & \textbf{Regression test} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Defect and cause} & \textbf{Found by} & \textbf{Fix} & \textbf{Regression test} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+BUG-01 & Tapping ``Sign in with Google'' crashed (unrecognized selector): packages link statically, so the linker dropped an Objective-C category in AppAuth. & IT-09, Nov 10 & \texttt{-ObjC} linker flag on the app target (\texttt{1949cfe}). & \texttt{GoogleSignInLinkTests} \\
+BUG-02 & Google signed in but Codey did not: Google Sign-In~10 always puts a nonce in the ID token, and Supabase rejects a token whose nonce it was not given. The free project had also paused after a week idle. & IT-09, Nov 10 & \texttt{SignInNonce}: SHA-256 to Google, raw value to Supabase; project restored; keep-alive job (\texttt{1949cfe}). & \texttt{SignInNonceTests} \\
+BUG-03 & The exercise's code view was a selectable text view with no accessibility label, so VoiceOver read nothing for it. & ST-06 (audit), Nov 14 & Not selectable (the copy button covers copying) and labeled ``Swift code with 2 numbered blanks'' (\texttt{535911e}). & \texttt{AccessibilityAuditUITests} \\
+TD-01 & No test checked that progress rows send \texttt{retired\_at} as an explicit null (the integration fault of Section~\ref{sec:integration}). & Activity~12.2 review & Test added (\texttt{535911e}). & \texttt{progressRowsSendRetiredAtAsExplicitNull} \\
+TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 rows; scroll until hittable (\texttt{535911e}). & ST-05 on 3 sizes \\
+TD-03 & \texttt{ExerciseUITests} failed about 2 runs in 5 under load: the Simulator dropped a keystroke after the field had shown it. & Full CI-style run, Nov 14 & Hide the keyboard, re-check every blank's value, retype if needed, then tap Check (the same guard \texttt{DeckBuilderUITests} uses). & 5 of 5 consecutive passes \\
+\end{xltabular}
+
+% =====================================================================
+\section{Concluding Remarks and Future Work}\label{sec:conclusion}
+% =====================================================================
+Codey now does what the client asked for. All 66 functional requirements are
+implemented, including every client mandate: adaptive tier rotation, XP, streaks and
+badges, progress analytics and a study plan, offline use with cloud sync of decks and,
+since Sprint~4, of study results, leaderboards and weekly challenges, and
+code-completion exercises. The app is covered by 388 unit tests, 6 UI tests over 19
+screens, 75 database tests, and a 57-check live security test, all of which run with
+one command and, except the live check, on every push. The team's main lessons were
+practical ones: an integration can fail when both halves pass their own tests (the
+explicit-null fault and BUG-02); a free backend that pauses when idle is a risk to
+plan for, not a footnote (R11); and a test that fails one time in three is worth
+fixing, because otherwise the team learns to ignore red.
+
+Some things were deliberately left out, and are the natural next steps:
+\begin{itemize}
+  \item \textbf{Open-ended coding problems.} Exercises today compare each blank with
+        accepted answers (R1). Running students' code would need a sandboxed
+        execution service, which the Free plan and the client's no-cost constraint
+        rule out for now.
+  \item \textbf{Server-computed weekly XP.} The leaderboard trusts the client's XP,
+        bounded only by the 600-XP-per-minute pace limit (R13, accepted). A ledger of
+        answers kept and summed on the server would make the leaderboard
+        tamper-proof.
+  \item \textbf{Live performance tests.} NFR-02 was verified against a mock backend
+        and NFR-32 was retired (S33). Dedicated test accounts would allow both, and
+        a measurement on a cellular network.
+  \item \textbf{Peer usability study.} Replaced by acceptance tests this sprint (S34);
+        a task-success study with students would validate the design better than the
+        team can.
+  \item \textbf{Fuller sync.} Quiz history, daily activity, and badges stay on the
+        device, and Reset Progress is not sent to other devices; device clocks decide
+        the ``latest'' review.
+  \item \textbf{Distribution.} Codey runs from Xcode. TestFlight distribution would
+        need a paid developer account and moving the Google sign-in client to a Codey
+        project.
+\end{itemize}
 
 % =====================================================================
 \section*{Appendix A: Build Instructions}\label{sec:appA}
 \addcontentsline{toc}{section}{Appendix A: Build Instructions}
 % =====================================================================
-These steps build and run the current version of Codey from a clean machine. They
-were last dry-run from a fresh clone on Oct 31, 2026 (Raaj Banga, with an AI coding
-assistant) at the \texttt{sprint3-final} commit, in local-only mode: A.2--A.4, A.8, and the
-unit tests in A.9 (342 of 342 passed). The three UI test suites pass when run on their own;
-in a full run on a busy Simulator the deck-builder and accessibility-audit suites
-sometimes fail on dropped keystrokes or an ignored swipe, so run them one at a time.
+These steps build and run the current version of Codey from a clean machine. Steps
+A.2, A.3, A.8, and A.9 are repeated from a fresh checkout by continuous integration on
+every push (\texttt{.github/workflows/test.yml}, Section~\ref{sec:vc}), on a clean
+\texttt{macos-26} runner with no keys, which is the local-only mode of A.4; the last
+such run on Nov 14, 2026 built the app and passed every unit and UI test. The database
+steps were last run from scratch with the Supabase CLI on the same day (75 of 75 pgTAP
+tests passed). \tbd{fresh-clone dry-run of the whole guide after the freeze, by whom}.
 
 \textbf{A.1 Prerequisites.}
 \begin{itemize}
@@ -3252,9 +3508,10 @@ sometimes fail on dropped keystrokes or an ignored swipe, so run them one at a t
   \item Xcode 27 (27.2 was used) from the Mac App Store, opened once to install its components, with
         the iOS 27 Simulator runtime (Xcode $\to$ Settings $\to$ Components).
   \item Homebrew (\texttt{https://brew.sh}), then Tuist:
-        \texttt{brew install tuist} (version 4.209.0 was used).
+        \texttt{brew install tuist} (version 4.214.1 was used).
   \item Git (included with Xcode's command line tools).
-  \item Optional: the Supabase CLI and Docker for local pgTAP tests, and
+  \item Optional: the Supabase CLI (\texttt{brew install supabase/tap/supabase}, 3.1.0
+        was used) and Docker or OrbStack for the local database tests, and
         \texttt{libpq} (\texttt{brew install libpq}) for \texttt{scripts/backup.sh}.
 \end{itemize}
 
@@ -3304,8 +3561,6 @@ Run \texttt{scripts/check-secrets.sh} to confirm nothing secret is tracked.
         client IDs.
   \item Run \texttt{supabase/checks/rls\_live\_check.sql} in the SQL editor; it must
         report 0 failed.
-  \item Optional, for the integration and leaderboard tests: enable the Email provider
-        and add two users with ``Auto Confirm User''.
 \end{itemize}
 \texttt{supabase/README.md} has the same steps.
 
@@ -3321,24 +3576,31 @@ Simulator, then Run (Command-R). From the command line:
 
 \textbf{A.9 Tests and checks.}
 \begin{itemize}
-  \item Unit tests: \texttt{xcodebuild test -workspace codey.xcworkspace -scheme codey
-        -destination 'platform=iOS Simulator,name=iPhone 17'
-        -only-testing:codeyTests}.
-  \item UI tests: the same command with \texttt{-only-testing:codeyUITests} (three
-        suites: deck builder, study session, accessibility audit). On Xcode 27.1 and
-        earlier, macOS may refuse the UI-test runner (R15); use Xcode 27.2.
-  \item Integration tests (optional): set \texttt{TEST\_RUNNER\_SUPABASE\_TEST\_URL},
-        \texttt{\ldots\_KEY}, and the two accounts' \texttt{\ldots\_EMAIL\_A/B} and
-        \texttt{\ldots\_PASSWORD\_A/B} in the environment.
+  \item App tests: \texttt{scripts/test.sh} runs the unit tests and the accessibility
+        audit on an iPhone~17 Simulator and prints each test's name, result, and time,
+        then the failures and totals. Pass test filters to choose others, for example
+        \texttt{scripts/test.sh -only-testing:codeyUITests} for all four UI suites (deck
+        builder, study session, coding exercise, accessibility audit). Set
+        \texttt{COVERAGE=1} for line coverage by folder, \texttt{CSV=\textit{path}} for
+        per-suite counts, and \texttt{DESTINATION=\ldots} for another Simulator. The
+        result bundle is \texttt{build/test.xcresult} and the full log
+        \texttt{build/test.log}. On Xcode 27.1 and earlier, macOS may refuse the
+        UI-test runner (R15); use Xcode 27.2.
+  \item Database tests: \texttt{supabase db start} (builds a local database from the
+        migrations), then \texttt{supabase test db} runs the 75 pgTAP tests in
+        \texttt{supabase/tests}; \texttt{supabase stop} when done.
   \item Performance: \texttt{scripts/perf-report.sh} and, with the app installed on a
-        booted Simulator, \texttt{scripts/perf-launch.sh}.
+        booted Simulator, \texttt{scripts/perf-launch.sh}. Results go to
+        \texttt{docs/source/perf/<tag>*.csv}; set \texttt{PERF\_TAG} (default
+        \texttt{sprint4}) to keep each run apart.
   \item Repository checks: \texttt{scripts/check-imports.sh},
         \texttt{scripts/check-design-tokens.sh},
         \texttt{scripts/check-secrets.sh -{}-history},
         \texttt{scripts/check-release-build.sh}.
 \end{itemize}
 
-\textbf{A.10 Optional operations.} Add the repository secrets \texttt{SUPABASE\_URL}
+\textbf{A.10 Optional operations.} The coding exercises need no setup: they ship in
+\texttt{codey/Resources/exercises.json} and are checked when the app loads them. Add the repository secrets \texttt{SUPABASE\_URL}
 and \texttt{SUPABASE\_ANON\_KEY} on GitHub so the keep-alive workflow runs; back up
 the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 
@@ -3359,8 +3621,8 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 % =====================================================================
 This appendix lists every source and configuration file in the repository, one per
 subsection, with line numbers; Table~\ref{tab:pattern-lines} refers to these line
-numbers. It is generated by \texttt{scripts/gen-appendix-b.sh} from the commit tagged
-\texttt{sprint3-final}. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
+numbers. It is generated by \texttt{scripts/gen-appendix-b.sh} from the final Sprint~4
+commit \tbd{commit or tag after the freeze}. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
 repository and is not listed; \texttt{Secrets.example.xcconfig} shows its format.
 Generated color sets and the app icon images are not source code and are omitted.
 
