@@ -118,7 +118,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         try audit("quiz.topics")
 
         // Coding exercises (FR-39 to FR-41): list, exercise, checked result.
-        app.buttons["quiz.exercises"].tap()
+        app.buttons["Exercises"].tap()
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
         try audit("exercises.list")
@@ -134,11 +134,11 @@ final class AccessibilityAuditUITests: XCTestCase {
         try audit("exercise.result")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
-        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["Quizzes"].tap()
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
 
-        // The row's center is on its tier chips, which are buttons of their own.
-        quizTopic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
+        // The row's lower half is its tier chips, which are buttons of their own.
+        quizTopic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)).tap()
         XCTAssertTrue(app.buttons["quizSetup.start"].waitForExistence(timeout: 5))
         try audit("quiz.setup")
         app.buttons["quizSetup.start"].tap()
@@ -165,7 +165,7 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// first, so one run gives the full count.
     private func audit(_ screen: String) throws {
         try app.performAccessibilityAudit { issue in
-            let element = issue.element.map { "\($0.elementType.rawValue) '\($0.label)' id=\($0.identifier)" } ?? "-"
+            let element = issue.element.map { "\($0.elementType.rawValue) '\($0.label)' id=\($0.identifier) frame=\($0.frame)" } ?? "-"
             let known = Self.isKnownFalsePositive(issue)
             print("A11Y \(screen): \(issue.compactDescription) [\(element)]\(known ? " (known)" : "")")
             self.rawCount += 1

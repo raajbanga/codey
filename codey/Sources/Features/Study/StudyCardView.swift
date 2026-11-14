@@ -26,10 +26,35 @@ struct StudyCardView: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The taller face's height, so both faces match and the card doesn't
+    /// change size as it flips. Fresh per card (the session sets `.id`).
+    @State private var faceHeight: CGFloat = 0
 
     private static let halfFlip = 0.18
+    /// Shortest card, so a one-line prompt still reads as a card.
+    static let minHeight: CGFloat = 260
 
     var body: some View {
+        // Sized to its text (at least `minHeight`); a card too tall for the
+        // screen fills it and scrolls inside instead.
+        ViewThatFits(in: .vertical) {
+            faces.fixedSize(horizontal: false, vertical: true)
+            faces
+        }
+        .overlay(alignment: .top) {
+            if let masteredBadge {
+                CodeyChip(
+                    masteredBadge == .masteredAndRetired ? "Mastered · retired" : "Mastered",
+                    systemImage: "checkmark.seal.fill",
+                    variant: .success
+                )
+                .padding(.top, CodeySpacing.sm)
+                .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
+            }
+        }
+    }
+
+    private var faces: some View {
         ZStack {
             face(isFront: true)
                 .rotation3DEffect(
@@ -48,17 +73,6 @@ struct StudyCardView: View {
                 .opacity(isRevealed ? 1 : 0)
                 .animation(faceAnimation(showing: isRevealed), value: isRevealed)
         }
-        .overlay(alignment: .top) {
-            if let masteredBadge {
-                CodeyChip(
-                    masteredBadge == .masteredAndRetired ? "Mastered · retired" : "Mastered",
-                    systemImage: "checkmark.seal.fill",
-                    variant: .success
-                )
-                .padding(.top, CodeySpacing.sm)
-                .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
-            }
-        }
     }
 
     /// The face being hidden turns away first (ease-in); the face being shown
@@ -72,7 +86,11 @@ struct StudyCardView: View {
 
     private func face(isFront: Bool) -> some View {
         let visible = isFront != isRevealed
-        return CardFace(card: card, isFront: isFront, scoreChange: scoreChange, isRepeat: isRepeat)
+        return CardFace(
+            card: card, isFront: isFront, scoreChange: scoreChange, isRepeat: isRepeat,
+            minHeight: max(Self.minHeight, faceHeight)
+        )
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { faceHeight = max(faceHeight, $0) }
             .allowsHitTesting(visible)
             .accessibilityHidden(!visible)
     }
@@ -83,6 +101,7 @@ private struct CardFace: View {
     let isFront: Bool
     let scoreChange: StudyCardView.ScoreChange?
     let isRepeat: Bool
+    let minHeight: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.md) {
@@ -115,7 +134,7 @@ private struct CardFace: View {
             )
         }
         .padding(CodeySpacing.lg)
-        .frame(maxWidth: .infinity, minHeight: 260, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
         .codeyNote()
         .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
     }

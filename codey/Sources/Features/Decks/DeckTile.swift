@@ -4,6 +4,8 @@ import SwiftUI
 struct DeckTile: View {
     let deck: FlashcardDeck
     let topic: Topic?
+    /// S40: room for the library's play button over the bottom-right corner.
+    var reservesStudyButton = false
 
     @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 40
 
@@ -30,6 +32,7 @@ struct DeckTile: View {
             Spacer(minLength: 0)
 
             ProgressBar(value: deck.progressRate, label: "Progress \(deck.progressRate.percentText)")
+                .padding(.trailing, reservesStudyButton ? 44 + CodeySpacing.sm : 0)
         }
         .padding(CodeySpacing.md)
         .frame(maxWidth: .infinity, minHeight: 168, alignment: .topLeading)

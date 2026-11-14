@@ -18,26 +18,17 @@ final class Router {
 
     var study: StudyRequest?
     var quiz: QuizRequest?
+    /// Quiz setup, shown as a FloatingPanel at the root (S40).
     var quizSetupTopic: Topic?
     var showProfile = false
+    /// Ask AI on a coding exercise (S39), in a root FloatingPanel so the
+    /// dimmed page covers the bars. The quiz cover hosts its own.
+    var askAI: AskAISession?
 
-    /// A quiz chosen in the setup sheet, presented once the sheet is gone.
-    private var pendingQuiz: QuizRequest?
-
-    /// Called by the setup sheet's Start: close the sheet, then present.
+    /// The setup panel's Start: close the panel and present the quiz. The
+    /// panel is an overlay, not a sheet, so nothing has to wait for it.
     func startQuiz(_ request: QuizRequest) {
-        if quizSetupTopic == nil {
-            quiz = request
-        } else {
-            pendingQuiz = request
-            quizSetupTopic = nil
-        }
-    }
-
-    /// Setup sheet onDismiss.
-    func presentPendingQuiz() {
-        guard let pendingQuiz else { return }
-        quiz = pendingQuiz
-        self.pendingQuiz = nil
+        quizSetupTopic = nil
+        quiz = request
     }
 }

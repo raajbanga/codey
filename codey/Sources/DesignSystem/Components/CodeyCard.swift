@@ -46,6 +46,17 @@ extension View {
             .overlay { shape.strokeBorder(CodeyColor.separator, lineWidth: 1) }
     }
 
+    /// The lifted-note surface (S40) for centered floating cards:
+    /// FloatingPanel and CelebrationOverlay. Dotted paper, `xl` corners, a
+    /// hairline, and the app's one deep shadow, because the card is off the
+    /// page. Small toasts and undo bars keep `codeyFloatingSurface`.
+    func codeyFloatingCard() -> some View {
+        background { PaperBackground() }
+            .clipShape(.codey(CodeyRadius.xl))
+            .overlay { RoundedRectangle.codey(CodeyRadius.xl).strokeBorder(CodeyColor.separator, lineWidth: 1) }
+            .shadow(color: .black.opacity(0.18), radius: 24, y: 8)
+    }
+
     /// The app's page background: warm paper with a faint dot grid. Also
     /// tints the page in brand ink: sheets don't inherit RootView's tint, so
     /// list buttons in them (Sign in with Google) fell back to system blue.
@@ -62,7 +73,7 @@ extension View {
     }
 }
 
-/// Warm paper with a faint dot grid, like a notebook page. The dots stay
+/// Warm paper with a dot grid, like a notebook page. The dots stay
 /// put while content scrolls over them. Increase Contrast drops the dots so
 /// only content carries contrast.
 struct PaperBackground: View {
@@ -81,10 +92,11 @@ struct PaperBackground: View {
             .accessibilityHidden(true)
     }
 
-    /// One 20 pt cell with a 1.6 pt dot, drawn once and tiled. A template
+    /// One 20 pt cell with a 2.4 pt dot (S40: was 1.6, too faint to read as
+    /// a notebook page on a phone), drawn once and tiled. A template
     /// image, so the dot takes PaperDot's light/dark color at render time.
     private static let tile: UIImage = {
-        let pitch: CGFloat = 20, dot: CGFloat = 1.6
+        let pitch: CGFloat = 20, dot: CGFloat = 2.4
         return UIGraphicsImageRenderer(size: CGSize(width: pitch, height: pitch)).image { _ in
             UIBezierPath(ovalIn: CGRect(x: (pitch - dot) / 2, y: (pitch - dot) / 2, width: dot, height: dot)).fill()
         }

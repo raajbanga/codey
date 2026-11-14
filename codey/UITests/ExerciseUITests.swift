@@ -20,7 +20,7 @@ final class ExerciseUITests: XCTestCase {
         XCTAssertTrue(quizTab.waitForExistence(timeout: 15))
         quizTab.tap()
 
-        let entry = app.buttons["quiz.exercises"]
+        let entry = app.buttons["Exercises"]
         XCTAssertTrue(entry.waitForExistence(timeout: 5))
         snapshot("quiz-tab")
         entry.tap()

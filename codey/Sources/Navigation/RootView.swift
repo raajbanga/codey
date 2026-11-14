@@ -40,10 +40,14 @@ struct RootView: View {
                 QuizModeView(viewModel: $0)
             }
         }
-        .sheet(item: $router.quizSetupTopic, onDismiss: router.presentPendingQuiz) { topic in
+        // Above the tab bar, so the dimmed page covers it too.
+        .floatingPanel(item: $router.quizSetupTopic) { topic in
             QuizSetupView(topic: topic) { mode in
                 router.startQuiz(QuizRequest(topic: topic, mode: mode))
             }
+        }
+        .floatingPanel(item: $router.askAI, fillsHeight: true) { session in
+            AskAIChatView(session: session)
         }
         .sheet(isPresented: $router.showProfile) {
             ProfileSheet()

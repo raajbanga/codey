@@ -18,8 +18,9 @@ P = {
  'SurfaceRaised': ('#FFFFFF', '#1D1F23'),
  'Separator':     ('#E4E2DC', '#2F3136'),
  'FillNeutral':   ('#EEECE7', '#26282D'),
- # The faint dot grid on the paper background. Decoration only, no text.
- 'PaperDot':      ('#DCD9D1', '#2A2C31'),
+ # The dot grid on the paper background (S40: stronger, 1.58:1 light / 1.68:1 dark on Surface
+ # so it reads as a notebook page). Decoration only, never behind text alone.
+ 'PaperDot':      ('#C9C5BB', '#3A3D44'),
  'TextPrimary':   ('#1B1C1E', '#ECEBE7'),
  'TextSecondary': ('#5C5B57', '#A3A29D'),
  # Brand. `Brand` is text/icon/tint ink. `BrandFill` is the pastel button
