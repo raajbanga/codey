@@ -1355,7 +1355,7 @@ satisfies it (component, deployment node, or class) and to its verification test
 \endhead
 \bottomrule
 \endfoot
-NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & \tbd{Sprint 4 Simulator and device result} \\
+NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & Not met on the Simulator (4.23 s; 0.62 s is Codey's code); iPhone \tbd{result} \\
 NFR-02 & 100-card sync $\le$ 5 s & \texttt{SyncEngine} batched push (one request per table, up to 500 operations); pulls paged at PostgREST's 1,000-row cap, decks and cards in parallel; PostgREST (Fig.~\ref{fig:deploy}) & TC-N02, TC-P07 & Met with mock latency; not measured live (S33) \\
 NFR-03 & Latest iOS, target iOS 26 & Client node (Fig.~\ref{fig:deploy}); Xcode deployment target & TC-N03 & Implemented \\
 NFR-04 & Local encryption at rest & SwiftData store with \emph{complete unless open} protection; Keychain item \emph{this device only} (Fig.~\ref{fig:deploy}) & TC-N04 & Implemented \\
@@ -1380,7 +1380,7 @@ NFR-24 & Only Supabase and Google contacted & Supabase Adapter component (Fig.~\
 NFR-25 & Group data visible only to members & RLS on \texttt{groups}, \texttt{group\_members}, \texttt{weekly\_xp}; \texttt{private.is\_member()} & TC-S01 & Implemented \\
 NFR-26 & No test-only code in Release & \texttt{\#if DEBUG} around \texttt{SupabaseTestClient} & TC-S05 & Implemented \\
 NFR-27 & One callable function; Advisor clean & \texttt{private} schema for helpers; \texttt{join\_group} only & TC-S02 & Implemented \\
-NFR-28 & Memory $\le$ 150 MB & \texttt{StudySessionViewModel}, \texttt{StudyQueue} & TC-P03 & \tbd{iPhone 16 Pro Max result} \\
+NFR-28 & Memory $\le$ 150 MB & \texttt{StudySessionViewModel}, \texttt{StudyQueue} & TC-P03 & Not met on the Simulator (282.9 MB; the session adds 1.5 MB); iPhone \tbd{result} \\
 NFR-29 -- NFR-31 & Quiz build, deck save, render & \texttt{QuestionPool}, \texttt{SwiftDataService} + \texttt{FlashcardFactory}, \texttt{CardMarkdownView} & TC-P01, TC-P02, TC-P06 & Met \\
 NFR-32 & Leaderboard $\le$ 1.5 s & \texttt{group\_leaderboard} view (one request) & -- & Retired (S33) \\
 \end{xltabular}
