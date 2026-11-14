@@ -14,7 +14,9 @@ Tick tasks `[x]` as they finish. When every task is ticked, delete this file (gi
 
 **Device observation (RB, Nov 14):** on the iPhone 16 Pro Max (128 GB) every loading step looks under 1 s. Not instrumented, so the doc may cite it only as an informal observation next to the Simulator numbers. Optional 10-minute measurement if wanted: run the app on the phone from Xcode (Release scheme), open Console.app on the Mac → select the iPhone → search `home-ready`; force-quit and relaunch 10 times and read the `home-ready ms=` lines (NFR-01). For NFR-28, watch Xcode's Debug navigator → Memory gauge while studying a 100-card deck and note the peak.
 
-**Dismissed at finalization (Nov 14):** iPhone measurements (NFR-01, NFR-28, TC-S10), Proxyman capture (TC-S09), scroll-fps metric, live RLS re-run (keep Nov 9: 0/57), Free-plan usage check (TC-N20), content proofreading, sign-in error wording, fresh-clone dry-run of Appendix A (CI's clean checkout stands in).
+**Measured Nov 14:** NFR-01 on the iPhone 16 Pro Max: 178.0 ms mean, 193.7 ms p95 (met; in the doc, `perf/sprint4-device-launch.csv`).
+
+**Dismissed at finalization (Nov 14):** iPhone memory and file protection (NFR-28, TC-S10), Proxyman capture (TC-S09), scroll-fps metric, live RLS re-run (keep Nov 9: 0/57), Free-plan usage check (TC-N20), content proofreading, sign-in error wording, fresh-clone dry-run of Appendix A (CI's clean checkout stands in).
 
 ## 1. Non-goals (do not start these)
 

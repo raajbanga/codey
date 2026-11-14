@@ -571,7 +571,7 @@ usability metric was dropped with the usability study (S34).
 \endhead
 \bottomrule
 \endfoot
-Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & 3.82 s (Simulator) & 4.23 s (Simulator; 0.62 s is Codey's code); iPhone \tbd{value} \\
+Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & 3.82 s (Simulator) & 0.19 s on the iPhone 16 Pro Max (mean 0.18 s); 4.23 s on the Simulator \\
 Performance & 100-card deck sync & Mock with 50 ms per request (TC-P07) & $\le$ 5 s & 0.41 s & 0.42 s \\
 Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & 270.6 MB (Simulator; session +1.2 MB) & 282.9 MB (Simulator; session +1.5 MB); iPhone \tbd{value} \\
 Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & 0.39 / 57.9 / 15.1 ms & 0.37 / 38.7 / 13.8 ms \\
@@ -1355,7 +1355,7 @@ satisfies it (component, deployment node, or class) and to its verification test
 \endhead
 \bottomrule
 \endfoot
-NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & Not met on the Simulator (4.23 s; 0.62 s is Codey's code); iPhone \tbd{result} \\
+NFR-01 & Dashboard load $\le$ 3 s & Local-first reads from the SwiftData store (Local Store component, Fig.~\ref{fig:component}); no network wait on launch; \texttt{LaunchTimer} & TC-P08 & Met on the iPhone 16 Pro Max (193.7 ms p95); Simulator 4.23 s \\
 NFR-02 & 100-card sync $\le$ 5 s & \texttt{SyncEngine} batched push (one request per table, up to 500 operations); pulls paged at PostgREST's 1,000-row cap, decks and cards in parallel; PostgREST (Fig.~\ref{fig:deploy}) & TC-N02, TC-P07 & Met with mock latency; not measured live (S33) \\
 NFR-03 & Latest iOS, target iOS 26 & Client node (Fig.~\ref{fig:deploy}); Xcode deployment target & TC-N03 & Implemented \\
 NFR-04 & Local encryption at rest & SwiftData store with \emph{complete unless open} protection; Keychain item \emph{this device only} (Fig.~\ref{fig:deploy}) & TC-N04 & Implemented \\
@@ -2932,7 +2932,7 @@ built from docs/source/perf/sprint4.csv}}
 
 Against each requirement (p95 over 9 kept runs):
 \begin{itemize}
-  \item \textbf{NFR-01, launch (TC-P08): not met on the Simulator.} Home was ready
+  \item \textbf{NFR-01, launch (TC-P08): met on the iPhone, not on the Simulator.} Home was ready
         4.23~s after process start (mean 4.20~s, standard deviation 22.5~ms,
         \texttt{docs/source/perf/sprint4-launch.csv}) against
         3~s, with the TC-P08 store (the starter decks plus five 50-card user decks,
@@ -2954,8 +2954,12 @@ Against each requirement (p95 over 9 kept runs):
         27.2.1 update of the Mac that hosts the Simulator. For scale,
         a one-view SwiftUI app reached its first view in 1.2--1.9~s on the same
         Simulator. On an iPhone those system images come from the shared cache, so
-        the Simulator figure overstates launch; the requirement stays open until it
-        is measured on a device: \tbd{iPhone cold-launch p95 and date}.
+        the Simulator figure overstates launch. Measured on the iPhone~16 Pro Max
+        (128~GB) on Nov 14, 2026, running from Xcode, with the same method (force-quit
+        and relaunch 10 times, first run discarded, \texttt{home-ready} read in
+        Console): mean 178.0~ms, p95 193.7~ms, standard deviation 7.3~ms
+        (\texttt{docs/source/perf/sprint4-device-launch.csv}), 15 times under the
+        3~s limit. NFR-01 is met.
   \item \textbf{NFR-02, 100-card sync (TC-P07): met against the mock backend.} 0.42~s
         against 5~s, with 50~ms of latency per request; not measured live (S33).
   \item \textbf{NFR-28, memory (TC-P03): not met on the Simulator.} The whole test
@@ -2996,7 +3000,7 @@ TC-P04 & Question-bank seeding & 16.6 ms & 16.2 ms & $-3\%$ \\
 TC-P05 & Starter-deck seeding & 15.3 ms & 15.0 ms & $-2\%$ \\
 TC-P06 & 80-line snippet render & 15.1 ms & 13.8 ms & $-9\%$ \\
 TC-P07 & Sync push, mock 50 ms & 407 ms & 422 ms & $+4\%$ \\
-TC-P08 & Cold launch to Home & 3.82 s & 4.23 s & $+11\%$ \\
+TC-P08 & Cold launch to Home (iPhone: 0.19 s) & 3.82 s & 4.23 s & $+11\%$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -3037,8 +3041,9 @@ the times come from the results above.
         (848 in an idle Codey process) instead of sharing them as a device does,
         which cost about 3.3~s per launch before \texttt{main} and about 200~MB of
         every process's footprint; this is what NFR-01 and the absolute TC-P03
-        number measure on this setup. These are the reasons NFR-01 and NFR-28 are
-        decided by the on-device check, \tbd{device results}.
+        number measure on this setup. The iPhone confirms it: the same launch
+        took 193.7~ms at p95 on the iPhone~16 Pro Max against 4.23~s on the
+        Simulator, so the Simulator overstates launch about 22 times on this setup.
 \end{itemize}
 
 \subsection{Corrective Actions}
