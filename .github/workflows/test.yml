@@ -1,12 +1,17 @@
-# Unit tests plus the accessibility audit on every push and pull request to
-# main. Local-only build: no backend secrets, so Secrets.xcconfig is absent
-# (Base.xcconfig includes it optionally) and the Supabase integration tests
-# skip themselves.
+# CI for every push to main and dev and every pull request to main.
+#   checks:   guard scripts (imports R7, design tokens R12, secrets R10 / TC-S03)
+#   database: the 75 pgTAP tests (RLS, CHECKs, FR-61 merge rules) on a local
+#             Supabase database in Docker (TC-S01 offline half)
+#   app:      unit tests + accessibility audit with a readable per-test report
+#             and coverage in the job summary, then the Release-build check
+#             (TC-S05). No backend secrets: Secrets.xcconfig is absent
+#             (Base.xcconfig includes it optionally) and the Supabase client
+#             tests use a stubbed network.
 name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -19,9 +24,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # check-secrets.sh --history scans every commit
+
+      - name: Supabase / GoogleSignIn imports only in the adapter (R7)
+        run: scripts/check-imports.sh
+
+      - name: Design tokens only (R12)
+        run: scripts/check-design-tokens.sh
+
+      - name: No secrets in source or history (TC-S03)
+        run: scripts/check-secrets.sh --history
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.1.0 # same as local (brew)
+
+      - name: Start a local database with every migration applied
+        run: supabase db start
+
+      - name: pgTAP tests (supabase test db)
+        run: supabase test db
+
+  app:
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -37,10 +75,17 @@ jobs:
           tuist generate --no-open
 
       - name: Unit tests and accessibility audit
-        run: |
-          xcodebuild test \
-            -workspace codey.xcworkspace \
-            -scheme codey \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
-            -only-testing:codeyTests \
-            -only-testing:codeyUITests/AccessibilityAuditUITests
+        run: COVERAGE=1 scripts/test.sh
+
+      - name: Upload the result bundle and log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/test.xcresult
+            build/test.log
+          retention-days: 7
+
+      - name: Release build has no DEBUG-only code (TC-S05)
+        run: scripts/check-release-build.sh
