@@ -52,10 +52,15 @@ struct OpenRouterClient: AskAIClient {
     let model: String
     private let session: URLSession
 
+    /// For the NFR-06 test.
+    var minimumTLSVersion: tls_protocol_version_t { session.configuration.tlsMinimumSupportedProtocolVersion }
+
     init(apiKey: String, model: String, configuration: URLSessionConfiguration = .ephemeral) {
         self.apiKey = apiKey
         self.model = model
         configuration.timeoutIntervalForRequest = Self.timeout
+        // NFR-06: the same TLS 1.3 floor as the Supabase session.
+        configuration.tlsMinimumSupportedProtocolVersion = .TLSv13
         session = URLSession(configuration: configuration)
     }
 

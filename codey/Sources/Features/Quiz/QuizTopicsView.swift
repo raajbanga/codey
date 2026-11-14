@@ -1,12 +1,17 @@
 import SwiftData
 import SwiftUI
 
-/// Quiz tab root (replaces TopicListView): the coding-exercises entry card
-/// (FR-39), then one card per topic with its tier locks, accuracy over the
-/// last 50 answers (FR-36), and retired count.
-/// Tap → QuizSetupView sheet → quiz as a full-screen cover (both owned by
-/// the Router at the root).
+/// Quiz tab root. S40: one screen for both kinds of practice: a
+/// Quizzes | Exercises switch (the exercise list used to be its own
+/// pushed screen). Quizzes are rows on one note: tier locks, accuracy over
+/// the last 50 answers (FR-36), and retired count. Tap → the quiz-setup
+/// FloatingPanel → the quiz as a full-screen cover (both owned by the Router).
 struct QuizTopicsView: View {
+    enum Kind: String, CaseIterable {
+        case quizzes = "Quizzes"
+        case exercises = "Exercises"
+    }
+
     @Query(sort: \Topic.title) private var topics: [Topic]
     @Query private var progressRows: [QuestionProgress]
     @Query private var topicProgress: [TopicProgress]
@@ -14,34 +19,50 @@ struct QuizTopicsView: View {
     @Query private var profiles: [UserProfile]
 
     @Environment(Router.self) private var router
+    @SceneStorage("quiz.kind") private var kind: Kind = .quizzes
 
     var body: some View {
         ScrollView {
-            if topics.isEmpty {
-                EmptyStateView(
-                    systemImage: "questionmark.bubble",
-                    title: "No topics yet",
-                    message: "The question bank loads on launch. Try restarting the app."
-                )
-                .padding(.top, CodeySpacing.xl)
-            } else {
-                LazyVStack(spacing: CodeySpacing.md) {
-                    ExerciseEntryCard()
-                    ForEach(topics) { topic in
-                        Button {
-                            router.quizSetupTopic = topic
-                        } label: {
-                            QuizTopicRow(stats: stats(for: topic))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("quizTopic.\(topic.title)")
-                    }
+            VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+                Picker("Practice", selection: $kind) {
+                    ForEach(Kind.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
-                .padding(CodeySpacing.md)
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("quiz.kind")
+
+                switch kind {
+                case .quizzes: quizzes
+                case .exercises: ExerciseList(topics: topics)
+                }
             }
+            .padding(CodeySpacing.md)
         }
         .codeyPaperBackground()
         .navigationTitle("Quiz")
+    }
+
+    @ViewBuilder
+    private var quizzes: some View {
+        if topics.isEmpty {
+            EmptyStateView(
+                systemImage: "questionmark.bubble",
+                title: "No topics yet",
+                message: "The question bank loads on launch. Try restarting the app."
+            )
+            .padding(.top, CodeySpacing.xl)
+        } else {
+            NoteSection("Pick a topic") {
+                ForEach(topics) { topic in
+                    Button {
+                        router.quizSetupTopic = topic
+                    } label: {
+                        QuizTopicRow(stats: stats(for: topic))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("quizTopic.\(topic.title)")
+                }
+            }
+        }
     }
 
     private func stats(for topic: Topic) -> QuizTopicStats {
@@ -76,41 +97,18 @@ struct QuizTopicStats {
 private struct QuizTopicRow: View {
     let stats: QuizTopicStats
 
-    @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 44
-
     var body: some View {
-        CodeyCard {
-            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                HStack(alignment: .top, spacing: CodeySpacing.md) {
-                    IconTile(systemName: stats.topic.iconName, size: iconSize, radius: CodeyRadius.sm)
-                    VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                        Text(stats.topic.title)
-                            .font(.codeyHeadline)
-                            .foregroundStyle(CodeyColor.textPrimary)
-                        Text(accuracyText)
-                            .font(.codeySubheadline)
-                            .foregroundStyle(CodeyColor.textSecondary)
-                    }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.codeyCallout.weight(.semibold))
-                        .foregroundStyle(CodeyColor.textSecondary)
-                        .accessibilityHidden(true)
-                }
-                TierChipRow(tiers: stats.tiers)
-                ProgressBar(
-                    value: stats.total == 0 ? 0 : Double(stats.retired) / Double(stats.total),
-                    label: "\(stats.retired) of \(stats.total) retired"
-                )
-            }
+        ChevronRow(systemImage: stats.topic.iconName, title: stats.topic.title, subtitle: subtitle) {
+            TierChipRow(tiers: stats.tiers)
+                .padding(.top, CodeySpacing.xs)
         }
-        .contentShape(.rect(cornerRadius: CodeyRadius.lg))
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens quiz setup")
     }
 
-    private var accuracyText: String {
-        stats.accuracy.map { "\($0.percentText) accuracy" } ?? "No answers yet"
+    private var subtitle: String {
+        let accuracy = stats.accuracy.map { "\($0.percentText) accuracy" } ?? "No answers yet"
+        return "\(accuracy), \(stats.retired) of \(stats.total) retired"
     }
 }
 

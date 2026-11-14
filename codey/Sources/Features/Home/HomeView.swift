@@ -174,27 +174,19 @@ struct HomeView: View {
     private func planSection(_ stats: HomeStats) -> some View {
         let planned = plannedTopics
         if !planned.isEmpty {
-            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                HomeSectionTitle("This week's plan")
-                VStack(spacing: 0) {
-                    ForEach(planned) { topic in
-                        if topic.id != planned.first?.id {
-                            Divider().overlay(CodeyColor.separator)
-                        }
-                        Button { router.quizSetupTopic = topic } label: {
-                            ChevronRow(
-                                systemImage: topic.iconName,
-                                title: topic.title,
-                                subtitle: planAccuracy(topic, stats).map { "\($0.percentText) accuracy" } ?? "Not started"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Opens quiz setup")
-                        .accessibilityIdentifier("home.plan.\(topic.title)")
+            NoteSection("This week's plan") {
+                ForEach(planned) { topic in
+                    Button { router.quizSetupTopic = topic } label: {
+                        ChevronRow(
+                            systemImage: topic.iconName,
+                            title: topic.title,
+                            subtitle: planAccuracy(topic, stats).map { "\($0.percentText) accuracy" } ?? "Not started"
+                        )
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens quiz setup")
+                    .accessibilityIdentifier("home.plan.\(topic.title)")
                 }
-                .padding(.horizontal, CodeySpacing.md)
-                .codeyNote()
             }
         }
     }
@@ -206,37 +198,31 @@ struct HomeView: View {
     }
 
     private var weekSection: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HomeSectionTitle("Challenge and groups")
-            VStack(spacing: 0) {
-                if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
-                    Button { router.quizSetupTopic = topic } label: {
-                        ChevronRow(
-                            systemImage: challenge.isComplete ? "trophy.fill" : "flag.checkered",
-                            tint: challenge.isComplete ? CodeyColor.success : CodeyColor.brand,
-                            title: "Challenge: \(WeeklyChallenge.goal) correct in \(topic.title)",
-                            subtitle: challenge.isComplete
-                                ? "Done this week" : "\(min(challenge.correct, WeeklyChallenge.goal))/\(WeeklyChallenge.goal) correct"
-                        ) {
-                            ProgressBar(value: challenge.progress)
-                                .padding(.top, CodeySpacing.xxs)
-                        }
+        NoteSection("Challenge and groups") {
+            if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
+                Button { router.quizSetupTopic = topic } label: {
+                    ChevronRow(
+                        systemImage: challenge.isComplete ? "trophy.fill" : "flag.checkered",
+                        tint: challenge.isComplete ? CodeyColor.success : CodeyColor.brand,
+                        title: "Challenge: \(WeeklyChallenge.goal) correct in \(topic.title)",
+                        subtitle: challenge.isComplete
+                            ? "Done this week" : "\(min(challenge.correct, WeeklyChallenge.goal))/\(WeeklyChallenge.goal) correct"
+                    ) {
+                        ProgressBar(value: challenge.progress)
+                            .padding(.top, CodeySpacing.xxs)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Opens quiz setup")
-                    .accessibilityIdentifier("home.challenge")
-                    Divider().overlay(CodeyColor.separator)
-                }
-                NavigationLink {
-                    GroupsView()
-                } label: {
-                    ChevronRow(systemImage: "person.3.fill", title: "Groups", subtitle: "Weekly XP leaderboard")
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier("home.groups")
+                .accessibilityHint("Opens quiz setup")
+                .accessibilityIdentifier("home.challenge")
             }
-            .padding(.horizontal, CodeySpacing.md)
-            .codeyNote()
+            NavigationLink {
+                GroupsView()
+            } label: {
+                ChevronRow(systemImage: "person.3.fill", title: "Groups", subtitle: "Weekly XP leaderboard")
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home.groups")
         }
     }
 
@@ -263,7 +249,7 @@ struct HomeView: View {
 
     private func topicsSection(_ stats: HomeStats) -> some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HomeSectionTitle("Your topics")
+            SectionTitle("Your topics")
             VStack(spacing: CodeySpacing.md) {
                 ForEach(orderedTopics) { topic in
                     TopicNote(
@@ -320,16 +306,9 @@ struct HomeView: View {
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
                 Spacer(minLength: 0)
-                Button {
+                CloseButton(label: "Dismiss") {
                     withAnimation(CodeyMotion.snappy) { nudgeDismissed = true }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.codeyCallout.weight(.semibold))
-                        .foregroundStyle(CodeyColor.textSecondary)
-                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Dismiss")
             }
         }
         .onTapGesture { router.showProfile = true }

@@ -52,17 +52,14 @@ struct HomeLogicTests {
 
 @MainActor
 struct RouterTests {
-    @Test func startFromTheSetupSheetPresentsAfterDismiss() throws {
+    @Test func startFromTheSetupPanelClosesItAndPresents() throws {
         let context = try TestSupport.inMemoryContext()
         let topic = try TestSupport.insertTopic(context, easy: 2, medium: 0, hard: 0)
         let router = Router()
 
         router.quizSetupTopic = topic
-
         router.startQuiz(QuizRequest(topic: topic, mode: .mixed))
         #expect(router.quizSetupTopic == nil)
-        #expect(router.quiz == nil, "waits for the sheet to go away")
-        router.presentPendingQuiz()
         #expect(router.quiz?.topic.id == topic.id)
     }
 

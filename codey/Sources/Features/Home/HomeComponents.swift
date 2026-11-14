@@ -114,85 +114,6 @@ struct UpNextCard: View {
     }
 }
 
-/// A section heading above a Home note.
-struct HomeSectionTitle: View {
-    let title: String
-
-    init(_ title: String) { self.title = title }
-
-    var body: some View {
-        Text(title)
-            .font(.codeyHeadline)
-            .foregroundStyle(CodeyColor.textSecondary)
-            .accessibilityAddTraits(.isHeader)
-            .padding(.leading, CodeySpacing.xs)
-    }
-}
-
-/// A row inside a Home note: icon, title, subtitle (plus optional extra
-/// content such as a progress bar), and a trailing chevron. The caller
-/// wraps it in a Button or NavigationLink.
-struct ChevronRow<Extra: View>: View {
-    let systemImage: String
-    var tint: Color = CodeyColor.brand
-    let title: String
-    let subtitle: String
-    @ViewBuilder var extra: Extra
-
-    var body: some View {
-        HStack(spacing: CodeySpacing.sm) {
-            HomeRowIcon(systemName: systemImage, tint: tint)
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                Text(title)
-                    .font(.codeyHeadline)
-                    .foregroundStyle(CodeyColor.textPrimary)
-                    .multilineTextAlignment(.leading)
-                Text(subtitle)
-                    .font(.codeySubheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(CodeyColor.textSecondary)
-                extra
-            }
-            Spacer(minLength: 0)
-            RowChevron()
-        }
-        .padding(.vertical, CodeySpacing.md)
-        .contentShape(.rect)
-    }
-}
-
-extension ChevronRow where Extra == EmptyView {
-    init(systemImage: String, tint: Color = CodeyColor.brand, title: String, subtitle: String) {
-        self.init(systemImage: systemImage, tint: tint, title: title, subtitle: subtitle) { EmptyView() }
-    }
-}
-
-private struct RowChevron: View {
-    var body: some View {
-        Image(systemName: "chevron.right")
-            .font(.codeyCallout.weight(.semibold))
-            .foregroundStyle(CodeyColor.textSecondary)
-            .accessibilityHidden(true)
-    }
-}
-
-/// The leading symbol of a Home row, in a fixed-width column so titles line
-/// up whatever the symbol's width (person.3 is much wider than f(x)).
-struct HomeRowIcon: View {
-    let systemName: String
-    var tint: Color = CodeyColor.brand
-
-    @ScaledMetric(relativeTo: .callout) private var width: CGFloat = 32
-
-    var body: some View {
-        Image(systemName: systemName)
-            .font(.codeyCallout)
-            .foregroundStyle(tint)
-            .frame(width: width)
-            .accessibilityHidden(true)
-    }
-}
-
 /// One topic on Home, as its own note: title, mastery + accuracy, and the
 /// two ways to practice it: Cards (flashcards) and Quiz.
 struct TopicNote: View {
@@ -209,7 +130,7 @@ struct TopicNote: View {
         VStack(alignment: .leading, spacing: CodeySpacing.md) {
             VStack(alignment: .leading, spacing: CodeySpacing.xs) {
                 HStack(spacing: CodeySpacing.sm) {
-                    HomeRowIcon(systemName: topic.iconName)
+                    RowIcon(systemName: topic.iconName)
                     Text(topic.title)
                         .font(.codeyHeadline)
                         .foregroundStyle(CodeyColor.textPrimary)

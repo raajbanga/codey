@@ -45,10 +45,8 @@ struct QuizModeView: View {
             guard let level else { return }
             showToast(level)
         }
-        .sheet(item: $presentedAskAI) { session in
+        .floatingPanel(item: $presentedAskAI, fillsHeight: true) { session in
             AskAIChatView(session: session)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
         }
     }
 
@@ -219,11 +217,11 @@ struct QuizModeView: View {
     }
 
     private func showToast(_ level: Int) {
-        withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) { toastLevel = level }
+        withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toastLevel = level }
         UIAccessibility.post(notification: .announcement, argument: "Level \(level)!")
         Task {
             try? await Task.sleep(for: .seconds(2))
-            withCodeyAnimation(reduceMotion: reduceMotion) { toastLevel = nil }
+            withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toastLevel = nil }
             viewModel.levelUpToast = nil
         }
     }

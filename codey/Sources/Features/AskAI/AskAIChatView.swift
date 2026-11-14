@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Ask AI chat (S39): a header, the conversation as notes on the
+/// The Ask AI chat (S39), shown in a FloatingPanel: a header, the conversation as notes on the
 /// dotted paper (tutor replies rendered as Markdown), a typing indicator,
 /// an error row with Retry, and the input bar.
 ///
@@ -12,7 +12,7 @@ import SwiftUI
 ///     [ Ask about this question…     (↑) ]
 struct AskAIChatView: View {
     @Bindable var session: AskAISession
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismissPanel) private var dismissPanel
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -21,7 +21,6 @@ struct AskAIChatView: View {
             conversation
             inputBar
         }
-        .codeyPaperBackground()
         .task { await session.start() }
     }
 
@@ -39,12 +38,11 @@ struct AskAIChatView: View {
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
-            CloseButton(label: "Close Ask AI") { dismiss() }
+            CloseButton(label: "Close Ask AI") { dismissPanel() }
                 .accessibilityIdentifier("askAI.close")
         }
         .padding(.horizontal, CodeySpacing.md)
-        .padding(.top, CodeySpacing.md)
-        .padding(.bottom, CodeySpacing.sm)
+        .padding(.vertical, CodeySpacing.sm)
     }
 
     private var conversation: some View {
@@ -52,11 +50,14 @@ struct AskAIChatView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: CodeySpacing.sm) {
                     ForEach(session.messages) { message in
-                        ChatBubble(message: message)
+                        ChatBubble(text: message.text, isMine: message.role == .student, speaker: "Tutor")
+                            .accessibilityIdentifier(message.role == .student ? "askAI.message.student" : "askAI.message.tutor")
                             .id(message.id)
                     }
                     if session.isWaiting {
-                        TypingIndicator().id("typing")
+                        TypingIndicator(label: "Tutor is typing")
+                            .accessibilityIdentifier("askAI.typing")
+                            .id("typing")
                     }
                     if let error = session.error {
                         errorRow(error).id("error")
@@ -120,25 +121,13 @@ struct AskAIChatView: View {
                 .accessibilityLabel("Message")
                 .accessibilityIdentifier("askAI.input")
 
-            Button(action: send) {
-                Image(systemName: "arrow.up")
-                    .font(.codeyHeadline)
-                    .foregroundStyle(CodeyColor.onBrandFill)
-                    .frame(width: 44, height: 44)
-                    .background(CodeyColor.brandFill, in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!session.canSend)
-            .opacity(session.canSend ? 1 : 0.45)
-            .accessibilityLabel("Send")
+            CircleIconButton(systemImage: "arrow.up", label: "Send", kind: .filled, action: send)
+                .disabled(!session.canSend)
             .accessibilityIdentifier("askAI.send")
         }
         .padding(.horizontal, CodeySpacing.md)
         .padding(.top, CodeySpacing.sm)
         .padding(.bottom, CodeySpacing.sm)
-        .background(CodeyColor.surface)
-        .overlay(alignment: .top) { Divider().overlay(CodeyColor.separator) }
         .sensoryFeedback(.impact(weight: .light), trigger: session.messages.count)
     }
 
@@ -148,77 +137,12 @@ struct AskAIChatView: View {
     }
 }
 
-/// One message. Tutor replies are notes on the left rendered as Markdown;
-/// the student's are brand-soft notes on the right.
-private struct ChatBubble: View {
-    let message: AskAISession.Message
-
-    var body: some View {
-        switch message.role {
-        case .tutor:
-            CardMarkdownView(markdown: message.text)
-                .padding(CodeySpacing.sm + CodeySpacing.xs)
-                .codeyNote()
-                .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
-                .padding(.trailing, CodeySpacing.lg)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Tutor: \(message.text)")
-                .accessibilityIdentifier("askAI.message.tutor")
-        case .student:
-            Text(message.text)
-                .font(.codeyBody)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .padding(.horizontal, CodeySpacing.md)
-                .padding(.vertical, CodeySpacing.sm + CodeySpacing.xxs)
-                .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.lg))
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.leading, CodeySpacing.xl)
-                .accessibilityLabel("You: \(message.text)")
-                .accessibilityIdentifier("askAI.message.student")
-        }
-    }
-}
-
-/// Three ink dots that pulse in turn; a still "Thinking…" under Reduce Motion.
-private struct TypingIndicator: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        Group {
-            if reduceMotion {
-                Text("Thinking…")
-                    .font(.codeySubheadline)
-                    .foregroundStyle(CodeyColor.textSecondary)
-            } else {
-                TimelineView(.animation(minimumInterval: 0.15)) { timeline in
-                    let phase = Int(timeline.date.timeIntervalSinceReferenceDate / 0.3) % 3
-                    HStack(spacing: CodeySpacing.xs) {
-                        ForEach(0..<3, id: \.self) { index in
-                            Circle()
-                                .fill(CodeyColor.brand)
-                                .frame(width: 8, height: 8)
-                                .opacity(index == phase ? 1 : 0.3)
-                        }
-                    }
-                    .codeyAnimation(value: phase)
-                }
-            }
-        }
-        .padding(.horizontal, CodeySpacing.md)
-        .padding(.vertical, CodeySpacing.sm + CodeySpacing.xs)
-        .codeyNote()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Tutor is typing")
-        .accessibilityIdentifier("askAI.typing")
-    }
-}
-
 #if DEBUG
     #Preview {
-        AskAIChatView(session: AskAISession(
+        Color.clear.floatingPanel(item: .constant(Optional(AskAISession(
             context: .quiz(id: "q1", topic: "Algorithms", difficulty: .easy, prompt: "What is the time complexity of binary search?",
                            options: ["O(1)", "O(log n)", "O(n)", "O(n²)"], correctIndex: 1),
             client: StubAskAIClient()
-        ))
+        ))), fillsHeight: true) { AskAIChatView(session: $0) }
     }
 #endif

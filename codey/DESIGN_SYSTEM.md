@@ -9,7 +9,7 @@ Tokens and components for every screen. Screens use these. They never use raw
 | Folder | What |
 |---|---|
 | `Tokens/` | `CodeyColor`, `CodeyRadius`, `CodeySpacing`, type (`Font.codey*`), `CodeyMotion`, `TierStyle`, `SyntaxRole` |
-| `Components/` | `CodeyCard`, `CodeyButton`, `CodeyChip`, `AnswerOptionRow`, `ProgressBar`, `ProgressRing`, `StatTile` + `StatTileRow`, `TierChipRow` + `TierUnlockedBanner`, `EmptyStateView`, `CelebrationOverlay`, `XPGainLabel`, `IconTile`, `CloseButton`, `AppGlyph`, `MasteryDots`, and `FormFeedback` (`FieldErrorLabel`, `LimitCounter`, `.errorBorder`, `.errorAlert` + `Binding.attempt`) |
+| `Components/` | `FloatingPanel` (`.floatingPanel(item:)`, `\.dismissPanel`), `NoteList` + `NoteSection` + `ChevronRow` + `SectionTitle` + `RowIcon`, `CircleIconButton` (+ `CloseButton`, `AskAIButton`), `ChatBubble` + `TypingIndicator`, `CodeyCard`, `CodeyButton`, `CodeyChip`, `AnswerOptionRow`, `ProgressBar`, `ProgressRing`, `StatTile` + `StatTileRow`, `TierChipRow` + `TierUnlockedBanner`, `EmptyStateView`, `CelebrationOverlay`, `XPGainLabel`, `IconTile`, `CloseButton`, `AppGlyph`, `MasteryDots`, and `FormFeedback` (`FieldErrorLabel`, `LimitCounter`, `.errorBorder`, `.errorAlert` + `Binding.attempt`) |
 | `Markdown/` | `CardMarkdownView` (the **only** `import Textual`), `CardMarkdownComposition`, `MarkdownTextEditor`, `MarkdownFormatting` |
 | `CodeEditor/` | `CodeEditorView` + `CodeyRunestoneTheme` (the **only** Runestone/TreeSitter imports) |
 | `Gallery/` | `ComponentGallery` previews (DEBUG builds only): light, dark, AX3, XS |
@@ -18,6 +18,10 @@ Tokens and components for every screen. Screens use these. They never use raw
 
 - **Look ("pastel ink", notes on paper)**: content sits on rounded notes (`.codeyNote()`: raised fill, hairline edge, a barely-there lift) laid on warm dotted paper (`.codeyPaperBackground()`). A desaturated ink-blue accent and pastel fills. One `.primary` button per screen.
 - **Type**: headings and numbers in SF Rounded (`codeyDisplay`, `codeyTitle`, `codeyHeadline`, `codeyNumeric*`, and system navigation titles via `CodeyNavigationTitles`); reading text in SF Pro. Nothing smaller than footnote: `codeyCaption` is footnote, and secondary lines under a title use `codeySubheadline`. Flashcard and quiz prompts/answers use `codeyCardText` (title3) via `CardMarkdownView(font:)`.
+- **Lists are rows on one note** (S40): a `NoteSection` holds `ChevronRow`s divided by hairlines (Home's plan, the Quiz topics, the exercises). Use separate `CodeyCard`s only for things that are not a list (a summary, an explanation).
+- **Floating panels** (S40): small tasks that keep the page in view (quiz setup, Ask AI) open with `.floatingPanel(item:)`: a dotted-paper card (`.codeyFloatingCard()`) centered over a dimmed page, with a margin on every side. It closes by drag, a tap outside, its own `CloseButton` (`@Environment(\.dismissPanel)`), or VoiceOver escape. Its shadow is the one deep shadow in the app, because the note is off the page. Editing flows (deck builder, profile) stay system sheets.
+- **One floating motion** (S40): everything that floats over the page (panels, `CelebrationOverlay`, the level toast, undo bars) appears and leaves with `CodeyMotion.popTransition` (96% scale plus fade, fade only under Reduce Motion) driven by `CodeyMotion.pop`. Centered cards use `.codeyFloatingCard()`; small toasts and bars use `.codeyFloatingSurface()`. Don't add slide-ins or bespoke offsets.
+- **Icon-only buttons** are `CircleIconButton` (44 pt): `.neutral` to close, `.soft` for Ask AI, `.filled` for play and send.
 - **Glass is the system's only**: tab bar, toolbars, and sheets get Liquid Glass from iOS. Our own buttons, toasts, and overlays are flat (`CodeyFillButtonStyle`, `.codeyFloatingSurface()`). Content cards are `.codeyNote()` surfaces; the only shadow is the note's faint lift.
 - **Corners**: use `Capsule` only for single-line, fixed-height controls (`CodeyChip`, `ProgressBar`, single-line `CodeyButton`). Anything that can wrap uses `.codey(CodeyRadius.md)`. Cards use `lg`. Nested surfaces use `ConcentricRectangle` or container-relative shapes (`.containerShape`).
 - **Color is never the only signal**: tiers carry a symbol and a label (`TierStyle`), and answer states carry an icon and a VoiceOver value.
@@ -25,7 +29,7 @@ Tokens and components for every screen. Screens use these. They never use raw
 - **Haptics**: use `.sensoryFeedback`, not UIKit feedback generators.
 - **brand vs brandFill**: `brand` is ink for text, icons, and tint. `brandFill` is the pastel button fill, always labeled with `onBrandFill` (never white). `brandSoft` sits behind brand text.
 - **Pastel pairs**: every status/tier color has a `…Soft` fill (`CodeyColor.Soft`, or `CodeyChipVariant.softColor`). Put a color's text only on its own soft fill or on the surfaces.
-- **Backgrounds**: every page uses `.codeyPaperBackground()` (Increase Contrast hides the dots); `.codeyListBackground()` does the same for a `List`. The dots use `paperDot`, which never carries text.
+- **Backgrounds**: every page uses `.codeyPaperBackground()` (Increase Contrast hides the dots); `.codeyListBackground()` does the same for a `List`. The dots use `paperDot` (2.4 pt on a 20 pt grid; 1.58:1 light, 1.68:1 dark against `surface`, S40), which never carries text.
 
 ## Contrast (NFR-12)
 

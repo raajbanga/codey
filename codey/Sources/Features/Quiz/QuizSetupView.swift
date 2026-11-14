@@ -1,8 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// Pre-quiz sheet (medium detent): tier locks with reasons, Mixed vs one
-/// tier (FR-29), how many questions, Start. When every unlocked question is
+/// Quiz setup, shown in a FloatingPanel (S40; was a medium-detent sheet):
+/// tier locks with reasons, Mixed vs one tier (FR-29), how many questions,
+/// Start. When every unlocked question is
 /// retired: "Topic mastered!" with a no-XP review of retired questions.
 struct QuizSetupView: View {
     let topic: Topic
@@ -11,6 +12,7 @@ struct QuizSetupView: View {
     @Query private var progressRows: [QuestionProgress]
     @Query private var topicProgress: [TopicProgress]
     @Query private var profiles: [UserProfile]
+    @Environment(\.dismissPanel) private var dismissPanel
     /// .mixed or .tier(_); review has its own button.
     @State private var choice: QuizMode = .mixed
 
@@ -53,49 +55,41 @@ struct QuizSetupView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                    header
-                    VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                        Text("Tiers")
-                            .font(.codeyHeadline)
-                        TierChipRow(tiers: tiers)
-                    }
-                    if isMastered {
-                        masteredState
-                    } else {
-                        picker
-                    }
-                }
-                .padding(CodeySpacing.md)
+        VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+            header
+            TierChipRow(tiers: tiers)
+            if isMastered {
+                masteredState
+            } else {
+                picker
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .codeyPaperBackground()
-            .safeAreaInset(edge: .bottom) { startButton }
-            .navigationTitle("Quiz Setup")
-            .navigationBarTitleDisplayMode(.inline)
+            startButton
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .padding(CodeySpacing.md)
         .onChange(of: unlocked) { _, open in
             if case .tier(let tier) = choice, !open.contains(tier) { choice = .mixed }
         }
     }
 
+    @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 44
+
     private var header: some View {
-        HStack(spacing: CodeySpacing.md) {
-            Image(systemName: topic.iconName)
-                .font(.codeyTitle)
-                .foregroundStyle(CodeyColor.brand)
-                .accessibilityHidden(true)
+        HStack(alignment: .top, spacing: CodeySpacing.md) {
+            IconTile(systemName: topic.iconName, size: iconSize, radius: CodeyRadius.sm)
             VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                 Text(topic.title)
                     .font(.codeyTitle)
+                    .foregroundStyle(CodeyColor.textPrimary)
                 Text(topic.summary)
                     .font(.codeySubheadline)
                     .foregroundStyle(CodeyColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            CloseButton(label: "Close quiz setup") { dismissPanel() }
+                .accessibilityIdentifier("quizSetup.close")
         }
     }
 
@@ -159,8 +153,6 @@ struct QuizSetupView: View {
                 .accessibilityIdentifier("quizSetup.start")
             }
         }
-        .padding(.horizontal, CodeySpacing.md)
-        .padding(.bottom, CodeySpacing.sm)
     }
 
     private var choiceLabel: String {
@@ -177,8 +169,9 @@ struct QuizSetupView: View {
 #Preview("Setup") {
     let container = ModelContainerFactory.makePreview()
     let topic = try! container.mainContext.fetch(FetchDescriptor<Topic>()).first!
-    return Color.clear.sheet(isPresented: .constant(true)) {
-        QuizSetupView(topic: topic) { _ in }
-    }
-    .modelContainer(container)
+    return Color.clear
+        .floatingPanel(item: .constant(Optional(topic))) { topic in
+            QuizSetupView(topic: topic) { _ in }
+        }
+        .modelContainer(container)
 }

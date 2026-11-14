@@ -253,13 +253,28 @@ Elnad Salcinovic & iOS UI/UX \& QA Lead & SwiftUI components, offline caching (S
 
 \subsection{User Interface}\label{sec:ui}
 The app uses a native iOS 26 structure: a Liquid Glass tab bar with Home, Decks, and
-Quiz; sheets for setup and editing; and full-screen covers for study and quiz sessions.
-Its look, redone in Sprint 3, is calm and minimal: content sits on rounded notes on
-warm, faintly dotted paper with one desaturated ink-blue accent, and celebrations are
-quiet banners with a haptic. Every color, font, spacing, and radius comes from the
-design-system tokens, which a CI check enforces (Section~\ref{sec:vc}). Sprint 4 added
-one screen family, the coding exercises, reached from the top of the Quiz tab.
-Figure~\ref{fig:screens} shows the main screens on an iPhone~17 Simulator; the
+Quiz; sheets for editing; floating panels for quiz setup and the Ask AI tutor; and
+full-screen covers for study and quiz sessions. Its look is calm and minimal: content
+sits on rounded notes on warm dotted paper, like a notebook page, with one desaturated
+ink-blue accent, and celebrations are quiet banners with a haptic. Every color, font,
+spacing, and radius comes from the design-system tokens, which a CI check enforces
+(Section~\ref{sec:vc}).
+
+A UI refresh before the code freeze (decision S40) made four changes. The paper's dot
+grid is darker and larger (2.4~pt dots instead of 1.6~pt; 1.58:1 against the paper in Light Mode and 1.68:1 in Dark Mode, up from 1.29:1 and 1.31:1), so the
+notebook look survives a phone's brightness; text contrast is unchanged (at least
+4.5:1, \texttt{ContrastTests}). Quiz setup and Ask AI open in a \texttt{FloatingPanel}:
+a dotted-paper card centered over the dimmed screen with a margin on every side that
+closes by dragging down, tapping outside, its close button, or the VoiceOver escape
+gesture. Everything that floats over a page (panels, celebrations, toasts) now shares one
+motion: it grows in place from 96\% while fading in, or only fades under Reduce Motion. Navigation is shorter: the coding exercises moved from their own screen into
+the Quiz tab behind a Quizzes~/ Exercises switch (21 screens became 20), and each deck
+tile has a play button that continues studying in one tap instead of two. Lists became
+rows on one note (\texttt{NoteList}, \texttt{ChevronRow}) instead of a stack of
+identical cards, and repeated pieces moved into the design system
+(\texttt{CircleIconButton}, \texttt{ChatBubble}, \texttt{TypingIndicator}), so the
+Features layer is 4,901 lines against 4,917 before, although it now includes the Ask
+AI chat. Figure~\ref{fig:screens} shows the main screens on an iPhone~17 Simulator; the
 storyboard, wireframes, and navigation diagram are in the Sprint 3 document.
 
 \begin{figure}[!htbp]
@@ -286,6 +301,14 @@ documenting tests. The principal changes are:
         blank, and every blank is checked as one test case against its accepted
         answers after whitespace normalization. No code is compiled or executed on
         the device (decision S31).
+  \item \textbf{Ask AI tutor (FR-67, FR-68).} A button on a quiz question or a coding
+        exercise opens a chat with a free model through OpenRouter that explains the
+        idea and never gives the answer: strict rules, a local check on every reply,
+        and a conversation kept only in memory for the problem on screen
+        (decision S39).
+  \item \textbf{UI refresh.} A stronger dot grid, floating panels for quiz setup and
+        Ask AI, the exercises folded into the Quiz tab, one-tap study from the deck
+        grid, and shared row components (decision S40, Section~\ref{sec:ui}).
   \item \textbf{Study-results sync (FR-61).} Card mastery, quiz-question progress,
         and tier unlocks now sync per account through three new Supabase tables with
         Row Level Security and merge triggers (decision S32).
@@ -390,9 +413,9 @@ FR-45 $\to$ FR-65, and FR-46 $\to$ FR-66. The compound leaderboard requirement F
 was split into FR-42 and FR-50 to FR-53, and FR-61 was added for the client's offline
 results mandate. Every requirement whose source is the client's mandatory list has
 Must priority. In Sprint 4, FR-39 to FR-41 and FR-61 moved from Planned to
-Implemented, and NFR-32 was retired (decision S33). The functional requirements
-number 66, all implemented, and the non-functional requirements 32, of which 31 are
-in force.
+Implemented, NFR-32 was retired (decision S33), and FR-67 and FR-68 were added for
+the Ask AI tutor (decision S39). The functional requirements number 68, all
+implemented, and the non-functional requirements 32, of which 31 are in force.
 
 \subsection{Functional Requirements}
 
@@ -483,6 +506,9 @@ FR-47 & The app shall resolve a sync conflict with an additive merge that keeps 
 FR-59 & When the same card has been edited in both versions of a conflicting deck, the app shall keep the version with the later modification timestamp. & Should & Team & Implemented \\
 FR-48 & The app shall show each deck's sync status (Draft, Saved locally, Syncing, Synced, or Conflict) in the deck library. & Should & Team & Implemented \\
 FR-61 & The app shall sync a signed-in user's study results (card mastery scores, quiz question progress, and tier unlocks) to Supabase when connectivity is restored, keeping the most recent review when two devices differ. & Must & Client & Implemented \\
+\multicolumn{5}{@{}l}{\textit{Ask AI tutor}} \\
+FR-67 & The app shall offer an Ask AI tutor on a quiz question and on a coding exercise that explains the underlying concept in a chat, without naming the correct option, the missing code, or the solution. & Should & Team & Implemented \\
+FR-68 & The app shall keep an Ask AI conversation in memory only, for the question or exercise on screen; the next question or exercise starts a new conversation, and no conversation is stored or synced. & Should & Team & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Feedback}} \\
 FR-49 & The app shall allow a signed-in user to submit a UI/UX defect report with a text description of 1--1,000 characters, which is stored in Supabase for review by the development team. & Could & Team & Implemented \\
 \end{xltabular}
@@ -537,7 +563,7 @@ NFR-20 & Constraint & All third-party services shall be used within their free p
 NFR-21 & Security & Session tokens shall never be written to logs, \texttt{UserDefaults}, or any file other than the Keychain item. & \texttt{KeychainSessionStorageTests}; logging audit (every log value is private by default); PR checklist item. \\
 NFR-22 & Security & The Supabase \texttt{service\_role} key and every real secret shall be absent from the app bundle, the repository, and its history. & \texttt{scripts/check-secrets.sh -{}-history} reports 0 findings (TC-S03). \\
 NFR-23 & Security & Every client validation limit shall be enforced again by a CHECK constraint in PostgreSQL with the same bounds. & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests} fail when the limits drift (TC-S06). \\
-NFR-24 & Security & The app shall send network requests only to the configured Supabase project and Google's sign-in endpoints. & Code review of every URL the app builds; Proxyman traffic capture (TC-S09). \\
+NFR-24 & Security & The app shall send network requests only to the configured Supabase project, Google's sign-in endpoints, and the OpenRouter chat endpoint used by Ask AI. & Code review of every URL the app builds; \texttt{check-imports.sh} keeps \texttt{openrouter.ai} inside \texttt{OpenRouterClient}; Proxyman traffic capture (TC-S09). \\
 NFR-25 & Security & Group, group-membership, and weekly-XP rows shall be readable only by members of the same group. & Live RLS check items 37--48: a non-member reads 0 rows (TC-S01). \\
 NFR-26 & Security & A Release build shall contain no test-only client code or other DEBUG-only bypass. & \texttt{scripts/check-release-build.sh} (TC-S05). \\
 NFR-27 & Security & The database shall expose no callable function other than \texttt{join\_group}, and the Supabase Security Advisor shall report no unjustified warning. & Security Advisor run after each migration (TC-S02). \\
@@ -621,8 +647,10 @@ Source control and tracking & GitHub repository with GitHub Actions workflows fo
 Table~\ref{tab:services} lists every external service the project uses and the plan
 limits that apply. Usage is limited to the three developers during development and
 the team's own demonstrations, so expected load is a small fraction of each limit.
-Sprint 4 added no new service or library; the progress tables (FR-61) live in the
-same Supabase project, and the coding exercises are a bundled JSON file.
+The progress tables (FR-61) live in the same Supabase project, and the coding
+exercises are a bundled JSON file. The one service added late in Sprint 4 is
+OpenRouter for the Ask AI tutor (FR-67): its API key was created with a \$0 credit
+limit, so it can only call free models and cannot incur a charge (NFR-20).
 Sign in with Apple, which requires a paid Apple Developer Program membership, is not
 used. App Store distribution, which also requires that membership, is out of scope.
 
@@ -640,6 +668,7 @@ Xcode, iOS Simulator, and on-device installs & Free Apple ID & Personal-team sig
 GitHub and GitHub Actions & Free & Repository, pull request template, and Actions; a scheduled workflow pings the Supabase API every 3 days. & \$0 \\
 Textual & Open source (MIT) & Markdown and Prism.js code rendering for card text (pinned at 0.5.0). & \$0 \\
 Runestone and TreeSitterLanguages & Open source (MIT) & Code editor and Tree-sitter grammars for Swift, Python, Java, and C++ (pinned). & \$0 \\
+OpenRouter (chat completions API) & Free models only & Key with a \$0 credit limit, so only \texttt{:free} models answer; a free-tier account gets 50 free-model requests per day (opening a chat is one, each message one more), and the free catalog changes often, so the model ID is configuration (\texttt{OPENROUTER\_MODEL}), not code (decision S39). & \$0 \\
 Supabase Swift and GoogleSignIn-iOS SDKs & Open source (MIT, Apache 2.0) & Client libraries for the two services above (pinned). The app's Acknowledgements screen credits them and their dependencies. & \$0 \\
 \bottomrule
 \end{tabularx}
@@ -1021,7 +1050,7 @@ Section~\ref{sec:testing}.
 Table~\ref{tab:risks} is the project risk register. Risks R1--R6 were identified in
 Sprint 1 and re-rated in later sprints. Risks R7--R11 arise from Sprint 2 architecture
 decisions, R12 from the choice of third-party UI libraries, R13--R18 from Sprint 3,
-and R19--R20 from Sprint 4 testing. Probability (P) and impact (I) are rated High (H), Medium (M), or Low (L).
+R19--R20 from Sprint 4 testing, and R21 from the Ask AI tutor. Probability (P) and impact (I) are rated High (H), Medium (M), or Low (L).
 
 \begin{xltabular}{\textwidth}{@{}l L{3.0cm} c c Y L{2.9cm} L{1.7cm}@{}}
 \caption{Risk register (updated for Sprint 4)}\label{tab:risks}\\
@@ -1056,6 +1085,7 @@ R17 & The client-mandated coding challenges (FR-39 to FR-41) slip to Sprint 4 (R
 R18 & The client-mandated sync of study results (FR-61) slips, or merging progress from two devices loses a student's mastery (Requirements) & M & M & Progress tables with RLS and merge triggers; the latest review wins on both pull and push (S32); 13 unit tests include two simulated devices. & Not started by the second week of Sprint 4, or a two-device test loses progress. & Closed: built Nov 10; two-Simulator test passed \\
 R19 & Results measured on the Simulator do not hold on a phone (launch, memory, file protection) (Testing) & M & M & Measure NFR-01, NFR-28, and TC-S10 on the iPhone 16 Pro Max and report the numbers as they are, met or not. & A device number misses its target. & Monitoring \\
 R20 & UI tests are slow or flaky on shared runners, so CI failures are ignored (Testing) & M & L & UI tests wait on elements rather than fixed delays and scroll to off-screen rows; failures upload the result bundle; only the accessibility audit runs in CI, and the other UI suites run locally before a merge. & A CI failure that passes on re-run. & Monitoring \\
+R21 & The Ask AI tutor gives the answer away, or its free model disappears, or the API key shipped in the app is extracted (Security, Technology) & M & L & A strict system prompt (the answer is never sent to the model), a local leak check on every reply with one rewrite and then a fixed refusal, and a one-line first reply. The model ID is configuration, with \texttt{openrouter/free} as the fallback. The key has a \$0 credit limit, so a leaked key can only use free models; a server-side proxy (Supabase Edge Function) is future work. The button is hidden when no key is configured. & A reply names a correct option in testing, or the configured model returns 404. & Accepted \\
 \end{xltabular}
 
 \subsection{Risk Planning}
@@ -1120,6 +1150,7 @@ replicates study progress (FR-61).
   \node[usecase] (board)    at (-4.2,-17.6) {View Weekly Leaderboard};
   \node[usecase] (exer)     at (-3.6,-19.2) {Complete Coding Exercise};
   \node[usecase] (checkans) at (0.9,-19.2)  {Check Exercise Answers};
+  \node[usecase] (askai)    at (0.9,-15.2)  {Ask AI Tutor};
   % Middle column
   \node[usecase] (attach)   at (0.9,1.6)    {Attach Code Snippet};
   \node[usecase] (tier)     at (0.9,-2.4)   {Practice by Tier};
@@ -1136,7 +1167,7 @@ replicates study progress (FR-61).
     \node[draw, line width=0.7pt, fill=magenta!5, inner sep=0.45cm,
           fit=(onboard)(attach)(create)(validate)(study)(quiz)(hide)(profile)(report)
               (tier)(signout)(auth)(cache)(queue)(repl)(conflict)
-              (plan)(chall)(badges)(mkgroup)(join)(board)(exer)(checkans)] (sys) {};
+              (plan)(chall)(badges)(mkgroup)(join)(board)(exer)(checkans)(askai)] (sys) {};
   \end{scope}
   \node[anchor=north, font=\sffamily\scriptsize\bfseries] at (sys.north) {Codey Application Boundary};
   % Actors
@@ -1146,6 +1177,7 @@ replicates study progress (FR-61).
   \node[store] (local)  at (7.2,-0.8) {\st{system}\\Local Data\\(SwiftData)};
   \node[store] (cloud)  at (7.2,-4.6) {\st{system}\\Cloud Sync\\(Supabase)};
   \node[store] (google) at (7.2,-8.4) {\st{system}\\Google\\Account};
+  \node[store] (orouter) at (7.2,-15.2) {\st{system}\\AI Model\\(OpenRouter)};
   % Associations
   \foreach \u in {onboard,create,study,quiz,hide,profile,report,plan,chall,badges,mkgroup,join,board,exer}
     \draw[line width=0.6pt] (student) -- (\u);
@@ -1157,6 +1189,7 @@ replicates study progress (FR-61).
   \draw[line width=0.6pt] (conflict) -- (cloud);
   \draw[line width=0.6pt] (auth)     -- (cloud);
   \draw[line width=0.6pt] (auth)     -- (google);
+  \draw[line width=0.6pt] (askai)    -- (orouter);
   % Include / extend
   \tikzset{ucl/.style={font=\sffamily\scriptsize, inner sep=1pt}}
   \draw[dep] (attach)  -- node[ucl, above, sloped] {\st{extend}} (create);
@@ -1169,8 +1202,10 @@ replicates study progress (FR-61).
   \foreach \u in {report,mkgroup,join,board}
     \draw[dep] (\u) -- node[ucl, pos=0.3, above, sloped] {\st{include}} (auth);
   \draw[dep] (exer) -- node[ucl, above] {\st{include}} (checkans);
+  \draw[dep] (askai) -- node[ucl, above, sloped, pos=0.6] {\st{extend}} (quiz);
+  \draw[dep] (askai) -- node[ucl, below, sloped, pos=0.6] {\st{extend}} (exer);
 \end{tikzpicture}}
-\caption{UML use case diagram: decks, study, quizzes, coding exercises, profile, groups, challenges, and synchronization}
+\caption{UML use case diagram: decks, study, quizzes, coding exercises, the Ask AI tutor, profile, groups, challenges, and synchronization}
 \label{fig:usecase}
 \end{figure}
 
@@ -1182,7 +1217,8 @@ earned badges, creates, joins, and views groups, and completes coding exercises.
 caches decks for offline use, and records unsynchronized changes. \emph{Cloud Sync}
 authenticates sessions, replicates decks and study progress across devices, and
 resolves write conflicts.
-\emph{Google Account} verifies the student's identity for sign-in.
+\emph{Google Account} verifies the student's identity for sign-in. The \emph{AI Model},
+a free model reached through OpenRouter, writes the Ask AI tutor's explanations.
 
 \textbf{Relationships.} \emph{Create / Edit Flashcard Deck} includes \emph{Validate
 Schema Constraints}, because no card is saved until it conforms to the JSON card schema
@@ -1199,7 +1235,10 @@ ties a report to its sender and a group to its members. Badges are earned as a s
 effect of saving a deck, rating a card, or answering a quiz question, and are viewed
 in the profile. \emph{Complete Coding Exercise} includes \emph{Check Exercise
 Answers}, because every submission is checked blank by blank (FR-40); it touches no
-store and no network, so it works offline and for a guest. Sign-in is optional for
+store and no network, so it works offline and for a guest. \emph{Ask AI Tutor}
+extends \emph{Take Quiz} and \emph{Complete Coding Exercise}: the student may open it
+on a question or an exercise, and only there (FR-67). It needs a network connection
+but no account. Sign-in is optional for
 everything else: every other use case except \emph{Replicate Decks \& Progress to
 Remote} works for a guest.
 
@@ -1212,7 +1251,8 @@ UC-10 Resolve Write Conflicts, UC-11 Take Quiz, UC-12 Practice by Tier, UC-13 Hi
 Restore Starter Deck, UC-14 Onboard, UC-15 Manage Profile, UC-16 Sign Out, UC-17 View
 Weekly Plan, UC-18 Track Weekly Challenge, UC-19 Earn / View Badges, UC-20 Create Group,
 UC-21 Join Group, UC-22 View Weekly Leaderboard, UC-23 Complete Coding Exercise, and
-UC-24 Check Exercise Answers. Table~\ref{tab:uc23} specifies the Sprint 4 use case;
+UC-24 Check Exercise Answers, and UC-25 Ask AI Tutor. Tables~\ref{tab:uc23}
+and~\ref{tab:uc25} specify the Sprint 4 use cases;
 Table~\ref{tab:ucnew} summarizes the Sprint 3 use cases, which are specified in full
 in the Sprint 3 document.
 
@@ -1250,6 +1290,25 @@ Main flow & 1. On the Quiz tab, the student opens \emph{Coding Exercises}; the s
 Alternate flows & 4a. A blank is left empty: it is reported as ``No answer'' and counts as failed. 5a. A blank failed: its accepted answers are shown under the field. 5b. The student selects \emph{Try Again}: the fields are cleared and the exercise restarts. 1a. The file fails validation: an error screen is shown instead of a partial list. \\
 Postconditions & Nothing is stored or synced, and no XP is awarded (S31). \\
 Requirements & FR-39, FR-40, FR-41 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Use case specification: UC-25 Ask AI Tutor}
+\label{tab:uc25}
+\begin{tabularx}{\textwidth}{@{}L{3.0cm} Y@{}}
+\toprule
+\textbf{Field} & \textbf{Description} \\
+\midrule
+Primary actor & Student \\
+Secondary actors & AI Model (a free model reached through OpenRouter) \\
+Preconditions & A quiz question or a coding exercise is on screen, the build has an OpenRouter key (otherwise the button is hidden), and the device is online. Sign-in is not required. \\
+Main flow & 1. The student selects \emph{Ask AI}; the chat opens as a floating panel. 2. The system sends the tutor rules and the problem (the question and its options, or the exercise prompt and code with numbered blanks, never the answer) as hidden messages. 3. The system shows the tutor's one-line greeting. 4. The student types a question and selects \emph{Send}. 5. The system shows a typing indicator, then the tutor's explanation as Markdown (bullets, small diagrams). 6. Steps 4--5 repeat until the student closes the panel. \\
+Alternate flows & 3a/5a. The request fails (offline, timeout, rate limit, model unavailable): the system shows the reason and a \emph{Retry} button. 5b. The reply names the correct option or a missing token: the system asks the model once to rewrite it, and if the rewrite still gives the answer away, shows a fixed refusal that offers to explain the idea. 6a. The student reopens the chat on the same question: the conversation is still there. 6b. The student moves to the next question or leaves the quiz or exercise: the conversation is discarded. \\
+Postconditions & Nothing is stored or synced (FR-68); the quiz or exercise is unchanged. \\
+Requirements & FR-67, FR-68 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1325,7 +1384,8 @@ FR-35 & UC-19 & \texttt{Badge}, \texttt{BadgeEvaluator.award()}, \texttt{BadgeAw
 FR-36 & UC-11 & \texttt{QuizAnswerRecord}, \texttt{QuizProgressStore.accuracy()} & TC-36 & Implemented \\
 FR-37 & -- & \texttt{HomeView} (level card, topic cards with per-topic accuracy) & TC-37 & Implemented \\
 FR-38 & UC-17 & \texttt{StudyPlanBuilder.build()}, \texttt{StudyPlan.current()} (cached per week), Home ``This week's plan'' & TC-38 & Implemented \\
-FR-39 -- FR-41 & UC-23, UC-24 & \texttt{ExerciseLoader}, \texttt{exercises.json}, \texttt{ExerciseValidator.check()}, \texttt{normalize()}, \texttt{ExerciseResult}, \texttt{ExerciseListView}, \texttt{ExerciseView}; no code is executed on the device & TC-39 -- TC-41 & Implemented \\
+FR-39 -- FR-41 & UC-23, UC-24 & \texttt{ExerciseLoader}, \texttt{exercises.json}, \texttt{ExerciseValidator.check()}, \texttt{normalize()}, \texttt{ExerciseResult}, \texttt{ExerciseList}, \texttt{ExerciseView}; no code is executed on the device & TC-39 -- TC-41 & Implemented \\
+FR-67, FR-68 & UC-25 & \texttt{OpenRouterClient}, \texttt{AskAIPrompt.system}, \texttt{AskAIContext}, \texttt{AnswerLeakGuard}, \texttt{AskAISession}, \texttt{AskAIChatView}, \texttt{AskAIButton}, \texttt{FloatingPanel} & TC-67, TC-68 & Implemented \\
 FR-42, FR-52 & UC-22 & \texttt{GroupBoardView}, \texttt{BackendFacade.fetchLeaderboard()}, \texttt{leaveGroup()}, \texttt{LeaderboardRanking}, \texttt{GroupCache}, \texttt{WeeklyXPStore}; \texttt{group\_leaderboard} view, \texttt{weekly\_xp} & TC-42, TC-52 & Implemented \\
 FR-43, FR-53 & UC-18 & \texttt{WeeklyChallenge}, \texttt{UTCWeek}, Home challenge row, \texttt{Badge.weeklyChallenge} & TC-43, TC-53 & Implemented \\
 FR-50, FR-51 & UC-20, UC-21 & \texttt{GroupsView} (create and join sheets), \texttt{BackendFacade.createGroup()}, \texttt{joinGroup(code:)}, \texttt{ModelValidator.validateGroupName()}, \texttt{validateInviteCode()}; \texttt{groups}, \texttt{group\_members}, \texttt{join\_group(code)} & TC-50, TC-51 & Implemented \\
@@ -1376,7 +1436,7 @@ NFR-20 & No service costs & Free plans and open-source libraries (Table~\ref{tab
 NFR-21 & Tokens never logged or stored outside the Keychain & \texttt{KeychainSessionStorage}; \texttt{Logger} privacy defaults & TC-S07 & Implemented \\
 NFR-22 & No secrets in app or repository & Gitignored \texttt{Secrets.xcconfig}; \texttt{check-secrets.sh} & TC-S03 & Implemented \\
 NFR-23 & Server CHECKs mirror client limits & \texttt{ModelValidator.Limits}, \texttt{flashcard.schema.json}, SQL CHECK constraints & TC-S06 & Implemented \\
-NFR-24 & Only Supabase and Google contacted & Supabase Adapter component (Fig.~\ref{fig:component}) & TC-S09 & \tbd{Proxyman result} \\
+NFR-24 & Only Supabase, Google, and OpenRouter contacted & Supabase Adapter and Ask AI components (Fig.~\ref{fig:component}) & TC-S09 & \tbd{Proxyman result} \\
 NFR-25 & Group data visible only to members & RLS on \texttt{groups}, \texttt{group\_members}, \texttt{weekly\_xp}; \texttt{private.is\_member()} & TC-S01 & Implemented \\
 NFR-26 & No test-only code in Release & \texttt{\#if DEBUG} around \texttt{SupabaseTestClient} & TC-S05 & Implemented \\
 NFR-27 & One callable function; Advisor clean & \texttt{private} schema for helpers; \texttt{join\_group} only & TC-S02 & Implemented \\
@@ -1422,6 +1482,7 @@ TC-44 & \texttt{DeckViewModelTests}, \texttt{SyncEngineTests} (offline save neve
 TC-45, TC-65 & \texttt{SyncQueueTests}, \texttt{SyncEngineTests} (sign-in claims guest decks) \\
 TC-46, TC-66 & \texttt{SyncEngineTests} (push, pull, backoff, reconnect), \texttt{SupabaseDataClientTests} \\
 TC-39 -- TC-41 & \texttt{ExerciseLoaderTests}, \texttt{ExerciseValidatorTests} (basis paths, Section~\ref{sec:flowgraph}), \texttt{ExerciseUITests} (UI), \texttt{AccessibilityAuditUITests} (UI) \\
+TC-67, TC-68 & \texttt{OpenRouterClientTests} (request body, error mapping, TLS 1.3), \texttt{AskAISessionTests} (greeting, reset on a new question, rewrite and refusal, retry), \texttt{AnswerLeakGuardTests}, \texttt{AskAIConfigTests} (button hidden without a key), \texttt{AskAIUITests} (UI, stubbed model), \texttt{AccessibilityAuditUITests} (UI) \\
 TC-61 & \texttt{ProgressSyncTests} (two simulated devices), \texttt{SupabaseDataClientTests} (explicit nulls), \texttt{supabase/tests/progress.sql} (pgTAP) \\
 TC-47, TC-59 & \texttt{ConflictResolverTests}, \texttt{SyncEngineTests} (concurrent edits, two devices converge) \\
 TC-48 & \texttt{DeckSyncStateTests} \\
@@ -2179,6 +2240,10 @@ Appendix~B after the code freeze, so the two cannot disagree.
   \node[ball] (iEx) at (-8.6,0) {}; \node[ilbl, above=2pt of iEx] {Exercises};
   \draw[line width=0.6pt] (content.east) -- (iEx);
   \sock{iEx}{0} \draw[line width=0.6pt] (pres.west) -- ([shift={(0:0.24)}]iEx.center);
+  \node[wcomp] (askai) at (-11.4,-3.3) {\st{component}\\\textbf{Ask AI}\\AskAISession, OpenRouterClient, AskAIPrompt, AnswerLeakGuard};
+  \node[ball] (iAI) at (-9.1,-1.1) {}; \node[ilbl, below=2pt of iAI] {AskAIClient};
+  \draw[line width=0.6pt] (askai.north) |- (iAI);
+  \sock{iAI}{0} \draw[line width=0.6pt] ([xshift=-1.5cm]pres.south) |- ([shift={(0:0.24)}]iAI.center);
   % Provided interfaces (balls) and their providers
   \node[ball] (iDB)   at (-2.9,0.15)  {}; \node[ilbl, above=2pt of iDB] {DeckBackend};
   \node[ball] (iFA)   at (-2.9,-0.45) {}; \node[ilbl, below=2pt of iFA, align=center] {Facade API (auth,\\profile, groups)};
@@ -2203,12 +2268,16 @@ Appendix~B after the code freeze, so the two cannot disagree.
   \node[anchor=south west, font=\sffamily\scriptsize\bfseries] (t1) at (-7.8,1.0) {\st{subsystem} Client App (iOS)};
   \begin{scope}[on background layer]
     \node[draw=magenta!60!black, fill=magenta!5, line width=0.6pt, inner xsep=0.3cm, inner ysep=0.3cm,
-          fit=(t1)(pres)(back)(adapt)(local)(net)(content)] (cf) {};
+          fit=(t1)(pres)(back)(adapt)(local)(net)(content)(askai)] (cf) {};
   \end{scope}
-  \foreach \n in {pres,back,adapt,local,net,content}{\compicon{\n}}
+  \foreach \n in {pres,back,adapt,local,net,content,askai}{\compicon{\n}}
 
   % ---- Remote
   \node[wcomp] (google) at (-1.0,-7.9) {\st{component}\\\textbf{Google Identity}\\OAuth 2.0 / OpenID Connect};
+  \node[wcomp] (orouter) at (-7.0,-7.9) {\st{component}\\\textbf{OpenRouter}\\chat completions, free models};
+  \node[ball] (iOR) at (-7.0,-5.9) {}; \node[ilbl, right=3pt of iOR] {Chat API (HTTPS)};
+  \draw[line width=0.6pt] (orouter.north) -- (iOR);
+  \sock{iOR}{180} \draw[line width=0.6pt] (askai.south) |- ([shift={(180:0.24)}]iOR.center);
   \node[wcomp] (gotrue) at (3.6,-7.9)  {\st{component}\\\textbf{Supabase Auth}\\(GoTrue)};
   \node[wcomp] (rest)   at (8.0,-7.9)  {\st{component}\\\textbf{PostgREST}\\enforces RLS policies};
   \node[wcomp] (db)     at (6.3,-11.1) {\st{component}\\\textbf{PostgreSQL}\\profiles, decks, flashcards, sync\_log, feedback\_reports, groups, group\_members, weekly\_xp, card/question/topic\_progress; join\_group()};
@@ -2231,7 +2300,7 @@ Appendix~B after the code freeze, so the two cannot disagree.
     \node[draw=teal!60!black, fill=teal!5, line width=0.6pt, inner xsep=0.3cm, inner ysep=0.3cm,
           fit=(t2)(gotrue)(rest)(db)] (bf) {};
   \end{scope}
-  \foreach \n in {google,gotrue,rest,db}{\compicon{\n}}
+  \foreach \n in {google,gotrue,rest,db,orouter}{\compicon{\n}}
 \end{tikzpicture}}
 \caption{UML component diagram: client and backend subsystems with interfaces}
 \label{fig:component}
@@ -2260,6 +2329,13 @@ Adapter} provides those two protocols; it is the only component that imports the
 Supabase and Google Sign-In libraries (checked by \texttt{check-imports.sh}, risk R7),
 and it stores the session in the iOS Keychain. Unit tests replace the adapter and the
 network monitor with in-memory mocks, so the whole client is tested without a network.
+The \emph{Ask AI} component (FR-67, FR-68) holds the tutor's in-memory chat
+(\texttt{AskAISession}), its rules (\texttt{AskAIPrompt}), the local answer-leak check,
+and \texttt{OpenRouterClient}, the only code that talks to \texttt{openrouter.ai}
+(checked by \texttt{check-imports.sh}). The presentation requires it through the
+\texttt{AskAIClient} protocol, which tests and UI tests replace with a stub; it shares
+nothing with the backend components, so the tutor never sees an account, a deck, or
+any stored data.
 
 \textbf{Backend subsystem.} The adapter requires three HTTPS interfaces: Google's OpenID
 Connect endpoints, which return the ID token at sign-in; the \emph{Supabase Auth}
@@ -2322,6 +2398,15 @@ PostgreSQL & SQL & -- \\
     \nodebox{ng}{yellow}
   \end{scope}
 
+  % ---- OpenRouter node
+  \node[artifact] (orapi) at (-8.2,-7.2) {\st{service}\\Chat completions API\\(free models)};
+  \node[anchor=south, font=\sffamily\scriptsize\bfseries, align=center] (tor) at (-8.2,-6.4)
+       {\st{execution environment}\\OpenRouter (Ask AI)};
+  \begin{scope}[on background layer]
+    \node[draw, line width=0.6pt, fill=violet!6, inner sep=0.3cm, fit=(tor)(orapi)] (nor) {};
+    \nodebox{nor}{violet}
+  \end{scope}
+
   % ---- Cloud node
   \node[artifact] (gt) at (-2.1,-7.3) {\st{service}\\GoTrue Auth Service};
   \node[artifact] (pr) at (2.1,-7.3)  {\st{service}\\PostgREST API Engine};
@@ -2360,12 +2445,13 @@ PostgreSQL & SQL & -- \\
   \draw[line width=0.8pt, -{Stealth[length=2.2mm]}] ([xshift=0.35cm]n1.east) -| node[glbl, pos=0.75] {\st{HTTPS}\\port 443} (ng.north);
   \draw[line width=0.8pt, -{Stealth[length=2.2mm]}] ([xshift=0.35cm]n2.east |- oidc.west) -- node[glbl, above=1pt] {\st{HTTPS}} (ng.west |- oidc.west);
   \draw[line width=0.8pt, -{Stealth[length=2.2mm]}] (n2.south) -- node[glbl] {\st{TCP / SSL}\\port 5432} (n3.north);
+  \draw[line width=0.8pt, -{Stealth[length=2.2mm]}] ([xshift=-0.35cm]n1.west) -| node[glbl, pos=0.75] {\st{HTTPS / TLS 1.3}\\port 443} (nor.north);
 \end{tikzpicture}}
-\caption{UML deployment diagram: client, cloud, identity provider, and data tier nodes}
+\caption{UML deployment diagram: client, cloud, identity provider, OpenRouter, and data tier nodes}
 \label{fig:deploy}
 \end{figure}
 
-Figure~\ref{fig:deploy} shows the four nodes on which Codey is deployed and the
+Figure~\ref{fig:deploy} shows the five nodes on which Codey is deployed and the
 artifacts each node hosts.
 \begin{itemize}
   \item \textbf{Client node} (\st{device}): an iPhone or the iOS Simulator running
@@ -2378,6 +2464,10 @@ artifacts each node hosts.
   \item \textbf{Identity provider node} (\st{execution environment}): Google's OAuth
         2.0 and OpenID Connect service. The app's Google Sign-In sheet obtains an ID
         token from it, and Supabase Auth verifies that token's signature against it.
+  \item \textbf{OpenRouter node} (\st{execution environment}): OpenRouter's chat
+        completions API, which routes the Ask AI tutor's requests to a free model
+        (FR-67). The app sends it only the tutor rules, the problem on screen, and the
+        chat; no account, device, or stored data.
   \item \textbf{Cloud node} (\st{execution environment}): the Supabase platform,
         running in AWS-hosted containers. It hosts the GoTrue authentication service
         and the PostgREST API engine. Every PostgREST request passes through the Row
@@ -2407,7 +2497,8 @@ audit on a macOS runner for every push and pull request to \texttt{main}.
 \textbf{Communication paths.} Components on the client communicate through in-process
 calls and, for the Keychain, through the Security framework. The client communicates
 with the cloud node only over HTTPS, and its URL session refuses any protocol below
-TLS 1.3 (NFR-06); it reaches Google over HTTPS during sign-in. The cloud node
+TLS 1.3 (NFR-06); it reaches Google over HTTPS during sign-in, and OpenRouter over
+HTTPS with the same TLS 1.3 floor when the student uses Ask AI. The cloud node
 connects to PostgreSQL over an encrypted TCP/SSL connection on port 5432, which is not
 exposed to the client. Database credentials therefore remain within Supabase, and the
 client only ever holds the public anon key and the signed-in user's session.
@@ -2551,7 +2642,7 @@ The security non-functional requirements are NFR-04 to NFR-07 (encryption at res
 the device and in the cloud, TLS 1.3 in transit, row ownership) and, added in
 Sprint 3, NFR-21 to NFR-27 (Table~\ref{tab:nfr}): tokens only in the Keychain, no
 secrets in the repository, server-side limits that mirror client validation, only the
-two known hosts contacted, group data visible only to members, no test bypass in
+three known hosts contacted, group data visible only to members, no test bypass in
 Release builds, and a single exposed database function. Each names its verification
 test, and Table~\ref{tab:sectests} records the results.
 
@@ -2633,6 +2724,7 @@ and elements that cross a boundary.
   \node[ent] (stu) at (-2.2,0) {Student\\(user)};
   \node[ent] (goo) at (3.2,6.4) {Google OAuth};
   \node[ent] (sau) at (15.0,4.6) {Supabase Auth};
+  \node[ent] (orm) at (3.2,-8.0) {OpenRouter\\(AI model)};
   % Processes (device)
   \node[proc] (p1) at (3.2,3.6) {P1\\Sign In};
   \node[proc] (p2) at (3.2,0) {P2\\Validate\\Deck};
@@ -2641,6 +2733,7 @@ and elements that cross a boundary.
   \node[proc] (p5) at (7.4,-3.8) {P5\\Join Group /\\Leaderboard};
   % Processes (cloud)
   \node[proc] (p6) at (15.0,0) {P6\\PostgREST\\API (RLS)};
+  \node[proc] (p7) at (3.2,-4.9) {P7\\Ask AI};
   % Data stores (open rectangles: top and bottom lines only)
   \node[ds] (d1) at (7.4,-1.95) {D1 SwiftData store};
   \node[ds] (d2) at (7.4,3.6) {D2 iOS Keychain};
@@ -2666,13 +2759,16 @@ and elements that cross a boundary.
   \draw[fl] (stu) |- node[fn, pos=0.75] {13} (p5);
   \draw[fl] (p5) -| node[fn, pos=0.25] {14} (p6);
   \draw[fl] (sau) -- node[fn] {15} (p6);
+  \draw[fl] (stu) |- node[fn, pos=0.75] {16} (p7);
+  \draw[fl] ([xshift=-0.35cm]p7.south) -- node[fn] {17} ([xshift=-0.35cm]orm.north);
+  \draw[fl] ([xshift=0.35cm]orm.north) -- node[fn] {18} ([xshift=0.35cm]p7.south);
   % Trust boundaries
-  \draw[tb] (0.8,-5.3) rectangle (12.6,5.0);
+  \draw[tb] (0.8,-6.1) rectangle (12.6,5.0);
   \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (4.3,5.0) {TB1: iPhone app (device)};
   \draw[tb] (13.4,-1.6) rectangle (20.2,5.3);
   \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (13.5,5.3) {TB2: Supabase cloud};
 \end{tikzpicture}}
-\caption{Security threat model as a data flow diagram (external entities, processes P1--P6, data stores D1--D4, numbered flows, trust boundaries TB1 and TB2)}
+\caption{Security threat model as a data flow diagram (external entities, processes P1--P7, data stores D1--D4, numbered flows, trust boundaries TB1 and TB2)}
 \label{fig:dfd}
 \end{figure}
 
@@ -2685,7 +2781,10 @@ token are read by the sync engine; (11) batched upserts and pulls go to PostgRES
 HTTPS; (12) PostgREST queries PostgreSQL under the caller's RLS policies; (13) the
 student enters an invite code or opens a board; (14) \texttt{join\_group} and the
 leaderboard view are called; (15) PostgREST verifies the session's JWT issued by
-Supabase Auth.
+Supabase Auth; (16) the student opens Ask AI and types a message; (17) the tutor rules,
+the problem on screen (never its answer), and the chat go to OpenRouter over HTTPS;
+(18) the model's reply comes back and is checked for a leaked answer before it is
+shown.
 
 \begin{xltabular}{\textwidth}{@{}L{2.1cm} L{2.4cm} Y Y@{}}
 \caption{STRIDE analysis of the threat model}\label{tab:stride}\\
@@ -2708,6 +2807,9 @@ D3 (\texttt{weekly\_xp}) & Tampering & A user writes an inflated weekly XP. & Ow
 D2, flow 10 & Information disclosure & The session token leaks from storage or logs. & Keychain, this device only; logging audit: the 7 public log values are a launch duration, starter-deck keys and card IDs, sync event, state, and entity names, and tier names (NFR-21). \\
 D1 & Information disclosure & A lost phone exposes progress and decks. & iOS Data Protection (\emph{complete unless open}). The offline group cache (group names, invite codes, member names) is in \texttt{UserDefaults}, which has the default protection, and is cleared on sign-out. \\
 P2, flow 5 & Tampering, Denial of service & Oversized or malformed input crashes the app or the server. & Validator limits (title 60, text 500, code 2,000 characters and 80 lines), errors as values; CHECK constraints server-side. \\
+Flow 17 & Information disclosure & Text sent to Ask AI reaches a third party (OpenRouter and the model's provider, which may log free-model traffic). & Only the problem on screen and what the student types are sent: no account, user ID, device ID, or stored data; the chat is never stored (FR-68); TLS 1.3. The chat input asks about the problem, and students are told not to type personal data. \\
+P7, flow 18 & Tampering (prompt injection), Elevation of privilege & A student or a crafted message talks the model into giving the answer or saying something off topic. & The model never receives the answer; rules ranked above anything the student writes; a local leak check with one rewrite, then a fixed refusal. A reply is only displayed as Markdown text: it cannot call a tool, open a link by itself, run code, or change any data, so injection affects only that one explanation. \\
+P7 & Information disclosure, Denial of service & The OpenRouter key is extracted from the app binary and used by someone else. & The key has a \$0 credit limit (free models only, 50 requests per day); it can be revoked and replaced in \texttt{Secrets.xcconfig} without a code change; R21 accepted, server-side proxy is future work. When the quota or rate limit is hit the chat shows a message and the rest of the app is unaffected. \\
 Flow 11 & Repudiation & A user denies having pushed a change. & Append-only \texttt{sync\_log} with no update or delete policies. \\
 P6 & Denial of service & Request flooding exhausts the Free plan. & Every write needs a signed-in session and passes RLS and CHECK constraints; usage is reviewed monthly against the Free-plan limits (NFR-20, R11). Weekly XP writes are pace-limited by a trigger (at most 600 XP per minute of server time, clamped rather than rejected; migration \texttt{weekly\_xp\_rate\_limit}). Other tables have no per-user rate limit, accepted for a class-sized user base (R11). \\
 \end{xltabular}
@@ -3091,7 +3193,7 @@ effort). Sprint~4 was the testing sprint: Activities~12.1, 12.2, 13.1, and 13.2 
 fed one subsection, and the defects found are listed in Section~\ref{sec:defects}.
 
 \subsection{Test Plan and Checklist}\label{sec:testplan}
-\textbf{Scope.} Everything in the app target and the database: the 66 functional
+\textbf{Scope.} Everything in the app target and the database: the 68 functional
 requirements (Table~\ref{tab:fr}) and the 31 active non-functional requirements
 (Table~\ref{tab:nfr}). Out of scope: Apple's and Supabase's own code (SwiftUI,
 SwiftData, PostgREST, Google Sign-In), which is exercised only through Codey's use of
@@ -3160,7 +3262,7 @@ used.
 \bottomrule
 \endfoot
 1 & Test plan written: scope, levels, environment, entry and exit criteria, roles. & Done (this section) \\
-2 & Every requirement traced to a test case and a suite (Tables~\ref{tab:rtm}, \ref{tab:tcmap}). & Done; 66 of 66 FRs traced \\
+2 & Every requirement traced to a test case and a suite (Tables~\ref{tab:rtm}, \ref{tab:tcmap}). & Done; 68 of 68 FRs traced \\
 3 & Unit tests for every model, rule, view model, loader, and validator. & Done; 388 pass \\
 4 & Basis-path tests for the two flow-graph methods. & Done; 8 of 8 paths covered \\
 5 & Integration tests with stubs and drivers (Activity 12.2). & Done; Swift, pgTAP, live check \\
@@ -3395,7 +3497,7 @@ ST-07 & Account, sync, groups (FR-01 to FR-03, FR-42, FR-50 to FR-53, FR-61) & S
 specification. Codey's verification is the traceability check: every requirement
 names a test case, every test case names the suite that runs it
 (Tables~\ref{tab:rtm}, \ref{tab:rtm-nfr}, \ref{tab:tcmap}), and the suites above
-pass. All 66 functional requirements are implemented and traced to a passing test;
+pass. All 68 functional requirements are implemented and traced to a passing test;
 of the 31 active non-functional requirements, NFR-01 and NFR-28 wait on the device
 measurement and NFR-24 on the traffic capture (Sections~\ref{sec:security} and
 \ref{sec:performance}). Design reviews of each migration against the security
@@ -3460,7 +3562,7 @@ TD-03 & \texttt{ExerciseUITests} failed about 2 runs in 5 under load: the Simula
 % =====================================================================
 \section{Concluding Remarks and Future Work}\label{sec:conclusion}
 % =====================================================================
-Codey now does what the client asked for. All 66 functional requirements are
+Codey now does what the client asked for. All 68 functional requirements are
 implemented, including every client mandate: adaptive tier rotation, XP, streaks and
 badges, progress analytics and a study plan, offline use with cloud sync of decks and,
 since Sprint~4, of study results, leaderboards and weekly challenges, and
@@ -3491,6 +3593,10 @@ Some things were deliberately left out, and are the natural next steps:
   \item \textbf{Fuller sync.} Quiz history, daily activity, and badges stay on the
         device, and Reset Progress is not sent to other devices; device clocks decide
         the ``latest'' review.
+  \item \textbf{Ask AI behind a server.} The OpenRouter key ships in the app (R21,
+        accepted because it can only use free models). A Supabase Edge Function proxy
+        would keep the key on the server, require a session, and allow a per-user
+        quota; streaming replies would make the tutor feel faster.
   \item \textbf{Distribution.} Codey runs from Xcode. TestFlight distribution would
         need a paid developer account and moving the Google sign-in client to a Codey
         project.

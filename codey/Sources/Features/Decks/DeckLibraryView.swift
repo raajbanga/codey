@@ -30,6 +30,7 @@ struct DeckLibraryView: View {
     @State private var actionError: String?
 
     @Environment(BackendFacade.self) private var backend
+    @Environment(Router.self) private var router
 
     var body: some View {
         let topicsByID = topics.keyed(by: \.id)
@@ -135,11 +136,23 @@ struct DeckLibraryView: View {
                 spacing: CodeySpacing.sm + CodeySpacing.xs
             ) {
                 ForEach(decks) { deck in
+                    let canStudy = deck.cardCount > 0 && !deck.isHidden
                     NavigationLink(value: DeckRoute(id: deck.id)) {
-                        DeckTile(deck: deck, topic: topicsByID[deck.topicId])
+                        DeckTile(deck: deck, topic: topicsByID[deck.topicId], reservesStudyButton: canStudy)
                     }
                     .buttonStyle(.plain)
                     .contextMenu { menu(for: deck) }
+                    // S40: study straight from the grid (continues where you
+                    // left off); the deck screen keeps tier and start-over options.
+                    .overlay(alignment: .bottomTrailing) {
+                        if canStudy {
+                            CircleIconButton(systemImage: "play.fill", label: "Study \(deck.title)", kind: .filled) {
+                                router.study = StudyRequest(deck: deck, start: .resume)
+                            }
+                            .padding(CodeySpacing.sm)
+                            .accessibilityIdentifier("deckTile.study.\(deck.title)")
+                        }
+                    }
                 }
             }
         }

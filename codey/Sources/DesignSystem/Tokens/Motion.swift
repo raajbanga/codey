@@ -6,6 +6,10 @@ import SwiftUI
 enum CodeyMotion {
     static let snappy: Animation = .snappy(duration: 0.25)
     static let smooth: Animation = .smooth(duration: 0.35)
+    /// Anything floating over the page appearing or leaving (S40): panels,
+    /// celebrations, toasts. Paired with `popTransition`, it grows from 96%
+    /// to full size in place, settling without bounce.
+    static let pop: Animation = .spring(duration: 0.32, bounce: 0)
     /// What any motion becomes under Reduce Motion: a short crossfade.
     static let reduced: Animation = .easeInOut(duration: 0.2)
 

@@ -54,7 +54,7 @@ final class AskAIUITests: XCTestCase {
 
     func testAskAIOnCodingExercise() throws {
         app.tabBars.buttons["Quiz"].tap()
-        let entry = app.buttons["quiz.exercises"]
+        let entry = app.buttons["Exercises"]
         XCTAssertTrue(entry.waitForExistence(timeout: 15))
         entry.tap()
         let exercise = app.buttons["exercise.ex-swift-guard"]

@@ -22,7 +22,7 @@ binary="$derived/Build/Products/Release-iphonesimulator/codey.app/codey"
 [[ -f "$binary" ]] || { echo "No Release binary at $binary (build first)"; exit 2; }
 
 # Names that exist only inside #if DEBUG.
-needles=(SupabaseTestClient "Replay Onboarding" ComponentGallery)
+needles=(SupabaseTestClient "Replay Onboarding" ComponentGallery StubAskAIClient UITestAskAIStub)
 fail=0
 for needle in "${needles[@]}"; do
     if nm "$binary" 2>/dev/null | grep -qF -- "$needle" || strings -a "$binary" | grep -qF -- "$needle"; then

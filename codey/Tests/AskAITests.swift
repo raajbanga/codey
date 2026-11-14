@@ -43,6 +43,11 @@ struct OpenRouterClientTests {
         #expect(!problem.localizedCaseInsensitiveContains("correct"), "the answer key never leaves the device")
     }
 
+    /// NFR-06: Ask AI's session has the app's TLS 1.3 floor.
+    @Test func sessionRequiresTLS13() {
+        #expect(makeClient().minimumTLSVersion == .TLSv13)
+    }
+
     @Test func systemPromptCarriesTheHardRules() {
         let prompt = AskAIPrompt.system
         #expect(prompt.contains("Never reveal or confirm the answer"))
