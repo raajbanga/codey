@@ -1,0 +1,4 @@
+# NFR-01 / TC-P08 on device: iPhone 16 Pro Max (128 GB), run from Xcode, Nov 14 2026.
+# home-ready ms read in Console.app; force-quit and relaunch 10 times; first run discarded.
+name,runs,mean_ms,p95_ms,stddev_ms,discarded_ms,kept_ms
+launch_home_ready_device,9,178.0,193.7,7.3,214.3,170.4 193.7 184.7 180.6 173.9 174.5 174.6 176.7 172.5
