@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import codey
 
-// SupabaseTestAccounts is DEBUG-only (NFR-26); the Release perf run
+// SupabaseTestClient is DEBUG-only (NFR-26); the Release perf run
 // (scripts/perf-report.sh) builds the test target without it.
 #if DEBUG
 
@@ -13,7 +13,7 @@ struct SupabaseDataClientTests {
     private func makeClient(pageSize: Int = 1000) -> any RemoteDeckStore {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
-        return SupabaseTestAccounts.dataClient(
+        return SupabaseTestClient.dataClient(
             url: URL(string: "https://stub.supabase.co")!, key: "stub-key", configuration: configuration, pageSize: pageSize
         )
     }

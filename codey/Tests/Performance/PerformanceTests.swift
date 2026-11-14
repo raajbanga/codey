@@ -87,8 +87,8 @@ struct PerformanceTests {
     }
 
     /// TC-P07: pushing a 100-card deck against the in-memory backend with a
-    /// 50 ms round trip per request (the live variant is
-    /// SupabaseIntegrationTests.hundredCardPushIsUnderFiveSeconds) ≤ 5 s.
+    /// 50 ms round trip per request ≤ 5 s (NFR-02 is verified against this
+    /// mock only, S33).
     @Test func syncPush100CardsMockRTT() async throws {
         let result = try await Perf.measureAsync("sync_push_100_mock50ms", thresholdMS: 5000, setUp: { () -> (BackendFacade, FlashcardDeck) in
             let context = try TestSupport.inMemoryContext()

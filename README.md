@@ -69,18 +69,16 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 
 ## Tests
 
-- Unit tests
+- Unit tests + accessibility audit, with a readable report (every test ✓/✗ by suite, failures, totals)
   ```bash
-  xcodebuild test -workspace codey.xcworkspace -scheme codey -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:codeyTests
+  scripts/test.sh
   ```
-- UI tests → same command with `-only-testing:codeyUITests` (run suites one at a time)
-- Database (pgTAP: RLS, constraints, weekly-XP pace limit; needs the Supabase CLI + Docker)
+  `COVERAGE=1` adds line coverage by folder; pass any `-only-testing:` filter to run less (e.g. `scripts/test.sh -only-testing:codeyUITests/DeckBuilderUITests`). Raw xcodebuild output is in `build/test.log`.
+- Database (pgTAP: RLS, constraints, weekly-XP pace limit, FR-61 merge rules; needs the Supabase CLI + Docker)
   ```bash
-  supabase init   # once per clone; config.toml isn't committed
-  supabase start && supabase db reset
-  supabase test db
+  supabase db start && supabase test db
   ```
-- CI → [`.github/workflows/test.yml`](.github/workflows/test.yml) runs the unit tests + accessibility audit on every push and PR to `main`
+- CI → [`.github/workflows/test.yml`](.github/workflows/test.yml) runs the repo checks, the pgTAP tests, the unit tests + accessibility audit (report and coverage in the job summary) and the Release-build check on every push to `main`/`dev` and every PR to `main`
 - Repo checks
   ```bash
   scripts/check-imports.sh
@@ -94,7 +92,7 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
   ```bash
   scripts/check-release-build.sh
   ```
-  (Release build has no test accounts or component gallery)
+  (Release build has no DEBUG-only test client or component gallery)
 
 ## Project layout
 
