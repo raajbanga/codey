@@ -115,6 +115,27 @@ final class AccessibilityAuditUITests: XCTestCase {
         let quizTopic = app.buttons["quizTopic.Algorithms"]
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
         try audit("quiz.topics")
+
+        // Coding exercises (FR-39 to FR-41): list, exercise, checked result.
+        app.buttons["quiz.exercises"].tap()
+        let exercise = app.buttons["exercise.ex-swift-guard"]
+        XCTAssertTrue(exercise.waitForExistence(timeout: 5))
+        try audit("exercises.list")
+        for _ in 0..<4 where !exercise.isHittable { app.swipeUp() }
+        exercise.tap()
+        let blank = app.textFields["exercise.blank.1"]
+        XCTAssertTrue(blank.waitForExistence(timeout: 5))
+        try audit("exercise")
+        blank.tap()
+        blank.typeText("guard")
+        app.buttons["exercise.submit"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["exercise.summary"].waitForExistence(timeout: 5))
+        try audit("exercise.result")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(exercise.waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
+
         // The row's center is on its tier chips, which are buttons of their own.
         quizTopic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
         XCTAssertTrue(app.buttons["quizSetup.start"].waitForExistence(timeout: 5))

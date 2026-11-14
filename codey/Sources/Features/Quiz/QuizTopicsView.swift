@@ -1,8 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// Quiz tab root (replaces TopicListView): one card per topic with its tier
-/// locks, accuracy over the last 50 answers (FR-36), and retired count.
+/// Quiz tab root (replaces TopicListView): the coding-exercises entry card
+/// (FR-39), then one card per topic with its tier locks, accuracy over the
+/// last 50 answers (FR-36), and retired count.
 /// Tap → QuizSetupView sheet → quiz as a full-screen cover (both owned by
 /// the Router at the root).
 struct QuizTopicsView: View {
@@ -25,6 +26,7 @@ struct QuizTopicsView: View {
                 .padding(.top, CodeySpacing.xl)
             } else {
                 LazyVStack(spacing: CodeySpacing.md) {
+                    ExerciseEntryCard()
                     ForEach(topics) { topic in
                         Button {
                             router.quizSetupTopic = topic

@@ -427,7 +427,7 @@ private struct SyncLogRow: Encodable {
 // column out keeps the old value, so "Again" after retirement must send
 // retired_at = null to clear it.
 
-private struct CardProgressRow: Codable {
+struct CardProgressRow: Codable {
     static let columns = "card_id,mastery_score,last_reviewed_at,retired_at,server_updated_at"
 
     var ownerId: UUID?
@@ -459,7 +459,7 @@ private struct CardProgressRow: Codable {
     }
 }
 
-private struct QuestionProgressRow: Codable {
+struct QuestionProgressRow: Codable {
     static let columns = "question_id,topic_id,difficulty,consecutive_correct,total_attempts,total_correct,retired_at,is_review,last_answered_at,server_updated_at"
 
     var ownerId: UUID?
