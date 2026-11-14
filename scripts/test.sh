@@ -32,7 +32,7 @@ xcodebuild test \
     -workspace codey.xcworkspace -scheme codey \
     -destination "$destination" \
     -resultBundlePath "$result" \
-    "${coverage_flag[@]}" "${filters[@]}" > "$log" 2>&1
+    ${coverage_flag[@]+"${coverage_flag[@]}"} "${filters[@]}" > "$log" 2>&1
 status=$?
 grep -E '(error|fatal error):' "$log" | sort -u | head -40
 

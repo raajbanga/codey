@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "exercises": [
+    {
+      "id": "ex-swift-if-let",
+      "topicId": "topic-swift",
+      "title": "Unwrap an optional",
+      "language": "swift",
+      "prompt": "Greet the user by name when there is one.",
+      "code": "func greet(_ name: String?) -> String {\n    ___ let name {\n        return \"Hello, \\(name)!\"\n    }\n    return \"Hello, stranger!\"\n}",
+      "blanks": [
+        { "accepted": ["if"] }
+      ],
+      "explanation": "`if let name` unwraps the optional: the block runs only when `name` is not nil, and inside it `name` is a plain `String`."
+    },
+    {
+      "id": "ex-swift-guard",
+      "topicId": "topic-swift",
+      "title": "Exit early with guard",
+      "language": "swift",
+      "prompt": "Return nil instead of dividing by zero.",
+      "code": "func divide(_ a: Int, by b: Int) -> Int? {\n    ___ b != 0 ___ {\n        return nil\n    }\n    return a / b\n}",
+      "blanks": [
+        { "accepted": ["guard"] },
+        { "accepted": ["else"] }
+      ],
+      "explanation": "`guard condition else { ... }` runs the `else` block when the condition is false, and that block must leave the scope (here with `return nil`)."
+    },
+    {
+      "id": "ex-swift-map",
+      "topicId": "topic-swift",
+      "title": "Transform an array",
+      "language": "swift",
+      "prompt": "Square every number in the array.",
+      "code": "let numbers = [1, 2, 3, 4]\nlet squares = numbers.___ { $0 * $0 }\n// squares == [1, 4, 9, 16]",
+      "blanks": [
+        { "accepted": ["map"] }
+      ],
+      "explanation": "`map` calls the closure on every element and returns a new array of the results, in the same order."
+    },
+    {
+      "id": "ex-swift-mutating",
+      "topicId": "topic-swift",
+      "title": "Change a struct from a method",
+      "language": "swift",
+      "prompt": "Let `increment()` change the counter's stored property.",
+      "code": "struct Counter {\n    var count = 0\n\n    ___ func increment() {\n        count += 1\n    }\n}",
+      "blanks": [
+        { "accepted": ["mutating"] }
+      ],
+      "explanation": "Structs are value types, so a method that changes a stored property must be marked `mutating`."
+    },
+    {
+      "id": "ex-python-def",
+      "topicId": "topic-python",
+      "title": "Define a function",
+      "language": "python",
+      "prompt": "Define a function that returns the area of a rectangle.",
+      "code": "___ area(width, height):\n    return width * height",
+      "blanks": [
+        { "accepted": ["def"] }
+      ],
+      "explanation": "Python functions start with `def`, then the name, the parameters in parentheses, and a colon."
+    },
+    {
+      "id": "ex-python-comprehension",
+      "topicId": "topic-python",
+      "title": "Filter with a list comprehension",
+      "language": "python",
+      "prompt": "Keep only the even numbers.",
+      "code": "numbers = [1, 2, 3, 4, 5, 6]\nevens = [n ___ n in numbers ___ n % 2 == 0]\n# evens == [2, 4, 6]",
+      "blanks": [
+        { "accepted": ["for"] },
+        { "accepted": ["if"] }
+      ],
+      "explanation": "A list comprehension reads `[expression for item in iterable if condition]`; the `if` part drops items that fail the test."
+    },
+    {
+      "id": "ex-python-dict-get",
+      "topicId": "topic-python",
+      "title": "Count words with a dictionary",
+      "language": "python",
+      "prompt": "Count each word, starting from 0 for words not seen yet.",
+      "code": "counts = {}\nfor word in [\"a\", \"b\", \"a\"]:\n    counts[word] = counts.___(word, 0) + 1\n# counts == {\"a\": 2, \"b\": 1}",
+      "blanks": [
+        { "accepted": ["get"] }
+      ],
+      "explanation": "`dict.get(key, default)` returns the default instead of raising `KeyError` when the key is missing."
+    },
+    {
+      "id": "ex-alg-binary-search",
+      "topicId": "topic-algorithms",
+      "title": "Binary search",
+      "language": "python",
+      "prompt": "Finish the loop condition and move the lower bound.",
+      "code": "def binary_search(items, target):\n    low, high = 0, len(items) - 1\n    while low ___ high:\n        mid = (low + high) // 2\n        if items[mid] == target:\n            return mid\n        elif items[mid] < target:\n            low = ___\n        else:\n            high = mid - 1\n    return -1",
+      "blanks": [
+        { "accepted": ["<="] },
+        { "accepted": ["mid + 1", "1 + mid"] }
+      ],
+      "explanation": "The range is inclusive, so the loop runs while `low <= high`. When the middle item is too small, the target can only be to its right, so `low = mid + 1`."
+    },
+    {
+      "id": "ex-alg-factorial",
+      "topicId": "topic-algorithms",
+      "title": "Recursive factorial",
+      "language": "swift",
+      "prompt": "Give the base case and the recursive call.",
+      "code": "func factorial(_ n: Int) -> Int {\n    if n <= 1 { return ___ }\n    return n * factorial(___)\n}",
+      "blanks": [
+        { "accepted": ["1"] },
+        { "accepted": ["n - 1"] }
+      ],
+      "explanation": "0! and 1! are both 1, which stops the recursion. Every other call multiplies `n` by the factorial of the next smaller number, `n - 1`."
+    },
+    {
+      "id": "ex-ds-stack",
+      "topicId": "topic-data-structures",
+      "title": "Build a stack",
+      "language": "swift",
+      "prompt": "Push onto and pop from the end of the array.",
+      "code": "struct Stack<Element> {\n    private var items: [Element] = []\n\n    mutating func push(_ item: Element) {\n        items.___(item)\n    }\n\n    mutating func pop() -> Element? {\n        items.___()\n    }\n}",
+      "blanks": [
+        { "accepted": ["append"] },
+        { "accepted": ["popLast"] }
+      ],
+      "explanation": "A stack is last in, first out. `append` adds to the end, and `popLast()` removes from the end, returning nil when the stack is empty (unlike `removeLast()`, which crashes)."
+    },
+    {
+      "id": "ex-ds-queue",
+      "topicId": "topic-data-structures",
+      "title": "Use a queue",
+      "language": "python",
+      "prompt": "Take the oldest item out of the queue.",
+      "code": "from collections import deque\n\nqueue = deque()\nqueue.append(\"a\")\nqueue.append(\"b\")\nfirst = queue.___()\n# first == \"a\"  (first in, first out)",
+      "blanks": [
+        { "accepted": ["popleft"] }
+      ],
+      "explanation": "A queue is first in, first out. `deque.popleft()` removes from the front in O(1); `list.pop(0)` would be O(n)."
+    },
+    {
+      "id": "ex-oop-inheritance",
+      "topicId": "topic-oop",
+      "title": "Inherit from a class",
+      "language": "java",
+      "prompt": "Make `Dog` a subclass of `Animal`.",
+      "code": "class Animal {\n    String sound() { return \"...\"; }\n}\n\nclass Dog ___ Animal {\n    @Override\n    String sound() { return \"Woof\"; }\n}",
+      "blanks": [
+        { "accepted": ["extends"] }
+      ],
+      "explanation": "In Java a class inherits with `extends`. `@Override` asks the compiler to check that `sound()` really replaces a method of the superclass."
+    }
+  ]
+}

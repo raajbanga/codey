@@ -21,6 +21,8 @@ extension Font {
     /// XP, levels, counters. Pair with .contentTransition(.numericText()).
     static let codeyNumeric = Font.system(.title, design: .rounded, weight: .semibold).monospacedDigit()
     static let codeyNumericSmall = Font.system(.headline, design: .rounded, weight: .medium).monospacedDigit()
+    /// Typed code (exercise answers): monospaced so spacing reads as typed.
+    static let codeyCode = Font.system(.body, design: .monospaced)
 }
 
 /// System navigation titles in SF Rounded, to match codeyDisplay /
