@@ -18,8 +18,7 @@ struct CelebrationOverlay: View {
         ZStack {
             if shown {
                 VStack(spacing: CodeySpacing.sm) {
-                    Image(systemName: systemImage)
-                        .font(.largeTitle)
+                    Icon(systemImage, size: 32, relativeTo: .largeTitle)
                         .foregroundStyle(CodeyColor.brand)
                         .frame(width: 64, height: 64)
                         .background(CodeyColor.brandSoft, in: Circle())

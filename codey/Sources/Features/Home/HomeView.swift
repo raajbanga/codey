@@ -1,8 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// Home (D8, simplified r3; Sprint 3 S9 facelift): progress at a glance
-/// plus ONE suggestion, as rounded notes on dotted paper.
+/// Home (D8, simplified r3; Sprint 3 S9 facelift; S40 bento): progress at a
+/// glance plus ONE suggestion, then bento grids (Bento.swift) for the plan,
+/// challenge and groups, and every topic.
 ///
 ///     Good evening                          (◎)
 ///     Codey Learner
@@ -48,7 +49,7 @@ struct HomeView: View {
         let stats = HomeStats(records: records, decks: decks, snapshots: snapshots)
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                header
+                PageHeader(eyebrow: HomeLogic.greeting(at: .now), title: profile?.username ?? UserProfile.defaultUsername)
                 LevelSummary(
                     xp: xp,
                     streak: StreakCalculator.currentStreak(endingOn: .now, activity: activity),
@@ -70,8 +71,7 @@ struct HomeView: View {
                 Button {
                     router.showProfile = true
                 } label: {
-                    Image(systemName: "person.crop.circle")
-                        .font(.codeyTitle)
+                    Icon("person.crop.circle", size: 26, relativeTo: .title2)
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
                 .accessibilityLabel("Profile")
@@ -84,21 +84,6 @@ struct HomeView: View {
             LaunchTimer.markHomeReady()
         }
         .onChange(of: topics.map(\.id)) { refreshPlan(stats) }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-            Text(HomeLogic.greeting(at: .now))
-                .font(.codeyCallout)
-                .foregroundStyle(CodeyColor.textSecondary)
-            Text(profile?.username ?? UserProfile.defaultUsername)
-                .font(.codeyDisplay)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: Up next
@@ -174,13 +159,14 @@ struct HomeView: View {
     private func planSection(_ stats: HomeStats) -> some View {
         let planned = plannedTopics
         if !planned.isEmpty {
-            NoteSection("This week's plan") {
+            BentoSection("This week's plan") {
                 ForEach(planned) { topic in
                     Button { router.quizSetupTopic = topic } label: {
-                        ChevronRow(
-                            systemImage: topic.iconName,
+                        BentoTile(
+                            icon: topic.iconName,
                             title: topic.title,
-                            subtitle: planAccuracy(topic, stats).map { "\($0.percentText) accuracy" } ?? "Not started"
+                            detail: planAccuracy(topic, stats).map { "\($0.percentText) accuracy" } ?? "Not started",
+                            minHeight: 0
                         )
                     }
                     .buttonStyle(.plain)
@@ -198,19 +184,19 @@ struct HomeView: View {
     }
 
     private var weekSection: some View {
-        NoteSection("Challenge and groups") {
+        BentoSection("Challenge and groups") {
             if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
                 Button { router.quizSetupTopic = topic } label: {
-                    ChevronRow(
-                        systemImage: challenge.isComplete ? "trophy.fill" : "flag.checkered",
-                        tint: challenge.isComplete ? CodeyColor.success : CodeyColor.brand,
-                        title: "Challenge: \(WeeklyChallenge.goal) correct in \(topic.title)",
-                        subtitle: challenge.isComplete
-                            ? "Done this week" : "\(min(challenge.correct, WeeklyChallenge.goal))/\(WeeklyChallenge.goal) correct"
+                    BentoTile(
+                        icon: challenge.isComplete ? "trophy.fill" : "flag.checkered",
+                        title: "Weekly challenge",
+                        detail: challenge.isComplete
+                            ? "Done this week"
+                            : "\(min(challenge.correct, WeeklyChallenge.goal)) of \(WeeklyChallenge.goal) correct in \(topic.title)"
                     ) {
                         ProgressBar(value: challenge.progress)
-                            .padding(.top, CodeySpacing.xxs)
                     }
+                    .accessibilityElement(children: .combine)
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Opens quiz setup")
@@ -219,7 +205,7 @@ struct HomeView: View {
             NavigationLink {
                 GroupsView()
             } label: {
-                ChevronRow(systemImage: "person.3.fill", title: "Groups", subtitle: "Weekly XP leaderboard")
+                BentoTile(icon: "person.3.fill", title: "Groups", detail: "Weekly XP leaderboard")
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("home.groups")
@@ -248,11 +234,9 @@ struct HomeView: View {
     }
 
     private func topicsSection(_ stats: HomeStats) -> some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            SectionTitle("Your topics")
-            VStack(spacing: CodeySpacing.md) {
-                ForEach(orderedTopics) { topic in
-                    TopicNote(
+        BentoSection("Your topics") {
+            ForEach(orderedTopics) { topic in
+                TopicTile(
                     topic: topic,
                     isPinned: pinned.contains(topic.id),
                     decks: stats.decksByTopic[topic.id] ?? [],
@@ -262,8 +246,7 @@ struct HomeView: View {
                         router.study = StudyRequest(deck: deck, start: resume ? .resume : .fresh(tierFilter: nil))
                     },
                     quiz: { router.quizSetupTopic = topic }
-                    )
-                }
+                )
             }
         }
     }
@@ -294,10 +277,8 @@ struct HomeView: View {
     private var signInNudge: some View {
         CodeyCard(tint: CodeyColor.brand) {
             HStack(alignment: .top, spacing: CodeySpacing.sm) {
-                Image(systemName: "icloud.and.arrow.up")
-                    .font(.codeyTitle)
+                Icon("icloud.and.arrow.up", size: 26, relativeTo: .title2)
                     .foregroundStyle(CodeyColor.brand)
-                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: CodeySpacing.xs) {
                     Text("Back up your decks")
                         .font(.codeyHeadline)

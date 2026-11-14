@@ -22,8 +22,7 @@ struct CircleIconButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.codeyHeadline)
+            Icon(systemImage, size: 20, relativeTo: .headline)
                 .foregroundStyle(colors.icon)
                 .frame(width: 44, height: 44)
                 .background(colors.fill, in: Circle())

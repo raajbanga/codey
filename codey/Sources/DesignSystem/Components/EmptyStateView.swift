@@ -11,9 +11,11 @@ struct EmptyStateView: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label(title, systemImage: systemImage)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(CodeyColor.brand)
+            VStack(spacing: CodeySpacing.sm) {
+                Icon(systemImage, size: 44, relativeTo: .largeTitle)
+                    .foregroundStyle(CodeyColor.brand)
+                Text(title)
+            }
         } description: {
             Text(message)
         } actions: {

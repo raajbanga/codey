@@ -58,16 +58,18 @@ struct CodeyChip: View {
     var body: some View {
         HStack(spacing: CodeySpacing.xs) {
             if let systemImage {
-                Image(systemName: systemImage)
-                    .imageScale(.small)
+                Icon(systemImage, size: 13, relativeTo: .caption)
             }
-            Text(title)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            // An empty title makes an icon-only chip (compact tier chips).
+            if !title.isEmpty {
+                Text(title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
         }
         .font(.codeyCaption.weight(.medium))
         .foregroundStyle(variant.color)
-        .padding(.horizontal, CodeySpacing.sm + CodeySpacing.xxs)
+        .padding(.horizontal, title.isEmpty ? CodeySpacing.sm : CodeySpacing.sm + CodeySpacing.xxs)
         .padding(.vertical, CodeySpacing.xs)
         .background(variant.softColor, in: Capsule())
         .accessibilityElement(children: .combine)

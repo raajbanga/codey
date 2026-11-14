@@ -14,15 +14,15 @@ from contrast import *
 P = {
  # Neutrals. Custom instead of iOS semantic colors so the paper tone is
  # warm; HC below restores the Increase Contrast behavior we gave up.
- 'Surface':       ('#F6F5F2', '#141518'),
- 'SurfaceRaised': ('#FFFFFF', '#1D1F23'),
- 'Separator':     ('#E4E2DC', '#2F3136'),
- 'FillNeutral':   ('#EEECE7', '#26282D'),
- # The dot grid on the paper background (S40: stronger, 1.58:1 light / 1.68:1 dark on Surface
+ 'Surface':       ('#EEECE7', '#111215'),
+ 'SurfaceRaised': ('#FFFFFF', '#202227'),
+ 'Separator':     ('#D9D6CE', '#393C42'),
+ 'FillNeutral':   ('#ECEAE4', '#2A2C31'),
+ # The dot grid on the paper background (S40: stronger; ratio on Surface printed below
  # so it reads as a notebook page). Decoration only, never behind text alone.
- 'PaperDot':      ('#C9C5BB', '#3A3D44'),
+ 'PaperDot':      ('#C6C2B8', '#33363C'),
  'TextPrimary':   ('#1B1C1E', '#ECEBE7'),
- 'TextSecondary': ('#5C5B57', '#A3A29D'),
+ 'TextSecondary': ('#4E4D49', '#B3B2AD'),
  # Brand. `Brand` is text/icon/tint ink. `BrandFill` is the pastel button
  # fill, labeled with `OnBrandFill` (not white). `BrandSoft` sits behind
  # brand text (chips, icon tiles, inline code).
@@ -56,9 +56,9 @@ P = {
 }
 # Increase Contrast variants (light, dark) for the neutrals.
 HC = {
- 'Separator':     ('#BDBAB2', '#55585F'),
+ 'Separator':     ('#ABA8A0', '#5E6168'),
  'TextPrimary':   ('#000000', '#FFFFFF'),
- 'TextSecondary': ('#3F3E3B', '#C9C8C3'),
+ 'TextSecondary': ('#363532', '#D2D1CC'),
 }
 TEXT = ['TextPrimary', 'TextSecondary', 'Brand', 'Success', 'Warning', 'Danger',
         'TierEasy', 'TierMedium', 'TierHard']

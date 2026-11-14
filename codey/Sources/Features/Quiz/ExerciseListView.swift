@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Coding exercises (FR-39), the Quiz tab's Exercises side: the bundled
-/// exercises grouped by topic, one note per topic. No progress is kept
+/// exercises grouped by topic, a bento grid per topic. No progress is kept
 /// (S31), so the list is the same on every visit.
 struct ExerciseList: View {
     let topics: [Topic]
@@ -17,15 +17,16 @@ struct ExerciseList: View {
             } else {
                 VStack(alignment: .leading, spacing: CodeySpacing.lg) {
                     ForEach(sections, id: \.title) { section in
-                        NoteSection(section.title) {
+                        BentoSection(section.title) {
                             ForEach(section.exercises) { exercise in
                                 NavigationLink {
                                     ExerciseView(exercise: exercise)
                                 } label: {
-                                    ChevronRow(
-                                        systemImage: "chevron.left.forwardslash.chevron.right",
+                                    BentoTile(
+                                        icon: "chevron.left.forwardslash.chevron.right",
                                         title: exercise.title,
-                                        subtitle: "\(exercise.language.displayName), \(exercise.blanks.count.counted("blank"))"
+                                        detail: "\(exercise.language.displayName), \(exercise.blanks.count.counted("blank"))",
+                                        minHeight: 0
                                     )
                                     .accessibilityElement(children: .combine)
                                     .accessibilityHint("Opens the exercise")

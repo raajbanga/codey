@@ -24,8 +24,7 @@ struct StatTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.xs) {
             if let systemImage {
-                Image(systemName: systemImage)
-                    .font(.codeyHeadline)
+                Icon(systemImage, relativeTo: .headline)
                     .foregroundStyle(tint)
             }
             HStack(alignment: .firstTextBaseline, spacing: CodeySpacing.xxs) {
