@@ -10,6 +10,9 @@ struct ExerciseView: View {
     @State private var answers: [String]
     @State private var result: ExerciseResult?
     @FocusState private var focusedBlank: Int?
+    /// Ask AI (S39): lives as long as this exercise is on screen (FR-68).
+    @State private var askAI: AskAISession?
+    @State private var presentedAskAI: AskAISession?
 
     init(exercise: Exercise) {
         self.exercise = exercise
@@ -69,6 +72,24 @@ struct ExerciseView: View {
         .codeyPaperBackground()
         .navigationTitle(exercise.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let client = AskAI.client {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Ask AI", systemImage: "sparkles") {
+                        focusedBlank = nil
+                        askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
+                        presentedAskAI = askAI
+                    }
+                    .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
+                    .accessibilityIdentifier("askAI.open")
+                }
+            }
+        }
+        .sheet(item: $presentedAskAI) { session in
+            AskAIChatView(session: session)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
         .sensoryFeedback(trigger: result) { _, new in
             guard let new else { return nil }
             return new.allPassed ? .success : .error

@@ -11,6 +11,9 @@ struct QuizModeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: QuizViewModel
     @State private var toastLevel: Int?
+    /// Ask AI (S39): the chat for the current question, and whether it is open.
+    @State private var askAI: AskAISession?
+    @State private var presentedAskAI: AskAISession?
 
     /// Build `viewModel` in a `ViewModelHost`: its init starts the quiz.
     init(viewModel: QuizViewModel) {
@@ -42,6 +45,22 @@ struct QuizModeView: View {
             guard let level else { return }
             showToast(level)
         }
+        .sheet(item: $presentedAskAI) { session in
+            AskAIChatView(session: session)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    /// Reuses the chat while the question stays the same; a new question
+    /// starts a new one (FR-68).
+    private func openAskAI(_ question: Question, client: any AskAIClient) {
+        let context = AskAIContext.quiz(
+            id: question.id, topic: viewModel.topic.title, difficulty: question.difficulty,
+            prompt: question.prompt, options: question.options, correctIndex: question.correctOptionIndex
+        )
+        askAI = AskAISession.reusing(askAI, for: context, client: client)
+        presentedAskAI = askAI
     }
 
     // MARK: Top bar
@@ -61,6 +80,9 @@ struct QuizModeView: View {
                 }
                 if !viewModel.isPractice {
                     XPGainLabel(total: viewModel.profileXP)
+                }
+                if let client = AskAI.client, let question = viewModel.currentQuestion {
+                    AskAIButton { openAskAI(question, client: client) }
                 }
             } else {
                 Spacer()
