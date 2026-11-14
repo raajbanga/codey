@@ -2955,11 +2955,13 @@ Against each requirement (p95 over 9 kept runs):
         a one-view SwiftUI app reached its first view in 1.2--1.9~s on the same
         Simulator. On an iPhone those system images come from the shared cache, so
         the Simulator figure overstates launch. Measured on the iPhone~16 Pro Max
-        (128~GB) on Nov 14, 2026, running from Xcode, with the same method (force-quit
+        (128~GB) on Nov 14, 2026, as a Debug build run from Xcode (the scheme's Run
+        configuration; the Simulator runs above used Release), with the same method (force-quit
         and relaunch 10 times, first run discarded, \texttt{home-ready} read in
         Console): mean 178.0~ms, p95 193.7~ms, standard deviation 7.3~ms
         (\texttt{docs/source/perf/sprint4-device-launch.csv}), 15 times under the
-        3~s limit. NFR-01 is met.
+        3~s limit. A Release build is compiler-optimized, so it launches no slower; NFR-01
+        is met.
   \item \textbf{NFR-02, 100-card sync (TC-P07): met against the mock backend.} 0.42~s
         against 5~s, with 50~ms of latency per request; not measured live (S33).
   \item \textbf{NFR-28, memory (TC-P03): not met on the Simulator.} The whole test
