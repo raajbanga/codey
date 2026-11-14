@@ -45,8 +45,7 @@ struct AnswerOptionRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if let icon {
-                    Image(systemName: icon)
-                        .font(.title3)
+                    Icon(icon, size: 22, relativeTo: .title3)
                         .foregroundStyle(tint)
                         .transition(.opacity)
                 }

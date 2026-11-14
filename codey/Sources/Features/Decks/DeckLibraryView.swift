@@ -37,6 +37,7 @@ struct DeckLibraryView: View {
         let sections = deckSections(topicsByID: topicsByID)
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+                PageHeader(title: "Decks")
                 Picker("Show", selection: $filter) {
                     ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
                 }
@@ -55,10 +56,10 @@ struct DeckLibraryView: View {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     if filter != .starter, !sections.user.isEmpty {
-                        section(filter == .all ? "My Decks" : nil, decks: sections.user, topicsByID: topicsByID)
+                        section(filter == .all ? "My decks" : nil, decks: sections.user, topicsByID: topicsByID)
                     }
                     if filter != .mine, !sections.starter.isEmpty {
-                        section(filter == .all ? "Starter Decks" : nil, decks: sections.starter, topicsByID: topicsByID)
+                        section(filter == .all ? "Starter decks" : nil, decks: sections.starter, topicsByID: topicsByID)
                     }
                     if filter == .mine, sections.user.isEmpty {
                         EmptyStateView(
@@ -80,8 +81,11 @@ struct DeckLibraryView: View {
             .padding(CodeySpacing.md)
         }
         .codeyPaperBackground()
-        .navigationTitle("Decks")
+        .toolbarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "Title or topic")
+        // A toolbar button that expands, so the field doesn't sit above the
+        // page title (S40).
+        .searchToolbarBehavior(.minimize)
         .refreshable { await backend.syncPending() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -125,16 +129,7 @@ struct DeckLibraryView: View {
     // MARK: Sections
 
     private func section(_ title: String?, decks: [FlashcardDeck], topicsByID: [String: Topic]) -> some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            if let title {
-                Text(title)
-                    .font(.codeyTitle)
-                    .accessibilityAddTraits(.isHeader)
-            }
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 170), spacing: CodeySpacing.sm + CodeySpacing.xs)],
-                spacing: CodeySpacing.sm + CodeySpacing.xs
-            ) {
+        BentoSection(title) {
                 ForEach(decks) { deck in
                     let canStudy = deck.cardCount > 0 && !deck.isHidden
                     NavigationLink(value: DeckRoute(id: deck.id)) {
@@ -154,7 +149,6 @@ struct DeckLibraryView: View {
                         }
                     }
                 }
-            }
         }
     }
 

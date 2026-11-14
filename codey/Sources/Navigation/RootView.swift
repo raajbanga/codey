@@ -11,13 +11,13 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $router.tab) {
-            Tab("Home", systemImage: "house.fill", value: AppTab.home) {
+            Tab("Home", image: "icon-home", value: AppTab.home) {
                 NavigationStack { HomeView() }
             }
-            Tab("Decks", systemImage: "rectangle.stack.fill", value: AppTab.decks) {
+            Tab("Decks", image: "icon-cards", value: AppTab.decks) {
                 NavigationStack(path: $router.decksPath) { DeckLibraryView() }
             }
-            Tab("Quiz", systemImage: "questionmark.bubble.fill", value: AppTab.quiz) {
+            Tab("Quiz", image: "icon-quiz", value: AppTab.quiz) {
                 NavigationStack { QuizTopicsView() }
             }
         }

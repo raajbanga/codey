@@ -2,8 +2,8 @@ import SwiftUI
 
 // Home's building blocks (HomeView lays them out).
 
-/// Level, XP, and streak above a thin progress line, then today's goal.
-/// No card: the greeting and this summary read as one header block.
+/// Level, XP, and streak above a thin progress line, then today's goal, as
+/// one wide bento tile (S40).
 struct LevelSummary: View {
     let xp: Int
     let streak: Int
@@ -36,7 +36,7 @@ struct LevelSummary: View {
                     .foregroundStyle(CodeyColor.textSecondary)
                 Spacer(minLength: 0)
                 if today >= goal {
-                    Label("Goal met", systemImage: "checkmark.circle.fill")
+                    Label("Goal met", icon: "checkmark.circle.fill")
                         .foregroundStyle(CodeyColor.success)
                 } else {
                     Text("Today \(today)/\(goal)")
@@ -48,6 +48,8 @@ struct LevelSummary: View {
         }
         .lineLimit(1)
         .minimumScaleFactor(0.8)
+        .padding(CodeySpacing.md)
+        .codeyNote()
         .codeyAnimation(CodeyMotion.snappy, value: xp)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
@@ -75,8 +77,7 @@ struct UpNextCard: View {
                 Group {
                     if let progress {
                         ProgressRing(value: progress, lineWidth: 4) {
-                            Image(systemName: systemImage)
-                                .font(.codeyHeadline)
+                            Icon(systemImage, size: 18, relativeTo: .headline)
                                 .foregroundStyle(CodeyColor.brand)
                         }
                     } else {
@@ -114,9 +115,9 @@ struct UpNextCard: View {
     }
 }
 
-/// One topic on Home, as its own note: title, mastery + accuracy, and the
-/// two ways to practice it: Cards (flashcards) and Quiz.
-struct TopicNote: View {
+/// One topic on Home as a bento tile: mastery + accuracy, and the two ways
+/// to practice it: Cards (flashcards) and Quiz.
+struct TopicTile: View {
     let topic: Topic
     let isPinned: Bool
     let decks: [FlashcardDeck]
@@ -127,46 +128,33 @@ struct TopicNote: View {
     let quiz: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.md) {
-            VStack(alignment: .leading, spacing: CodeySpacing.xs) {
-                HStack(spacing: CodeySpacing.sm) {
-                    RowIcon(systemName: topic.iconName)
-                    Text(topic.title)
-                        .font(.codeyHeadline)
-                        .foregroundStyle(CodeyColor.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    if isPinned {
-                        Image(systemName: "pin")
-                            .font(.codeyCaption)
-                            .foregroundStyle(CodeyColor.textSecondary)
-                            .accessibilityLabel("Pinned")
-                    }
-                }
-                Text(statsLine)
-                    .font(.codeySubheadline)
+        BentoTile(icon: topic.iconName, title: topic.title, detail: statsLine) {
+            if isPinned {
+                Icon("pin", size: 16, relativeTo: .caption)
                     .foregroundStyle(CodeyColor.textSecondary)
+                    .accessibilityLabel("Pinned")
+                    .accessibilityHidden(false)
             }
-            HStack(spacing: CodeySpacing.sm) {
-                Group {
-                    if decks.isEmpty {
-                        Spacer(minLength: 0)
-                    } else {
-                        ProgressBar(value: progressRate)
-                            .accessibilityLabel("Flashcard progress")
-                    }
+        } footer: {
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                if !decks.isEmpty {
+                    ProgressBar(value: progressRate)
+                        .accessibilityLabel("Flashcard progress")
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.trailing, CodeySpacing.sm)
-                practiceButton
-                CodeyButton("Quiz", compact: true, action: quiz)
-                    .accessibilityIdentifier("home.topic.\(topic.title).quiz")
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: CodeySpacing.xs) { buttons }
+                    VStack(alignment: .leading, spacing: CodeySpacing.xs) { buttons }
+                }
             }
         }
-        .padding(CodeySpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .codeyNote()
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private var buttons: some View {
+        practiceButton
+        CodeyButton("Quiz", compact: true, action: quiz)
+            .accessibilityIdentifier("home.topic.\(topic.title).quiz")
     }
 
     /// One deck → a button. Several → a menu of decks. None → disabled.
@@ -180,7 +168,7 @@ struct TopicNote: View {
                     } label: {
                         Label(
                             snapshotDeckIDs.contains(deck.id) ? "\(deck.title) (continue)" : deck.title,
-                            systemImage: deck.origin == .starter ? "sparkles" : "rectangle.stack"
+                            icon: deck.origin == .starter ? "sparkles" : "rectangle.stack"
                         )
                     }
                 }
@@ -223,6 +211,6 @@ struct TopicNote: View {
         var parts: [String] = []
         if !decks.isEmpty { parts.append("\(progressRate.percentText) progress") }
         parts.append(accuracy.map { "\($0.percentText) accuracy" } ?? "No quizzes yet")
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: "\n")
     }
 }

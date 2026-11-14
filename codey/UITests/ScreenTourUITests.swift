@@ -20,6 +20,11 @@ final class ScreenTourUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["home.profile"].waitForExistence(timeout: 15))
         shot("home", appearance)
+        app.swipeUp()
+        app.swipeUp()
+        shot("home-topics", appearance)
+        app.swipeDown()
+        app.swipeDown()
 
         app.tabBars.buttons["Decks"].tap()
         XCTAssertTrue(app.buttons["decks.add"].waitForExistence(timeout: 5))

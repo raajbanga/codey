@@ -13,11 +13,13 @@ struct TierAvailability: Identifiable, Equatable {
 /// Easy ✓ / Medium ✓ / Hard 🔒. Tapping a locked tier shows why it's locked.
 struct TierChipRow: View {
     let tiers: [TierAvailability]
+    /// Icon-only chips for half-width bento tiles (labels stay in VoiceOver).
+    var compact = false
 
     var body: some View {
         HStack(spacing: CodeySpacing.xs) {
             ForEach(tiers) { tier in
-                TierChip(tier: tier)
+                TierChip(tier: tier, compact: compact)
             }
         }
     }
@@ -35,7 +37,7 @@ struct TierUnlockedBanner: View {
                     .font(.codeyHeadline)
                     .foregroundStyle(CodeyColor.textPrimary)
             } icon: {
-                Image(systemName: tier.style.symbol)
+                Icon(tier.style.symbol, relativeTo: .headline)
                     .foregroundStyle(tier.style.color)
             }
         }
@@ -44,17 +46,20 @@ struct TierUnlockedBanner: View {
 
 private struct TierChip: View {
     let tier: TierAvailability
+    let compact: Bool
     @State private var showReason = false
+
+    private var title: String { compact ? "" : tier.difficulty.style.label }
 
     var body: some View {
         if tier.isUnlocked {
-            CodeyChip(tier.difficulty.style.label, systemImage: tier.difficulty.style.symbol, variant: .tier(tier.difficulty))
+            CodeyChip(title, systemImage: tier.difficulty.style.symbol, variant: .tier(tier.difficulty))
                 .accessibilityLabel("\(tier.difficulty.style.label) unlocked")
         } else {
             Button {
                 showReason = true
             } label: {
-                CodeyChip(tier.difficulty.style.label, systemImage: "lock.fill", variant: .neutral)
+                CodeyChip(title, systemImage: "lock.fill", variant: .neutral)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("\(tier.difficulty.style.label) locked")

@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Quiz tab root. S40: one screen for both kinds of practice: a
 /// Quizzes | Exercises switch (the exercise list used to be its own
-/// pushed screen). Quizzes are rows on one note: tier locks, accuracy over
-/// the last 50 answers (FR-36), and retired count. Tap → the quiz-setup
+/// pushed screen). Quizzes are bento tiles: tier locks, accuracy over the
+/// last 50 answers (FR-36), and retired count. Tap → the quiz-setup
 /// FloatingPanel → the quiz as a full-screen cover (both owned by the Router).
 struct QuizTopicsView: View {
     enum Kind: String, CaseIterable {
@@ -24,6 +24,7 @@ struct QuizTopicsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+                PageHeader(title: "Quiz")
                 Picker("Practice", selection: $kind) {
                     ForEach(Kind.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
@@ -38,7 +39,7 @@ struct QuizTopicsView: View {
             .padding(CodeySpacing.md)
         }
         .codeyPaperBackground()
-        .navigationTitle("Quiz")
+        .toolbarTitleDisplayMode(.inline)
     }
 
     @ViewBuilder
@@ -51,12 +52,12 @@ struct QuizTopicsView: View {
             )
             .padding(.top, CodeySpacing.xl)
         } else {
-            NoteSection("Pick a topic") {
+            BentoSection("Pick a topic") {
                 ForEach(topics) { topic in
                     Button {
                         router.quizSetupTopic = topic
                     } label: {
-                        QuizTopicRow(stats: stats(for: topic))
+                        QuizTopicTile(stats: stats(for: topic))
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("quizTopic.\(topic.title)")
@@ -94,21 +95,20 @@ struct QuizTopicStats {
     let total: Int
 }
 
-private struct QuizTopicRow: View {
+private struct QuizTopicTile: View {
     let stats: QuizTopicStats
 
     var body: some View {
-        ChevronRow(systemImage: stats.topic.iconName, title: stats.topic.title, subtitle: subtitle) {
-            TierChipRow(tiers: stats.tiers)
-                .padding(.top, CodeySpacing.xs)
+        BentoTile(icon: stats.topic.iconName, title: stats.topic.title, detail: detail) {
+            TierChipRow(tiers: stats.tiers, compact: true)
         }
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens quiz setup")
     }
 
-    private var subtitle: String {
+    private var detail: String {
         let accuracy = stats.accuracy.map { "\($0.percentText) accuracy" } ?? "No answers yet"
-        return "\(accuracy), \(stats.retired) of \(stats.total) retired"
+        return "\(accuracy)\n\(stats.retired) of \(stats.total) retired"
     }
 }
 
