@@ -48,7 +48,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         try audit("onboarding.signIn")
         app.terminate()
 
-        app.launchArguments = ["-UITestInMemoryStore", "-appearance", appearance]
+        // The stubbed Ask AI client (no network) so the chat can be audited.
+        app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-appearance", appearance]
         app.launch()
 
         // Home and the profile sheet.
@@ -144,6 +145,14 @@ final class AccessibilityAuditUITests: XCTestCase {
         let option = app.buttons["quiz.option.0"]
         XCTAssertTrue(option.waitForExistence(timeout: 5))
         try audit("quiz.question")
+
+        // Ask AI (S39): the chat with the greeting and one answer.
+        app.buttons["askAI.open"].tap()
+        let tutor = app.descendants(matching: .any)["askAI.message.tutor"].firstMatch
+        XCTAssertTrue(tutor.waitForExistence(timeout: 10))
+        try audit("askAI.chat")
+        app.buttons["askAI.close"].tap()
+        XCTAssertTrue(option.waitForExistence(timeout: 5))
         option.tap()
         sleep(1)
         try audit("quiz.answered")

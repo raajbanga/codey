@@ -35,6 +35,9 @@ let project = Project(
                     "GOOGLE_IOS_CLIENT_ID": "$(GOOGLE_IOS_CLIENT_ID)",
                     "GOOGLE_REVERSED_CLIENT_ID": "$(GOOGLE_REVERSED_CLIENT_ID)",
                     "GOOGLE_SERVER_CLIENT_ID": "$(GOOGLE_SERVER_CLIENT_ID)",
+                    // Ask AI (S39); empty key = the Ask AI button is hidden.
+                    "OPENROUTER_API_KEY": "$(OPENROUTER_API_KEY)",
+                    "OPENROUTER_MODEL": "$(OPENROUTER_MODEL)",
                     // GoogleSignIn reads these; the reversed client ID is the
                     // OAuth redirect scheme. No ATS exceptions (NFR-06).
                     "GIDClientID": "$(GOOGLE_IOS_CLIENT_ID)",

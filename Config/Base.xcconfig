@@ -10,5 +10,8 @@ SUPABASE_ANON_KEY =
 GOOGLE_IOS_CLIENT_ID =
 GOOGLE_REVERSED_CLIENT_ID =
 GOOGLE_SERVER_CLIENT_ID =
+// Ask AI (S39). Empty key = the Ask AI button is hidden.
+OPENROUTER_API_KEY =
+OPENROUTER_MODEL =
 
 #include? "Secrets.xcconfig"

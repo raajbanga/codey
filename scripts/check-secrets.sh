@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 fail=0
-patterns='eyJ[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9_-]{10,}|sb_publishable_[A-Za-z0-9_-]{10,}|[0-9]{6,}-[a-z0-9]{20,}\.apps\.googleusercontent\.com|GOCSPX-[A-Za-z0-9_-]{10,}'
+patterns='eyJ[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9_-]{10,}|sb_publishable_[A-Za-z0-9_-]{10,}|[0-9]{6,}-[a-z0-9]{20,}\.apps\.googleusercontent\.com|GOCSPX-[A-Za-z0-9_-]{10,}|sk-or-v1-[A-Fa-f0-9]{20,}'
 
 if git ls-files --error-unmatch Config/Secrets.xcconfig >/dev/null 2>&1; then
     echo "Config/Secrets.xcconfig is tracked"; fail=1
@@ -25,7 +25,8 @@ if [[ -f Config/Secrets.xcconfig ]]; then
         if [[ "${1:-}" == "--history" ]] && git log --all -p | grep -qF -- "$value"; then
             echo "A value from Secrets.xcconfig appears in git history"; fail=1
         fi
-    done < <(grep -E '^[A-Z_]+ *=' Config/Secrets.xcconfig | sed 's/^[^=]*= *//; s#/\$()/#//#')
+    # OPENROUTER_MODEL is a public model ID, not a secret.
+    done < <(grep -E '^[A-Z_]+ *=' Config/Secrets.xcconfig | grep -v '^OPENROUTER_MODEL' | sed 's/^[^=]*= *//; s#/\$()/#//#')
 fi
 
 if [[ "${1:-}" == "--history" ]] && git log --all -p | grep -qE "$patterns"; then
