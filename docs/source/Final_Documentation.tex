@@ -3590,7 +3590,7 @@ passes or has a logged defect with a decision.
 \endfoot
 ST-01 & Study a deck and resume (FR-16 to FR-18) & \texttt{StudySessionUITests}: open a starter deck, flip, rate by swipe, close mid-session, reopen; the session resumes on the same card. & Pass (automated) \\
 ST-02 & Author and delete a deck (FR-05 to FR-13) & \texttt{DeckBuilderUITests}: create a deck with a Python snippet, save, find its tile; delete an unsynced deck from its detail screen. & Pass (automated) \\
-ST-03 & Quiz with tiers, XP, streak, badge (FR-19 to FR-38) & New learner: onboarding, a 10-question quiz, then Home shows the XP, the streak, and the first badge; Medium unlocks after the retire threshold. & \tbd{result} \\
+ST-03 & Quiz with tiers, XP, streak, badge (FR-19 to FR-38) & New learner: onboarding, an Easy quiz, then Play shows the XP and level; right answers in a row raise the quiz streak bonus; the daily streak starts once 20 answers or ratings are made in a day; Medium unlocks after the retire threshold. & Partial (Nov 14, by hand, iPhone~17 Simulator, fresh local store): onboarding, an 8-question quiz (7 right, +170~XP, streak bonus to +35, a wrong answer shows the right one), Play at 170~XP. Daily streak, badge, and Medium unlock need more answers than one sitting; covered by unit tests. \\
 ST-04 & Offline use (FR-44 to FR-46, NFR-09) & Signed in, network off: study, answer a quiz, create a deck; network on: everything syncs, nothing is lost or duplicated. & \tbd{result} \\
 ST-05 & Coding exercise (FR-39 to FR-41) & \texttt{ExerciseUITests}: Play, Exercises, ``Exit early with guard''; one right and one wrong blank give Passed and Failed with the accepted answer; Try Again with both right gives ``All 2 tests passed''. & Pass (automated) \\
 ST-06 & Every main screen is accessible (NFR-10 to NFR-12) & \texttt{AccessibilityAuditUITests}: walk 18 screens from onboarding to an answered question and the Ask AI chat, run the system audit on each, in Light and Dark. & Pass, 0 open issues (automated) \\
@@ -3640,7 +3640,7 @@ AT-07 & Offline sync of study results & Study on device A offline, reconnect; de
 
 \subsection{Defects Found}\label{sec:defects}
 Table~\ref{tab:defects} lists the defects found in Sprint~4, how, and their fixes.
-Each fix has a regression test, so the defect cannot return unnoticed. Three of the
+Each fix has a regression test, so the defect cannot return unnoticed. Four of the
 entries are faults in the tests rather than the app; they are listed because a flaky
 or blind test is a defect in the test plan.
 
@@ -3662,6 +3662,7 @@ BUG-03 & The exercise's code view was a selectable text view with no accessibili
 TD-01 & No test checked that progress rows send \texttt{retired\_at} as an explicit null (the integration fault of Section~\ref{sec:integration}). & Activity~12.2 review & Test added (\texttt{535911e}). & \texttt{progressRowsSendRetiredAtAsExplicitNull} \\
 TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 rows; scroll until hittable (\texttt{535911e}). & ST-05 on 3 sizes \\
 TD-03 & \texttt{ExerciseUITests} failed about 2 runs in 5 under load: the Simulator dropped a keystroke after the field had shown it. & Full CI-style run, Nov 14 & Hide the keyboard, re-check every blank's value, retype if needed, then tap Check (the same guard \texttt{DeckBuilderUITests} uses). & 5 of 5 consecutive passes \\
+TD-04 & \texttt{AccessibilityAuditUITests} failed in CI on one of its two appearances, a different one each run (``Invalid target app'', or the app reported as not running): after the test relaunched the app, the system audit sometimes lost its process. The same flow passed by hand on the iPhone~17 Simulator. & CI on \texttt{dev}, Nov 14 & A fresh \texttt{XCUIApplication} for the relaunch, and one retry of an audit that loses its target. & ST-06 in CI \\
 \end{xltabular}
 
 % =====================================================================
