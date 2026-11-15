@@ -17,6 +17,8 @@ struct FlashcardPayload: Codable, Equatable {
     var createdAt: Date?
     var updatedAt: Date?
     var deletedAt: Date?
+    /// Out of study (§3b). nil: not known (bundle data), keep what's there.
+    var isHidden: Bool?
 
     init(
         id: UUID? = nil,
@@ -29,7 +31,8 @@ struct FlashcardPayload: Codable, Equatable {
         masteryScore: Int? = nil,
         createdAt: Date? = nil,
         updatedAt: Date? = nil,
-        deletedAt: Date? = nil
+        deletedAt: Date? = nil,
+        isHidden: Bool? = nil
     ) {
         self.id = id
         self.prompt = prompt
@@ -42,5 +45,6 @@ struct FlashcardPayload: Codable, Equatable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.deletedAt = deletedAt
+        self.isHidden = isHidden
     }
 }

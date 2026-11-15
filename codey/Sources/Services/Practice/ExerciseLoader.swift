@@ -117,3 +117,22 @@ enum ExerciseLoader {
         let exercises: [Exercise]
     }
 }
+
+extension ExerciseLoader {
+    /// The bundled exercises, loaded once: Play's tiles and an exercise's
+    /// Next Challenge / Try Another read the same list.
+    static let bundled: Result<[Exercise], Error> = Result { try load() }
+}
+
+/// Which exercise "Next Challenge" and "Try Another" open (§3c).
+enum ExercisePicker {
+    /// The first match after `current` in bundle order (wrapping), trying in
+    /// turn: unsolved in the same topic, unsolved anywhere, then any other
+    /// exercise. Nil only when `current` is the only one.
+    static func next(after current: Exercise, in all: [Exercise], solved: Set<String>) -> Exercise? {
+        let start = (all.firstIndex(of: current) ?? -1) + 1
+        let others = (all[min(start, all.count)...] + all[..<min(start, all.count)]).filter { $0.id != current.id }
+        let unsolved = others.filter { !solved.contains($0.id) }
+        return unsolved.first { $0.topicId == current.topicId } ?? unsolved.first ?? others.first
+    }
+}

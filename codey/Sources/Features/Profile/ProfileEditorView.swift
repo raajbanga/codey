@@ -24,46 +24,32 @@ struct ProfileEditorView: View {
     private var hue: CodeyColor.TopicHue { color.hue }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                preview
-                nameField
-                VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                    SectionTitle("Color")
-                    LazyVGrid(columns: swatchColumns, spacing: CodeySpacing.sm) {
-                        ForEach(ProfileAvatar.Color.allCases) { option in
-                            ColorSwatch(color: option, isSelected: color == option) {
-                                color = option
-                                if avatarId == nil { avatarId = ProfileAvatar.fallback }
-                            }
+        CodeyPage("Edit Profile") {
+            PageAction(systemImage: "checkmark", label: "Save", action: save)
+                .disabled(nameError != nil)
+                .accessibilityIdentifier("profileEditor.save")
+        } hero: {
+            preview
+        } content: {
+            nameField
+            NoteGroup("Color") {
+                LazyVGrid(columns: swatchColumns, spacing: CodeySpacing.sm) {
+                    ForEach(ProfileAvatar.Color.allCases) { option in
+                        ColorSwatch(color: option, isSelected: color == option) {
+                            color = option
+                            if avatarId == nil { avatarId = ProfileAvatar.fallback }
                         }
                     }
-                    .padding(CodeySpacing.md)
-                    .codeyNote()
-                }
-                VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                    SectionTitle("Icon")
-                    LazyVGrid(columns: columns, spacing: CodeySpacing.sm) {
-                        ForEach(ProfileAvatar.symbols, id: \.self) { symbol in
-                            AvatarChoice(symbol: symbol, hue: hue, isSelected: avatarId == symbol) {
-                                avatarId = avatarId == symbol ? nil : symbol
-                            }
-                        }
-                    }
-                    .padding(CodeySpacing.md)
-                    .codeyNote()
                 }
             }
-            .padding(CodeySpacing.md)
-        }
-        .scrollDismissesKeyboard(.interactively)
-        .codeyPaperBackground()
-        .codeyPageTitle("Edit Profile")
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { save() }
-                    .disabled(nameError != nil)
-                    .accessibilityIdentifier("profileEditor.save")
+            NoteGroup("Icon") {
+                LazyVGrid(columns: columns, spacing: CodeySpacing.sm) {
+                    ForEach(ProfileAvatar.symbols, id: \.self) { symbol in
+                        AvatarChoice(symbol: symbol, hue: hue, isSelected: avatarId == symbol) {
+                            avatarId = avatarId == symbol ? nil : symbol
+                        }
+                    }
+                }
             }
         }
         .onAppear {
@@ -78,25 +64,15 @@ struct ProfileEditorView: View {
     }
 
     /// The avatar and name as the group board shows them.
+    /// The hero shows the name, icon and color as you pick them.
     private var preview: some View {
-        HStack(spacing: CodeySpacing.md) {
-            ProfileAvatarView(avatarId: storedId, size: 64, emphasized: true)
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                Text(name.isEmpty ? UserProfile.defaultUsername : name)
-                    .font(.codeyTitle.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text("How your groups see you")
-                    .font(.codeySubheadline)
-            }
-            Spacer(minLength: 0)
-        }
-        .foregroundStyle(hue.ink)
-        .padding(CodeySpacing.md)
-        .background(hue.soft, in: .codey(CodeyRadius.lg))
-        .environment(\.colorScheme, .light)
+        HeroCard(
+            title: name.isEmpty ? UserProfile.defaultUsername : name,
+            subtitle: "How your groups see you",
+            icon: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: storedId)),
+            hue: hue
+        )
         .codeyAnimation(CodeyMotion.snappy, value: color)
-        .accessibilityElement(children: .combine)
     }
 
     private var nameField: some View {
@@ -106,8 +82,7 @@ struct ProfileEditorView: View {
                 .font(.codeyBody)
                 .textContentType(.nickname)
                 .submitLabel(.done)
-                .padding(CodeySpacing.md)
-                .codeyNote()
+                .codeyField()
                 .accessibilityIdentifier("profileEditor.name")
             HStack {
                 if loaded, let nameError {
@@ -116,9 +91,7 @@ struct ProfileEditorView: View {
                     Text("Shown on Play and, when signed in, to your groups.")
                 }
                 Spacer()
-                Text("\(length)/\(limit)")
-                    .monospacedDigit()
-                    .foregroundStyle(length > limit ? CodeyColor.danger : CodeyColor.textSecondary)
+                LimitCounter(count: length, limit: limit)
             }
             .font(.codeyCaption)
             .foregroundStyle(CodeyColor.textSecondary)
@@ -155,7 +128,7 @@ private struct AvatarChoice: View {
                         Circle().strokeBorder(hue.ink, lineWidth: 2).padding(-4)
                     }
                 }
-                .padding(4)
+                .padding(CodeySpacing.xs)
         }
         .buttonStyle(TilePressStyle())
         .sensoryFeedback(.selection, trigger: isSelected)
@@ -181,7 +154,7 @@ private struct ColorSwatch: View {
                             .foregroundStyle(color.hue.onFill)
                     }
                 }
-                .padding(4)
+                .padding(CodeySpacing.xs)
                 .overlay {
                     if isSelected { Circle().strokeBorder(color.hue.fill, lineWidth: 2) }
                 }

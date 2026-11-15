@@ -69,7 +69,7 @@ final class AccessibilityAuditUITests: XCTestCase {
             groups.tap()
             sleep(1)
             try audit("groups")
-            app.navigationBars.buttons.firstMatch.tap()
+            app.swipeBack()
         }
 
         // Decks, deck detail, builder.
@@ -79,7 +79,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.buttons["decks.add"].tap()
         XCTAssertTrue(app.textFields["builder.title"].waitForExistence(timeout: 5))
         try audit("builder")
-        app.navigationBars.buttons["Cancel"].firstMatch.tap()
+        app.buttons["builder.cancel"].tap()
         let discard = app.buttons["Discard Changes"]
         if discard.waitForExistence(timeout: 1) { discard.tap() }
 
@@ -131,7 +131,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.buttons["exercise.submit"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["exercise.summary"].waitForExistence(timeout: 5))
         try audit("exercise.result")
-        app.navigationBars.buttons.firstMatch.tap()
+        app.swipeBack()
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
         for _ in 0..<8 where !quizTopic.isHittable { app.swipeDown() }

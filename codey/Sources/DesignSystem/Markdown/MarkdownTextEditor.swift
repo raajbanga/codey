@@ -1,8 +1,12 @@
 import SwiftUI
 
-/// Markdown field for card prompt/answer: TextEditor + formatting toolbar
-/// (Bold, Italic, Code, List) + n/limit counter. Preview it with
-/// CardMarkdownView.
+/// Card prompt / answer field, Notion-style (§3b, Nov 15): you type
+/// straight on the card, with no grey well, and a closed `**x**` or
+/// `` `x` `` shows as bold or code with its markers folded away
+/// (MarkdownRichText). The format
+/// row (Bold, Italic, Code, List) appears under the text only while you
+/// type, and the n/limit counter only once you're near the limit. The
+/// binding stays Markdown.
 struct MarkdownTextEditor: View {
     let title: String
     @Binding var text: String
@@ -12,88 +16,103 @@ struct MarkdownTextEditor: View {
     /// a failed save); reset to false once focused.
     var focusRequested: Binding<Bool> = .constant(false)
 
-    @State private var selection: TextSelection?
+    @State private var rich = AttributedString()
+    @State private var selection = AttributedTextSelection()
     @FocusState private var isFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var length: Int { ModelValidator.measuredLength(text) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            TextEditor(text: $text, selection: $selection)
-                .font(.codeyBody)
+        VStack(alignment: .leading, spacing: CodeySpacing.xs) {
+            TextEditor(text: $rich, selection: $selection)
                 .focused($isFocused)
                 .scrollContentBackground(.hidden)
-                .frame(minHeight: 96)
-                .padding(CodeySpacing.sm)
-                // A paper well with a hairline on the note, not a solid
-                // grey block (§3b): the field reads as a page to write on.
-                .background(CodeyColor.surface, in: .codey(CodeyRadius.md))
-                .errorBorder(errorMessage != nil, radius: CodeyRadius.md)
+                .scrollDisabled(true)
+                .frame(minHeight: 120, alignment: .topLeading)
+                // TextEditor insets its text; pull it back to the card's edge.
+                .padding(.horizontal, -CodeySpacing.xs)
+                .overlay(alignment: .topLeading) {
+                    if text.isEmpty {
+                        Text("Type the \(title.lowercased())…")
+                            .font(.codeyBody)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                            .padding(.top, CodeySpacing.xs)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                }
                 .accessibilityLabel(title)
+                .onAppear { rich = MarkdownRichText.styled(text) }
+                .onChange(of: rich) { _, new in
+                    let plain = String(new.characters)
+                    guard plain != text else { return }
+                    text = plain
+                    // Attributes only: the caret and the keyboard's pending
+                    // input are left alone.
+                    MarkdownRichText.apply(to: &rich)
+                }
+                .onChange(of: text) { _, new in
+                    // Changed from outside (a reset, an undo): restyle all.
+                    if String(rich.characters) != new { rich = MarkdownRichText.styled(new) }
+                }
                 .onChange(of: focusRequested.wrappedValue, initial: true) { _, requested in
                     guard requested else { return }
                     isFocused = true
                     focusRequested.wrappedValue = false
                 }
 
-            HStack(spacing: CodeySpacing.xs) {
-                ForEach(MarkdownFormat.allCases, id: \.self) { format in
-                    Button {
-                        apply(format)
-                    } label: {
-                        // Plain ink icons with a 44pt target: a quiet,
-                        // editor-like toolbar (S9).
-                        Image(systemName: format.symbol)
-                            .foregroundStyle(CodeyColor.brand)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(format.accessibilityLabel)
+            if isFocused || length * 5 >= limit * 4 {
+                HStack(spacing: 0) {
+                    if isFocused { formatButtons }
+                    Spacer(minLength: 0)
+                    if length * 5 >= limit * 4 { LimitCounter(count: length, limit: limit) }
                 }
-                Spacer()
-                LimitCounter(count: ModelValidator.measuredLength(text), limit: limit)
+                .transition(.opacity)
             }
 
             FieldErrorLabel(message: errorMessage)
         }
+        .animation(CodeyMotion.resolve(CodeyMotion.snappy, reduceMotion: reduceMotion), value: isFocused)
     }
 
+    private var formatButtons: some View {
+        ForEach(MarkdownFormat.allCases, id: \.self) { format in
+            Button { apply(format) } label: {
+                Image(systemName: format.symbol)
+                    .foregroundStyle(CodeyColor.brand)
+                    .frame(minWidth: 44, minHeight: 36)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(format.accessibilityLabel)
+        }
+    }
+
+    /// Wraps (or unwraps) the selection in the format's markers; with no
+    /// selection, an empty pair with the caret inside, so what you type next
+    /// takes the style once you close it.
     private func apply(_ format: MarkdownFormat) {
-        let range = selectedOffsets()
-        let result = MarkdownFormatting.apply(format, to: text, selection: range)
+        let result = MarkdownFormatting.apply(format, to: text, selection: selectedOffsets())
         text = result.text
-        let lower = text.index(text.startIndex, offsetBy: result.selection.lowerBound)
-        let upper = text.index(text.startIndex, offsetBy: result.selection.upperBound)
-        selection = TextSelection(range: lower..<upper)
+        rich = MarkdownRichText.styled(result.text)
+        let lower = rich.characters.index(rich.startIndex, offsetBy: result.selection.lowerBound)
+        let upper = rich.characters.index(rich.startIndex, offsetBy: result.selection.upperBound)
+        selection = AttributedTextSelection(range: lower..<upper)
         isFocused = true
     }
 
+    /// The selection as Character offsets (MarkdownFormatting's units).
     private func selectedOffsets() -> Range<Int> {
-        guard let selection, case .selection(let range) = selection.indices,
-              range.lowerBound >= text.startIndex, range.upperBound <= text.endIndex else {
-            return text.count..<text.count
+        func offset(_ index: AttributedString.Index) -> Int {
+            rich.characters.distance(from: rich.startIndex, to: index)
         }
-        let lower = text.distance(from: text.startIndex, to: range.lowerBound)
-        let upper = text.distance(from: text.startIndex, to: range.upperBound)
-        return lower..<upper
-    }
-}
-
-extension MarkdownFormat {
-    var symbol: String {
-        switch self {
-        case .bold: "bold"
-        case .italic: "italic"
-        case .code: "chevron.left.forwardslash.chevron.right"
-        case .bulletList: "list.bullet"
-        }
-    }
-
-    var accessibilityLabel: String {
-        switch self {
-        case .bold: "Bold"
-        case .italic: "Italic"
-        case .code: "Inline code"
-        case .bulletList: "Bulleted list"
+        switch selection.indices(in: rich) {
+        case .insertionPoint(let index):
+            return offset(index)..<offset(index)
+        case .ranges(let ranges):
+            guard let first = ranges.ranges.first, let last = ranges.ranges.last else { return 0..<0 }
+            return offset(first.lowerBound)..<offset(last.upperBound)
         }
     }
 }

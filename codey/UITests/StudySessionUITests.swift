@@ -26,7 +26,8 @@ final class StudySessionUITests: XCTestCase {
         study.tap()
 
         // New learner: only the 4 Easy cards are unlocked (D9).
-        let counter = app.staticTexts["study.counter"]
+        // The bar shows ticks only; the count is its VoiceOver label (§3b).
+        let counter = app.descendants(matching: .any)["study.counter"].firstMatch
         XCTAssertTrue(counter.waitForExistence(timeout: 5))
         XCTAssertEqual(counter.label, "Card 1 of 4")
         let card = app.descendants(matching: .any)["study.card"].firstMatch

@@ -13,9 +13,8 @@ enum CodeyButtonKind: Equatable {
     case hue(CodeyColor.TopicHue)
 }
 
-/// The app's content button. Flat pastel fills, no glass: since Sprint 3
-/// (S9) Liquid Glass is left to the system's own controls (tab bar,
-/// toolbars, sheets). Labels are single-line (the Capsule rule, D19); long
+/// The app's content button. Flat pastel fills, no glass (the tab bar is
+/// the only system-drawn control, Nov 15). Labels are single-line (pill rule, D19); long
 /// text scales down rather than wrapping.
 struct CodeyButton: View {
     let title: String
@@ -64,12 +63,12 @@ struct CodeyButton: View {
     }
 }
 
-/// Flat capsule with a pastel fill. Each fill/label pair is one that
+/// Flat `.pill` with a pastel fill. Each fill/label pair is one that
 /// scripts/palette checks at 4.5:1. Pressed state dims instead of scaling.
 struct CodeyFillButtonStyle: ButtonStyle {
     let kind: CodeyButtonKind
     var compact = false
-    /// Less side padding, for buttons in half-width tiles (S41).
+    /// Least side padding, for ChoiceChips rows of four.
     var tight = false
 
     @Environment(\.isEnabled) private var isEnabled
@@ -80,10 +79,10 @@ struct CodeyFillButtonStyle: ButtonStyle {
         configuration.label
             .font(compact ? .codeySubheadline.weight(.medium) : .codeyHeadline)
             .foregroundStyle(colors.label)
-            .padding(.horizontal, tight ? CodeySpacing.md : compact ? CodeySpacing.md : CodeySpacing.lg)
+            .padding(.horizontal, tight ? CodeySpacing.sm : compact ? CodeySpacing.md : CodeySpacing.lg)
             .frame(minHeight: compact ? compactHeight : regularHeight)
-            .background(colors.fill, in: Capsule())
-            .contentShape(Capsule())
+            .background(colors.fill, in: .pill)
+            .contentShape(.pill)
             .opacity(configuration.isPressed ? 0.7 : (isEnabled ? 1 : 0.45))
             .animation(CodeyMotion.snappy, value: configuration.isPressed)
     }

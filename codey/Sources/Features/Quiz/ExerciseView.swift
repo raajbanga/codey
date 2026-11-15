@@ -4,10 +4,15 @@ import os
 
 /// One code-completion exercise (FR-39 to FR-41): the highlighted snippet
 /// with numbered blanks, one monospaced field per blank, and Check, which
-/// runs each blank's test case and shows pass or fail per blank plus the
-/// explanation. The first full solve pays XP (S41); nothing else is saved.
+/// runs each blank's test case. The first full solve pays XP (S41);
+/// nothing else is saved.
+///
+/// §3c: a full pass swaps the page for the shared session summary (Solved,
+/// XP, explanation, Next Challenge / Done), like the end of a quiz. A miss
+/// keeps the per-blank results with Try Again and Try Another. Next and
+/// Another load the picked exercise in place (ExercisePicker).
 struct ExerciseView: View {
-    let exercise: Exercise
+    @State private var exercise: Exercise
 
     @State private var answers: [String]
     @State private var result: ExerciseResult?
@@ -18,110 +23,188 @@ struct ExerciseView: View {
     /// Ask AI (S39): lives as long as this exercise is on screen (FR-68).
     @State private var askAI: AskAISession?
     @Environment(Router.self) private var router
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query private var profiles: [UserProfile]
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 112
 
     init(exercise: Exercise) {
-        self.exercise = exercise
+        _exercise = State(initialValue: exercise)
         _answers = State(initialValue: Array(repeating: "", count: exercise.blanks.count))
     }
 
     private var hue: CodeyColor.TopicHue { .of(topicID: exercise.topicId) }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.md) {
-                header
-
-                // Not selectable: the header's copy button covers copying, and
-                // a selectable text view has no accessibility label.
-                CardMarkdownView(
-                    markdown: "",
-                    snippet: CodeSnippet(language: exercise.language, source: exercise.displayCode),
-                    isSelectable: false
-                )
-                .accessibilityElement(children: .contain)
-                .accessibilityLabel("\(exercise.language.displayName) code with \(exercise.blanks.count) numbered blanks")
-
-                ForEach(exercise.blanks.indices, id: \.self) { index in
-                    blankField(index)
-                }
-
-                if let result {
-                    summary(result)
-                    VStack(alignment: .leading, spacing: CodeySpacing.xs) {
-                        Text("Explanation")
-                            .font(.codeyHeadline)
-                            .foregroundStyle(CodeyColor.textPrimary)
-                        Text(Self.inline(exercise.explanation))
-                            .font(.codeyBody)
-                            .foregroundStyle(CodeyColor.textPrimary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(CodeySpacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .codeyNote()
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("exercise.explanation")
-                    CodeyButton("Try Again", systemImage: "arrow.counterclockwise", kind: .secondary, fullWidth: true) {
-                        answers = Array(repeating: "", count: exercise.blanks.count)
-                        self.result = nil
-                        focusedBlank = 0
-                    }
-                    .accessibilityIdentifier("exercise.retry")
-                } else {
-                    CodeyButton("Check", systemImage: "checkmark", kind: .hue(hue), fullWidth: true) {
-                        focusedBlank = nil
-                        let checked = ExerciseValidator.check(answers, for: exercise)
-                        result = checked
-                        xpPaid = checked.allPassed ? payXP() : 0
-                    }
-                    .accessibilityIdentifier("exercise.submit")
-                }
+        Group {
+            if let result, result.allPassed {
+                solvedSummary
+                    .padding(.horizontal, CodeySpacing.md)
+                    .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
+            } else {
+                workspace
             }
-            .padding(CodeySpacing.md)
         }
-        .scrollDismissesKeyboard(.interactively)
         .codeyPaperBackground()
-        .codeyPageTitle(exercise.title)
-        .toolbar {
-            if let client = AskAI.client {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        focusedBlank = nil
-                        askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
-                        router.askAI = askAI
-                    } label: {
-                        Label("Ask AI", icon: "ask.ai")
-                    }
-                    .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
-                    .accessibilityIdentifier("askAI.open")
-                }
-            }
-        }
         .sensoryFeedback(trigger: result) { _, new in
             guard let new else { return nil }
             return new.allPassed ? .success : .error
         }
     }
 
-    /// The task on the topic's pastel (S42), like a tile: language and the
-    /// first-solve reward as tags, then the prompt.
-    private var header: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HStack(spacing: CodeySpacing.xs) {
-                Icon("chevron.left.forwardslash.chevron.right", size: 22, relativeTo: .title2)
-                Spacer(minLength: 0)
-                CodeyChip(exercise.language.displayName, variant: .outline(hue.ink))
-                CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count)
+    /// The task, the code, a field per blank, then Check; after a miss, the
+    /// per-blank results and Try Again / Try Another.
+    private var workspace: some View {
+        CodeyPage(exercise.title) {
+            if let client = AskAI.client {
+                CircleIconButton(systemImage: "ask.ai", label: "Ask Codey", kind: .soft) {
+                    focusedBlank = nil
+                    askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
+                    router.askAI = askAI
+                }
+                .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
+                .accessibilityIdentifier("askAI.open")
             }
-            Text(Self.inline(exercise.prompt))
-                .font(.codeyCardText)
+        } hero: {
+            header
+        } content: {
+            // Not selectable: the header's copy button covers copying, and
+            // a selectable text view has no accessibility label.
+            CardMarkdownView(
+                markdown: "",
+                snippet: CodeSnippet(language: exercise.language, source: exercise.displayCode),
+                isSelectable: false
+            )
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("\(exercise.language.displayName) code with \(exercise.blanks.count) numbered blanks")
+
+            ForEach(exercise.blanks.indices, id: \.self) { index in
+                blankField(index)
+            }
+
+            if let result {
+                summary(result)
+                explanation
+                HStack(spacing: CodeySpacing.sm) {
+                    CodeyButton("Try Again", systemImage: "arrow.counterclockwise", kind: .hue(hue), fullWidth: true) {
+                        retry()
+                    }
+                    .accessibilityIdentifier("exercise.retry")
+                    if let next = nextExercise {
+                        CodeyButton("Try Another", systemImage: "shuffle", kind: .secondary, fullWidth: true) {
+                            open(next)
+                        }
+                        .accessibilityIdentifier("exercise.another")
+                    }
+                }
+            } else {
+                CodeyButton("Check", systemImage: "checkmark", kind: .hue(hue), fullWidth: true) {
+                    focusedBlank = nil
+                    let checked = ExerciseValidator.check(answers, for: exercise)
+                    let paid = checked.allPassed ? payXP() : 0
+                    withCodeyAnimation(reduceMotion: reduceMotion) {
+                        xpPaid = paid
+                        result = checked
+                    }
+                }
+                .accessibilityIdentifier("exercise.submit")
+            }
+        }
+        // A new exercise starts at the top, not where the last one was left.
+        .id(exercise.id)
+    }
+
+    /// The win screen: the same summary as a quiz or study session.
+    private var solvedSummary: some View {
+        let total = exercise.blanks.count
+        return SessionSummary(
+            title: "Solved!",
+            subtitle: "All \(total) \(total == 1 ? "test" : "tests") passed",
+            xpEarned: xpPaid > 0 ? xpPaid : nil,
+            againTitle: "Next Challenge",
+            againSystemImage: "arrow.right",
+            againID: "exercise.next",
+            doneID: "exercise.done",
+            again: nextExercise.map { next in { open(next) } },
+            done: { dismiss() }
+        ) {
+            IconTile(
+                systemName: "checkmark.seal.fill", size: heroSize, radius: CodeyRadius.xl,
+                ink: CodeyColor.success, tile: CodeyColor.Soft.success
+            )
+        } details: {
+            if xpPaid == 0 {
+                // Said, not hidden: otherwise a repeat solve looks broken.
+                Text("Already solved, so no XP this time. XP is paid on the first solve.")
+                    .font(.codeySubheadline)
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            explanation
+        }
+        .accessibilityIdentifier("exercise.solved")
+    }
+
+    private var explanation: some View {
+        VStack(alignment: .leading, spacing: CodeySpacing.xs) {
+            Text("Explanation")
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textPrimary)
+            Text(Self.inline(exercise.explanation))
+                .font(.codeyBody)
+                .foregroundStyle(CodeyColor.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .foregroundStyle(hue.ink)
-        .padding(CodeySpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(hue.soft, in: .codey(CodeyRadius.lg))
-        .environment(\.colorScheme, .light)
+        .codeyCard()
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("exercise.explanation")
+    }
+
+    // MARK: Moving on
+
+    /// What Next Challenge / Try Another opens; nil hides them.
+    private var nextExercise: Exercise? {
+        ExercisePicker.next(
+            after: exercise,
+            in: (try? ExerciseLoader.bundled.get()) ?? [],
+            solved: Set(profiles.first?.solvedExerciseIds ?? [])
+        )
+    }
+
+    private func retry() {
+        withCodeyAnimation(reduceMotion: reduceMotion) {
+            answers = Array(repeating: "", count: exercise.blanks.count)
+            result = nil
+            xpPaid = 0
+        }
+        focusedBlank = 0
+    }
+
+    /// Loads `next` in place: fresh answers, and a fresh Ask AI chat, since
+    /// the old one was about the other exercise.
+    private func open(_ next: Exercise) {
+        withCodeyAnimation(reduceMotion: reduceMotion) {
+            exercise = next
+            answers = Array(repeating: "", count: next.blanks.count)
+            result = nil
+            xpPaid = 0
+        }
+        askAI = nil
+        focusedBlank = nil
+    }
+
+    /// The exercise on its topic's pastel (S42): language and first-solve
+    /// reward as tags, the title, then the task.
+    private var header: some View {
+        HeroCard(
+            title: exercise.title,
+            icon: "chevron.left.forwardslash.chevron.right",
+            hue: hue,
+            attributedSubtitle: Self.inline(exercise.prompt)
+        ) {
+            CodeyChip(exercise.language.displayName, variant: .outline(hue.ink))
+            CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count)
+        }
     }
 
     /// Inline Markdown (`code`, *emphasis*) as styled text; plain text if
@@ -179,8 +262,7 @@ struct ExerciseView: View {
                 }
             }
         }
-        .padding(CodeySpacing.md)
-        .codeyNote()
+        .codeyCard()
     }
 
     private func summary(_ result: ExerciseResult) -> some View {

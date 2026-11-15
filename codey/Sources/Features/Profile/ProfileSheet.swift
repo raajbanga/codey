@@ -26,98 +26,81 @@ struct ProfileSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                    header
-                    SettingsGroup("Badges") { BadgesRow() }
-                    accountSection
-                    appearanceSection
-                    studySection
-                    dataSection
-                    aboutSection
+            CodeyPage("Profile", closes: true, closeID: "profile.done") {
+                NavigationLink {
+                    ProfileEditorView()
+                } label: {
+                    CircleIcon(systemImage: "pencil", kind: .soft)
                 }
-                .padding(CodeySpacing.md)
-            }
-            .codeyPaperBackground()
-            .codeyPageTitle("Profile")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .accessibilityIdentifier("profile.done")
-                }
+                .buttonStyle(TilePressStyle())
+                .accessibilityLabel("Edit profile")
+                .accessibilityIdentifier("profile.edit")
+            } hero: {
+                hero
+            } content: {
+                NoteGroup("Badges") { BadgesRow() }
+                accountSection
+                appearanceSection
+                studySection
+                dataSection
+                aboutSection
             }
         }
-        .confirmationDialog("Reset progress?", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("Reset Progress", role: .destructive) {
+        .codeyConfirm(
+            "Reset progress?",
+            isPresented: $confirmReset,
+            message: "XP, streak, badges, card mastery, quiz progress, and tier unlocks go back to zero. Your decks stay. This can't be undone."
+        ) {
+            [CodeyDialog.Action("Reset Progress", isDestructive: true) {
                 $actionError.attempt {
                     try LocalDataReset.resetProgress(context: modelContext)
                     backend.didResetProgress()
                 }
-            }
-        } message: {
-            Text("XP, streak, badges, card mastery, quiz progress, and tier unlocks go back to zero. Your decks stay. This can't be undone.")
+            }]
         }
-        .confirmationDialog("Erase all local data?", isPresented: $confirmErase, titleVisibility: .visible) {
-            Button("Erase Everything", role: .destructive) {
+        .codeyConfirm(
+            "Erase all local data?",
+            isPresented: $confirmErase,
+            message: "Your decks, progress, and profile will be deleted from this device. This can't be undone."
+        ) {
+            [CodeyDialog.Action("Erase Everything", isDestructive: true) {
                 $actionError.attempt {
                     try LocalDataReset.eraseAllLocalData(context: modelContext, bank: QuestionBankLoader.loadBank())
                 }
-            }
-        } message: {
-            Text("Your decks, progress, and profile will be deleted from this device. This can't be undone.")
+            }]
         }
-        .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
-            Button("Remove Decks from This Device", role: .destructive) {
-                Task { await backend.signOut(removingLocalDecks: true) }
-            }
-            Button("Keep Decks on This Device") {
-                Task { await backend.signOut(removingLocalDecks: false) }
-            }
-        } message: {
-            Text(signOutMessage)
+        .codeyConfirm("Sign out?", isPresented: $confirmSignOut, message: signOutMessage) {
+            [
+                CodeyDialog.Action("Remove Decks from This Device", isDestructive: true) {
+                    Task { await backend.signOut(removingLocalDecks: true) }
+                },
+                CodeyDialog.Action("Keep Decks on This Device") {
+                    Task { await backend.signOut(removingLocalDecks: false) }
+                },
+            ]
         }
         .errorAlert($actionError)
+        .codeyOverlayHost()
     }
 
     // MARK: Sections
 
     private var hue: CodeyColor.TopicHue { ProfileAvatar.color(for: profile?.avatarId).hue }
 
-    /// Tapping the hero edits the name and avatar (FR-04).
-    private var header: some View {
-        NavigationLink {
-            ProfileEditorView()
-        } label: {
-            HStack(spacing: CodeySpacing.md) {
-                ProfileAvatarView(avatarId: profile?.avatarId, size: 64, emphasized: true)
-                VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                    Text(profile?.username ?? UserProfile.defaultUsername)
-                        .font(.codeyTitle.weight(.semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                    Text(accountStatus)
-                        .font(.codeySubheadline)
-                        .lineLimit(2)
-                    HStack(spacing: CodeySpacing.xs) {
-                        CodeyChip("Level \(LevelCalculator.level(forXP: xp))", variant: .outline(hue.ink))
-                        CodeyChip("\(xp.formatted()) XP", variant: .xp)
-                    }
-                    .padding(.top, CodeySpacing.xxs)
-                }
-                Spacer(minLength: 0)
-                Icon("pencil", size: 20, relativeTo: .headline)
-            }
-            .foregroundStyle(hue.ink)
-            .multilineTextAlignment(.leading)
-            .padding(CodeySpacing.md)
-            .background(hue.soft, in: .codey(CodeyRadius.lg))
-            .environment(\.colorScheme, .light)
-            .contentShape(.rect(cornerRadius: CodeyRadius.lg))
+    /// Name, account, level and XP; the pencil above edits the name and
+    /// avatar (FR-04).
+    private var hero: some View {
+        let level = LevelCalculator.level(forXP: xp)
+        return HeroCard(
+            title: profile?.username ?? UserProfile.defaultUsername,
+            subtitle: accountStatus,
+            icon: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: profile?.avatarId)),
+            hue: hue,
+            progress: LevelCalculator.progressFraction(xp),
+            caption: "\(xp.formatted()) XP, \(LevelCalculator.xpToNextLevel(xp)) to Level \(level + 1)"
+        ) {
+            CodeyChip("Level \(level)", systemImage: "star.fill", variant: .xp)
         }
-        .buttonStyle(TilePressStyle())
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Edit your name and avatar")
-        .accessibilityIdentifier("profile.edit")
     }
 
     private var accountStatus: String {
@@ -127,7 +110,7 @@ struct ProfileSheet: View {
     @ViewBuilder
     private var accountSection: some View {
         if backend.currentUser != nil {
-            SettingsGroup("Account", footer: backend.engine.lastError.map { "Last sync failed: \($0) Codey will retry automatically." }
+            NoteGroup("Account", footer: backend.engine.lastError.map { "Last sync failed: \($0) Codey will retry automatically." }
                           ?? "Your decks, progress, streak, badges, and XP sync across devices.") {
                 SettingsRow(icon: "arrow.triangle.2.circlepath", title: "Last synced") {
                     if let date = backend.lastSyncedAt {
@@ -152,7 +135,7 @@ struct ProfileSheet: View {
                 .padding(.top, CodeySpacing.xs)
             }
         } else {
-            SettingsGroup("Account", footer: signInFooter) {
+            NoteGroup("Account", footer: signInFooter) {
                 CodeyButton(backend.authState == .signingIn ? "Signing In" : "Sign in with Google",
                             systemImage: "person.crop.circle", fullWidth: true) {
                     Task { await backend.signInWithGoogle() }
@@ -179,13 +162,13 @@ struct ProfileSheet: View {
     }
 
     private var appearanceSection: some View {
-        SettingsGroup("Appearance") {
+        NoteGroup("Appearance") {
             ChoiceChips("Appearance", selection: $appearance, options: AppAppearance.allCases.map { ($0, $0.title) }, fills: true)
         }
     }
 
     private var studySection: some View {
-        SettingsGroup("Pinned topics", footer: "Pinned topics show first on Play and in Decks." + (hiddenDecks.isEmpty ? "" : " Hidden starter decks are listed below them.")) {
+        NoteGroup("Pinned topics", footer: "Pinned topics show first on Play and in Decks." + (hiddenDecks.isEmpty ? "" : " Hidden starter decks are listed below them.")) {
             ForEach(topics) { topic in
                 let pinned = profile?.pinnedTopicIds.contains(topic.id) == true
                 let topicHue = CodeyColor.TopicHue.of(topicID: topic.id)
@@ -212,7 +195,7 @@ struct ProfileSheet: View {
     }
 
     private var dataSection: some View {
-        SettingsGroup("Data", footer: backend.currentUser == nil
+        NoteGroup("Data", footer: backend.currentUser == nil
                       ? "Reset progress keeps your decks. Erase deletes everything on this device."
                       : "Reset progress keeps your decks. To erase everything on this device, sign out first.") {
             HStack(spacing: CodeySpacing.sm) {
@@ -225,7 +208,7 @@ struct ProfileSheet: View {
     }
 
     private var aboutSection: some View {
-        SettingsGroup("About") {
+        NoteGroup("About") {
             SettingsRow(icon: "number", title: "Version") { Text(Self.versionString) }
             NavigationLink {
                 FeedbackFormView()
@@ -299,8 +282,7 @@ private struct AcknowledgementsView: View {
     ]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+        CodeyPage("Acknowledgements", subtitle: "Open-source code in Codey", icon: "heart") {
                 ForEach(Self.libraries, id: \.name) { library in
                     VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                         Text(library.name)
@@ -310,45 +292,9 @@ private struct AcknowledgementsView: View {
                             .font(.codeySubheadline)
                             .foregroundStyle(CodeyColor.textSecondary)
                     }
-                    .padding(CodeySpacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .codeyNote()
+                    .codeyCard()
                     .accessibilityElement(children: .combine)
                 }
-            }
-            .padding(CodeySpacing.md)
-        }
-        .codeyPaperBackground()
-        .codeyPageTitle("Acknowledgements")
-    }
-}
-
-/// A titled note of settings (S42): the bento page's answer to a grouped
-/// List section, with an optional caption below.
-struct SettingsGroup<Content: View>: View {
-    let title: String
-    var footer: String?
-    @ViewBuilder let content: Content
-
-    init(_ title: String, footer: String? = nil, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.footer = footer
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            SectionTitle(title)
-            VStack(alignment: .leading, spacing: CodeySpacing.sm) { content }
-                .padding(CodeySpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .codeyNote()
-            if let footer {
-                Text(footer)
-                    .font(.codeyCaption)
-                    .foregroundStyle(CodeyColor.textSecondary)
-                    .padding(.horizontal, CodeySpacing.xs)
-            }
         }
     }
 }

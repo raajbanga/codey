@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// The Ask AI chat (S39), shown in a FloatingPanel: a header, the conversation as notes on the
+/// The Ask AI chat (S39), titled "Ask Codey" on screen (§3d), shown in a FloatingPanel: a header, the conversation as notes on the
 /// dotted paper (tutor replies rendered as Markdown), a typing indicator,
 /// an error row with Retry, and the input bar.
 ///
-///     ✦ Ask AI                            ✕
-///       Explains the idea, never the answer
+///     (✦) Ask Codey                       ✕
 ///     ╭ Hi! What part … ╮
 ///                      ╭ why is it O(n)? ╮
 ///     ╭ • bullets … ╮
 ///     [ Ask about this question…     (↑) ]
+///        Explains the idea, never the answer
 struct AskAIChatView: View {
     @Bindable var session: AskAISession
     @Environment(\.dismissPanel) private var dismissPanel
@@ -24,25 +24,24 @@ struct AskAIChatView: View {
         .task { await session.start() }
     }
 
+    /// Round soft icon like the header buttons and the ✕ beside it (§3d),
+    /// and the name only: the one-line promise sits by the input.
     private var header: some View {
         HStack(spacing: CodeySpacing.sm) {
-            IconTile(systemName: "ask.ai", size: 40, radius: CodeyRadius.sm)
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                Text("Ask AI")
-                    .font(.codeyHeadline)
-                    .foregroundStyle(CodeyColor.textPrimary)
-                Text("Explains the idea, never the answer")
-                    .font(.codeyCaption)
-                    .foregroundStyle(CodeyColor.textSecondary)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isHeader)
+            CircleIcon(systemImage: "ask.ai", kind: .soft)
+                .accessibilityHidden(true)
+            Text("Ask Codey")
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
-            CloseButton(label: "Close Ask AI") { dismissPanel() }
+            CloseButton(label: "Close Ask Codey") { dismissPanel() }
                 .accessibilityIdentifier("askAI.close")
         }
+        // Same insets as every floating card (codeyPanelPadding).
         .padding(.horizontal, CodeySpacing.md)
-        .padding(.vertical, CodeySpacing.sm)
+        .padding(.top, CodeySpacing.lg)
+        .padding(.bottom, CodeySpacing.xs)
     }
 
     private var conversation: some View {
@@ -103,9 +102,24 @@ struct AskAIChatView: View {
     }
 
     private var inputBar: some View {
+        VStack(spacing: CodeySpacing.xs) {
+            inputRow
+            Text("Explains the idea, never the answer")
+                .font(.codeyCaption)
+                .foregroundStyle(CodeyColor.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, CodeySpacing.md)
+        .padding(.top, CodeySpacing.sm)
+        .padding(.bottom, CodeySpacing.lg)
+        .sensoryFeedback(.impact(weight: .light), trigger: session.messages.count)
+    }
+
+    private var inputRow: some View {
         HStack(alignment: .bottom, spacing: CodeySpacing.sm) {
             TextField("Ask about this \(session.context.kind == .quiz ? "question" : "exercise")…", text: $session.draft, axis: .vertical)
-                .font(.codeyBody)
+                .font(.codeyCallout)
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .submitLabel(.send)
@@ -125,10 +139,6 @@ struct AskAIChatView: View {
                 .disabled(!session.canSend)
             .accessibilityIdentifier("askAI.send")
         }
-        .padding(.horizontal, CodeySpacing.md)
-        .padding(.top, CodeySpacing.sm)
-        .padding(.bottom, CodeySpacing.sm)
-        .sensoryFeedback(.impact(weight: .light), trigger: session.messages.count)
     }
 
     private func send() {

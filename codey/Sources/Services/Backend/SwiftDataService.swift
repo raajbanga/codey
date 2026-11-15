@@ -26,10 +26,6 @@ struct SwiftDataService {
         try context.first(#Predicate<FlashcardDeck> { $0.id == id })
     }
 
-    func fetchCard(id: UUID) throws -> Flashcard? {
-        try context.first(#Predicate<Flashcard> { $0.id == id })
-    }
-
     /// Decks by id, in one fetch (missing ids are absent).
     func fetchDecks(ids: some Collection<UUID>) throws -> [UUID: FlashcardDeck] {
         guard !ids.isEmpty else { return [:] }

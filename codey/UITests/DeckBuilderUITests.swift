@@ -27,12 +27,13 @@ final class DeckBuilderUITests: XCTestCase {
         // Card 1: prompt + answer.
         fill(prompt: "What does `let` declare?", answer: "A constant.")
 
-        // Card 2: prompt + Python snippet + answer.
-        app.buttons["strip.addCard"].tap()
+        // Card 2: prompt + Python snippet + answer, added from the top
+        // bar's + (§3b: no mini-card strip).
+        app.buttons["builder.addCard"].tap()
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Prompt'"))).tap()
         app.typeText("What prints?")
         // The keyboard covers "Add code" on smaller phones; close it the
-        // way a user would, with the builder's keyboard "Done" button.
+        // way a user would, by tapping the bar's deck name.
         dismissKeyboard()
         hittable(app.buttons.matching(identifier: "card.addCode")).tap()
 
@@ -44,7 +45,7 @@ final class DeckBuilderUITests: XCTestCase {
         editor.tap()
         app.typeText("print(1)")
 
-        switchSide(to: "Back")
+        flipCard()
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Answer'"))).tap()
         app.typeText("1")
 
@@ -76,9 +77,9 @@ final class DeckBuilderUITests: XCTestCase {
         XCTAssertTrue(tile.waitForExistence(timeout: 15))
         tile.tap()
 
-        // Secondary toolbar items sit in the overflow menu, where identifiers
-        // don't carry over; the menu item and the dialog share the label.
-        let more = app.navigationBars.buttons["OverflowBarButtonItem"]
+        // Delete sits in the deck's ⋯ menu; the menu item and the
+        // confirmation's button share the label.
+        let more = app.buttons["deck.actions"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))
         more.tap()
         let menuItem = app.buttons["Delete Deck"].firstMatch
@@ -113,19 +114,20 @@ final class DeckBuilderUITests: XCTestCase {
     private func fill(prompt: String, answer: String) {
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Prompt'"))).tap()
         app.typeText(prompt)
-        switchSide(to: "Back")
+        flipCard()
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Answer'"))).tap()
         app.typeText(answer)
-        switchSide(to: "Front")
+        flipCard()
     }
 
     private func dismissKeyboard() {
-        let done = app.toolbars.buttons["Done"]
-        if done.waitForExistence(timeout: 2) { done.tap() }
+        app.staticTexts["builder.barTitle"].tap()
+        _ = app.keyboards.firstMatch.waitForNonExistence(timeout: 3)
     }
 
-    private func switchSide(to side: String) {
-        hittable(app.otherElements.matching(identifier: "card.side")).buttons[side].tap()
+    /// Turns the card over (prompt ⇄ answer).
+    private func flipCard() {
+        hittable(app.buttons.matching(identifier: "card.flip")).tap()
     }
 
     /// The pager keeps neighbors in the hierarchy; act on the visible one.

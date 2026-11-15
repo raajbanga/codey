@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 /// App shell (D8, S41): Play | Decks with a Liquid Glass tab bar that
-/// shrinks on scroll, plus the app-level sheets/covers. Study and Quiz are
+/// shrinks on scroll (the only system-drawn control), plus the app-level sheets/covers. Study and Quiz are
 /// full-screen covers (focus mode), so the bar never covers their controls.
 /// Every study session and quiz is presented from here, via the Router.
 struct RootView: View {
@@ -37,6 +37,7 @@ struct RootView: View {
             } content: {
                 StudySessionView(viewModel: $0)
             }
+            .codeyOverlayHost()
         }
         .fullScreenCover(item: $router.quiz) { request in
             ViewModelHost {
@@ -44,6 +45,7 @@ struct RootView: View {
             } content: {
                 QuizModeView(viewModel: $0)
             }
+            .codeyOverlayHost()
         }
         // Above the tab bar, so the dimmed page covers it too.
         .floatingPanel(item: $router.quizSetupTopic) { topic in
@@ -54,6 +56,9 @@ struct RootView: View {
         .floatingPanel(item: $router.askAI, fillsHeight: true) { session in
             AskAIChatView(session: session)
         }
+        // Our dropdowns, tips and dialogs draw here, above the tab bar and
+        // the floating panels; each sheet and cover has its own layer.
+        .codeyOverlayHost()
         .sheet(isPresented: $router.showProfile) {
             ProfileSheet()
         }

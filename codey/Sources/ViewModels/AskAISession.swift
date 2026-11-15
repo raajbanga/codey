@@ -120,16 +120,13 @@ enum AskAI {
             // System prompt + hidden problem only: the opening greeting.
             if turns.count <= 2 { return AskAIPrompt.greeting }
             return """
-                Good question. Think about **when** each step runs:
-                - A loop repeats its body
-                  - until its condition becomes false
-                - A function call pauses the caller
+                Think about **when** each step runs. A `while` loop checks its \
+                condition before every pass, so the body may run zero times.
 
-                ```
-                [ caller ] --calls--> [ helper ]
-                ```
+                - The condition is checked first
+                - The body runs only while it holds
 
-                What happens to the caller while the helper runs?
+                What happens if the condition is false at the start?
                 """
         }
     }

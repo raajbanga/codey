@@ -2,8 +2,8 @@ import SwiftData
 import SwiftUI
 
 /// Quiz setup, shown in a FloatingPanel (S40; was a medium-detent sheet):
-/// tier locks with reasons, Mixed vs one tier (FR-29), how many questions,
-/// Start. When every unlocked question is
+/// Mixed vs one unlocked tier (FR-29), how many questions, the next locked
+/// tier's reason, Start. When every unlocked question is
 /// retired: "Topic mastered!" with a no-XP review of retired questions.
 struct QuizSetupView: View {
     let topic: Topic
@@ -12,7 +12,6 @@ struct QuizSetupView: View {
     @Query private var progressRows: [QuestionProgress]
     @Query private var topicProgress: [TopicProgress]
     @Query private var profiles: [UserProfile]
-    @Environment(\.dismissPanel) private var dismissPanel
     /// .mixed or .tier(_); review has its own button.
     @State private var choice: QuizMode = .mixed
 
@@ -57,9 +56,10 @@ struct QuizSetupView: View {
     }
 
     var body: some View {
+        // Gaps match the padding (Nov 15). A locked tier is one line under
+        // the choices.
         VStack(alignment: .leading, spacing: CodeySpacing.lg) {
             header
-            TierChipRow(tiers: tiers)
             if isMastered {
                 masteredState
             } else {
@@ -67,36 +67,30 @@ struct QuizSetupView: View {
             }
             startButton
         }
-        .padding(CodeySpacing.md)
+        .codeyPanelPadding()
         .onChange(of: unlocked) { _, open in
             if case .tier(let tier) = choice, !open.contains(tier) { choice = .mixed }
         }
     }
 
-    @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 44
-
+    /// The topic in its pastel, like every page's hero (Nov 15): what a
+    /// question pays as a tag, and how full this quiz is as a bar.
+    /// No ✕: the panel is swiped away (or tapped outside, or VoiceOver's
+    /// escape gesture).
     private var header: some View {
-        HStack(alignment: .center, spacing: CodeySpacing.md) {
-            // The topic in its own color, as on its Play tile (S41).
-            IconTile(systemName: topic.iconName, size: iconSize, radius: CodeyRadius.sm, ink: hue.ink, tile: hue.soft)
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                Text(topic.title)
-                    .font(.codeyTitle.weight(.semibold))
-                    .foregroundStyle(CodeyColor.textPrimary)
-                Text("Up to \(XPPolicy.base(bestTier)) XP a question")
-                    .font(.codeySubheadline)
-                    .foregroundStyle(CodeyColor.textSecondary)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: 0)
-            CloseButton(label: "Close quiz setup") { dismissPanel() }
-                .accessibilityIdentifier("quizSetup.close")
+        HeroCard(
+            title: topic.title,
+            icon: topic.iconName,
+            hue: hue,
+            progress: isMastered ? 1 : Double(min(activeCount, config.quizSize)) / Double(config.quizSize),
+            caption: isMastered ? "Every unlocked question retired" : readyText
+        ) {
+            CodeyChip(xp: XPPolicy.base(bestTier))
         }
     }
 
     private var picker: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+        VStack(alignment: .leading, spacing: CodeySpacing.md) {
             ChoiceChips(
                 "Questions",
                 selection: $choice,
@@ -104,12 +98,8 @@ struct QuizSetupView: View {
                 fills: true
             )
             .accessibilityIdentifier("quizSetup.mode")
-
-            Text(choice == .mixed
-                 ? "\(countText), mostly your top tier with some review."
-                 : "\(countText), \(choiceLabel) only.")
-                .font(.codeySubheadline)
-                .foregroundStyle(CodeyColor.textSecondary)
+            .accessibilityHint(choice == .mixed ? "Mostly your top tier, with some review" : "\(choiceLabel) questions only")
+            TierLockNote(tiers: tiers)
         }
     }
 
@@ -157,9 +147,11 @@ struct QuizSetupView: View {
         return "Mixed"
     }
 
-    private var countText: String {
+    /// "7 of 10 questions ready", or "10 questions" when the quiz is full.
+    private var readyText: String {
         let size = config.quizSize
-        return activeCount >= size ? size.counted("question") : "\(activeCount.counted("question")) available"
+        let tier = choice == .mixed ? "" : "\(choiceLabel) "
+        return activeCount >= size ? "\(size) \(tier)questions" : "\(activeCount) of \(size) \(tier)questions ready"
     }
 }
 

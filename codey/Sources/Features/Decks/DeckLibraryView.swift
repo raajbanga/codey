@@ -27,8 +27,8 @@ struct DeckLibraryView: View {
     @State private var isSearching = false
     @FocusState private var searchFocused: Bool
     @State private var showHiddenStarters = false
-    @State private var builder: BuilderRequest?
-    @State private var deckToDelete: FlashcardDeck?
+    /// The New Deck builder (editing opens from Deck detail).
+    @State private var isBuilding = false
     @State private var actionError: String?
 
     @Environment(BackendFacade.self) private var backend
@@ -37,89 +37,79 @@ struct DeckLibraryView: View {
     var body: some View {
         let topicsByID = topics.keyed(by: \.id)
         let sections = deckSections(topicsByID: topicsByID)
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                header
-                if isSearching {
-                    searchField
-                }
-                ChoiceChips("Show", selection: $filter, fills: true)
+        CodeyPage("Decks", isTabRoot: true) {
+            headerActions
+        } hero: {
+            hero
+        } content: {
+            if isSearching {
+                searchField
+            }
+            ChoiceChips("Show", selection: $filter, fills: true)
 
-                if decks.isEmpty {
+            if decks.isEmpty {
+                EmptyStateView(
+                    systemImage: "rectangle.stack.badge.plus",
+                    title: "Make your first deck",
+                    message: "Write your own prompt/answer cards, with code if you like.",
+                    actionTitle: "New Deck",
+                    action: { isBuilding = true }
+                )
+                .padding(.top, CodeySpacing.xl)
+            } else if sections.user.isEmpty && sections.starter.isEmpty {
+                ContentUnavailableView.search(text: searchText)
+            } else {
+                if filter != .starter, !sections.user.isEmpty {
+                    section(filter == .all ? "My decks" : nil, decks: sections.user, topicsByID: topicsByID)
+                }
+                if filter != .mine, !sections.starter.isEmpty {
+                    section(filter == .all ? "Starter decks" : nil, decks: sections.starter, topicsByID: topicsByID)
+                }
+                if filter == .mine, sections.user.isEmpty {
                     EmptyStateView(
                         systemImage: "rectangle.stack.badge.plus",
-                        title: "Make your first deck",
-                        message: "Write your own prompt/answer cards, with code if you like.",
+                        title: "No decks of your own yet",
+                        message: "Your decks show up here.",
                         actionTitle: "New Deck",
-                        action: { builder = .new }
+                        action: { isBuilding = true }
                     )
-                    .padding(.top, CodeySpacing.xl)
-                } else if sections.user.isEmpty && sections.starter.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
-                } else {
-                    if filter != .starter, !sections.user.isEmpty {
-                        section(filter == .all ? "My decks" : nil, decks: sections.user, topicsByID: topicsByID)
-                    }
-                    if filter != .mine, !sections.starter.isEmpty {
-                        section(filter == .all ? "Starter decks" : nil, decks: sections.starter, topicsByID: topicsByID)
-                    }
-                    if filter == .mine, sections.user.isEmpty {
-                        EmptyStateView(
-                            systemImage: "rectangle.stack.badge.plus",
-                            title: "No decks of your own yet",
-                            message: "Your decks show up here.",
-                            actionTitle: "New Deck",
-                            action: { builder = .new }
-                        )
-                    }
-                }
-
-                if filter != .mine, hasHiddenStarters {
-                    Toggle("Show hidden starter decks", isOn: $showHiddenStarters)
-                        .font(.codeyCallout)
-                        .tint(CodeyColor.brand)
                 }
             }
-            .padding([.horizontal, .bottom], CodeySpacing.md)
+
+            if filter != .mine, hasHiddenStarters {
+                // Our button, not the system switch.
+                CodeyButton(
+                    showHiddenStarters ? "Hide Hidden Starter Decks" : "Show Hidden Starter Decks",
+                    systemImage: showHiddenStarters ? "eye.slash" : "eye",
+                    kind: .secondary,
+                    fullWidth: true
+                ) { showHiddenStarters.toggle() }
+                .accessibilityIdentifier("decks.showHidden")
+            }
         }
-        .codeyTabPage()
-        // Title at the top as on Play (S41); search and New Deck are round
-        // buttons beside it instead of a bar above it.
-        .toolbarVisibility(.hidden, for: .navigationBar)
         .refreshable { await backend.syncPending() }
         .navigationDestination(for: DeckRoute.self) { route in
             if let deck = decks.first(where: { $0.id == route.id }) {
                 DeckDetailView(deck: deck, topic: topicsByID[deck.topicId])
             }
         }
-        .sheet(item: $builder) { request in
+        .sheet(isPresented: $isBuilding) {
             DeckBuilderView(
                 viewModel: DeckViewModel(
                     backend: backend,
                     knownTopicIds: Set(topics.map(\.id)),
-                    editing: request.deck,
                     defaultTopicId: topics.first?.id
                 ),
                 topics: topics
             )
-        }
-        .confirmationDialog(
-            "Delete \"\(deckToDelete?.title ?? "")\"?",
-            isPresented: $deckToDelete.isPresent(),
-            titleVisibility: .visible,
-            presenting: deckToDelete
-        ) { deck in
-            Button("Delete Deck", role: .destructive) { $actionError.attempt { try backend.deleteDeck(deck) } }
-        } message: { deck in
-            Text("All \(deck.cardCount) cards will be deleted. This can't be undone.")
         }
         .errorAlert($actionError)
     }
 
     // MARK: Header
 
-    private var header: some View {
-        TabHeader(title: "Decks") {
+    @ViewBuilder
+    private var headerActions: some View {
             CircleIconButton(systemImage: isSearching ? "xmark" : "magnifyingglass", label: isSearching ? "Close search" : "Search", kind: .soft) {
                 withAnimation(CodeyMotion.snappy) {
                     isSearching.toggle()
@@ -128,9 +118,22 @@ struct DeckLibraryView: View {
                 searchFocused = isSearching
             }
             .accessibilityIdentifier("decks.search")
-            CircleIconButton(systemImage: "plus", label: "New Deck", kind: .soft) { builder = .new }
+            CircleIconButton(systemImage: "plus", label: "New Deck", kind: .soft) { isBuilding = true }
                 .accessibilityIdentifier("decks.add")
-        }
+    }
+
+    /// Every deck you study, and how far along you are across them.
+    private var hero: some View {
+        let shown = decks.filter { !$0.isHidden }
+        let cards = shown.reduce(0) { $0 + $1.cardCount }
+        let progress = cards == 0 ? 0 : shown.reduce(0.0) { $0 + $1.progressRate * Double($1.cardCount) } / Double(cards)
+        return HeroCard(
+            title: "Decks",
+            subtitle: "\(shown.count.counted("deck")), \(cards.counted("card"))",
+            icon: "rectangle.stack",
+            progress: progress,
+            caption: "\(progress.percentText) progress"
+        )
     }
 
     private var searchField: some View {
@@ -145,8 +148,8 @@ struct DeckLibraryView: View {
         }
         .padding(.horizontal, CodeySpacing.md)
         .frame(minHeight: 44)
-        .background(CodeyColor.surfaceRaised, in: Capsule())
-        .overlay { Capsule().strokeBorder(CodeyColor.separator, lineWidth: 1) }
+        .background(CodeyColor.surfaceRaised, in: .pill)
+        .overlay { RoundedRectangle.pill.strokeBorder(CodeyColor.separator, lineWidth: 1) }
         .transition(.opacity)
     }
 
@@ -154,46 +157,28 @@ struct DeckLibraryView: View {
 
     private func section(_ title: String?, decks: [FlashcardDeck], topicsByID: [String: Topic]) -> some View {
         BentoSection(title) {
-                ForEach(decks) { deck in
-                    let canStudy = deck.cardCount > 0 && !deck.isHidden
-                    NavigationLink(value: DeckRoute(id: deck.id)) {
-                        DeckTile(deck: deck, topic: topicsByID[deck.topicId], reservesStudyButton: canStudy)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu { menu(for: deck) }
-                    // S40: study straight from the grid (continues where you
-                    // left off); the deck screen keeps tier and start-over options.
-                    .overlay(alignment: .bottom) {
-                        if canStudy {
-                            Button {
-                                router.study = StudyRequest(deck: deck, start: .resume)
-                            } label: {
-                                TileActionLabel(action: TileAction("Study"), hue: .of(topicID: deck.topicId))
-                            }
-                            .buttonStyle(TilePressStyle())
-                            .padding(CodeySpacing.md)
-                            .accessibilityLabel("Study \(deck.title)")
-                            .accessibilityIdentifier("deckTile.study.\(deck.title)")
+            ForEach(decks) { deck in
+                let canStudy = deck.cardCount > 0 && !deck.isHidden
+                NavigationLink(value: DeckRoute(id: deck.id)) {
+                    DeckTile(deck: deck, topic: topicsByID[deck.topicId], reservesStudyButton: canStudy)
+                }
+                .buttonStyle(.plain)
+                // S40: study straight from the grid (continues where you
+                // left off); the deck screen keeps tier and start-over options.
+                .overlay(alignment: .bottom) {
+                    if canStudy {
+                        Button {
+                            router.study = StudyRequest(deck: deck, start: .resume)
+                        } label: {
+                            TileActionLabel(action: TileAction("Study"), hue: .of(topicID: deck.topicId))
                         }
+                        .buttonStyle(TilePressStyle())
+                        .padding(CodeySpacing.md)
+                        .accessibilityLabel("Study \(deck.title)")
+                        .accessibilityIdentifier("deckTile.study.\(deck.title)")
                     }
                 }
-        }
-    }
-
-    @ViewBuilder
-    private func menu(for deck: FlashcardDeck) -> some View {
-        if deck.isEditable {
-            Button("Edit", systemImage: "pencil") { builder = .edit(deck) }
-                .disabled(!deck.canEdit)
-            Button("Delete", systemImage: "trash", role: .destructive) { deckToDelete = deck }
-                .disabled(!deck.canDelete)
-            if let reason = deck.deleteBlockedReason {
-                Text(reason)
             }
-        } else if deck.isHidden {
-            Button("Restore", systemImage: "eye") { $actionError.attempt { try backend.setHidden(false, deck: deck) } }
-        } else {
-            Button("Hide", systemImage: "eye.slash") { $actionError.attempt { try backend.setHidden(true, deck: deck) } }
         }
     }
 
@@ -234,24 +219,6 @@ struct DeckLibraryView: View {
 
 struct DeckRoute: Hashable {
     let id: UUID
-}
-
-/// Which deck the builder sheet opens on.
-enum BuilderRequest: Identifiable {
-    case new
-    case edit(FlashcardDeck)
-
-    var id: String {
-        switch self {
-        case .new: "new"
-        case .edit(let deck): deck.id.uuidString
-        }
-    }
-
-    var deck: FlashcardDeck? {
-        if case .edit(let deck) = self { return deck }
-        return nil
-    }
 }
 
 #Preview {

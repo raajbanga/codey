@@ -1,9 +1,8 @@
 import SwiftUI
 
 /// Bento layout (S40, S41): every list on Play and Decks is a grid of
-/// GameTiles in two columns, under a TabHeader.
+/// GameTiles in two columns, under the page's HeroCard (CodeyPage).
 ///
-///     Decks                     (⌕) (+)   ← TabHeader: title, round buttons
 ///     Starter decks                       ← BentoSection title
 ///     ╭ GameTile ╮ ╭ GameTile ╮
 ///     ╭ a last odd tile spans both    ╮
@@ -11,87 +10,20 @@ import SwiftUI
 /// Tiles in a row share its height. At accessibility text sizes the grid
 /// becomes one column.
 
-/// A tab's title at the top of its scrolling page (Play, Decks): an
-/// optional line above, the title, and round buttons on the right. No large
-/// navigation title collapsing into the bar.
-struct TabHeader<Trailing: View>: View {
-    var eyebrow: String?
-    let title: String
-    @ViewBuilder var trailing: Trailing
-
-    var body: some View {
-        HStack(alignment: .center, spacing: CodeySpacing.sm) {
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                if let eyebrow {
-                    Text(eyebrow)
-                        .font(.codeySubheadline)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
-                Text(title)
-                    .font(.codeyDisplay)
-                    .foregroundStyle(CodeyColor.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: 0)
-            trailing
-        }
-    }
-}
-
 extension View {
-    /// A tab's root page (Home, Decks, Quiz): paper and no large title (the
-    /// PageHeader scrolls with the page).
+    /// Every CodeyPage: paper, no navigation bar, and the soft edge blur at
+    /// the top and bottom of the screen.
     func codeyTabPage() -> some View {
-        // The nav bar is hidden, so the status bar area gets the same edge
-        // fade as a bar (S41): content fades out instead of running into
-        // the clock.
-        // The page starts below the fade, so the header is clear at rest.
-        safeAreaPadding(.top, EdgeFade.overshoot)
-            .overlay(alignment: .top) { StatusBarFade() }
+        // The nav bar is hidden, so both screen edges get the same soft
+        // blur (S41, Nov 15): content blurs out under the clock and under
+        // the tab bar / home indicator. The page is inset past each, so
+        // nothing is blurred at rest.
+        safeAreaPadding(.top, EdgeFade.overshoot(.top))
+            .safeAreaPadding(.bottom, EdgeFade.overshoot(.bottom))
+            .overlay { ScreenEdgeFade(edge: .top) }
+            .overlay { ScreenEdgeFade(edge: .bottom) }
             .codeyPaperBackground()
             .toolbarTitleDisplayMode(.inline)
-    }
-}
-
-/// A pushed page's or sheet's title (S40): shown in the bar at the top of
-/// the page and faded out once the page scrolls, so only the bar's buttons
-/// stay over the content. `navigationTitle` still names the page for the
-/// back-button menu and VoiceOver.
-private struct FadingTitle: ViewModifier {
-    let title: String
-    @State private var scrolled = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func body(content: Content) -> some View {
-        content
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text(title)
-                        .font(.codeyHeadline)
-                        .foregroundStyle(CodeyColor.textPrimary)
-                        .lineLimit(1)
-                        .opacity(scrolled ? 0 : 1)
-                        .animation(CodeyMotion.resolve(CodeyMotion.pop, reduceMotion: reduceMotion), value: scrolled)
-                        .accessibilityHidden(scrolled)
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
-            .onScrollGeometryChange(for: Bool.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top > CodeySpacing.sm
-            } action: { _, isScrolled in
-                scrolled = isScrolled
-            }
-    }
-}
-
-extension View {
-    func codeyPageTitle(_ title: String) -> some View {
-        modifier(FadingTitle(title: title))
     }
 }
 
@@ -160,3 +92,33 @@ struct RowChevron: View {
             .foregroundStyle(CodeyColor.textSecondary)
     }
 }
+
+/// A titled note with an optional footer (S42, shared Nov 15): Profile's
+/// groups and Deck detail's Study section. Lists on the paper are these
+/// notes or bento tiles, not grouped List sections.
+struct NoteGroup<Content: View>: View {
+    let title: String
+    var footer: String?
+    @ViewBuilder let content: Content
+
+    init(_ title: String, footer: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.footer = footer
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+            SectionTitle(title)
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) { content }
+                .codeyCard()
+            if let footer {
+                Text(footer)
+                    .font(.codeyCaption)
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .padding(.horizontal, CodeySpacing.xs)
+            }
+        }
+    }
+}
+

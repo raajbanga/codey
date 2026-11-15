@@ -53,7 +53,7 @@ enum CodeyChipVariant: Equatable {
 
 /// The app's one tag (S41): tier, status, XP, sync state, counts. Every
 /// pill-shaped label is a CodeyChip so they share size, type, and padding.
-/// Capsule is allowed because the text never wraps (lineLimit 1).
+/// The shared `.tag` shape, the roundest-looking control (the text never wraps).
 struct CodeyChip: View {
     let title: String
     var systemImage: String?
@@ -75,6 +75,8 @@ struct CodeyChip: View {
         self.init("+\(xp) XP", variant: .xp)
     }
 
+    static let height: CGFloat = 32
+
     var body: some View {
         HStack(spacing: CodeySpacing.xs) {
             if let systemImage {
@@ -91,11 +93,14 @@ struct CodeyChip: View {
         .foregroundStyle(variant.color)
         .padding(.horizontal, title.isEmpty ? CodeySpacing.sm : CodeySpacing.sm + CodeySpacing.xxs)
         .padding(.vertical, CodeySpacing.xs)
+        // As tall as a compact round button (⋯), so a row of tags and ⋯
+        // lines up without extra space (Nov 15).
+        .frame(minHeight: Self.height)
         .monospacedDigit()
-        .background(variant.softColor, in: Capsule())
+        .background(variant.softColor, in: .tag)
         .overlay {
             if variant.isOutline {
-                Capsule().strokeBorder(variant.color.opacity(0.6), lineWidth: 1)
+                RoundedRectangle.tag.strokeBorder(variant.color.opacity(0.6), lineWidth: 1)
             }
         }
         .accessibilityElement(children: .combine)

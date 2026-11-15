@@ -73,18 +73,16 @@ struct StudySessionView: View {
             isActive: viewModel.summary == nil,
             close: { dismiss() }
         ) {
+            // Ticks only (§3b, Nov 15): "6 / 6 · +2 repeats" beside them
+            // crowded the bar. Repeats are extra ticks and a Repeat tag on
+            // the card; VoiceOver still hears the count.
             SessionProgress(
                 done: doneColors,
                 total: viewModel.queue.total,
-                accessibilityLabel: "Progress",
+                accessibilityLabel: counterAccessibilityLabel,
                 accessibilityValue: viewModel.queue.progress.formatted(.percent.precision(.fractionLength(0)))
             )
-            Text(counterText)
-                .font(.codeyNumericSmall)
-                .foregroundStyle(CodeyColor.textSecondary)
-                .contentTransition(.numericText())
-                .accessibilityLabel(counterAccessibilityLabel)
-                .accessibilityIdentifier("study.counter")
+            .accessibilityIdentifier("study.counter")
         } trailing: {
             // XP so far, as in a quiz (S41): +5 a card moved up.
             SessionXP(amount: viewModel.xpEarned)
@@ -100,16 +98,8 @@ struct StudySessionView: View {
         return Array(repeating: CodeyColor.brand, count: rated - known.count) + known
     }
 
-    /// "3 / 12", "3 / 12 · +1 repeat", or "Repeat 1 of 2" (S19): cards that
-    /// "Again" adds are announced as soon as they're added.
-    private var counterText: String {
-        let queue = viewModel.queue
-        if queue.isRepeat { return "Repeat \(queue.repeatPosition) of \(queue.repeatCount)" }
-        let base = "\(queue.displayPosition) / \(queue.distinctTotal)"
-        guard queue.repeatCount > 0 else { return base }
-        return "\(base) · +\(queue.repeatCount.counted("repeat"))"
-    }
-
+    /// "Card 3 of 12", "…, 1 repeat added", or "Repeat 1 of 2" (S19): cards
+    /// that "Again" adds are announced as soon as they're added.
     private var counterAccessibilityLabel: String {
         let queue = viewModel.queue
         if queue.isRepeat { return "Repeat \(queue.repeatPosition) of \(queue.repeatCount)" }

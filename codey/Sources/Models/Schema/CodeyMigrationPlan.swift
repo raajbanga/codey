@@ -7,11 +7,11 @@ enum CodeyMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [CodeySchemaV1.self, CodeySchemaV2.self, CodeySchemaV3.self, CodeySchemaV4.self, CodeySchemaV5.self,
          CodeySchemaV6.self, CodeySchemaV7.self, CodeySchemaV8.self, CodeySchemaV9.self,
-         CodeySchemaV10.self]
+         CodeySchemaV10.self, CodeySchemaV11.self]
     }
 
     static var stages: [MigrationStage] {
-        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7, v7ToV8, v8ToV9, v9ToV10]
+        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7, v7ToV8, v8ToV9, v9ToV10, v10ToV11]
     }
 
     /// Additive only (new deck/card entities), so lightweight is enough.
@@ -73,16 +73,22 @@ enum CodeyMigrationPlan: SchemaMigrationPlan {
         fromVersion: CodeySchemaV9.self,
         toVersion: CodeySchemaV10.self
     )
+
+    /// Flashcard gains isHidden with a default (§3b), so lightweight.
+    static let v10ToV11 = MigrationStage.lightweight(
+        fromVersion: CodeySchemaV10.self,
+        toVersion: CodeySchemaV11.self
+    )
 }
 
-typealias CodeySchemaCurrent = CodeySchemaV10
+typealias CodeySchemaCurrent = CodeySchemaV11
 
 // The rest of the app always uses these names, never the versioned ones.
 typealias UserProfile = CodeySchemaV9.UserProfile
 typealias Topic = CodeySchemaV1.Topic
 typealias Question = CodeySchemaV1.Question
-typealias FlashcardDeck = CodeySchemaV2.FlashcardDeck
-typealias Flashcard = CodeySchemaV2.Flashcard
+typealias FlashcardDeck = CodeySchemaV11.FlashcardDeck
+typealias Flashcard = CodeySchemaV11.Flashcard
 typealias StudyProgressSnapshot = CodeySchemaV8.StudyProgressSnapshot
 typealias DailyActivity = CodeySchemaV3.DailyActivity
 typealias QuestionProgress = CodeySchemaV4.QuestionProgress

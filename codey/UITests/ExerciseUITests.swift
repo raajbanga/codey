@@ -2,8 +2,9 @@ import XCTest
 
 /// FR-39 to FR-41 end to end (system test ST-05 in the Sprint 4 doc §18e):
 /// Play → Exercises → "Exit early with guard" → one right and
-/// one wrong blank → per-blank pass/fail → Try Again → both right → all
-/// tests pass. Screenshots are attached to the result bundle.
+/// one wrong blank → per-blank pass/fail → Try Again → both right → the
+/// Solved summary with Next Challenge and Done (§3c). Screenshots are
+/// attached to the result bundle.
 @MainActor
 final class ExerciseUITests: XCTestCase {
     private var app: XCUIApplication!
@@ -32,6 +33,7 @@ final class ExerciseUITests: XCTestCase {
         XCTAssertTrue(chip(1).label.contains("Passed"), chip(1).label)
         XCTAssertTrue(chip(2).label.contains("Failed"), chip(2).label)
         XCTAssertTrue(app.staticTexts["1 of 2 tests passed"].exists)
+        XCTAssertTrue(app.buttons["exercise.another"].exists, "a miss offers another exercise")
         snapshot("exercise-result-partial")
 
         // Try again with both right; spacing around the answer is ignored.
@@ -39,9 +41,13 @@ final class ExerciseUITests: XCTestCase {
         answer(1, " guard ")
         answer(2, "else")
         check([" guard ", "else"])
-        XCTAssertTrue(app.staticTexts["All 2 tests passed"].waitForExistence(timeout: 5))
-        XCTAssertTrue(chip(2).label.contains("Passed"), chip(2).label)
+        // A full pass ends on the win screen, like a quiz (§3c).
+        XCTAssertTrue(app.staticTexts["Solved!"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["All 2 tests passed"].exists)
+        XCTAssertTrue(app.buttons["exercise.next"].exists)
         snapshot("exercise-result-pass")
+        app.buttons["exercise.done"].tap()
+        XCTAssertTrue(exercise.waitForExistence(timeout: 5))
     }
 
     /// Types into a blank and checks the field took every character (a

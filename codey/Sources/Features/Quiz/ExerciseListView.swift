@@ -10,7 +10,7 @@ struct ExerciseTiles: View {
     /// Loaded once from the bundle. Not in `.task`: before the load the
     /// view has no content (an empty ForEach), so it never appears and the
     /// task never ran, which left the section empty.
-    private static let loaded: Result<[Exercise], Error> = Result { try ExerciseLoader.load() }
+    private static var loaded: Result<[Exercise], Error> { ExerciseLoader.bundled }
 
     private var exercises: [Exercise] { (try? Self.loaded.get()) ?? [] }
     private var loadError: String? {
@@ -42,9 +42,12 @@ struct ExerciseTiles: View {
                                 prominent: !done
                             )
                         ) {
-                            if done { CodeyChip("Solved", systemImage: "checkmark", variant: .success) }
-                        } tags: {
-                            if !done { CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count) }
+                            // Solved, or what a first solve pays.
+                            if done {
+                                CodeyChip("Solved", systemImage: "checkmark", variant: .success)
+                            } else {
+                                CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count)
+                            }
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityHint("Opens the exercise")

@@ -5,7 +5,7 @@ import SwiftUI
 ///     ✕  ▮▮▮▯▯▯▯▯▯▯   🔥 3   1,240 XP
 ///     ╭ ◇ Medium · Review ─ prompt ╮
 ///     (A) (B) (C) (D)
-///     ╭ explanation ╮      [ Next ]  ← glass, pinned
+///     ╭ explanation ╮      [ Next ]  ← pinned bar (codeyBar)
 struct QuizModeView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
