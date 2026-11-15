@@ -49,6 +49,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.terminate()
 
         // The stubbed Ask AI client (no network) so the chat can be audited.
+        // A fresh XCUIApplication, so the audit targets the new process.
+        app = XCUIApplication()
         app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-appearance", appearance]
         app.launch()
 
@@ -159,6 +161,19 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// Records every issue on the current screen instead of stopping at the
     /// first, so one run gives the full count.
     private func audit(_ screen: String) throws {
+        do {
+            try performAudit(screen)
+        } catch let error as NSError where error.domain == "com.apple.accessibilityAudit" && error.code == -902 {
+            // "Invalid target app": on CI runners the audit sometimes loses
+            // the app's process (seen in Light and in Dark, never both). Bring
+            // the app forward and audit once more.
+            app.activate()
+            sleep(1)
+            try performAudit(screen)
+        }
+    }
+
+    private func performAudit(_ screen: String) throws {
         try app.performAccessibilityAudit { issue in
             let element = issue.element.map { "\($0.elementType.rawValue) '\($0.label)' id=\($0.identifier) frame=\($0.frame)" } ?? "-"
             let known = Self.isKnownFalsePositive(issue)
