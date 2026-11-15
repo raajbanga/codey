@@ -3640,7 +3640,7 @@ AT-07 & Offline sync of study results & Study on device A offline, reconnect; de
 
 \subsection{Defects Found}\label{sec:defects}
 Table~\ref{tab:defects} lists the defects found in Sprint~4, how, and their fixes.
-Each fix has a regression test, so the defect cannot return unnoticed. Four of the
+Each fix has a regression test, so the defect cannot return unnoticed. Three of the
 entries are faults in the tests rather than the app; they are listed because a flaky
 or blind test is a defect in the test plan.
 
@@ -3659,10 +3659,10 @@ or blind test is a defect in the test plan.
 BUG-01 & Tapping ``Sign in with Google'' crashed (unrecognized selector): packages link statically, so the linker dropped an Objective-C category in AppAuth. & IT-09, Nov 10 & \texttt{-ObjC} linker flag on the app target (\texttt{1949cfe}). & \texttt{GoogleSignInLinkTests} \\
 BUG-02 & Google signed in but Codey did not: Google Sign-In~10 always puts a nonce in the ID token, and Supabase rejects a token whose nonce it was not given. The free project had also paused after a week idle. & IT-09, Nov 10 & \texttt{SignInNonce}: SHA-256 to Google, raw value to Supabase; project restored; keep-alive job (\texttt{1949cfe}). & \texttt{SignInNonceTests} \\
 BUG-03 & The exercise's code view was a selectable text view with no accessibility label, so VoiceOver read nothing for it. & ST-06 (audit), Nov 14 & Not selectable (the copy button covers copying) and labeled ``Swift code with 2 numbered blanks'' (\texttt{535911e}). & \texttt{AccessibilityAuditUITests} \\
+BUG-04 & Flipping a study card crashed the app on CI runners (it looked like a flaky audit: ``Invalid target app'', or the app not running, in one appearance per run). The crash log showed the cause: during the flip SwiftUI built the card's mastery dots on its background render thread, and Swift~6's main-actor check on that closure trapped. & ST-06 in CI, Nov 14 & The dots' closure is \texttt{@Sendable} and calls a nonisolated helper; the audit retries only while the app is still running, so a crash fails the test instead of being relaunched. & \texttt{AccessibilityAuditUITests} (both appearances) \\
 TD-01 & No test checked that progress rows send \texttt{retired\_at} as an explicit null (the integration fault of Section~\ref{sec:integration}). & Activity~12.2 review & Test added (\texttt{535911e}). & \texttt{progressRowsSendRetiredAtAsExplicitNull} \\
 TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 rows; scroll until hittable (\texttt{535911e}). & ST-05 on 3 sizes \\
 TD-03 & \texttt{ExerciseUITests} failed about 2 runs in 5 under load: the Simulator dropped a keystroke after the field had shown it. & Full CI-style run, Nov 14 & Hide the keyboard, re-check every blank's value, retype if needed, then tap Check (the same guard \texttt{DeckBuilderUITests} uses). & 5 of 5 consecutive passes \\
-TD-04 & \texttt{AccessibilityAuditUITests} failed in CI on one of its two appearances, a different one each run (``Invalid target app'', or the app reported as not running): after the test relaunched the app, the system audit sometimes lost its process. The same flow passed by hand on the iPhone~17 Simulator. & CI on \texttt{dev}, Nov 14 & A fresh \texttt{XCUIApplication} for the relaunch, and one retry of an audit that loses its target. & ST-06 in CI \\
 \end{xltabular}
 
 % =====================================================================

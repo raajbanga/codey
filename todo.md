@@ -17,7 +17,7 @@ Tick tasks `[x]` as they finish. When every task is ticked, delete this file (gi
 - [x] **Screen counts**: now 18 screens / 108 layout checks. Not re-run (UI tests are run manually): confirm "18 screens" and "108 of 108" in the final CI run.
 
 ## 2. Final tests (ES, Nov 17–19)
-- [ ] System tests ST-03 (quiz → XP/streak/badge, Medium unlock), ST-04 (offline then sync), re-run ST-07 (sign-in → sync → group → leaderboard → sign-out) → §18e table + checklist item 7.
+- [ ] System tests: ST-03 partial done Nov 14 (RB, iPhone 17 Sim, fresh store: onboarding, quiz, XP, quiz-streak bonus; daily streak/badge/Medium unlock not reached). Still to run by hand: ST-04 (offline then sync) and ST-07 re-run (two Google accounts: sign-in → sync → group → leaderboard → sign-out) → §18e table + checklist item 7.
 - [ ] Acceptance tests AT-01–07 by a non-author on a fresh install, including one Ask AI chat → §18f table + checklist item 8.
 - [ ] Log any defect found in the defect table (ID, found by, fix commit, regression test).
 
