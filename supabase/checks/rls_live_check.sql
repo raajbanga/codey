@@ -2,9 +2,10 @@
 -- through the Supabase MCP (execute_sql) or the SQL editor, without pgTAP.
 --
 -- It ALWAYS ends with an error whose message holds the results, e.g.
---   "RLS TESTS: 0 failed of 57. ok 1 … | ok 57 …"
+--   "RLS TESTS: 0 failed of 63. ok 1 … | ok 63 …"
 -- Raising it rolls back every test user and row, so nothing persists.
--- Last run: 2026-11-10, see supabase/README.md (after the FR-61 study_progress migration).
+-- Last live run: 2026-11-10 (checks 1-57), see supabase/README.md. Checks 58-63
+-- (S43 history tables) were added 2026-11-15 and run on the local stack: 0 failed of 63.
 
 do $test$
 declare
@@ -275,6 +276,34 @@ begin
     exception when insufficient_privilege then results := results || 'ok 56 B can''t insert A''s progress'::text;
               when others then failed := failed + 1; results := results || ('FAIL 56 ' || sqlstate || ' ' || sqlerrm); end;
 
+    -- S43 history: quiz_answers, daily_activity, badge_awards
+    perform set_config('request.jwt.claims', claims_a, true);
+    insert into public.quiz_answers (question_id, topic_id, correct, answered_at) values ('q-swift-1', 'topic-swift', true, '2026-11-15');
+    insert into public.daily_activity (device_id, day, quiz_answers) values ('phone', '2026-11-15', 9);
+    insert into public.badge_awards (badge, earned_at) values ('firstDeck', '2026-11-15');
+    insert into public.daily_activity (device_id, day, quiz_answers) values ('phone', '2026-11-15', 4)
+        on conflict (owner_id, device_id, day) do update set quiz_answers = excluded.quiz_answers;
+    select quiz_answers into n from public.daily_activity where owner_id = a;
+    if n = 9 then results := results || 'ok 58 day counters keep the larger'::text; else failed := failed + 1; results := results || ('FAIL 58 quiz_answers=' || n); end if;
+
+    perform set_config('request.jwt.claims', claims_b, true);
+    select (select count(*) from public.quiz_answers) + (select count(*) from public.daily_activity)
+         + (select count(*) from public.badge_awards) into n;
+    if n = 0 then results := results || 'ok 59 B sees 0 of A''s history'::text; else failed := failed + 1; results := results || ('FAIL 59 rows=' || n); end if;
+    update public.daily_activity set quiz_answers = 99 where owner_id = a;
+    get diagnostics n = row_count;
+    if n = 0 then results := results || 'ok 60 B updates 0 of A''s days'::text; else failed := failed + 1; results := results || ('FAIL 60 updated=' || n); end if;
+    begin
+        insert into public.quiz_answers (owner_id, question_id, topic_id, correct, answered_at) values (a, 'q-x', 'topic-swift', true, now());
+        failed := failed + 1; results := results || 'FAIL 61 B inserted an answer for A'::text;
+    exception when insufficient_privilege then results := results || 'ok 61 B can''t insert A''s answers'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 61 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        insert into public.badge_awards (badge, earned_at) values ('madeUp', now());
+        failed := failed + 1; results := results || 'FAIL 62 unknown badge accepted'::text;
+    exception when check_violation then results := results || 'ok 62 unknown badge rejected'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 62 ' || sqlstate || ' ' || sqlerrm); end;
+
     -- anon can't call the RPC
     execute 'set local role anon';
     perform set_config('request.jwt.claims', '{"role": "anon"}', true);
@@ -288,6 +317,11 @@ begin
              + (select count(*) from public.topic_progress) into n;
         if n = 0 then results := results || 'ok 57 anon sees no progress'::text; else failed := failed + 1; results := results || ('FAIL 57 rows=' || n); end if;
     exception when insufficient_privilege then results := results || 'ok 57 anon sees no progress (no grant)'::text; end;
+    begin
+        select (select count(*) from public.quiz_answers) + (select count(*) from public.daily_activity)
+             + (select count(*) from public.badge_awards) into n;
+        if n = 0 then results := results || 'ok 63 anon sees no history'::text; else failed := failed + 1; results := results || ('FAIL 63 rows=' || n); end if;
+    exception when insufficient_privilege then results := results || 'ok 63 anon sees no history (no grant)'::text; end;
 
     raise exception 'RLS TESTS: % failed of %. %', failed, coalesce(array_length(results, 1), 0), array_to_string(results, ' | ');
 end

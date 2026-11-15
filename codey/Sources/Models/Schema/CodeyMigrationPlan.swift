@@ -6,11 +6,12 @@ import SwiftData
 enum CodeyMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [CodeySchemaV1.self, CodeySchemaV2.self, CodeySchemaV3.self, CodeySchemaV4.self, CodeySchemaV5.self,
-         CodeySchemaV6.self, CodeySchemaV7.self, CodeySchemaV8.self, CodeySchemaV9.self]
+         CodeySchemaV6.self, CodeySchemaV7.self, CodeySchemaV8.self, CodeySchemaV9.self,
+         CodeySchemaV10.self]
     }
 
     static var stages: [MigrationStage] {
-        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7, v7ToV8, v8ToV9]
+        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7, v7ToV8, v8ToV9, v9ToV10]
     }
 
     /// Additive only (new deck/card entities), so lightweight is enough.
@@ -66,9 +67,15 @@ enum CodeyMigrationPlan: SchemaMigrationPlan {
         fromVersion: CodeySchemaV8.self,
         toVersion: CodeySchemaV9.self
     )
+
+    /// Additive only (other devices' daily counters, S43).
+    static let v9ToV10 = MigrationStage.lightweight(
+        fromVersion: CodeySchemaV9.self,
+        toVersion: CodeySchemaV10.self
+    )
 }
 
-typealias CodeySchemaCurrent = CodeySchemaV9
+typealias CodeySchemaCurrent = CodeySchemaV10
 
 // The rest of the app always uses these names, never the versioned ones.
 typealias UserProfile = CodeySchemaV9.UserProfile
@@ -83,3 +90,4 @@ typealias TopicProgress = CodeySchemaV4.TopicProgress
 typealias QuizAnswerRecord = CodeySchemaV4.QuizAnswerRecord
 typealias SyncOperation = CodeySchemaV6.SyncOperation
 typealias BadgeAward = CodeySchemaV7.BadgeAward
+typealias DeviceDayActivity = CodeySchemaV10.DeviceDayActivity

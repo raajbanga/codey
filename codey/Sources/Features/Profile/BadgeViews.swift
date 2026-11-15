@@ -83,7 +83,11 @@ private struct BadgeBannerModifier: ViewModifier {
             .onChange(of: awards.map(\.badgeRaw)) { _, raws in
                 let new = raws.filter { !(seen ?? []).contains($0) }
                 seen = Set(raws)
-                guard isActive, let raw = new.last, let earned = Badge(rawValue: raw) else { return }
+                // Only one earned just now: a badge pulled from another
+                // device (S43) arrives with its old date and isn't news.
+                guard isActive, let raw = new.last, let earned = Badge(rawValue: raw),
+                      let award = awards.first(where: { $0.badgeRaw == raw }),
+                      award.earnedAt > .now.addingTimeInterval(-60) else { return }
                 badge = earned
                 isPresented = true
             }

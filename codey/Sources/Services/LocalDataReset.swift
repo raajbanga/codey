@@ -20,6 +20,7 @@ enum LocalDataReset {
         }
         try deleteAll(StudyProgressSnapshot.self, context: context)
         try deleteAll(DailyActivity.self, context: context)
+        try deleteAll(DeviceDayActivity.self, context: context)
         try deleteAll(BadgeAward.self, context: context)
         try deleteQuizProgress(context: context)
         try context.save()
@@ -37,6 +38,7 @@ enum LocalDataReset {
         try deleteAll(Flashcard.self, context: context)
         try deleteAll(StudyProgressSnapshot.self, context: context)
         try deleteAll(DailyActivity.self, context: context)
+        try deleteAll(DeviceDayActivity.self, context: context)
         try deleteAll(BadgeAward.self, context: context)
         try deleteQuizProgress(context: context)
         try deleteAll(UserProfile.self, context: context)

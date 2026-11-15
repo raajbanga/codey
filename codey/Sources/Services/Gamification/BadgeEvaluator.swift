@@ -102,8 +102,8 @@ enum BadgeEvaluator {
             // Today (which may not count yet) plus streakTarget days before it.
             let days = (0...streakTarget).compactMap { calendar.date(byAdding: .day, value: -$0, to: now) }
                 .map { DailyActivity.dayKey(for: $0, calendar: calendar) }
-            let recent = try context.fetch(FetchDescriptor<DailyActivity>(predicate: #Predicate { days.contains($0.day) }))
-            facts.streak = StreakCalculator.currentStreak(endingOn: now, activity: recent, calendar: calendar)
+            let totals = try StreakCalculator.dayTotals(for: days, context: context)
+            facts.streak = StreakCalculator.currentStreak(endingOn: now, totals: totals, calendar: calendar)
         }
         if badges.contains(.xp1000) {
             let profile: UserProfile? = try context.first()
