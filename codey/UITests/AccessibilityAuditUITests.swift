@@ -163,10 +163,12 @@ final class AccessibilityAuditUITests: XCTestCase {
     private func audit(_ screen: String) throws {
         do {
             try performAudit(screen)
-        } catch let error as NSError where error.domain == "com.apple.accessibilityAudit" && error.code == -902 {
-            // "Invalid target app": on CI runners the audit sometimes loses
-            // the app's process (seen in Light and in Dark, never both). Bring
-            // the app forward and audit once more.
+        } catch let error as NSError where error.domain == "com.apple.accessibilityAudit" && error.code == -902
+                    && app.state != .notRunning {
+            // "Invalid target app" while the app is still running: on CI the
+            // audit sometimes loses track of the process. Bring it forward and
+            // audit once more. If the app is gone (a crash), fail here instead
+            // of relaunching it, so the crash isn't hidden.
             app.activate()
             sleep(1)
             try performAudit(screen)
