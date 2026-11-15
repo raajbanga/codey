@@ -120,7 +120,6 @@ private struct CardFace: View {
                 content
                 ScrollView { content }
                     .scrollBounceBehavior(.basedOnSize)
-                    .scrollIndicators(.visible)
             }
 
             Spacer(minLength: 0)
