@@ -103,13 +103,11 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 | `supabase/` | Database migrations, RLS policies, tests |
 | `scripts/` | Repo checks, perf + backup tools |
 | `.github/workflows/` | CI (tests) + Supabase keep-alive |
-| `docs/` | Final and sprint reports (PDF); LaTeX sources in `docs/source/`; course material in `docs/course/` |
+| `docs/` | Final report (PDF); LaTeX source in `docs/source/`; README screenshots in `docs/screenshots/`; course material in `docs/course/` |
 
 ## Docs
 
 - [Final report](docs/Final_Documentation.pdf) · [reading copy](docs/Final_Documentation_reading.pdf)
-- [Sprint 3 report](docs/Sprint3_Documentation.pdf) · [reading copy](docs/Sprint3_Documentation_reading.pdf)
-- [Sprint 2 report](docs/Sprint2_Documentation.pdf)
 - Full build guide → Appendix A of the final report
 
 ## Team
