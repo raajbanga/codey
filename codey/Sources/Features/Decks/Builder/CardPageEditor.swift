@@ -32,8 +32,7 @@ struct CardPageEditor: View {
                 }
             }
             .padding(CodeySpacing.md)
-            .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
-            .errorBorder(viewModel.errorCount(cardID: card.id) > 0, radius: CodeyRadius.lg)
+            .codeyNote(edge: viewModel.errorCount(cardID: card.id) > 0 ? CodeyColor.danger : nil)
             .padding(.vertical, CodeySpacing.xs)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -75,9 +74,13 @@ struct CardPageEditor: View {
                 if let tier = card.difficulty {
                     CodeyChip(tier: tier)
                 } else {
-                    CodeyChip("Tier", systemImage: "tag")
+                    // Outlined so it reads as something to tap, not a
+                    // disabled grey tag.
+                    CodeyChip("Add tier", systemImage: "plus", variant: .outline(CodeyColor.brand))
                 }
             }
+            .frame(minHeight: 44)
+            .contentShape(.rect)
             .accessibilityLabel("Tier: \(card.difficulty?.style.label ?? "None")")
 
             Button {

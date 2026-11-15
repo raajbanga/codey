@@ -45,10 +45,16 @@ struct CardThumbnailStrip: View {
                         let id = viewModel.addCard()
                         withAnimation(CodeyMotion.snappy) { page = .card(id) }
                     } label: {
+                        // Dashed, like "Add code" and the pager's New card page.
                         Image(systemName: "plus")
                             .font(.codeyHeadline)
-                            .frame(width: 56, height: 72)
-                            .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.sm))
+                            .frame(width: Thumbnail.size.width, height: Thumbnail.size.height)
+                            .background(CodeyColor.brandSoft, in: .codey(CodeyRadius.md))
+                            .overlay {
+                                RoundedRectangle.codey(CodeyRadius.md)
+                                    .strokeBorder(CodeyColor.brand, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                            }
+                            .contentShape(.rect(cornerRadius: CodeyRadius.md))
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(CodeyColor.brand)
@@ -68,34 +74,40 @@ struct CardThumbnailStrip: View {
 }
 
 private struct Thumbnail: View {
+    static let size = CGSize(width: 96, height: 76)
+
     let card: CardDraft
     let number: Int
     let isSelected: Bool
     let errorCount: Int
 
+    /// A mini card (§3b): the number leads, so empty cards read "2" instead
+    /// of "Em…"; the first words of the prompt sit underneath once written.
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-            Text(card.summary.isEmpty ? "Empty" : card.summary)
-                .font(.codeyCaption)
-                .foregroundStyle(card.summary.isEmpty ? CodeyColor.textSecondary : CodeyColor.textPrimary)
-                .lineLimit(3)
-            Spacer(minLength: 0)
             HStack(spacing: CodeySpacing.xxs) {
                 Text("\(number)")
-                    .font(.codeyCaption.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(CodeyColor.textSecondary)
+                    .font(.codeyHeadline.monospacedDigit())
+                    .foregroundStyle(isSelected ? CodeyColor.brand : CodeyColor.textPrimary)
+                Spacer(minLength: 0)
                 if card.snippet != nil {
-                    Image(systemName: "chevron.left.forwardslash.chevron.right")
-                        .font(.codeyCaption)
-                        .foregroundStyle(CodeyColor.brand)
+                    Icon("chevron.left.forwardslash.chevron.right", size: 12, relativeTo: .caption)
+                        .foregroundStyle(CodeyColor.textSecondary)
                 }
             }
+            Spacer(minLength: 0)
+            if !card.summary.isEmpty {
+                Text(card.summary)
+                    .font(.codeyCaption)
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .lineLimit(2)
+            }
         }
-        .padding(CodeySpacing.xs + CodeySpacing.xxs)
-        .frame(width: 56, height: 72, alignment: .topLeading)
-        .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.sm))
+        .padding(CodeySpacing.sm)
+        .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
+        .background(isSelected ? CodeyColor.brandSoft : CodeyColor.surfaceRaised, in: .codey(CodeyRadius.md))
         .overlay {
-            RoundedRectangle.codey(CodeyRadius.sm)
+            RoundedRectangle.codey(CodeyRadius.md)
                 .strokeBorder(isSelected ? CodeyColor.brand : CodeyColor.separator, lineWidth: isSelected ? 2 : 1)
         }
         .overlay(alignment: .topTrailing) {
