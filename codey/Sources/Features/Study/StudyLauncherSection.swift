@@ -74,6 +74,9 @@ struct StudyLauncherSection: View {
         } footer: {
             Text(footer)
         }
+        // Chips and buttons, not list rows: separators between them start
+        // at each row's text inset and read as stray lines (§3b).
+        .listRowSeparator(.hidden)
         .onChange(of: unlocked) { _, open in
             if let tierFilter, !open.contains(tierFilter) { self.tierFilter = nil }
         }

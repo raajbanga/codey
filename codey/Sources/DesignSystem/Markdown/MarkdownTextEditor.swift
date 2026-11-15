@@ -23,8 +23,10 @@ struct MarkdownTextEditor: View {
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 96)
                 .padding(CodeySpacing.sm)
-                .background(CodeyColor.fillNeutral, in: .codey(CodeyRadius.sm))
-                .errorBorder(errorMessage != nil, radius: CodeyRadius.sm)
+                // A paper well with a hairline on the note, not a solid
+                // grey block (§3b): the field reads as a page to write on.
+                .background(CodeyColor.surface, in: .codey(CodeyRadius.md))
+                .errorBorder(errorMessage != nil, radius: CodeyRadius.md)
                 .accessibilityLabel(title)
                 .onChange(of: focusRequested.wrappedValue, initial: true) { _, requested in
                     guard requested else { return }
