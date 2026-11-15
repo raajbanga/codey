@@ -38,6 +38,8 @@ extension CodeyIcon {
         "flame": "icon-flame",
         "flame.fill": "icon-flame",
         "function": "icon-algorithm",
+        "gamecontroller": "icon-controller",
+        "gamecontroller.fill": "icon-controller",
         "globe": "icon-globe",
         "house": "icon-home",
         "house.fill": "icon-home",

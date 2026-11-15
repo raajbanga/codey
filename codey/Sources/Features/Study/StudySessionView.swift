@@ -25,6 +25,8 @@ struct StudySessionView: View {
 
     @State private var drag: CGSize = .zero
     @State private var isCommitting = false
+    /// The swiped card is off-screen: remove it at once instead of fading it.
+    @State private var flewOff = false
     @State private var masteredBadge: StudyCardView.MasteredBadge?
     @State private var scoreChange: StudyCardView.ScoreChange?
     @State private var feedbackEvent: FeedbackEvent?
@@ -71,7 +73,12 @@ struct StudySessionView: View {
             isActive: viewModel.summary == nil,
             close: { dismiss() }
         ) {
-            ProgressBar(value: viewModel.queue.progress)
+            SessionProgress(
+                done: doneColors,
+                total: viewModel.queue.total,
+                accessibilityLabel: "Progress",
+                accessibilityValue: viewModel.queue.progress.formatted(.percent.precision(.fractionLength(0)))
+            )
             Text(counterText)
                 .font(.codeyNumericSmall)
                 .foregroundStyle(CodeyColor.textSecondary)
@@ -83,6 +90,14 @@ struct StudySessionView: View {
             SessionXP(amount: viewModel.xpEarned)
                 .accessibilityIdentifier("study.xp")
         }
+    }
+
+    /// A tick per card in the queue (repeats add one): rated ones in their
+    /// rating's color; cards rated before a resume in brand.
+    private var doneColors: [Color] {
+        let rated = viewModel.queue.position
+        let known = viewModel.ratings.suffix(rated).map(\.tint)
+        return Array(repeating: CodeyColor.brand, count: rated - known.count) + known
     }
 
     /// "3 / 12", "3 / 12 · +1 repeat", or "Repeat 1 of 2" (S19): cards that
@@ -137,7 +152,7 @@ struct StudySessionView: View {
             .transition(
                 .asymmetric(
                     insertion: CodeyMotion.popTransition(reduceMotion: reduceMotion),
-                    removal: .opacity
+                    removal: flewOff ? .identity : .opacity
                 )
             )
             .offset(drag)
@@ -217,10 +232,14 @@ struct StudySessionView: View {
         viewModel.toggleReveal()
     }
 
-    /// Rates the card. The card settles back and its dots show the new
-    /// score and the change ("+2", "Reset") for a moment (S19); a rating
-    /// that masters it also shows the "Mastered" chip. A swipe then flies
-    /// the card off-screen.
+    /// Rates the card. The haptic plays at once.
+    ///
+    /// A swipe keeps the card moving the way it went, from where the finger
+    /// let go, with its outline (§3b; it used to snap back to the center
+    /// first, then fly off); the next card pops in and the toast says what
+    /// changed. A button, key, or VoiceOver rating has no motion to keep, so
+    /// the card stays and its dots show the new score and the change ("+2",
+    /// "Reset") for a moment (S19), with the "Mastered" chip if it masters.
     private func commit(_ rating: CardRating, fromSwipe translation: CGSize? = nil) {
         guard !isCommitting, viewModel.hasRevealedCurrent, let card = viewModel.currentCard else { return }
         isCommitting = true
@@ -228,37 +247,54 @@ struct StudySessionView: View {
 
         let newScore = rating.applied(to: card.masteryScore)
         let willMaster = !card.isMastered && newScore >= Flashcard.maxMastery
+        let flyOff = translation.flatMap { reduceMotion ? nil : Self.offScreen(along: $0) }
         Task { @MainActor in
-            withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) {
-                drag = .zero
-                scoreChange = .init(previous: card.masteryScore, new: newScore)
-                if willMaster {
-                    masteredBadge = viewModel.deck.origin == .starter ? .masteredAndRetired : .mastered
+            if let flyOff {
+                flewOff = true
+                withAnimation(.easeOut(duration: 0.22)) { drag = flyOff }
+                try? await Task.sleep(for: .milliseconds(220))
+            } else {
+                withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) {
+                    drag = .zero
+                    scoreChange = .init(previous: card.masteryScore, new: newScore)
+                    if willMaster {
+                        masteredBadge = viewModel.deck.origin == .starter ? .masteredAndRetired : .mastered
+                    }
                 }
-            }
-            try? await Task.sleep(for: .milliseconds(willMaster ? 900 : 650))
-            if let translation, !reduceMotion {
-                withAnimation(.easeIn(duration: 0.2)) {
-                    drag = CGSize(width: translation.width * 4, height: translation.height * 4)
-                }
-                try? await Task.sleep(for: .milliseconds(200))
+                try? await Task.sleep(for: .milliseconds(willMaster ? 900 : 650))
             }
 
             masteredBadge = nil
             scoreChange = nil
-            drag = .zero
+            // Off-screen card: re-center the offset for the next card without
+            // animating it (the old one is removed, not faded, so it can't
+            // be seen jumping back).
+            var still = Transaction()
+            still.disablesAnimations = true
+            withTransaction(still) { drag = .zero }
             var outcome: StudySessionViewModel.RatingOutcome?
             withCodeyAnimation(CodeyMotion.snappy, reduceMotion: reduceMotion) {
                 outcome = viewModel.rate(rating)
             }
-            // A bonus outranks the card's own +5.
+            flewOff = false
+            // A bonus outranks mastering, which outranks the card's own +5.
+            let xp = outcome?.xp ?? 0
             if let bonus = outcome?.bonuses.last {
                 withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .bonus(bonus) }
-            } else if let xp = outcome?.xp, xp > 0 {
+            } else if willMaster, flyOff != nil {
+                withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .mastered(xp: xp) }
+            } else if xp > 0 {
                 withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .xp(xp) }
             }
             isCommitting = false
         }
+    }
+
+    /// Far enough along the swipe's direction to leave any screen.
+    private static func offScreen(along translation: CGSize) -> CGSize {
+        let length = max(hypot(translation.width, translation.height), 1)
+        let scale = 1000 / length
+        return CGSize(width: translation.width * scale, height: translation.height * scale)
     }
 
     private struct FeedbackEvent: Equatable {

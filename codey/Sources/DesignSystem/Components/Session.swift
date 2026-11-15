@@ -31,6 +31,56 @@ struct SessionTopBar<Progress: View, Trailing: View>: View {
     }
 }
 
+/// The session's progress in the top bar, shared by quiz and study (§3b) so
+/// the two read the same: one 6 pt tick per item, finished ones in their
+/// result's color, the current one brand, the rest in the dot-grid ink.
+/// Past `maxSegments` the ticks would be slivers, so it draws one
+/// continuous bar of the same height and track instead.
+///
+///     ▮▮▮▮▯▯▯▯   (green, green, red, brand, then dot ink)
+struct SessionProgress: View {
+    /// Colors of the finished items, in order.
+    let done: [Color]
+    let total: Int
+    let accessibilityLabel: String
+    var accessibilityValue: String = ""
+
+    static let height: CGFloat = 6
+    static let maxSegments = 30
+
+    var body: some View {
+        let colors = segmentColors
+        Group {
+            if total <= Self.maxSegments {
+                HStack(spacing: CodeySpacing.xxs) {
+                    // @Sendable: built off the main thread like MasteryDots (BUG-04).
+                    ForEach(colors.indices, id: \.self) { @Sendable index in
+                        Self.segment(colors[index])
+                    }
+                }
+            } else {
+                ProgressBar(value: total > 0 ? Double(done.count) / Double(total) : 0, height: Self.height)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .codeyAnimation(CodeyMotion.smooth, value: done.count)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(accessibilityValue)
+    }
+
+    private var segmentColors: [Color] {
+        (0..<max(total, 0)).map { index in
+            if index < done.count { return done[index] }
+            return index == done.count ? CodeyColor.brand : CodeyColor.paperDot
+        }
+    }
+
+    nonisolated private static func segment(_ color: Color) -> some View {
+        RoundedRectangle.codey(CodeyRadius.xs / 2).fill(color).frame(height: Self.height)
+    }
+}
+
 /// XP so far this session, in the top bar.
 struct SessionXP: View {
     let amount: Int

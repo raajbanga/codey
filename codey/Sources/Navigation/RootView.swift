@@ -18,7 +18,7 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $router.tab) {
-            Tab("Play", systemImage: "gamecontroller", value: AppTab.home) {
+            Tab("Play", image: "icon-controller", value: AppTab.home) {
                 NavigationStack { HomeView() }
             }
             Tab("Decks", image: "icon-cards", value: AppTab.decks) {
