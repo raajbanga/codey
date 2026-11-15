@@ -10,7 +10,7 @@ Tick tasks `[x]` as they finish. When every task is ticked, delete this file (gi
 
 ---
 
-## 1. Doc updates for the game layer (RB): done Nov 14
+## 1. Doc updates for the game layer (RB): done Nov 14 (S40–S42; S42 decision, FR-60 avatar colors, test counts 426 unit / 77 pgTAP)
 - [x] **S41 game layer**: add the S41 decision (Play/Decks game tiles, quests, XP tags, Radix palette, shared `GameTile` / `CodeyChip` / `SessionTopBar` / `SessionSummary`); update FR-30 and O2; drop "no XP for exercises" from the non-goals and UC "no XP is awarded (S31)" (exercises now pay XP); schema V9 in the data model.
 - [x] **Screenshots** (`fig:screens`): the figure points at `final-*.png`, which don't exist yet. Capture them from `ScreenTourUITests` on the S41 UI (Play, Decks, quiz setup, quiz question, Ask AI, exercises, exercise, study) into `docs/source/figures/`; recheck the caption against the new screens.
 - [x] **Test results** (§18): re-run with `COVERAGE=1 CSV=docs/source/tests/unit.csv scripts/test.sh`; the doc says 416 / 57 suites, now 426 / 59 (adds `XPRewardsTests`). Update `tab:unitresults`, the coverage paragraph, checklist item 3, the summary sentence and the metrics row (~line 618).
@@ -29,7 +29,7 @@ Tick tasks `[x]` as they finish. When every task is ticked, delete this file (gi
 - [x] Appendix A opening line; renamed to `Final_Documentation.tex` / `_reading.tex`; README links updated.
 
 ## 4. Freeze and release (freeze Sun Nov 22; submit Tue Dec 1)
-- [ ] [AB] After the freeze, re-run (last run Nov 14): `scripts/gen-file-table.py`, `scripts/gen-pattern-map.sh`, `scripts/gen-appendix-b.sh` (picks up the new Bento, GameTiles, Session, FloatingPanel and Ask AI files).
+- [ ] [AB] After the freeze, re-run (last run Nov 14, after S42): `scripts/gen-file-table.py`, `scripts/gen-pattern-map.sh`, `scripts/gen-appendix-b.sh` (picks up the new Bento, GameTiles, Session, FloatingPanel and Ask AI files).
 - [ ] [AB] All tests green in CI on the final commit; all repository checks pass (incl. `check-release-build.sh`).
 - [ ] [RB] Squash-merge `dev` → `main`, then merge `main` back into `dev`; `git shortlog -sn` → version-control table; Appendix B "from commit …" → final hash.
 - [ ] [RB] Build both PDFs; check TOC, labels, axis labels; copy to `docs/`; README links the final report and Appendix A.

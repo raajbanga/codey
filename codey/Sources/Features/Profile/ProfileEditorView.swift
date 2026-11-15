@@ -178,7 +178,7 @@ private struct ColorSwatch: View {
                 .overlay {
                     if isSelected {
                         Icon("checkmark", size: 16, relativeTo: .callout)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(color.hue.onFill)
                     }
                 }
                 .padding(4)

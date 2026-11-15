@@ -138,7 +138,7 @@ struct ExerciseView: View {
             HStack(spacing: CodeySpacing.sm) {
                 Text("\(index + 1)")
                     .font(.codeySubheadline.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(hue.onFill)
                     .frame(width: 26, height: 26)
                     .background(hue.fill, in: Circle())
                     .accessibilityHidden(true)
