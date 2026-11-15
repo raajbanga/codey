@@ -62,7 +62,21 @@ struct ProfileAndFeedbackTests {
         #expect(ProfileAvatar.symbol(for: "star.fill") == "star.fill")
         #expect(ProfileAvatar.symbol(for: "skull.fill") == ProfileAvatar.fallback)
         #expect(ProfileAvatar.symbol(for: nil) == ProfileAvatar.fallback)
-        #expect(ProfileAvatar.symbols.count == 12)
+        #expect(ProfileAvatar.symbols.count == 32)
+        #expect(Set(ProfileAvatar.symbols).count == ProfileAvatar.symbols.count)
+    }
+
+    /// S42: "symbol@color"; no color is slate; an unknown color is rejected.
+    @Test func avatarColorRoundTrips() {
+        #expect(ProfileAvatar.id(symbol: "cat", color: .teal) == "cat@teal")
+        #expect(ProfileAvatar.id(symbol: "cat", color: .slate) == "cat")
+        #expect(ProfileAvatar.parse("cat@teal")?.symbol == "cat")
+        #expect(ProfileAvatar.parse("cat@teal")?.color == .teal)
+        #expect(ProfileAvatar.color(for: "star.fill") == .slate)
+        #expect(ProfileAvatar.parse("cat@purple") == nil)
+        #expect(ProfileAvatar.parse("skull@teal") == nil)
+        #expect(ProfileAvatar.glyph(for: "star.fill") == "star")
+        #expect(ProfileAvatar.glyph(for: "cat") == "cat")
     }
 
     // MARK: FR-49

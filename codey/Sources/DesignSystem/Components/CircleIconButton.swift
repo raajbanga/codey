@@ -35,6 +35,7 @@ struct CircleIcon: View {
     var kind: Kind = .neutral
 
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.appHue) private var appHue
 
     var body: some View {
         Icon(systemImage, size: 20, relativeTo: .headline)
@@ -48,8 +49,8 @@ struct CircleIcon: View {
     private var colors: (icon: Color, fill: Color) {
         switch kind {
         case .neutral: (CodeyColor.textSecondary, CodeyColor.fillNeutral)
-        case .soft: (CodeyColor.TopicHue.slate.ink, CodeyColor.TopicHue.slate.soft)
-        case .filled: (CodeyColor.onBrandFill, CodeyColor.brandFill)
+        case .soft: ((appHue ?? .slate).ink, (appHue ?? .slate).soft)
+        case .filled: appHue.map { (.white, $0.fill) } ?? (CodeyColor.onBrandFill, CodeyColor.brandFill)
         }
     }
 }

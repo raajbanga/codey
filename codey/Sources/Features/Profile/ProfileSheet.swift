@@ -1,8 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// Profile + settings (replaces the Settings tab, 7.3). A native
-/// inset-grouped List opened from the avatar on Home.
+/// Profile + settings (replaces the Settings tab, 7.3), opened from the
+/// avatar on Play. Bento layout (S42): a hero card in the avatar's color,
+/// then one note per group of settings.
 struct ProfileSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -25,17 +26,19 @@ struct ProfileSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                header
-                Section("Badges") { BadgesRow() }
-                accountSection
-                appearanceSection
-                studySection
-                dataSection
-                aboutSection
+            ScrollView {
+                VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+                    header
+                    SettingsGroup("Badges") { BadgesRow() }
+                    accountSection
+                    appearanceSection
+                    studySection
+                    dataSection
+                    aboutSection
+                }
+                .padding(CodeySpacing.md)
             }
-            .listStyle(.insetGrouped)
-            .codeyListBackground()
+            .codeyPaperBackground()
             .codeyPageTitle("Profile")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -78,107 +81,93 @@ struct ProfileSheet: View {
 
     // MARK: Sections
 
-    /// Tapping the header edits the name and avatar (FR-04).
-    private var header: some View {
-        Section {
-            NavigationLink {
-                ProfileEditorView()
-            } label: {
-                headerLabel
-            }
-            .accessibilityHint("Edit your name and avatar")
-            .accessibilityIdentifier("profile.edit")
-        }
-    }
+    private var hue: CodeyColor.TopicHue { ProfileAvatar.color(for: profile?.avatarId).hue }
 
-    private var headerLabel: some View {
-        HStack(spacing: CodeySpacing.md) {
-            ProfileAvatarView(avatarId: profile?.avatarId)
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                Text(profile?.username ?? UserProfile.defaultUsername)
-                    .font(.codeyTitle)
-                Text("Level \(LevelCalculator.level(forXP: xp)) · \(xp.formatted()) XP")
-                    .font(.codeySubheadline)
-                    .foregroundStyle(CodeyColor.textSecondary)
-                Text(accountStatus)
-                    .font(.codeySubheadline)
-                    .foregroundStyle(CodeyColor.textSecondary)
+    /// Tapping the hero edits the name and avatar (FR-04).
+    private var header: some View {
+        NavigationLink {
+            ProfileEditorView()
+        } label: {
+            HStack(spacing: CodeySpacing.md) {
+                ProfileAvatarView(avatarId: profile?.avatarId, size: 64, emphasized: true)
+                VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                    Text(profile?.username ?? UserProfile.defaultUsername)
+                        .font(.codeyTitle.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Text(accountStatus)
+                        .font(.codeySubheadline)
+                        .lineLimit(2)
+                    HStack(spacing: CodeySpacing.xs) {
+                        CodeyChip("Level \(LevelCalculator.level(forXP: xp))", variant: .outline(hue.ink))
+                        CodeyChip("\(xp.formatted()) XP", variant: .xp)
+                    }
+                    .padding(.top, CodeySpacing.xxs)
+                }
+                Spacer(minLength: 0)
+                Icon("pencil", size: 20, relativeTo: .headline)
             }
+            .foregroundStyle(hue.ink)
+            .multilineTextAlignment(.leading)
+            .padding(CodeySpacing.md)
+            .background(hue.soft, in: .codey(CodeyRadius.lg))
+            .environment(\.colorScheme, .light)
+            .contentShape(.rect(cornerRadius: CodeyRadius.lg))
         }
-        .padding(.vertical, CodeySpacing.xs)
+        .buttonStyle(TilePressStyle())
         .accessibilityElement(children: .combine)
+        .accessibilityHint("Edit your name and avatar")
+        .accessibilityIdentifier("profile.edit")
     }
 
     private var accountStatus: String {
-        guard let user = backend.currentUser else { return "Guest · data stays on this device" }
-        return "Signed in as \(user.email ?? user.displayName ?? "Google user")"
+        backend.currentUser == nil ? "Guest. Your data stays on this device." : "Signed in with Google"
     }
 
     @ViewBuilder
     private var accountSection: some View {
-        if let user = backend.currentUser {
-            Section {
-                LabeledContent("Account", value: user.email ?? user.displayName ?? "Google")
-                LabeledContent("Last synced") {
+        if backend.currentUser != nil {
+            SettingsGroup("Account", footer: backend.engine.lastError.map { "Last sync failed: \($0) Codey will retry automatically." }
+                          ?? "Your decks, display name, and XP sync across devices.") {
+                SettingsRow(icon: "arrow.triangle.2.circlepath", title: "Last synced") {
                     if let date = backend.lastSyncedAt {
                         Text(date, format: .relative(presentation: .named))
                     } else {
                         Text("Not yet")
                     }
                 }
-                LabeledContent("Pending changes", value: backend.pendingCount.formatted())
-                Button {
-                    Task { await backend.syncPending() }
-                } label: {
-                    HStack {
-                        Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
-                        Spacer()
-                        if backend.engine.isSyncing {
-                            ProgressView()
-                        }
+                SettingsRow(icon: "icloud.and.arrow.up", title: "Pending changes") {
+                    Text(backend.pendingCount.formatted())
+                }
+                HStack(spacing: CodeySpacing.sm) {
+                    CodeyButton(backend.engine.isSyncing ? "Syncing" : "Sync Now", systemImage: "arrow.triangle.2.circlepath",
+                                kind: .secondary, fullWidth: true, compact: true) {
+                        Task { await backend.syncPending() }
                     }
+                    .disabled(backend.engine.isSyncing)
+                    .accessibilityIdentifier("profile.syncNow")
+                    CodeyButton("Sign Out", kind: .destructive, fullWidth: true, compact: true) { confirmSignOut = true }
+                        .accessibilityIdentifier("profile.signOut")
                 }
-                .disabled(backend.engine.isSyncing)
-                .accessibilityIdentifier("profile.syncNow")
-                Button("Sign Out", role: .destructive) { confirmSignOut = true }
-                    .foregroundStyle(CodeyColor.danger)
-                    .accessibilityIdentifier("profile.signOut")
-            } header: {
-                Text("Account")
-            } footer: {
-                if let error = backend.engine.lastError {
-                    Text("Last sync failed: \(error) Codey will retry automatically.")
-                } else {
-                    Text("Your decks, display name, and XP sync across devices.")
-                }
+                .padding(.top, CodeySpacing.xs)
             }
         } else {
-            Section {
-                Button {
+            SettingsGroup("Account", footer: signInFooter) {
+                CodeyButton(backend.authState == .signingIn ? "Signing In" : "Sign in with Google",
+                            systemImage: "person.crop.circle", fullWidth: true) {
                     Task { await backend.signInWithGoogle() }
-                } label: {
-                    HStack {
-                        Label("Sign in with Google", systemImage: "person.badge.key")
-                        Spacer()
-                        if backend.authState == .signingIn {
-                            ProgressView()
-                        }
-                    }
                 }
                 .disabled(!backend.isSignInAvailable || backend.authState == .signingIn)
                 .accessibilityIdentifier("profile.signIn")
-            } header: {
-                Text("Account")
-            } footer: {
-                if case .error(let message) = backend.authState {
-                    Text(message)
-                } else {
-                    Text(backend.isSignInAvailable
-                         ? "Sign in to back up your decks and XP and sync them across devices. Codey works fully without an account."
-                         : "Cloud sync isn't set up in this build. Everything is saved on this device.")
-                }
             }
         }
+    }
+
+    private var signInFooter: String {
+        if case .error(let message) = backend.authState { return message }
+        return backend.isSignInAvailable
+            ? "Sign in to back up your decks and XP and sync them across devices. Codey works fully without an account."
+            : "Cloud sync isn't set up in this build. Everything is saved on this device."
     }
 
     private var signOutMessage: String {
@@ -190,82 +179,75 @@ struct ProfileSheet: View {
     }
 
     private var appearanceSection: some View {
-        Section("Appearance") {
+        SettingsGroup("Appearance") {
             ChoiceChips("Appearance", selection: $appearance, options: AppAppearance.allCases.map { ($0, $0.title) }, fills: true)
         }
     }
 
     private var studySection: some View {
-        Section {
+        SettingsGroup("Pinned topics", footer: "Pinned topics show first on Play and in Decks." + (hiddenDecks.isEmpty ? "" : " Hidden starter decks are listed below them.")) {
             ForEach(topics) { topic in
                 let pinned = profile?.pinnedTopicIds.contains(topic.id) == true
+                let topicHue = CodeyColor.TopicHue.of(topicID: topic.id)
                 Button {
                     togglePin(topic.id)
                 } label: {
-                    HStack {
-                        Label(topic.title, systemImage: topic.iconName)
-                            .foregroundStyle(CodeyColor.textPrimary)
-                        Spacer()
-                        if pinned {
-                            Image(systemName: "pin.fill")
-                                .foregroundStyle(CodeyColor.brand)
-                        }
+                    SettingsRow(icon: topic.iconName, title: topic.title, hue: topicHue) {
+                        Icon(pinned ? "pin.fill" : "pin", size: 18, relativeTo: .headline)
+                            .foregroundStyle(pinned ? topicHue.fill : CodeyColor.textSecondary)
                     }
                 }
+                .buttonStyle(TilePressStyle())
                 .accessibilityValue(pinned ? "Pinned" : "Not pinned")
-                .accessibilityHint("Pinned topics show first on Home and in Decks")
+                .accessibilityHint("Pinned topics show first on Play and in Decks")
             }
             ForEach(hiddenDecks) { deck in
-                HStack {
-                    Label(deck.title, systemImage: "eye.slash")
-                        .foregroundStyle(CodeyColor.textSecondary)
-                    Spacer()
-                    Button("Restore") {
+                SettingsRow(icon: "eye.slash", title: deck.title) {
+                    CodeyButton("Restore", kind: .secondary, compact: true) {
                         $actionError.attempt { try backend.setHidden(false, deck: deck) }
                     }
-                    .buttonStyle(.borderless)
-                    .tint(CodeyColor.brand)
                 }
             }
-        } header: {
-            Text("Study")
-        } footer: {
-            Text("Pinned topics show first on Home and in Decks." + (hiddenDecks.isEmpty ? "" : " Hidden starter decks are listed above."))
         }
     }
 
     private var dataSection: some View {
-        Section {
-            // Muted palette danger instead of the role's system red (S9).
-            Button("Reset Progress", role: .destructive) { confirmReset = true }
-                .foregroundStyle(CodeyColor.danger)
-            Button("Erase All Local Data", role: .destructive) { confirmErase = true }
-                .foregroundStyle(CodeyColor.danger)
-                .disabled(backend.currentUser != nil)
-        } header: {
-            Text("Data")
-        } footer: {
-            Text(backend.currentUser == nil
-                 ? "Reset progress keeps your decks. Erase deletes everything on this device."
-                 : "Reset progress keeps your decks. To erase everything on this device, sign out first.")
+        SettingsGroup("Data", footer: backend.currentUser == nil
+                      ? "Reset progress keeps your decks. Erase deletes everything on this device."
+                      : "Reset progress keeps your decks. To erase everything on this device, sign out first.") {
+            HStack(spacing: CodeySpacing.sm) {
+                CodeyButton("Reset Progress", kind: .destructive, fullWidth: true, compact: true) { confirmReset = true }
+                CodeyButton("Erase All Data", kind: .destructive, fullWidth: true, compact: true) { confirmErase = true }
+                    .disabled(backend.currentUser != nil)
+                    .accessibilityLabel("Erase All Local Data")
+            }
         }
     }
 
     private var aboutSection: some View {
-        Section("About") {
-            LabeledContent("Version", value: Self.versionString)
+        SettingsGroup("About") {
+            SettingsRow(icon: "number", title: "Version") { Text(Self.versionString) }
             NavigationLink {
                 FeedbackFormView()
             } label: {
-                Label("Report a UI/UX Issue", systemImage: "exclamationmark.bubble")
+                SettingsRow(icon: "questionmark.bubble", title: "Report a UI/UX Issue") { RowChevron() }
             }
+            .buttonStyle(TilePressStyle())
             .accessibilityIdentifier("profile.feedback")
-            NavigationLink("Acknowledgements") { AcknowledgementsView() }
+            NavigationLink {
+                AcknowledgementsView()
+            } label: {
+                SettingsRow(icon: "heart", title: "Acknowledgements") { RowChevron() }
+            }
+            .buttonStyle(TilePressStyle())
             #if DEBUG
-            Button("Replay Onboarding") {
+            Button {
                 hasCompletedOnboarding = false
                 dismiss()
+            } label: {
+                SettingsRow(icon: "arrow.counterclockwise", title: "Replay Onboarding") { RowChevron() }
             }
+            .buttonStyle(TilePressStyle())
             #endif
         }
     }
@@ -317,17 +299,87 @@ private struct AcknowledgementsView: View {
     ]
 
     var body: some View {
-        List(Self.libraries, id: \.name) { library in
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                Text(library.name)
-                    .font(.codeyHeadline)
-                Text(library.detail)
-                    .font(.codeySubheadline)
+        ScrollView {
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                ForEach(Self.libraries, id: \.name) { library in
+                    VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                        Text(library.name)
+                            .font(.codeyHeadline)
+                            .foregroundStyle(CodeyColor.textPrimary)
+                        Text(library.detail)
+                            .font(.codeySubheadline)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                    }
+                    .padding(CodeySpacing.md)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .codeyNote()
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(CodeySpacing.md)
+        }
+        .codeyPaperBackground()
+        .codeyPageTitle("Acknowledgements")
+    }
+}
+
+/// A titled note of settings (S42): the bento page's answer to a grouped
+/// List section, with an optional caption below.
+struct SettingsGroup<Content: View>: View {
+    let title: String
+    var footer: String?
+    @ViewBuilder let content: Content
+
+    init(_ title: String, footer: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.footer = footer
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+            SectionTitle(title)
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) { content }
+                .padding(CodeySpacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .codeyNote()
+            if let footer {
+                Text(footer)
+                    .font(.codeyCaption)
                     .foregroundStyle(CodeyColor.textSecondary)
+                    .padding(.horizontal, CodeySpacing.xs)
             }
         }
-        .codeyListBackground()
-        .codeyPageTitle("Acknowledgements")
+    }
+}
+
+/// One settings line: an icon tile, a title, and a trailing value or control.
+struct SettingsRow<Trailing: View>: View {
+    let icon: String
+    let title: String
+    /// Nil: the app accent (the avatar's color).
+    var hue: CodeyColor.TopicHue?
+    @ViewBuilder var trailing: Trailing
+
+    @ScaledMetric(relativeTo: .body) private var tile: CGFloat = 34
+    @Environment(\.appHue) private var appHue
+
+    var body: some View {
+        HStack(spacing: CodeySpacing.sm) {
+            IconTile(systemName: icon, size: tile, radius: CodeyRadius.sm, ink: (hue ?? appHue ?? .slate).ink, tile: (hue ?? appHue ?? .slate).soft)
+            Text(title)
+                .font(.codeyBody)
+                .foregroundStyle(CodeyColor.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: CodeySpacing.xs)
+            trailing
+                .font(.codeySubheadline)
+                .foregroundStyle(CodeyColor.textSecondary)
+        }
+        .frame(minHeight: 44)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
     }
 }
 

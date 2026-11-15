@@ -9,41 +9,55 @@ struct GroupsView: View {
     @State private var sheet: GroupSheet?
 
     var body: some View {
-        List {
-            if backend.currentUser == nil {
-                Section {
-                    Label("Sign in from your profile to create or join a group.", systemImage: "person.2.slash")
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
-            } else {
-                if let error = list.error {
-                    Section {
-                        StaleNotice(message: error, fetchedAt: list.fetchedAt)
-                    }
-                }
-                if list.items.isEmpty, !list.isLoading {
-                    Section {
-                        Text("Groups rank members by XP earned this week. Create one and share its code, or join with a friend's code.")
-                            .foregroundStyle(CodeyColor.textSecondary)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: CodeySpacing.md) {
+                if backend.currentUser == nil {
+                    EmptyStateView(
+                        systemImage: "person.2",
+                        title: "Sign in for groups",
+                        message: "Sign in from your profile to create or join a group."
+                    )
                 } else {
-                    Section {
-                        ForEach(list.items) { group in
-                            NavigationLink {
-                                GroupBoardView(group: group)
-                            } label: {
-                                Label(group.name, systemImage: "person.3.fill")
-                                    .font(.codeyBody)
+                    if let error = list.error {
+                        StaleNotice(message: error, fetchedAt: list.fetchedAt)
+                            .padding(CodeySpacing.md)
+                            .codeyNote()
+                    }
+                    if list.items.isEmpty, !list.isLoading {
+                        EmptyStateView(
+                            systemImage: "person.3",
+                            title: "No groups yet",
+                            message: "Groups rank members by XP earned this week. Create one and share its code, or join with a friend's code.",
+                            actionTitle: "Create Group"
+                        ) { sheet = .create }
+                    } else {
+                        BentoSection("Your groups") {
+                            ForEach(list.items) { group in
+                                NavigationLink {
+                                    GroupBoardView(group: group)
+                                } label: {
+                                    GameTile(
+                                        icon: "person.3",
+                                        title: group.name,
+                                        detail: "Code \(group.inviteCode)",
+                                        hue: group.hue,
+                                        action: TileAction("Board", icon: "trophy")
+                                    )
+                                }
+                                .buttonStyle(TilePressStyle())
+                                .accessibilityIdentifier("groups.row")
                             }
-                            .accessibilityIdentifier("groups.row")
                         }
-                    } footer: {
                         Text("Weeks reset Monday 00:00 UTC.")
+                            .font(.codeyCaption)
+                            .foregroundStyle(CodeyColor.textSecondary)
+                            .padding(.horizontal, CodeySpacing.xs)
                     }
                 }
             }
+            .padding(CodeySpacing.md)
         }
-        .codeyListBackground()
+        .codeyPaperBackground()
         .codeyPageTitle("Groups")
         .toolbar {
             if backend.currentUser != nil {
@@ -86,6 +100,14 @@ struct GroupsView: View {
     private func add(_ group: GroupSummary) {
         list.items.removeAll { $0.id == group.id }
         list.items.append(group)
+    }
+}
+
+extension GroupSummary {
+    /// A steady color per group, from its id, for its tile.
+    var hue: CodeyColor.TopicHue {
+        let colors = ProfileAvatar.Color.allCases
+        return colors[Int(id.uuid.0) % colors.count].hue
     }
 }
 
@@ -132,32 +154,33 @@ struct CreateGroupView: View {
     private var isValid: Bool { ModelValidator.validateGroupName(name).isEmpty }
 
     var body: some View {
-        Form {
-            if let created {
-                Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                if let created {
                     InviteCodeCard(group: created)
-                } footer: {
-                    Text("Anyone with this code can join and see the group's weekly board.")
-                }
-            } else {
-                Section {
+                    FieldNote("Anyone with this code can join and see the group's weekly board.")
+                } else {
                     TextField("Group name", text: $name)
+                        .font(.codeyBody)
                         .submitLabel(.done)
                         .onSubmit(create)
+                        .padding(CodeySpacing.md)
+                        .codeyNote()
                         .accessibilityIdentifier("groups.create.name")
-                } footer: {
                     HStack {
-                        Text("You'll get a code to share.")
+                        FieldNote("You'll get a code to share.")
                         Spacer()
                         Text("\(length)/\(limit)")
+                            .font(.codeyCaption)
                             .monospacedDigit()
                             .foregroundStyle(length > limit ? CodeyColor.danger : CodeyColor.textSecondary)
+                            .padding(.horizontal, CodeySpacing.xs)
                     }
-                    .font(.codeyCaption)
                 }
             }
+            .padding(CodeySpacing.md)
         }
-        .codeyListBackground()
+        .codeyPaperBackground()
         .codeyPageTitle(created == nil ? "New Group" : created!.name)
         .toolbar {
             if created == nil {
@@ -209,10 +232,12 @@ struct JoinGroupView: View {
     private var isValid: Bool { ModelValidator.validateInviteCode(code).isEmpty }
 
     var body: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                 TextField("ABC234", text: $code)
                     .font(.codeyNumeric)
+                    .kerning(4)
+                    .multilineTextAlignment(.center)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
                     .onChange(of: code) { _, new in
@@ -221,13 +246,15 @@ struct JoinGroupView: View {
                     }
                     .submitLabel(.join)
                     .onSubmit(join)
+                    .padding(CodeySpacing.md)
+                    .codeyNote()
                     .accessibilityLabel("Invite code")
                     .accessibilityIdentifier("groups.join.code")
-            } footer: {
-                Text("Ask a group member for its 6-character code.")
+                FieldNote("Ask a group member for its 6-character code.")
             }
+            .padding(CodeySpacing.md)
         }
-        .codeyListBackground()
+        .codeyPaperBackground()
         .codeyPageTitle("Join a Group")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -259,26 +286,46 @@ struct JoinGroupView: View {
     }
 }
 
-/// The invite code, large, with a share button.
+/// The invite code, large, with a share button, on a note.
 struct InviteCodeCard: View {
     let group: GroupSummary
 
     var body: some View {
-        VStack(spacing: CodeySpacing.sm) {
+        VStack(spacing: CodeySpacing.md) {
             Text(group.inviteCode)
                 .font(.codeyNumeric)
-                .kerning(4)
+                .kerning(6)
+                .foregroundStyle(CodeyColor.textPrimary)
                 .textSelection(.enabled)
                 .accessibilityLabel("Invite code \(group.inviteCode.map(String.init).joined(separator: " "))")
             ShareLink(
                 item: "Join my Codey group \"\(group.name)\" with code \(group.inviteCode).",
                 subject: Text("Join my Codey group")
             ) {
-                Label("Share Code", systemImage: "square.and.arrow.up")
+                HStack(spacing: CodeySpacing.sm) {
+                    Icon("square.and.arrow.up", size: 18, relativeTo: .title2)
+                    Text("Share Code")
+                }
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(CodeyFillButtonStyle(kind: .secondary))
             .accessibilityIdentifier("groups.share")
         }
+        .padding(CodeySpacing.md)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, CodeySpacing.sm)
+        .codeyNote()
+    }
+}
+
+/// A caption under a field on a bento page.
+private struct FieldNote: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text)
+            .font(.codeyCaption)
+            .foregroundStyle(CodeyColor.textSecondary)
+            .padding(.horizontal, CodeySpacing.xs)
     }
 }

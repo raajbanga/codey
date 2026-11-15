@@ -3,7 +3,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(51);
+select plan(53);
 
 -- Two users. The sign-up trigger should give each a profile.
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -141,6 +141,12 @@ $$, 'A can pick an avatar from the set');
 select throws_ok($$
     update public.profiles set avatar_id = 'skull.fill' where id = '00000000-0000-0000-0000-00000000000a'
 $$, '23514', null, 'an avatar outside the set is rejected');
+select lives_ok($$
+    update public.profiles set avatar_id = 'cat@teal' where id = '00000000-0000-0000-0000-00000000000a'
+$$, 'A can pick an avatar with a color (S42)');
+select throws_ok($$
+    update public.profiles set avatar_id = 'cat@purple' where id = '00000000-0000-0000-0000-00000000000a'
+$$, '23514', null, 'an avatar color outside the set is rejected');
 select lives_ok($$
     insert into public.feedback_reports (description, app_version, os_version) values ('Button overlaps text', '1.0 (1)', '26.0')
 $$, 'A can send a feedback report (owner_id defaults to auth.uid())');

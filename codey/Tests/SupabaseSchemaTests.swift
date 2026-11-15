@@ -49,7 +49,9 @@ struct SupabaseSchemaTests {
         #expect(all.contains("between \(limits.displayName.lowerBound) and \(limits.displayName.upperBound)"))
         #expect(all.contains("btrim(description, E' \\t\\r\\n')) between \(limits.feedback.lowerBound) and \(limits.feedback.upperBound)"))
         let avatars = ProfileAvatar.symbols.map { "'\($0)'" }.joined(separator: ", ")
-        #expect(all.contains("avatar_id in (\(avatars))"))
+        #expect(all.contains("split_part(avatar_id, '@', 1) in (\(avatars))"))
+        let colors = ProfileAvatar.Color.allCases.map { "'\($0.rawValue)'" }.joined(separator: ", ")
+        #expect(all.contains("split_part(avatar_id, '@', 2) in (\(colors))"))
     }
 
     /// FR-42 / FR-50–51 (S3-D): group and weekly XP limits match the app.

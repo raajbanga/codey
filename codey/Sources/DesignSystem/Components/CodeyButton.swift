@@ -88,10 +88,12 @@ struct CodeyFillButtonStyle: ButtonStyle {
             .animation(CodeyMotion.snappy, value: configuration.isPressed)
     }
 
+    @Environment(\.appHue) private var appHue
+
     private var colors: (fill: Color, label: Color) {
         switch kind {
-        case .primary: (CodeyColor.brandFill, CodeyColor.onBrandFill)
-        case .secondary: (CodeyColor.brandSoft, CodeyColor.brand)
+        case .primary: appHue.map { ($0.fill, .white) } ?? (CodeyColor.brandFill, CodeyColor.onBrandFill)
+        case .secondary: appHue.map { ($0.soft, $0.ink) } ?? (CodeyColor.brandSoft, CodeyColor.brand)
         case .destructive: (CodeyColor.Soft.danger, CodeyColor.danger)
         case .hue(let hue): (hue.fill, .white)
         }

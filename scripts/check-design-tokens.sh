@@ -25,10 +25,14 @@ check "no literal corner radii in screens" 'cornerRadius: *[0-9]|\.cornerRadius\
 check "no raw system fonts in screens" '\.font\(\.(largeTitle|title|title2|title3|headline|body|callout|subheadline|footnote|caption|caption2)\b|\.system\(size' "${SCREENS[@]}"
 check "haptics via .sensoryFeedback, not UIKit generators" 'UI(Impact|Notification|Selection)FeedbackGenerator' "$SRC"
 
-# Capsule only for single-line, fixed-height controls (D19).
-hits=$(grep -rnE 'Capsule\(\)' "$SRC" | grep -vE "DesignSystem/Components/(CodeyChip|ProgressBar|CodeyButton)\.swift" || true)
+# Capsule only for single-line, fixed-height controls (D19): chips, bars,
+# buttons, segmented chips, tile actions and the XP toast (S41), the streak
+# and filter pills, and the onboarding step dots (S42).
+hits=$(grep -rnE 'Capsule\(\)' "$SRC" \
+    | grep -vE "DesignSystem/Components/(CodeyChip|ProgressBar|CodeyButton|ChoiceChips|GameTiles)\.swift" \
+    | grep -vE "Features/(Home/HomeView|Decks/DeckLibraryView|Onboarding/OnboardingView)\.swift" || true)
 if [[ -n "$hits" ]]; then echo "✗ Capsule() outside approved single-line components"; echo "$hits" | sed 's/^/    /'; fail=1
-else echo "✓ Capsule() only in CodeyChip / ProgressBar / CodeyButton"; fi
+else echo "✓ Capsule() only in approved single-line components"; fi
 
 # Third-party UI libraries stay behind one wrapper each (R12).
 hits=$(grep -rlnE '^import Textual' "$SRC" | grep -v "DesignSystem/Markdown/CardMarkdownView.swift" || true)

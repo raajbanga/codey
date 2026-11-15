@@ -8,6 +8,13 @@ import SwiftUI
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var router = Router()
+    @Query private var profiles: [UserProfile]
+
+    /// The avatar's color as the app accent (S42); nil keeps slate and ink.
+    private var appHue: CodeyColor.TopicHue? {
+        let color = ProfileAvatar.color(for: profiles.first?.avatarId)
+        return color == .slate ? nil : color.hue
+    }
 
     var body: some View {
         TabView(selection: $router.tab) {
@@ -19,8 +26,9 @@ struct RootView: View {
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        // Ink blue for the selected tab instead of the system blue.
-        .tint(CodeyColor.brand)
+        // Ink blue (or the avatar's color) for the selected tab instead of
+        // the system blue.
+        .tint(appHue?.fill ?? CodeyColor.brand)
         // Study and Quiz covers show their own banner (FR-35).
         .badgeBanner(isActive: router.study == nil && router.quiz == nil)
         .fullScreenCover(item: $router.study) { request in
@@ -50,6 +58,7 @@ struct RootView: View {
             ProfileSheet()
         }
         .environment(router)
+        .environment(\.appHue, appHue)
     }
 }
 
