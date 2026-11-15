@@ -1,45 +1,97 @@
 import SwiftUI
 
-/// Bento layout (S40, second pass): every list on Home, Decks and Quiz is
-/// a grid of tiles in two columns, so screens share one tile and one grid
-/// instead of each building rows.
+/// Bento layout (S40, S41): every list on Play and Decks is a grid of
+/// GameTiles in two columns, under a TabHeader.
 ///
-///     Decks                           ← PageHeader (scrolls with the page)
-///     Starter decks                   ← BentoSection title
-///     ╭ ▣        Starter ╮ ╭ ▣       ╮
-///     │ Algorithms       │ │ OS Basics│  ← BentoTile: icon tile, accessory,
-///     │ 12 cards         │ │ 12 cards │    title, detail, footer
-///     │ ━━━━──      (▶)  │ │ ━━━  (▶) │
-///     ╰──────────────────╯ ╰──────────╯
-///     ╭ ▣ a last odd tile spans both  ╮
-///     ╰───────────────────────────────╯
+///     Decks                     (⌕) (+)   ← TabHeader: title, round buttons
+///     Starter decks                       ← BentoSection title
+///     ╭ GameTile ╮ ╭ GameTile ╮
+///     ╭ a last odd tile spans both    ╮
 ///
-/// Tiles in a row share its height. A spanning tile lays out sideways
-/// (icon beside the text) so it isn't a tall empty box. At accessibility
-/// text sizes the grid becomes one column.
+/// Tiles in a row share its height. At accessibility text sizes the grid
+/// becomes one column.
 
-/// A tab's title inside the scrolling page, as on Home: no large navigation
-/// title collapsing into the bar on scroll.
-struct PageHeader: View {
+/// A tab's title at the top of its scrolling page (Play, Decks): an
+/// optional line above, the title, and round buttons on the right. No large
+/// navigation title collapsing into the bar.
+struct TabHeader<Trailing: View>: View {
     var eyebrow: String?
     let title: String
+    @ViewBuilder var trailing: Trailing
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-            if let eyebrow {
-                Text(eyebrow)
-                    .font(.codeyCallout)
-                    .foregroundStyle(CodeyColor.textSecondary)
+        HStack(alignment: .center, spacing: CodeySpacing.sm) {
+            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
+                if let eyebrow {
+                    Text(eyebrow)
+                        .font(.codeySubheadline)
+                        .foregroundStyle(CodeyColor.textSecondary)
+                }
+                Text(title)
+                    .font(.codeyTitle.weight(.semibold))
+                    .foregroundStyle(CodeyColor.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            Text(title)
-                .font(.codeyDisplay)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            trailing
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+extension View {
+    /// A tab's root page (Home, Decks, Quiz): paper and no large title (the
+    /// PageHeader scrolls with the page).
+    func codeyTabPage() -> some View {
+        // The nav bar is hidden, so the status bar area gets the same edge
+        // fade as a bar (S41): content fades out instead of running into
+        // the clock.
+        // The page starts below the fade, so the header is clear at rest.
+        safeAreaPadding(.top, EdgeFade.overshoot)
+            .overlay(alignment: .top) { StatusBarFade() }
+            .codeyPaperBackground()
+            .toolbarTitleDisplayMode(.inline)
+    }
+}
+
+/// A pushed page's or sheet's title (S40): shown in the bar at the top of
+/// the page and faded out once the page scrolls, so only the bar's buttons
+/// stay over the content. `navigationTitle` still names the page for the
+/// back-button menu and VoiceOver.
+private struct FadingTitle: ViewModifier {
+    let title: String
+    @State private var scrolled = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(title)
+                        .font(.codeyHeadline)
+                        .foregroundStyle(CodeyColor.textPrimary)
+                        .lineLimit(1)
+                        .opacity(scrolled ? 0 : 1)
+                        .animation(CodeyMotion.resolve(CodeyMotion.pop, reduceMotion: reduceMotion), value: scrolled)
+                        .accessibilityHidden(scrolled)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+            .onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top > CodeySpacing.sm
+            } action: { _, isScrolled in
+                scrolled = isScrolled
+            }
+    }
+}
+
+extension View {
+    func codeyPageTitle(_ title: String) -> some View {
+        modifier(FadingTitle(title: title))
     }
 }
 
@@ -94,86 +146,11 @@ struct BentoGrid<Content: View>: View {
                             tile
                                 .frame(maxHeight: .infinity, alignment: .top)
                                 .gridCellColumns(spans ? columns : 1)
-                                .environment(\.bentoWide, spans)
                         }
                     }
                 }
             }
         }
-    }
-}
-
-/// One tile: icon tile and an optional accessory (chip, pin) on top, then
-/// title and detail, then an optional footer (progress, buttons) pinned to
-/// the bottom. Callers wrap it in a Button or NavigationLink.
-struct BentoTile<Accessory: View, Footer: View>: View {
-    let icon: String
-    let title: String
-    var detail: String?
-    var minHeight: CGFloat = 132
-    @ViewBuilder var accessory: Accessory
-    @ViewBuilder var footer: Footer
-
-    @Environment(\.bentoWide) private var wide
-    @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 36
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            if wide {
-                HStack(alignment: .top, spacing: CodeySpacing.sm) {
-                    IconTile(systemName: icon, size: iconSize, radius: CodeyRadius.sm)
-                    text
-                    Spacer(minLength: 0)
-                    accessory
-                }
-            } else {
-                HStack(alignment: .top, spacing: CodeySpacing.xs) {
-                    IconTile(systemName: icon, size: iconSize, radius: CodeyRadius.sm)
-                    Spacer(minLength: 0)
-                    accessory
-                }
-                text
-                Spacer(minLength: 0)
-            }
-            footer
-        }
-        .padding(CodeySpacing.md)
-        .frame(maxWidth: .infinity, minHeight: wide ? 0 : minHeight, maxHeight: .infinity, alignment: .topLeading)
-        .codeyNote()
-        .contentShape(.rect(cornerRadius: CodeyRadius.lg))
-    }
-
-    private var text: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-            Text(title)
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.textPrimary)
-            if let detail {
-                Text(detail)
-                    .font(.codeySubheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(CodeyColor.textSecondary)
-            }
-        }
-        .multilineTextAlignment(.leading)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-extension EnvironmentValues {
-    /// Set by BentoGrid on a tile that spans the row.
-    @Entry var bentoWide = false
-}
-
-extension BentoTile where Accessory == EmptyView {
-    init(icon: String, title: String, detail: String? = nil, minHeight: CGFloat = 132, @ViewBuilder footer: () -> Footer) {
-        self.init(icon: icon, title: title, detail: detail, minHeight: minHeight, accessory: { EmptyView() }, footer: footer)
-    }
-}
-
-extension BentoTile where Accessory == EmptyView, Footer == EmptyView {
-    init(icon: String, title: String, detail: String? = nil, minHeight: CGFloat = 132) {
-        self.init(icon: icon, title: title, detail: detail, minHeight: minHeight, accessory: { EmptyView() }, footer: { EmptyView() })
     }
 }
 

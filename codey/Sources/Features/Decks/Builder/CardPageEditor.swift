@@ -59,12 +59,8 @@ struct CardPageEditor: View {
 
     private var header: some View {
         HStack(spacing: CodeySpacing.sm) {
-            Picker("Side", selection: $side) {
-                ForEach(Side.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .fixedSize()
-            .accessibilityIdentifier("card.side")
+            ChoiceChips("Side", selection: $side)
+                .accessibilityIdentifier("card.side")
 
             Spacer(minLength: 0)
 

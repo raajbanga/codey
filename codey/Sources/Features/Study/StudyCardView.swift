@@ -26,9 +26,6 @@ struct StudyCardView: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// The taller face's height, so both faces match and the card doesn't
-    /// change size as it flips. Fresh per card (the session sets `.id`).
-    @State private var faceHeight: CGFloat = 0
 
     private static let halfFlip = 0.18
     /// Shortest card, so a one-line prompt still reads as a card.
@@ -54,8 +51,10 @@ struct StudyCardView: View {
         }
     }
 
+    /// Both faces at the taller one's height (MatchedFaces), so the card
+    /// doesn't change size as it flips.
     private var faces: some View {
-        ZStack {
+        MatchedFaces {
             face(isFront: true)
                 .rotation3DEffect(
                     .degrees(reduceMotion ? 0 : (isRevealed ? 90 : 0)),
@@ -87,10 +86,8 @@ struct StudyCardView: View {
     private func face(isFront: Bool) -> some View {
         let visible = isFront != isRevealed
         return CardFace(
-            card: card, isFront: isFront, scoreChange: scoreChange, isRepeat: isRepeat,
-            minHeight: max(Self.minHeight, faceHeight)
+            card: card, isFront: isFront, scoreChange: scoreChange, isRepeat: isRepeat
         )
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { faceHeight = max(faceHeight, $0) }
             .allowsHitTesting(visible)
             .accessibilityHidden(!visible)
     }
@@ -101,7 +98,6 @@ private struct CardFace: View {
     let isFront: Bool
     let scoreChange: StudyCardView.ScoreChange?
     let isRepeat: Bool
-    let minHeight: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.md) {
@@ -134,7 +130,7 @@ private struct CardFace: View {
             )
         }
         .padding(CodeySpacing.lg)
-        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: StudyCardView.minHeight, alignment: .topLeading)
         .codeyNote()
         .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
     }
@@ -145,6 +141,26 @@ private struct CardFace: View {
             CardMarkdownView(markdown: card.prompt, snippet: card.codeSnippet, font: .codeyCardText, isSelectable: false)
         } else {
             CardMarkdownView(markdown: card.answer, font: .codeyCardText, isSelectable: false)
+        }
+    }
+}
+
+/// Stacks the two faces and gives both the taller face's height for the
+/// width offered. It measures on every layout, so a card is never stuck at
+/// a height from an earlier pass (the old `faceHeight` only ever grew, and
+/// one tall pass left a short card huge).
+private struct MatchedFaces: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(proposal) }
+        return CGSize(
+            width: proposal.width ?? sizes.map(\.width).max() ?? 0,
+            height: sizes.map(\.height).max() ?? 0
+        )
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for face in subviews {
+            face.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
         }
     }
 }

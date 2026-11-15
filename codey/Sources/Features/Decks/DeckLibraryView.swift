@@ -24,6 +24,8 @@ struct DeckLibraryView: View {
 
     @State private var filter: Filter = .all
     @State private var searchText = ""
+    @State private var isSearching = false
+    @FocusState private var searchFocused: Bool
     @State private var showHiddenStarters = false
     @State private var builder: BuilderRequest?
     @State private var deckToDelete: FlashcardDeck?
@@ -37,11 +39,11 @@ struct DeckLibraryView: View {
         let sections = deckSections(topicsByID: topicsByID)
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                PageHeader(title: "Decks")
-                Picker("Show", selection: $filter) {
-                    ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
+                header
+                if isSearching {
+                    searchField
                 }
-                .pickerStyle(.segmented)
+                ChoiceChips("Show", selection: $filter, fills: true)
 
                 if decks.isEmpty {
                     EmptyStateView(
@@ -78,25 +80,13 @@ struct DeckLibraryView: View {
                         .tint(CodeyColor.brand)
                 }
             }
-            .padding(CodeySpacing.md)
+            .padding([.horizontal, .bottom], CodeySpacing.md)
         }
-        .codeyPaperBackground()
-        .toolbarTitleDisplayMode(.inline)
-        .searchable(text: $searchText, prompt: "Title or topic")
-        // A toolbar button that expands, so the field doesn't sit above the
-        // page title (S40).
-        .searchToolbarBehavior(.minimize)
+        .codeyTabPage()
+        // Title at the top as on Play (S41); search and New Deck are round
+        // buttons beside it instead of a bar above it.
+        .toolbarVisibility(.hidden, for: .navigationBar)
         .refreshable { await backend.syncPending() }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    builder = .new
-                } label: {
-                    Label("New Deck", systemImage: "plus")
-                }
-                .accessibilityIdentifier("decks.add")
-            }
-        }
         .navigationDestination(for: DeckRoute.self) { route in
             if let deck = decks.first(where: { $0.id == route.id }) {
                 DeckDetailView(deck: deck, topic: topicsByID[deck.topicId])
@@ -126,6 +116,40 @@ struct DeckLibraryView: View {
         .errorAlert($actionError)
     }
 
+    // MARK: Header
+
+    private var header: some View {
+        TabHeader(title: "Decks") {
+            CircleIconButton(systemImage: isSearching ? "xmark" : "magnifyingglass", label: isSearching ? "Close search" : "Search", kind: .soft) {
+                withAnimation(CodeyMotion.snappy) {
+                    isSearching.toggle()
+                    if !isSearching { searchText = "" }
+                }
+                searchFocused = isSearching
+            }
+            .accessibilityIdentifier("decks.search")
+            CircleIconButton(systemImage: "plus", label: "New Deck", kind: .soft) { builder = .new }
+                .accessibilityIdentifier("decks.add")
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: CodeySpacing.sm) {
+            Icon("magnifyingglass", size: 18, relativeTo: .body)
+                .foregroundStyle(CodeyColor.textSecondary)
+            TextField("Title or topic", text: $searchText)
+                .font(.codeyBody)
+                .focused($searchFocused)
+                .submitLabel(.search)
+                .accessibilityIdentifier("decks.searchField")
+        }
+        .padding(.horizontal, CodeySpacing.md)
+        .frame(minHeight: 44)
+        .background(CodeyColor.surfaceRaised, in: Capsule())
+        .overlay { Capsule().strokeBorder(CodeyColor.separator, lineWidth: 1) }
+        .transition(.opacity)
+    }
+
     // MARK: Sections
 
     private func section(_ title: String?, decks: [FlashcardDeck], topicsByID: [String: Topic]) -> some View {
@@ -139,12 +163,16 @@ struct DeckLibraryView: View {
                     .contextMenu { menu(for: deck) }
                     // S40: study straight from the grid (continues where you
                     // left off); the deck screen keeps tier and start-over options.
-                    .overlay(alignment: .bottomTrailing) {
+                    .overlay(alignment: .bottom) {
                         if canStudy {
-                            CircleIconButton(systemImage: "play.fill", label: "Study \(deck.title)", kind: .filled) {
+                            Button {
                                 router.study = StudyRequest(deck: deck, start: .resume)
+                            } label: {
+                                TileActionLabel(action: TileAction("Study"), hue: .of(topicID: deck.topicId))
                             }
-                            .padding(CodeySpacing.sm)
+                            .buttonStyle(TilePressStyle())
+                            .padding(CodeySpacing.md)
+                            .accessibilityLabel("Study \(deck.title)")
                             .accessibilityIdentifier("deckTile.study.\(deck.title)")
                         }
                     }

@@ -36,8 +36,7 @@ struct ProfileSheet: View {
             }
             .listStyle(.insetGrouped)
             .codeyListBackground()
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
+            .codeyPageTitle("Profile")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -192,14 +191,7 @@ struct ProfileSheet: View {
 
     private var appearanceSection: some View {
         Section("Appearance") {
-            Picker("Appearance", selection: $appearance) {
-                ForEach(AppAppearance.allCases) { option in
-                    Text(option.title).tag(option)
-                }
-            }
-            .pickerStyle(.segmented)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
+            ChoiceChips("Appearance", selection: $appearance, options: AppAppearance.allCases.map { ($0, $0.title) }, fills: true)
         }
     }
 
@@ -335,7 +327,7 @@ private struct AcknowledgementsView: View {
             }
         }
         .codeyListBackground()
-        .navigationTitle("Acknowledgements")
+        .codeyPageTitle("Acknowledgements")
     }
 }
 

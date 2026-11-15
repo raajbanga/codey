@@ -53,6 +53,44 @@ enum CodeyColor {
         static let hard = Color(.tierHardSoft)
     }
 
+    /// XP gold (S41): reward pills and the level bar. `xp` is the ink,
+    /// `xpSoft` the fill behind it.
+    static let xp = Color(.XP)
+    static let xpSoft = Color(.xpSoft)
+
+    /// One hue per topic on the Play board (S41, muted two-tone): `ink`
+    /// for text and icons on the light `soft` tile, `fill` (mid tone) for
+    /// the Play button and progress bars, labeled white. Topics outside the
+    /// bundled bank fall back to brand.
+    struct TopicHue: Equatable {
+        let ink: Color
+        let soft: Color
+        let fill: Color
+
+        static let teal = TopicHue(ink: Color(.topicTeal), soft: Color(.topicTealSoft), fill: Color(.topicTealFill))
+        static let sand = TopicHue(ink: Color(.topicSand), soft: Color(.topicSandSoft), fill: Color(.topicSandFill))
+        /// The app's own hue: the level card and header buttons.
+        static let slate = TopicHue(ink: Color(.topicSlate), soft: Color(.topicSlateSoft), fill: Color(.topicSlateFill))
+        static let coral = TopicHue(ink: Color(.topicCoral), soft: Color(.topicCoralSoft), fill: Color(.topicCoralFill))
+        static let sky = TopicHue(ink: Color(.topicSky), soft: Color(.topicSkySoft), fill: Color(.topicSkyFill))
+        static let rose = TopicHue(ink: Color(.topicRose), soft: Color(.topicRoseSoft), fill: Color(.topicRoseFill))
+        static let olive = TopicHue(ink: Color(.topicOlive), soft: Color(.topicOliveSoft), fill: Color(.topicOliveFill))
+        static let brand = TopicHue(ink: CodeyColor.brand, soft: CodeyColor.brandSoft, fill: CodeyColor.brand)
+
+        static func of(topicID: String?) -> TopicHue {
+            switch topicID {
+            case "topic-algorithms": .teal
+            case "topic-data-structures": .sky
+            case "topic-python": .olive
+            case "topic-databases": .sand
+            case "topic-networking": .sky
+            case "topic-os-basics": .rose
+            case "topic-oop", "topic-swift": .coral
+            default: .brand
+            }
+        }
+    }
+
     /// Code-block background, shared by Textual (display) and Runestone
     /// (editor). Syntax colors are SyntaxRole.color.
     static let codeBackground = Color(.codeBackground)

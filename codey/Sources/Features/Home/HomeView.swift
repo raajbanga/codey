@@ -1,29 +1,25 @@
 import SwiftData
 import SwiftUI
 
-/// Home (D8, simplified r3; Sprint 3 S9 facelift; S40 bento): progress at a
-/// glance plus ONE suggestion, then bento grids (Bento.swift) for the plan,
-/// challenge and groups, and every topic.
+/// Play (S41, the game layer; was Home), laid out as the S41 mockup: few
+/// words, big targets, color per topic, on the dotted paper.
 ///
-///     Good evening                          (◎)
+///     Good evening                  🔥4 (▲) (◎)  ← streak, groups, profile
 ///     Codey Learner
-///     Level 4                   1,840 XP  🔥 3    ← LevelSummary (streak, FR-33)
-///     ━━━━━━━━━━━━━━━━━━━━━━────────
-///     160 XP to Level 5          Today 12/20     ← daily goal (FR-32)
-///     ╭ Up next: ▶ Continue Swift Closures 7/12 ╮   ← one action
-///     This week's plan                            ← FR-38, fixed for the week
-///     ╭ ◆ Networking · Not started            ›  ╮
-///     │ ◆ Databases · 41% accuracy             › │
-///     ╰ ◆ Algorithms · 58% accuracy            › ╯
-///     Your topics (all; pinned first)
-///     ╭ ◆ Data Structures                       ╮   ← one note per topic
-///     │ 42% mastered · 78% accuracy             │
-///     │ ━━━━━━──────────      [Cards] [Quiz]    │  ← mastery; deck (menu if several) / quiz setup
-///     ╰─────────────────────────────────────────╯
-///     ╭ ◆ Algorithms …                          ╮
-///     ╰─────────────────────────────────────────╯
+///     ╭ Level 3                 320 / 500 XP ╮   ← LevelHero, slate
+///     │ ████████████░░░░░░                   │
+///     ╰ 180 XP to Level 4                    ╯
+///     Today's quests
+///     ╭ ◎ Answer 20   ╮ ╭ ⚑ 15 right in   ╮      ← bonus XP, paid once
+///     │ ━━━──  +50 XP │ │ Python  +100 XP  │
+///     Play a topic
+///     ╭ Algorithms    ╮ ╭ Data Structures ╮      ← whole tile plays
+///     │ Easy, 10 XP   │ │ Medium, 15 XP   │
+///     │ [  ▶ Play  ]  │ │ [  ▶ Play  ]    │
+///     ╭ ▭ Warm up: Algorithms cards     › ╮      ← one deck to study
+///     Exercises                                  ← +10 XP a blank, once
 ///
-/// Everything else lives in its tab (Decks, Quiz); Home doesn't duplicate it.
+/// Decks is the only other tab.
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(BackendFacade.self) private var backend
@@ -40,6 +36,8 @@ struct HomeView: View {
     /// by QuizProgressStore's per-topic history cap.
     @Query(sort: \QuizAnswerRecord.answeredAt, order: .reverse) private var records: [QuizAnswerRecord]
     @Query private var activity: [DailyActivity]
+    @Query private var progressRows: [QuestionProgress]
+    @Query private var topicProgress: [TopicProgress]
 
     private var profile: UserProfile? { profiles.first }
     private var xp: Int { profile?.totalXP ?? 0 }
@@ -49,36 +47,22 @@ struct HomeView: View {
         let stats = HomeStats(records: records, decks: decks, snapshots: snapshots)
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                PageHeader(eyebrow: HomeLogic.greeting(at: .now), title: profile?.username ?? UserProfile.defaultUsername)
-                LevelSummary(
-                    xp: xp,
-                    streak: StreakCalculator.currentStreak(endingOn: .now, activity: activity),
-                    today: StreakCalculator.progress(of: activity.first { $0.day == DailyActivity.dayKey(for: .now) })
-                )
-                upNextCard(stats)
-                planSection(stats)
-                weekSection
+                header
+                LevelHero(xp: xp)
+                questsSection
                 topicsSection(stats)
+                warmUp(stats)
+                BentoSection("Exercises") {
+                    ExerciseTiles(topics: topics, solved: Set(profile?.solvedExerciseIds ?? []))
+                }
                 if showsSignInNudge {
                     signInNudge
                 }
             }
-            .padding(CodeySpacing.md)
+            .padding([.horizontal, .bottom], CodeySpacing.md)
         }
-        .codeyPaperBackground()
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    router.showProfile = true
-                } label: {
-                    Icon("person.crop.circle", size: 26, relativeTo: .title2)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
-                .accessibilityLabel("Profile")
-                .accessibilityIdentifier("home.profile")
-            }
-        }
-        .toolbarTitleDisplayMode(.inline)
+        .codeyTabPage()
+        .toolbarVisibility(.hidden, for: .navigationBar)
         .onAppear {
             refreshPlan(stats)
             LaunchTimer.markHomeReady()
@@ -100,39 +84,61 @@ struct HomeView: View {
         )
     }
 
+    /// The one deck to study (cards pay +5 XP for each card moved up):
+    /// the session in progress, the starter deck, or a deck in the
+    /// suggested topic.
     @ViewBuilder
-    private func upNextCard(_ stats: HomeStats) -> some View {
-        switch upNext(stats) {
-        case .resume(let deckID, let position, let total):
-            if let deck = stats.deckByID[deckID] {
-                UpNextCard(
-                    eyebrow: "Continue studying",
-                    title: deck.title,
-                    detail: "Card \(position) of \(total)",
-                    systemImage: "play.fill",
-                    progress: total == 0 ? nil : Double(position - 1) / Double(total)
-                ) { router.study = StudyRequest(deck: deck, start: .resume) }
+    private func warmUp(_ stats: HomeStats) -> some View {
+        let pick: (deck: FlashcardDeck, resume: Bool, title: String, detail: String)? = {
+            switch upNext(stats) {
+            case .resume(let deckID, let position, let total):
+                return stats.deckByID[deckID].map { ($0, true, "Continue: \($0.title)", "Card \(position) of \(total), +\(XPRewards.cardMovedUp) XP a card") }
+            case .startDeck(let deckID):
+                return stats.deckByID[deckID].map { ($0, false, "Warm up: \($0.title)", "\($0.cardCount) cards, +\(XPRewards.cardMovedUp) XP a card") }
+            case .quiz(let topicID):
+                return stats.decksByTopic[topicID]?.first.map { ($0, false, "Warm up: \($0.title)", "\($0.cardCount) cards, +\(XPRewards.cardMovedUp) XP a card") }
+            case .none:
+                return nil
             }
-        case .startDeck(let deckID):
-            if let deck = stats.deckByID[deckID] {
-                UpNextCard(
-                    eyebrow: "Start here",
-                    title: deck.title,
-                    detail: "Flip cards and swipe to rate. Takes about 5 minutes.",
-                    systemImage: "sparkles"
-                ) { router.study = StudyRequest(deck: deck, start: .fresh(tierFilter: nil)) }
+        }()
+        if let pick {
+            Button {
+                router.study = StudyRequest(deck: pick.deck, start: pick.resume ? .resume : .fresh(tierFilter: nil))
+            } label: {
+                PlayRow(icon: "rectangle.stack", title: pick.title, detail: pick.detail, tint: CodeyColor.TopicHue.slate.fill)
             }
-        case .quiz(let topicID):
-            if let topic = topics.first(where: { $0.id == topicID }) {
-                UpNextCard(
-                    eyebrow: "Suggested quiz",
-                    title: topic.title,
-                    detail: stats.accuracyByTopic[topicID].map { "Your weakest topic · \($0.percentText) accuracy" } ?? "You haven't quizzed this topic yet",
-                    systemImage: "questionmark.bubble.fill"
-                ) { router.quizSetupTopic = topic }
+            .buttonStyle(TilePressStyle())
+            .accessibilityIdentifier("home.upNext")
+        }
+    }
+
+    // MARK: Header
+
+    private var header: some View {
+        let streak = StreakCalculator.currentStreak(endingOn: .now, activity: activity)
+        return TabHeader(eyebrow: HomeLogic.greeting(at: .now), title: profile?.username ?? UserProfile.defaultUsername) {
+            if streak > 0 {
+                Label("\(streak)", icon: "flame")
+                    .font(.codeyHeadline.monospacedDigit())
+                    .foregroundStyle(CodeyColor.xp)
+                    .padding(.horizontal, CodeySpacing.md)
+                    .frame(height: 44)
+                    .background(CodeyColor.xpSoft, in: Capsule())
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(streak) day streak")
             }
-        case .none:
-            EmptyView()
+            NavigationLink {
+                GroupsView()
+            } label: {
+                CircleIcon(systemImage: "trophy", kind: .soft)
+            }
+            .buttonStyle(TilePressStyle())
+            .accessibilityLabel("Groups and leaderboard")
+            .accessibilityIdentifier("home.groups")
+            CircleIconButton(systemImage: ProfileAvatar.symbol(for: profile?.avatarId), label: "Profile", kind: .soft) {
+                router.showProfile = true
+            }
+            .accessibilityIdentifier("home.profile")
         }
     }
 
@@ -155,66 +161,70 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func planSection(_ stats: HomeStats) -> some View {
-        let planned = plannedTopics
-        if !planned.isEmpty {
-            BentoSection("This week's plan") {
-                ForEach(planned) { topic in
-                    Button { router.quizSetupTopic = topic } label: {
-                        BentoTile(
-                            icon: topic.iconName,
-                            title: topic.title,
-                            detail: planAccuracy(topic, stats).map { "\($0.percentText) accuracy" } ?? "Not started",
-                            minHeight: 0
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Opens quiz setup")
-                    .accessibilityIdentifier("home.plan.\(topic.title)")
-                }
-            }
-        }
-    }
+    /// Topics in this week's plan get a "This week" tag on their tile.
+    private var planIDs: Set<String> { Set(plannedTopics.map(\.id)) }
 
-    // MARK: This week (FR-42, FR-43)
+    // MARK: Quests (FR-32, FR-42, S41 bonuses)
+
+    private var todayCount: Int {
+        StreakCalculator.progress(of: activity.first { $0.day == DailyActivity.dayKey(for: .now) })
+    }
 
     private var challenge: WeeklyChallenge.Status? {
         WeeklyChallenge.status(now: .now, topicIDs: topics.map(\.id), records: records)
     }
 
-    private var weekSection: some View {
-        BentoSection("Challenge and groups") {
-            if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
+    /// Both quests open quiz setup: the daily goal on this week's first
+    /// topic, the challenge on its own topic. The first unpaid one is "Up next".
+    private var questsSection: some View {
+        let goal = GatingConfig.standard.dailyGoal
+        let dailyPaid = profile?.goalBonusDay == DailyActivity.dayKey(for: .now)
+        let weeklyPaid = profile?.challengeBonusWeek == UTCWeek.key(for: .now)
+        let challengeTopic = challenge.flatMap { status in topics.first { $0.id == status.topicID } }
+        return BentoSection("Today's quests") {
+            Button {
+                router.quizSetupTopic = plannedTopics.first ?? orderedTopics.first
+            } label: {
+                QuestTile(
+                    icon: "target",
+                    title: "Answer \(goal)",
+                    count: "\(min(todayCount, goal)) of \(goal) today",
+                    progress: Double(min(todayCount, goal)) / Double(goal),
+                    bonus: XPRewards.dailyGoalBonus,
+                    isPaid: dailyPaid,
+                    isNext: !dailyPaid,
+                    hue: .teal
+                )
+            }
+            .buttonStyle(TilePressStyle())
+            .disabled(dailyPaid || topics.isEmpty)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Daily goal: \(min(todayCount, goal)) of \(goal) answers or cards, \(dailyPaid ? "bonus paid" : "plus \(XPRewards.dailyGoalBonus) XP")")
+            .accessibilityAddTraits(dailyPaid ? [] : .isButton)
+            .accessibilityHint(dailyPaid ? "" : "Opens quiz setup")
+            .accessibilityIdentifier("play.quest.daily")
+            if let challenge, let topic = challengeTopic {
                 Button { router.quizSetupTopic = topic } label: {
-                    BentoTile(
-                        icon: challenge.isComplete ? "trophy.fill" : "flag.checkered",
-                        title: "Weekly challenge",
-                        detail: challenge.isComplete
-                            ? "Done this week"
-                            : "\(min(challenge.correct, WeeklyChallenge.goal)) of \(WeeklyChallenge.goal) correct in \(topic.title)"
-                    ) {
-                        ProgressBar(value: challenge.progress)
-                    }
-                    .accessibilityElement(children: .combine)
+                    QuestTile(
+                        icon: "flag.checkered",
+                        title: "\(WeeklyChallenge.goal) right in \(topic.title)",
+                        count: "\(min(challenge.correct, WeeklyChallenge.goal)) of \(WeeklyChallenge.goal) this week",
+                        progress: challenge.progress,
+                        bonus: XPRewards.weeklyChallengeBonus,
+                        isPaid: weeklyPaid,
+                        isNext: dailyPaid && !weeklyPaid,
+                        hue: .coral
+                    )
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens quiz setup")
+                .buttonStyle(TilePressStyle())
+                .disabled(weeklyPaid)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Weekly challenge: \(min(challenge.correct, WeeklyChallenge.goal)) of \(WeeklyChallenge.goal) right in \(topic.title), \(weeklyPaid ? "bonus paid" : "plus \(XPRewards.weeklyChallengeBonus) XP")")
+                .accessibilityAddTraits(weeklyPaid ? [] : .isButton)
+                .accessibilityHint(weeklyPaid ? "" : "Opens quiz setup")
                 .accessibilityIdentifier("home.challenge")
             }
-            NavigationLink {
-                GroupsView()
-            } label: {
-                BentoTile(icon: "person.3.fill", title: "Groups", detail: "Weekly XP leaderboard")
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("home.groups")
         }
-    }
-
-    /// Live accuracy, or nil while the topic has too few answers to judge.
-    private func planAccuracy(_ topic: Topic, _ stats: HomeStats) -> Double? {
-        stats.answerCounts[topic.id, default: 0] >= StudyPlanBuilder.minimumAnswers ? stats.accuracyByTopic[topic.id] : nil
     }
 
     // MARK: Topics
@@ -233,22 +243,33 @@ struct HomeView: View {
         return pins.isEmpty ? topics.map(\.id) : pins
     }
 
+    /// This week's plan first (FR-38), then the rest, pinned first.
     private func topicsSection(_ stats: HomeStats) -> some View {
-        BentoSection("Your topics") {
-            ForEach(orderedTopics) { topic in
-                TopicTile(
-                    topic: topic,
-                    isPinned: pinned.contains(topic.id),
-                    decks: stats.decksByTopic[topic.id] ?? [],
-                    snapshotDeckIDs: stats.snapshotDeckIDs,
-                    accuracy: stats.accuracyByTopic[topic.id],
-                    practice: { deck, resume in
-                        router.study = StudyRequest(deck: deck, start: resume ? .resume : .fresh(tierFilter: nil))
-                    },
-                    quiz: { router.quizSetupTopic = topic }
-                )
+        let plan = planIDs
+        let ordered = orderedTopics.filter { plan.contains($0.id) } + orderedTopics.filter { !plan.contains($0.id) }
+        return BentoSection("Play a topic") {
+            ForEach(ordered) { topic in
+                PlayTopicTile(stats: quizStats(for: topic), inPlan: plan.contains(topic.id)) {
+                    router.quizSetupTopic = topic
+                }
             }
         }
+    }
+
+    /// Tier locks, accuracy over the last answers (FR-36), and retired count.
+    private func quizStats(for topic: Topic) -> QuizTopicStats {
+        let progress = progressRows.filter { $0.topicId == topic.id }.keyed(by: \.questionId)
+        let sticky = topicProgress.first { $0.topicId == topic.id }?.unlockedTiers ?? []
+        return QuizTopicStats(
+            topic: topic,
+            tiers: QuizProgressStore.availability(questions: topic.questions, progress: progress, sticky: sticky, xp: xp),
+            accuracy: QuizProgressStore.accuracy(
+                of: records.filter { $0.topicId == topic.id },
+                window: GatingConfig.standard.accuracyWindow
+            ),
+            retired: topic.questions.filter { progress[$0.id]?.isRetired == true }.count,
+            total: topic.questions.count
+        )
     }
 
     // MARK: Data

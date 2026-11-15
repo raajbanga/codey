@@ -4,23 +4,25 @@ import SwiftUI
 /// SF Rounded (the "notes on paper" softness); reading text stays SF Pro.
 /// Numbers use monospaced digits so counters don't jitter.
 ///
-/// The smallest token is footnote (13pt at the default size): nothing in
-/// the app uses caption/caption2, which read too small on a phone.
+/// S41: two steps up the type ramp for legibility, so text fills the tiles
+/// instead of leaving white space (at the default size: body and headings
+/// 22pt, secondary 20pt, labels 17pt, card text 28pt, titles 34pt). Code
+/// stays at body so lines don't wrap.
 extension Font {
     static let codeyDisplay = Font.system(.largeTitle, design: .rounded, weight: .bold)
-    static let codeyTitle = Font.system(.title2, design: .rounded, weight: .semibold)
-    static let codeyHeadline = Font.system(.headline, design: .rounded, weight: .semibold)
-    static let codeyBody = Font.body
+    static let codeyTitle = Font.system(.largeTitle, design: .rounded, weight: .semibold)
+    static let codeyHeadline = Font.system(.title2, design: .rounded, weight: .semibold)
+    static let codeyBody = Font.title2
     /// Flashcard and quiz prompts/answers: a card is read at a glance, so
-    /// it reads larger than body (title3, 20pt by default).
-    static let codeyCardText = Font.title3
-    static let codeyCallout = Font.callout
-    static let codeySubheadline = Font.subheadline
-    /// Labels, chips, metadata. Footnote, not caption.
-    static let codeyCaption = Font.footnote
+    /// it reads larger than body (title, 28pt by default).
+    static let codeyCardText = Font.title
+    static let codeyCallout = Font.title3
+    static let codeySubheadline = Font.title3
+    /// Labels, chips, metadata.
+    static let codeyCaption = Font.body
     /// XP, levels, counters. Pair with .contentTransition(.numericText()).
-    static let codeyNumeric = Font.system(.title, design: .rounded, weight: .semibold).monospacedDigit()
-    static let codeyNumericSmall = Font.system(.headline, design: .rounded, weight: .medium).monospacedDigit()
+    static let codeyNumeric = Font.system(.largeTitle, design: .rounded, weight: .semibold).monospacedDigit()
+    static let codeyNumericSmall = Font.system(.title2, design: .rounded, weight: .medium).monospacedDigit()
     /// Typed code (exercise answers): monospaced so spacing reads as typed.
     static let codeyCode = Font.system(.body, design: .monospaced)
 }
@@ -33,7 +35,7 @@ enum CodeyNavigationTitles {
     static func apply() {
         let bar = UINavigationBar.appearance()
         bar.largeTitleTextAttributes = [.font: rounded(.largeTitle, bold: true)]
-        bar.titleTextAttributes = [.font: rounded(.headline, bold: true)]
+        bar.titleTextAttributes = [.font: rounded(.title2, bold: true)]
     }
 
     private static func rounded(_ style: UIFont.TextStyle, bold: Bool) -> UIFont {

@@ -22,7 +22,8 @@ ICONS = {
     # Tabs
     'home': (['house.fill', 'house'],
              '<path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>'),
-    'cards': (['rectangle.stack.fill', 'rectangle.stack', 'rectangle.stack.badge.plus', 'rectangle.on.rectangle'],
+    'cards': (['rectangle.stack.fill', 'rectangle.stack', 'rectangle.stack.badge.plus', 'rectangle.on.rectangle',
+               'rectangle.on.rectangle.angled', 'rectangle.stack.badge.person.crop.fill'],
               '<rect x="4" y="8" width="13" height="12" rx="2"/><path d="M8 4.5h10a2 2 0 0 1 2 2V16"/>'),
     'quiz': (['questionmark.bubble.fill', 'questionmark.bubble'],
              '<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-4.5 3.5V17H6a2 2 0 0 1-2-2z"/>'
@@ -55,6 +56,11 @@ ICONS = {
     'sparkles': (['sparkles'],
                  '<path d="M10 3.5 11.6 8.4 16.5 10l-4.9 1.6L10 16.5l-1.6-4.9L3.5 10l4.9-1.6z"/>'
                  '<path d="M18 14.5v5M15.5 17h5"/>'),
+    # Ask AI (S39): a round chat bubble with a spark, apart from the quiz
+    # tab's square question bubble and the starter-deck sparkles.
+    'ask-ai': (['ask.ai'],
+               '<path d="M12 3.5c4.7 0 8.5 3.2 8.5 7.2s-3.8 7.2-8.5 7.2c-1 0-1.9-.1-2.8-.4L4.5 20l1.2-3.8C4.3 14.8 3.5 12.9 3.5 10.7c0-4 3.8-7.2 8.5-7.2z"/>'
+               '<path d="M12 7.2l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/>'),
     'play': (['play.fill', 'play'],
              '<path d="M8 5.5v13l10.5-6.5z" fill="#000"/>'),
     'plus': (['plus'], '<path d="M12 5v14M5 12h14"/>'),

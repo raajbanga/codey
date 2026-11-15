@@ -125,7 +125,7 @@ final class DeckBuilderUITests: XCTestCase {
     }
 
     private func switchSide(to side: String) {
-        hittable(app.segmentedControls.matching(identifier: "card.side")).buttons[side].tap()
+        hittable(app.otherElements.matching(identifier: "card.side")).buttons[side].tap()
     }
 
     /// The pager keeps neighbors in the hierarchy; act on the visible one.

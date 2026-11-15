@@ -55,8 +55,7 @@ struct ProfileEditorView: View {
             }
         }
         .codeyListBackground()
-        .navigationTitle("Edit Profile")
-        .navigationBarTitleDisplayMode(.inline)
+        .codeyPageTitle("Edit Profile")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { save() }

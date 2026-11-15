@@ -286,15 +286,15 @@ storyboard, wireframes, and navigation diagram are in the Sprint 3 document.
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.235\textwidth]{home-light.png}\hfill
-\includegraphics[width=0.235\textwidth]{decks.png}\hfill
-\includegraphics[width=0.235\textwidth]{study.png}\hfill
-\includegraphics[width=0.235\textwidth]{quiz.png}\\[1ex]
-\includegraphics[width=0.235\textwidth]{exercise-list.png}\hfill
-\includegraphics[width=0.235\textwidth]{exercise.png}\hfill
-\includegraphics[width=0.235\textwidth]{profile.png}\hfill
-\includegraphics[width=0.235\textwidth]{groups.png}
-\caption{Main screens (iOS Simulator). Top: Home, Decks, a study card (answer side), and a quiz question after a correct answer. Bottom: the coding-exercise list and an exercise after Check with one blank passed and one failed (Dark Mode, FR-39 to FR-41), the profile sheet, and Groups while signed out.}
+\includegraphics[width=0.235\textwidth]{final-home.png}\hfill
+\includegraphics[width=0.235\textwidth]{final-decks.png}\hfill
+\includegraphics[width=0.235\textwidth]{final-quiz-setup.png}\hfill
+\includegraphics[width=0.235\textwidth]{final-quiz-question.png}\\[1ex]
+\includegraphics[width=0.235\textwidth]{final-ask-ai.png}\hfill
+\includegraphics[width=0.235\textwidth]{final-exercises.png}\hfill
+\includegraphics[width=0.235\textwidth]{final-exercise.png}\hfill
+\includegraphics[width=0.235\textwidth]{final-study.png}
+\caption{Main screens (iPhone~17 Simulator). Top, Light Mode: Home as a bento grid, the deck library with a play button on each tile, quiz setup in a floating panel over the Quiz tab, and a quiz question. Bottom, Dark Mode: an Ask AI chat explaining a question without answering it (FR-67), the Exercises side of the Quiz tab, an exercise after Check with one blank passed and one failed (FR-39 to FR-41), and a study card.}
 \label{fig:screens}
 \end{figure}
 
@@ -615,10 +615,10 @@ Security & Backend requests not using TLS 1.3 & URL session minimum protocol (un
 Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 (in CI on every push) \\
 Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1, justified (\texttt{join\_group}) & 0 unjustified (2 justified: \texttt{join\_group}; leaked-password protection, no password sign-in) \\
 Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & 0 & 0 \\
-Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{scripts/test.sh} with \texttt{xccov} & All pass; $\ge$ 70\% & 342 of 342; 89.4\% & 388 of 388; 89.8\% \\
-User interface & Screens passing the layout pass (3 sizes, Light and Dark) & UI tests on 3 Simulators; walkthrough & 100\% & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) & \tbd{count incl.\ exercise screens} \\
+Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{scripts/test.sh} with \texttt{xccov} & All pass; $\ge$ 70\% & 342 of 342; 89.4\% & 416 of 416; 90.0\% \\
+User interface & Screens passing the layout pass (3 sizes, Light and Dark) & UI tests on 3 Simulators; walkthrough & 100\% & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) & 100\% (126 of 126: 21 screens, 3 sizes, 2 modes) \\
 User interface & Text/background pairs below 4.5:1 & \texttt{ContrastTests} (Light, Dark, Increase Contrast) & 0 & 0 & 0 \\
-User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}) over every main screen, Light and Dark & 0 & 0 open over 16 screens & 0 open over 19 screens (1 fixed, BUG-03) \\
+User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}) over every main screen, Light and Dark & 0 & 0 open over 16 screens & 0 open over 21 screens (1 fixed, BUG-03) \\
 User interface & Taps to start a study session from launch & Task walkthrough & $\le$ 3 & 1 & 1 (Home ``Up next'') \\
 \end{xltabular}
 
@@ -1293,7 +1293,7 @@ Requirements & FR-05, FR-06, FR-07, FR-09, FR-10, FR-11, FR-44, FR-45, FR-48 \\
 Primary actor & Student \\
 Secondary actors & None (the exercises are bundled with the app) \\
 Preconditions & The app is running. Sign-in and connectivity are not required. \\
-Main flow & 1. On the Quiz tab, the student opens \emph{Coding Exercises}; the system loads and validates \texttt{exercises.json} and lists the exercises by topic. 2. The student opens an exercise; the system shows the prompt, the syntax-highlighted code with each blank numbered, and one text field per blank. 3. The student types an answer for each blank and selects \emph{Check}. 4. The system checks every blank as one test case (UC-24). 5. The system shows Passed or Failed next to each blank, a summary (``1 of 2 tests passed''), and the explanation. \\
+Main flow & 1. On the Quiz tab, the student switches from \emph{Quizzes} to \emph{Exercises}; the system loads and validates \texttt{exercises.json} and lists the exercises by topic on the same screen. 2. The student opens an exercise; the system shows the prompt, the syntax-highlighted code with each blank numbered, and one text field per blank. 3. The student types an answer for each blank and selects \emph{Check}. 4. The system checks every blank as one test case (UC-24). 5. The system shows Passed or Failed next to each blank, a summary (``1 of 2 tests passed''), and the explanation. \\
 Alternate flows & 4a. A blank is left empty: it is reported as ``No answer'' and counts as failed. 5a. A blank failed: its accepted answers are shown under the field. 5b. The student selects \emph{Try Again}: the fields are cleared and the exercise restarts. 1a. The file fails validation: an error screen is shown instead of a partial list. \\
 Postconditions & Nothing is stored or synced, and no XP is awarded (S31). \\
 Requirements & FR-39, FR-40, FR-41 \\
@@ -1498,7 +1498,7 @@ TC-N04 & \texttt{StoreFileProtectionTests}, \texttt{KeychainSessionStorageTests}
 TC-N06 & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} \\
 TC-N07 & \texttt{SupabaseSchemaTests} (every table has RLS), \texttt{supabase/tests/rls.sql} and \texttt{progress.sql} (in CI), live RLS check \\
 TC-N08, TC-N09 & \texttt{SyncEngineTests} (offline save, reconnect); system test ST-04 \\
-TC-N10, TC-N11 & Manual layout pass: 19 screens on iPhone 17e, 17, and 18 Pro Max, Light and Dark; \texttt{ExerciseUITests} on all three sizes \\
+TC-N10, TC-N11 & Layout pass: the 21 audited screens on iPhone 17e, 17, and 18 Pro Max, Light and Dark, plus the \texttt{ScreenTourUITests} captures checked by eye; all UI tests on all three sizes \\
 TC-N11, TC-N12 & \texttt{ColorTokenTests}, \texttt{ContrastTests}, \texttt{AppAppearanceTests}, \texttt{AccessibilityAuditUITests} (UI) \\
 TC-N03 & Build and smoke test on the iOS 27 Simulator (Appendix~A.8); deployment target iOS 26 in \texttt{Project.swift} \\
 TC-N05 & Review of the Supabase project settings and Supabase's encryption-at-rest documentation (AES-256) \\
@@ -2019,6 +2019,60 @@ displays results. On the sync side, \texttt{ProgressSync} reads and writes the
 existing progress models (\texttt{Flashcard}, \texttt{QuestionProgress},
 \texttt{TopicProgress}) and exchanges \texttt{ProgressBatch} values with the adapter;
 \texttt{SyncEngine} calls it once per cycle (Figure~\ref{fig:sequence3}).
+
+% ---------------------------------------------------------------------
+\begin{figure}[!htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+  \node[cls={violet}{5.4cm}, anchor=north] (sess) at (-7.4,0) {\ctitle{\st{class}\\\textbf{AskAISession}}
+    \nodepart{two}\raggedright +context: AskAIContext\\ +messages: [Message] \{read\}\\ +isWaiting: Bool \{read\}\\ +error: AskAIError? \{read\}\\ +draft: String\\ -client: AskAIClient
+    \nodepart{three}\raggedright +start()\\ +send()\\ +retry()\\ +turns() : [ChatTurn]\\ +reusing(old?, for, client) : AskAISession};
+  \node[cls={cyan}{4.4cm}, anchor=north] (turn) at (-8.1,-6.6) {\ctitle{\st{struct}\\\textbf{ChatTurn}}
+    \nodepart{two}\raggedright +role: system | user | assistant\\ +content: String
+    \nodepart{three}~};
+  \node[cls={cyan}{5.4cm}, anchor=north] (ctx) at (0.2,0) {\ctitle{\st{struct}\\\textbf{AskAIContext}}
+    \nodepart{two}\raggedright +id: String\\ +kind: quiz | exercise\\ +problem: String\\ +secrets: [String]\\ +correctLetter: String?
+    \nodepart{three}\raggedright +quiz(question) : AskAIContext\\ +exercise(Exercise) : AskAIContext};
+  \node[cls={orange}{5.4cm}, anchor=north] (guard) at (0.2,-4.4) {\ctitle{\st{enum}\\\textbf{AnswerLeakGuard}}
+    \nodepart{two}~
+    \nodepart{three}\raggedright +secrets(candidates, visibleText) : [String]\\ +leaks(reply, context) : Bool\\ +normalize(text) : String};
+  \node[cls={orange}{5.4cm}, anchor=north] (prompt) at (0.2,-7.4) {\ctitle{\st{enum}\\\textbf{AskAIPrompt}}
+    \nodepart{two}\raggedright +system, greeting, refusal, rewrite: String
+    \nodepart{three}~};
+  \node[cls={gray}{5.2cm}, anchor=north] (client) at (6.4,0) {\ctitle{\st{interface}\\\textbf{AskAIClient}}
+    \nodepart{two}~
+    \nodepart{three}\raggedright +complete(turns) async throws : String};
+  \node[cls={cyan}{5.2cm}, anchor=north] (or) at (6.4,-2.6) {\ctitle{\st{struct}\\\textbf{OpenRouterClient}}
+    \nodepart{two}\raggedright +endpoint: URL \{static\}\\ +apiKey, model: String
+    \nodepart{three}\raggedright +makeRequest(turns) : URLRequest\\ +complete(turns) : String};
+  \node[cls={gray}{5.2cm}, anchor=north] (err) at (6.4,-6.4) {\ctitle{\st{enum}\\\textbf{AskAIError}}
+    \nodepart{two}\raggedright offline, timeout, unauthorized,\\ rateLimited, modelUnavailable,\\ server, emptyReply
+    \nodepart{three}\raggedright +message: String \{get\}};
+  \draw[assoc] (sess.east |- ctx.text) -- node[lbl] {1} (ctx.text -| ctx.west);
+  \draw[assoc] (sess.north) -- ++(0,0.6) -| node[lbl, pos=0.25] {1} (client.north);
+  \draw[realize] (or.north) -- (client.south);
+  \draw[dep] (or.south) -- node[lbl] {\st{throw}} (err.north);
+  \draw[dep] (guard.north) -- node[lbl] {reads} (ctx.south);
+  \draw[dep] (sess.east |- guard.text) -- node[lbl] {\st{use}} (guard.text -| guard.west);
+  \draw[dep] ([xshift=-3mm]sess.south east) |- node[lbl, pos=0.8] {\st{use}} (prompt.west);
+  \draw[dep] (sess.south -| turn.north) -- node[lbl] {\st{create}} (turn.north);
+\end{tikzpicture}}
+\caption{UML class diagram: the Ask AI tutor (FR-67, FR-68)}
+\label{fig:askai-classes}
+\end{figure}
+
+Figure~\ref{fig:askai-classes} shows the Ask AI types. None is stored: the chat lives
+only in \texttt{AskAISession}, which the quiz or exercise screen keeps for the problem
+on screen and replaces when the problem changes (\texttt{reusing}), so FR-68 holds by
+construction. \texttt{AskAIContext} is built from the question or exercise and carries
+the problem text the model may see and, separately, the \texttt{secrets} (the correct
+option or accepted blanks) that it must never be sent; \texttt{AnswerLeakGuard} checks
+every reply against those secrets, and the session asks for one rewrite and then shows
+\texttt{AskAIPrompt.refusal}. The session depends only on the \texttt{AskAIClient}
+protocol, so unit tests and \texttt{AskAIUITests} use a stub and
+\texttt{OpenRouterClient} is the only type that talks to \texttt{openrouter.ai}.
+\texttt{AskAIError} maps each HTTP or network failure to one message the chat shows.
 
 \FloatBarrier
 \subsection{Creational Pattern: Factory}\label{sec:factory}
@@ -3270,10 +3324,10 @@ used.
 \endfoot
 1 & Test plan written: scope, levels, environment, entry and exit criteria, roles. & Done (this section) \\
 2 & Every requirement traced to a test case and a suite (Tables~\ref{tab:rtm}, \ref{tab:tcmap}). & Done; 68 of 68 FRs traced \\
-3 & Unit tests for every model, rule, view model, loader, and validator. & Done; 388 pass \\
+3 & Unit tests for every model, rule, view model, loader, and validator. & Done; 416 pass \\
 4 & Basis-path tests for the two flow-graph methods. & Done; 8 of 8 paths covered \\
 5 & Integration tests with stubs and drivers (Activity 12.2). & Done; Swift, pgTAP, live check \\
-6 & UI tests on three screen sizes, Light and Dark, with the accessibility audit. & Done; 19 screens, 0 open issues \\
+6 & UI tests on three screen sizes, Light and Dark, with the accessibility audit. & Done; 21 screens on 3 sizes, 0 open issues \\
 7 & Scripted system tests (Activity 13.1). & \tbd{results of the Nov 17 run} \\
 8 & Acceptance tests by a non-author (Activity 13.2). & \tbd{results of the Nov 19 run} \\
 9 & Security and performance re-runs. & Done on the Simulator; device checks \tbd{status} \\
@@ -3286,7 +3340,7 @@ Each unit test sets up one type with in-memory data, calls it, and checks the re
 or state change; nothing touches the network, and SwiftData runs in memory. Tests are
 named for the behavior they check (for example
 \texttt{againRequeuesAtTheEndOnlyOnce}), and many are parameterized, so one test
-function covers several inputs. Table~\ref{tab:unitresults} groups the 55 unit
+function covers several inputs. Table~\ref{tab:unitresults} groups the 59 unit
 suites by layer; the per-suite counts are in \texttt{docs/source/tests/unit.csv}.
 
 \begin{table}[H]
@@ -3303,18 +3357,20 @@ Content and persistence & \texttt{ExerciseLoaderTests}, \texttt{StarterDeckLoade
 Sync and backend & \texttt{SyncEngineTests}, \texttt{DeckSyncStateTests}, \texttt{ProgressSyncTests}, \texttt{SupabaseDataClientTests}, \texttt{GroupsAndChallengeTests} (9) & 119 & 0 \\
 Security and configuration & \texttt{KeychainSessionStorageTests}, \texttt{TransportSecurityTests}, \texttt{SignInNonceTests}, \texttt{AppConfigTests} (5) & 14 & 0 \\
 Design system & \texttt{ContrastTests}, \texttt{ColorTokenTests}, \texttt{MarkdownFormattingTests} (7) & 25 & 0 \\
+Ask AI tutor & \texttt{OpenRouterClientTests}, \texttt{AskAISessionTests}, \texttt{AnswerLeakGuardTests}, \texttt{AskAIConfigTests} (4) & 28 & 0 \\
 \midrule
-\textbf{Total} & 53 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{388} & \textbf{0} \\
+\textbf{Total} & 57 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{416} & \textbf{0} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 Line coverage of the app, measured with \texttt{xccov} over the unit and UI tests
-together, is 79.6\%: Models 97.8\%, ViewModels 94.1\%, Services 88.2\% (89.8\% for
+together, is 80.1\%: Models 97.8\%, ViewModels 92.5\%, Services 88.7\% (90.0\% for
 the three layers NFR-16 names, against 70\%). The least covered folders are
-DesignSystem (72.9\%) and Features (75.6\%): SwiftUI views, which the UI tests and
+DesignSystem (76.9\%) and Features (75.1\%): SwiftUI views, which the UI tests and
 the audit walk reach only along their main paths. Compared with Sprint~3 (342 tests,
-89.4\%), Sprint~4 added 46 unit tests, mostly for FR-61 and the coding exercises.
+89.4\%), Sprint~4 added 74 unit tests, mostly for FR-61, the coding exercises, and
+the Ask AI tutor.
 
 \subsection{Flow-Graph Coverage}\label{sec:flowgraph}
 Two methods with real branching were drawn as control flow graphs, and each basis
@@ -3494,8 +3550,8 @@ ST-01 & Study a deck and resume (FR-16 to FR-18) & \texttt{StudySessionUITests}:
 ST-02 & Author and delete a deck (FR-05 to FR-13) & \texttt{DeckBuilderUITests}: create a deck with a Python snippet, save, find its tile; delete an unsynced deck from its detail screen. & Pass (automated) \\
 ST-03 & Quiz with tiers, XP, streak, badge (FR-19 to FR-38) & New learner: onboarding, a 10-question quiz, then Home shows the XP, the streak, and the first badge; Medium unlocks after the retire threshold. & \tbd{result} \\
 ST-04 & Offline use (FR-44 to FR-46, NFR-09) & Signed in, network off: study, answer a quiz, create a deck; network on: everything syncs, nothing is lost or duplicated. & \tbd{result} \\
-ST-05 & Coding exercise (FR-39 to FR-41) & \texttt{ExerciseUITests}: Quiz tab, Coding Exercises, ``Exit early with guard''; one right and one wrong blank give Passed and Failed with the accepted answer; Try Again with both right gives ``All 2 tests passed''. & Pass (automated) \\
-ST-06 & Every main screen is accessible (NFR-10 to NFR-12) & \texttt{AccessibilityAuditUITests}: walk 19 screens from onboarding to an answered question, run the system audit on each, in Light and Dark. & Pass, 0 open issues (automated) \\
+ST-05 & Coding exercise (FR-39 to FR-41) & \texttt{ExerciseUITests}: Quiz tab, Exercises switch, ``Exit early with guard''; one right and one wrong blank give Passed and Failed with the accepted answer; Try Again with both right gives ``All 2 tests passed''. & Pass (automated) \\
+ST-06 & Every main screen is accessible (NFR-10 to NFR-12) & \texttt{AccessibilityAuditUITests}: walk 21 screens from onboarding to an answered question and the Ask AI chat, run the system audit on each, in Light and Dark. & Pass, 0 open issues (automated) \\
 ST-07 & Account, sync, groups (FR-01 to FR-03, FR-42, FR-50 to FR-53, FR-61) & Sign in with Google, sync, create a group, join it from a second account by code, see both on the weekly leaderboard, sign out. & Pass (Nov 10, by hand); \tbd{re-run} \\
 \end{xltabular}
 
@@ -3573,7 +3629,7 @@ Codey now does what the client asked for. All 68 functional requirements are
 implemented, including every client mandate: adaptive tier rotation, XP, streaks and
 badges, progress analytics and a study plan, offline use with cloud sync of decks and,
 since Sprint~4, of study results, leaderboards and weekly challenges, and
-code-completion exercises. The app is covered by 388 unit tests, 6 UI tests over 19
+code-completion exercises. The app is covered by 416 unit tests, 11 UI tests over 21
 screens, 75 database tests, and a 57-check live security test, all of which run with
 one command and, except the live check, on every push. The team's main lessons were
 practical ones: an integration can fail when both halves pass their own tests (the
@@ -3651,8 +3707,8 @@ tests passed). \tbd{fresh-clone dry-run of the whole guide after the freeze, by 
 \end{itemize}
 
 \textbf{A.4 Run without a backend (simplest).} Skip A.5--A.7. With no keys, the app
-runs in local-only mode: everything except sign-in, sync, groups, and defect reports
-works. Go to A.8.
+runs in local-only mode: everything except sign-in, sync, groups, defect reports, and
+the Ask AI tutor works. Go to A.8.
 
 \textbf{A.5 Secrets.} Copy \texttt{Config/Secrets.example.xcconfig} to
 \texttt{Config/Secrets.xcconfig} (gitignored; never commit it) and fill in:
@@ -3666,6 +3722,12 @@ works. Go to A.8.
         iOS OAuth client from A.7 and its reversed form
         (\texttt{com.googleusercontent.apps.\ldots}).
   \item \texttt{GOOGLE\_SERVER\_CLIENT\_ID}: the Web OAuth client from A.7.
+  \item \texttt{OPENROUTER\_API\_KEY} (optional, for Ask AI): openrouter.ai $\to$ Keys
+        $\to$ Create Key, with a credit limit of \$0 so only free models can answer.
+  \item \texttt{OPENROUTER\_MODEL}: a model ID ending in \texttt{:free} from the live
+        list at \texttt{openrouter.ai/api/v1/models}, or \texttt{openrouter/free} to
+        let OpenRouter pick one. The free catalog changes often, so check it before a
+        demo.
 \end{itemize}
 Run \texttt{scripts/check-secrets.sh} to confirm nothing secret is tracked.
 
@@ -3730,6 +3792,9 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
         then \texttt{tuist install \&\& tuist generate}.
   \item \emph{Sign-in button missing}: a key in \texttt{Secrets.xcconfig} is empty, so
         the app is in local-only mode.
+  \item \emph{Ask AI button missing}: \texttt{OPENROUTER\_API\_KEY} is empty. If the
+        chat says the model is unavailable, the free model in
+        \texttt{OPENROUTER\_MODEL} was retired: pick another from the models list.
   \item \emph{Google sign-in returns to the app with an error}: the reversed client ID
         does not match the iOS client, or the account is not a listed test user.
 \end{itemize}

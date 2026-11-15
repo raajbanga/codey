@@ -28,7 +28,8 @@ struct ColorTokenTests {
     @Test func assetColorsHaveDistinctDarkVariants() throws {
         let light = UITraitCollection(userInterfaceStyle: .light)
         let dark = UITraitCollection(userInterfaceStyle: .dark)
-        for name in Self.assetNames {
+        // BrandFill is one solid violet in both modes (S41), labeled white.
+        for name in Self.assetNames where name != "BrandFill" {
             let color = try #require(UIColor(named: name, in: .main, compatibleWith: nil))
             #expect(color.resolvedColor(with: light) != color.resolvedColor(with: dark), "\(name) has no dark variant")
         }

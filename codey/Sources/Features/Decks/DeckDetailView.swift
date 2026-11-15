@@ -16,6 +16,8 @@ struct DeckDetailView: View {
     @Environment(Router.self) private var router
     @Environment(BackendFacade.self) private var backend
 
+    private var hue: CodeyColor.TopicHue { .of(topicID: deck.topicId) }
+
     var body: some View {
         // Never-synced decks are hard-deleted, and a deleted model must not
         // be read while the pop animation is still showing this screen.
@@ -28,23 +30,31 @@ struct DeckDetailView: View {
 
     private var content: some View {
         List {
+            // The deck in its topic's pastel, as on Play and the library (S41).
             Section {
                 VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                    HStack {
-                        if let topic {
-                            Label(topic.title, systemImage: topic.iconName)
-                                .font(.codeySubheadline)
-                                .foregroundStyle(CodeyColor.textSecondary)
-                        }
+                    HStack(alignment: .top) {
+                        Icon(topic?.iconName ?? "rectangle.stack", size: 26, relativeTo: .title2)
                         Spacer()
-                        DeckStatusChip(deck: deck)
+                        if deck.origin == .user || deck.isHidden {
+                            DeckStatusChip(deck: deck)
+                        }
                     }
-                    ProgressBar(value: deck.progressRate, label: "\(deck.cardCount.counted("card")) · \(deck.progressRate.percentText) progress")
+                    Text(deck.title)
+                        .font(.codeyTitle.weight(.semibold))
+                    Text([topic?.title, deck.cardCount.counted("card")].compactMap { $0 }.joined(separator: ", "))
+                        .font(.codeySubheadline)
+                    ProgressBar(value: deck.progressRate, tint: hue.fill, height: 8, track: hue.fill.opacity(0.2))
+                    Text("\(deck.progressRate.percentText) progress")
+                        .font(.codeySubheadline)
                 }
+                .foregroundStyle(hue.ink)
                 .padding(.vertical, CodeySpacing.xs)
+                .accessibilityElement(children: .combine)
+                .listRowBackground(hue.soft)
             }
 
-            StudyLauncherSection(deck: deck) { start in
+            StudyLauncherSection(deck: deck, hue: hue) { start in
                 router.study = StudyRequest(deck: deck, start: start)
             }
 
@@ -61,11 +71,15 @@ struct DeckDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(.compact)
+        .contentMargins(.top, CodeySpacing.xs, for: .scrollContent)
         .codeyListBackground()
+        // The colored card shows the title, so the bar shows only buttons;
+        // navigationTitle still names the page for back and VoiceOver.
         .navigationTitle(deck.title)
-        // Inline: deck names are long and a large title truncates them.
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
             if deck.isEditable {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Edit") { isEditing = true }

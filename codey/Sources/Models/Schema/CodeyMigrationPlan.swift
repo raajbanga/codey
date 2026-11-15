@@ -6,11 +6,11 @@ import SwiftData
 enum CodeyMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [CodeySchemaV1.self, CodeySchemaV2.self, CodeySchemaV3.self, CodeySchemaV4.self, CodeySchemaV5.self,
-         CodeySchemaV6.self, CodeySchemaV7.self, CodeySchemaV8.self]
+         CodeySchemaV6.self, CodeySchemaV7.self, CodeySchemaV8.self, CodeySchemaV9.self]
     }
 
     static var stages: [MigrationStage] {
-        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7, v7ToV8]
+        [v1ToV2, v2ToV3, v3ToV4, v4ToV5, v5ToV6, v6ToV7, v7ToV8, v8ToV9]
     }
 
     /// Additive only (new deck/card entities), so lightweight is enough.
@@ -59,12 +59,19 @@ enum CodeyMigrationPlan: SchemaMigrationPlan {
         fromVersion: CodeySchemaV7.self,
         toVersion: CodeySchemaV8.self
     )
+
+    /// UserProfile gains reward bookkeeping with defaults (S41), so
+    /// lightweight.
+    static let v8ToV9 = MigrationStage.lightweight(
+        fromVersion: CodeySchemaV8.self,
+        toVersion: CodeySchemaV9.self
+    )
 }
 
-typealias CodeySchemaCurrent = CodeySchemaV8
+typealias CodeySchemaCurrent = CodeySchemaV9
 
 // The rest of the app always uses these names, never the versioned ones.
-typealias UserProfile = CodeySchemaV7.UserProfile
+typealias UserProfile = CodeySchemaV9.UserProfile
 typealias Topic = CodeySchemaV1.Topic
 typealias Question = CodeySchemaV1.Question
 typealias FlashcardDeck = CodeySchemaV2.FlashcardDeck

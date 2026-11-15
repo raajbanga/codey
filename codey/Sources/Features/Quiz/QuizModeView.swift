@@ -9,8 +9,9 @@ import SwiftUI
 struct QuizModeView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var viewModel: QuizViewModel
-    @State private var toastLevel: Int?
+    @State private var toast: XPToast?
     /// Ask AI (S39): the chat for the current question, and whether it is open.
     @State private var askAI: AskAISession?
     @State private var presentedAskAI: AskAISession?
@@ -21,8 +22,7 @@ struct QuizModeView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
+        Group {
             if viewModel.questions.isEmpty {
                 EmptyStateView(
                     systemImage: "questionmark.bubble",
@@ -34,16 +34,25 @@ struct QuizModeView: View {
                 .frame(maxHeight: .infinity)
             } else if viewModel.isFinished {
                 QuizSummaryView(viewModel: viewModel) { dismiss() }
+                    .padding(.horizontal, CodeySpacing.md)
             } else if let question = viewModel.currentQuestion {
                 questionView(question)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .codeyBar(.top) { topBar }
         .codeyPaperBackground()
-        .overlay(alignment: .top) { levelToast }
+        .xpToast($toast)
         .badgeBanner()
         .onChange(of: viewModel.levelUpToast) { _, level in
             guard let level else { return }
-            showToast(level)
+            withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .level(level) }
+            viewModel.levelUpToast = nil
+        }
+        .onChange(of: viewModel.bonusToast) { _, bonus in
+            guard let bonus else { return }
+            withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .bonus(bonus) }
+            viewModel.bonusToast = nil
         }
         .floatingPanel(item: $presentedAskAI, fillsHeight: true) { session in
             AskAIChatView(session: session)
@@ -64,69 +73,64 @@ struct QuizModeView: View {
     // MARK: Top bar
 
     private var topBar: some View {
-        HStack(spacing: CodeySpacing.sm) {
-            CloseButton(label: "Close quiz") { dismiss() }
-                .accessibilityIdentifier("quiz.close")
-
-            if !viewModel.isFinished, !viewModel.questions.isEmpty {
-                SegmentedQuizProgress(results: viewModel.results, current: viewModel.index)
-                if viewModel.streak >= 2 {
-                    CodeyChip("\(viewModel.streak)", systemImage: "flame.fill", variant: .warning)
-                        .contentTransition(.numericText())
-                        .accessibilityLabel("Streak \(viewModel.streak)")
-                        .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
-                }
-                if !viewModel.isPractice {
-                    XPGainLabel(total: viewModel.profileXP)
-                }
-                if let client = AskAI.client, let question = viewModel.currentQuestion {
-                    AskAIButton { openAskAI(question, client: client) }
-                }
-            } else {
-                Spacer()
+        SessionTopBar(
+            closeLabel: "Close quiz",
+            closeID: "quiz.close",
+            isActive: !viewModel.isFinished && !viewModel.questions.isEmpty,
+            close: { dismiss() }
+        ) {
+            SegmentedQuizProgress(results: viewModel.results, current: viewModel.index)
+        } trailing: {
+            if !viewModel.isPractice {
+                // XP earned this quiz (S41 mockup).
+                SessionXP(amount: viewModel.xpEarned)
+                    .accessibilityIdentifier("quiz.xp")
+            }
+            if let client = AskAI.client, let question = viewModel.currentQuestion {
+                AskAIButton { openAskAI(question, client: client) }
             }
         }
         .padding(.horizontal, CodeySpacing.md)
-        .padding(.vertical, CodeySpacing.xs)
         .codeyAnimation(CodeyMotion.snappy, value: viewModel.streak)
     }
 
     // MARK: Question
 
+    /// The question card with the answers as one tight block right under it;
+    /// a long question scrolls.
     private func questionView(_ question: Question) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CodeySpacing.md) {
                 CodeyCard {
                     VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                         HStack(spacing: CodeySpacing.xs) {
+                            // The tier and what it pays, as on its Play tile (S41).
                             CodeyChip(tier: question.difficulty)
+                            if viewModel.isPractice {
+                                CodeyChip("Practice", variant: .neutral)
+                            } else {
+                                CodeyChip(xp: XPPolicy.base(question.difficulty))
+                            }
                             if viewModel.reviewIDs.contains(question.id) {
                                 CodeyChip("Review", systemImage: "arrow.counterclockwise", variant: .brand)
                             }
-                            if viewModel.isPractice {
-                                CodeyChip("Practice · no XP", variant: .neutral)
-                            }
                             Spacer(minLength: 0)
-                            Text("\(viewModel.index + 1) of \(viewModel.questions.count)")
-                                .font(.codeySubheadline)
-                                .foregroundStyle(CodeyColor.textSecondary)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityValue("Question \(viewModel.index + 1) of \(viewModel.questions.count)")
                         CardMarkdownView(markdown: question.prompt, font: .codeyCardText)
                     }
                 }
 
-                VStack(spacing: CodeySpacing.sm) {
-                    ForEach(Array(question.options.enumerated()), id: \.offset) { index, option in
-                        AnswerOptionRow(
-                            index: index,
-                            title: option,
-                            state: optionState(index, question: question),
-                            isLocked: viewModel.hasAnswered
-                        ) {
-                            withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.select(index) }
-                        }
-                        .accessibilityIdentifier("quiz.option.\(index)")
-                    }
+                answers(question)
+                    .padding(.top, CodeySpacing.sm)
+
+                if !viewModel.hasAnswered, !viewModel.isPractice, viewModel.streak >= 1 {
+                    Text("Streak \(viewModel.streak): next right answer +\(XPPolicy.xpForCorrectAnswer(tier: question.difficulty, streakAfterIncrement: viewModel.streak + 1)) XP")
+                        .font(.codeySubheadline)
+                        .foregroundStyle(CodeyColor.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("quiz.streakHint")
                 }
 
                 if let feedback = viewModel.feedback {
@@ -137,7 +141,7 @@ struct QuizModeView: View {
             .padding(CodeySpacing.md)
         }
         .id(question.id)
-        .safeAreaInset(edge: .bottom) {
+        .codeyBar(.bottom) {
             if viewModel.hasAnswered {
                 CodeyButton(
                     viewModel.isLastQuestion ? "See Results" : "Next",
@@ -154,6 +158,51 @@ struct QuizModeView: View {
                 .transition(.opacity)
             }
         }
+    }
+
+    /// Short answers as a 2×2 grid of big tiles (S41 mockup); long ones
+    /// (or big text) as full-width rows so they wrap.
+    @ViewBuilder
+    private func answers(_ question: Question) -> some View {
+        let grid = question.options.count == 4
+            && question.options.allSatisfy { $0.count <= 24 && !$0.contains("\n") }
+            && !typeSize.isAccessibilitySize
+        if grid {
+            Grid(horizontalSpacing: CodeySpacing.sm, verticalSpacing: CodeySpacing.sm) {
+                ForEach(0..<2, id: \.self) { row in
+                    GridRow {
+                        ForEach(row * 2..<row * 2 + 2, id: \.self) { index in
+                            answerOption(index, question.options[index], question: question, asTile: true)
+                        }
+                    }
+                }
+            }
+            // Rows hug their tiles; without this the grid shares out the
+            // page's spare height and the rows drift apart.
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+            VStack(spacing: CodeySpacing.sm) {
+                ForEach(question.options.indices, id: \.self) { index in
+                    answerOption(index, question.options[index], question: question, asTile: false)
+                }
+            }
+        }
+    }
+
+    private func answerOption(_ index: Int, _ title: String, question: Question, asTile: Bool) -> some View {
+        AnswerOptionRow(
+            index: index,
+            title: title,
+            state: optionState(index, question: question),
+            isLocked: viewModel.hasAnswered,
+            asTile: asTile
+        ) {
+            withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.select(index) }
+        }
+        // Tiles in one grid row match heights; the grid itself is fixedSize,
+        // so this never pulls in extra page height.
+        .frame(maxHeight: asTile ? .infinity : nil)
+        .accessibilityIdentifier("quiz.option.\(index)")
     }
 
     private func explanation(_ question: Question, feedback: QuizViewModel.AnswerFeedback) -> some View {
@@ -198,33 +247,6 @@ struct QuizModeView: View {
         }
         return .idle
     }
-
-    // MARK: Level-up toast
-
-    @ViewBuilder
-    private var levelToast: some View {
-        if let toastLevel {
-            Label("Level \(toastLevel)!", systemImage: "arrow.up.circle.fill")
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.brand)
-                .padding(.horizontal, CodeySpacing.lg)
-                .padding(.vertical, CodeySpacing.sm)
-                .codeyFloatingSurface()
-                .padding(.top, CodeySpacing.xxl)
-                .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
-                .accessibilityAddTraits(.isStaticText)
-        }
-    }
-
-    private func showToast(_ level: Int) {
-        withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toastLevel = level }
-        UIAccessibility.post(notification: .announcement, argument: "Level \(level)!")
-        Task {
-            try? await Task.sleep(for: .seconds(2))
-            withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toastLevel = nil }
-            viewModel.levelUpToast = nil
-        }
-    }
 }
 
 /// One tick per question, colored correct / wrong as you go; the current
@@ -251,7 +273,9 @@ private struct SegmentedQuizProgress: View {
         switch results[index] {
         case .some(true): CodeyColor.success
         case .some(false): CodeyColor.danger
-        case nil: index == current ? CodeyColor.brand : CodeyColor.fillNeutral
+        // Track in the dot-grid ink: FillNeutral is made for white tiles and
+        // all but vanished on the paper (S40).
+        case nil: index == current ? CodeyColor.brand : CodeyColor.paperDot
         }
     }
 }

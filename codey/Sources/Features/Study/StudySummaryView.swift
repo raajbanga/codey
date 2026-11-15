@@ -1,7 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// End of a study session: what changed, then Study again / Done.
+/// End of a study session: what changed and the XP earned, then Study
+/// Again / Done. Laid out by SessionSummary, as the quiz summary is.
 struct StudySummaryView: View {
     let deck: FlashcardDeck
     let summary: StudySessionViewModel.Summary
@@ -11,58 +12,34 @@ struct StudySummaryView: View {
     let done: () -> Void
 
     @Environment(\.modelContext) private var modelContext
-    @State private var celebrating = false
 
     var body: some View {
-        ZStack {
-            ScrollView {
-                VStack(spacing: CodeySpacing.lg) {
-                    if wasEmpty {
-                        EmptyStateView(
-                            systemImage: "checkmark.seal.fill",
-                            title: "All caught up",
-                            message: emptyMessage
-                        )
-                    } else {
-                        header
-                        stats
-                        unlockBanners
-                    }
-                }
-                .padding(.top, CodeySpacing.lg)
+        SessionSummary(
+            title: wasEmpty ? nil : "Session complete",
+            subtitle: wasEmpty ? nil : deck.title,
+            xpEarned: wasEmpty ? nil : summary.xpEarned,
+            againTitle: "Study Again",
+            againID: "study.again",
+            doneID: "study.done",
+            again: wasEmpty ? nil : studyAgain,
+            done: done,
+            celebration: summary.unlockedTiers.last.map { ("\($0.style.label) unlocked!", $0.style.symbol) }
+        ) {
+            if !wasEmpty {
+                Icon("rectangle.stack", size: 40, relativeTo: .largeTitle)
+                    .foregroundStyle(CodeyColor.TopicHue.of(topicID: deck.topicId).ink)
+                    .frame(width: 72, height: 72)
+                    .background(CodeyColor.TopicHue.of(topicID: deck.topicId).soft, in: .codey(CodeyRadius.lg))
+                    .accessibilityHidden(true)
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .safeAreaInset(edge: .bottom) { buttons }
-
-            if let tier = summary.unlockedTiers.last {
-                CelebrationOverlay(
-                    isPresented: $celebrating,
-                    title: "\(tier.style.label) unlocked!",
-                    systemImage: tier.style.symbol
-                )
+        } details: {
+            if wasEmpty {
+                EmptyStateView(systemImage: "checkmark.seal.fill", title: "All caught up", message: emptyMessage)
+            } else {
+                stats
+                ForEach(summary.unlockedTiers, id: \.self) { TierUnlockedBanner(tier: $0) }
             }
         }
-        .onAppear {
-            if !summary.unlockedTiers.isEmpty { celebrating = true }
-        }
-    }
-
-    private var header: some View {
-        VStack(spacing: CodeySpacing.xs) {
-            Image(systemName: "rectangle.stack.badge.person.crop.fill")
-                .font(.codeyDisplay)
-                .foregroundStyle(CodeyColor.brand)
-                .accessibilityHidden(true)
-            Text("Session complete")
-                .font(.codeyDisplay)
-                .multilineTextAlignment(.center)
-            Text(deck.title)
-                .font(.codeyCallout)
-                .foregroundStyle(CodeyColor.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
     }
 
     /// S19: "moved up" and deck progress in mastery points, so a first pass
@@ -75,7 +52,7 @@ struct StudySummaryView: View {
             StatTileRow {
                 StatTile(value: summary.reviewed, label: reviewedLabel, systemImage: "rectangle.on.rectangle")
                 StatTile(value: summary.movedUp, label: "Moved up", systemImage: "arrow.up.circle.fill", tint: CodeyColor.success)
-                StatTile(value: endPercent, label: "Deck progress · \(delta) pts", suffix: "%", systemImage: "chart.line.uptrend.xyaxis")
+                StatTile(value: endPercent, label: "Progress, \(delta) pts", suffix: "%", systemImage: "chart.line.uptrend.xyaxis")
             }
             if summary.newlyMastered > 0 {
                 CodeyChip(
@@ -88,23 +65,7 @@ struct StudySummaryView: View {
     }
 
     private var reviewedLabel: String {
-        summary.repeats > 0 ? "Cards reviewed · +\(summary.repeats.counted("repeat"))" : "Cards reviewed"
-    }
-
-    private var unlockBanners: some View {
-        ForEach(summary.unlockedTiers, id: \.self) { TierUnlockedBanner(tier: $0) }
-    }
-
-    private var buttons: some View {
-        VStack(spacing: CodeySpacing.sm) {
-            if !wasEmpty {
-                CodeyButton("Study Again", systemImage: "arrow.clockwise", kind: .secondary, fullWidth: true, action: studyAgain)
-                    .accessibilityIdentifier("study.again")
-            }
-            CodeyButton("Done", kind: .primary, fullWidth: true, action: done)
-                .accessibilityIdentifier("study.done")
-        }
-        .padding(.top, CodeySpacing.sm)
+        summary.repeats > 0 ? "Reviewed, +\(summary.repeats.counted("repeat"))" : "Cards reviewed"
     }
 
     private var emptyMessage: String {

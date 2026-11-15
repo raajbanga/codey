@@ -44,8 +44,7 @@ struct DeckBuilderView: View {
             }
             .padding(.top, CodeySpacing.sm)
             .codeyPaperBackground()
-            .navigationTitle(viewModel.isEditing ? "Edit Deck" : "New Deck")
-            .navigationBarTitleDisplayMode(.inline)
+            .codeyPageTitle(viewModel.isEditing ? "Edit Deck" : "New Deck")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

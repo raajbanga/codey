@@ -11,16 +11,28 @@ enum AnswerOptionState: Equatable {
 }
 
 /// Multiple-choice answer row (replaces QuizOptionRow, fixes B14): md radius
-/// so long answers wrap cleanly, A/B/C/D badge, and state shown by icon +
-/// color + VoiceOver value, never color alone.
+/// so long answers wrap cleanly, A/B/C/D badge. State is fill + edge (dashed
+/// for the revealed answer) + VoiceOver value. No state icon (S41): it
+/// changed a tile's height on answer, and the explanation below carries ✓/✕.
 struct AnswerOptionRow: View {
     let index: Int
     let title: String
     let state: AnswerOptionState
     let isLocked: Bool
+    /// A tile in the 2×2 answer grid (S41): text centered, no letter badge.
+    var asTile = false
     let action: () -> Void
 
-    @ScaledMetric(relativeTo: .body) private var badgeSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .body) private var badgeSize: CGFloat = 32
+    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 60
+
+    /// The answer with inline Markdown (`code`, **bold**) rendered, as on
+    /// the question card; plain text if it doesn't parse.
+    private var titleText: Text {
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        guard let attributed = try? AttributedString(markdown: title, options: options) else { return Text(title) }
+        return Text(attributed)
+    }
 
     private var letter: String {
         String(UnicodeScalar(UInt8(65 + min(max(index, 0), 25))))
@@ -31,33 +43,11 @@ struct AnswerOptionRow: View {
             // VoiceOver can still activate a row that ignores touches.
             if !isLocked { action() }
         } label: {
-            HStack(alignment: .center, spacing: CodeySpacing.md) {
-                Text(letter)
-                    .font(.codeySubheadline.weight(.semibold))
-                    .foregroundStyle(badgeForeground)
-                    .frame(width: badgeSize, height: badgeSize)
-                    .background(badgeBackground, in: Circle())
-
-                Text(title)
-                    .font(.codeyBody)
-                    .foregroundStyle(CodeyColor.textPrimary)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                if let icon {
-                    Icon(icon, size: 22, relativeTo: .title3)
-                        .foregroundStyle(tint)
-                        .transition(.opacity)
-                }
+            if asTile {
+                tileLabel
+            } else {
+                rowLabel
             }
-            .padding(.vertical, CodeySpacing.sm + CodeySpacing.xs)
-            .padding(.horizontal, CodeySpacing.md)
-            .background(fill, in: .codey(CodeyRadius.md))
-            .overlay {
-                RoundedRectangle.codey(CodeyRadius.md)
-                    .strokeBorder(stroke, style: StrokeStyle(lineWidth: state == .idle ? 1 : 1.5, dash: state == .revealedCorrect ? [6, 4] : []))
-            }
-            .contentShape(.rect(cornerRadius: CodeyRadius.md))
         }
         // Not .disabled: a disabled .plain button dims its whole label, which
         // greyed out the picked and revealed rows too (contrast below 4.5:1).
@@ -78,20 +68,51 @@ struct AnswerOptionRow: View {
         .accessibilityValue(accessibilityState)
     }
 
+    private var tileLabel: some View {
+        titleText
+            .font(.codeyBody.weight(.medium))
+            .foregroundStyle(CodeyColor.textPrimary)
+            .multilineTextAlignment(.center)
+        .padding(CodeySpacing.md)
+        .frame(maxWidth: .infinity, minHeight: 84)
+        .background(fill, in: .codey(CodeyRadius.lg))
+        .overlay {
+            RoundedRectangle.codey(CodeyRadius.lg)
+                .strokeBorder(state == .idle ? CodeyColor.separator : tint, style: StrokeStyle(lineWidth: state == .idle ? 1.5 : 2.5, dash: state == .revealedCorrect ? [6, 4] : []))
+        }
+        .contentShape(.rect(cornerRadius: CodeyRadius.lg))
+    }
+
+    private var rowLabel: some View {
+            HStack(alignment: .center, spacing: CodeySpacing.md) {
+                Text(letter)
+                    .font(.codeySubheadline.weight(.semibold))
+                    .foregroundStyle(badgeForeground)
+                    .frame(width: badgeSize, height: badgeSize)
+                    .background(badgeBackground, in: Circle())
+
+                titleText
+                    .font(.codeyBody)
+                    .foregroundStyle(CodeyColor.textPrimary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, CodeySpacing.md)
+            .padding(.horizontal, CodeySpacing.md)
+            .frame(minHeight: rowHeight)
+            .background(fill, in: .codey(CodeyRadius.md))
+            .overlay {
+                RoundedRectangle.codey(CodeyRadius.md)
+                    .strokeBorder(stroke, style: StrokeStyle(lineWidth: state == .idle ? 1 : 1.5, dash: state == .revealedCorrect ? [6, 4] : []))
+            }
+            .contentShape(.rect(cornerRadius: CodeyRadius.md))
+    }
+
     private var tint: Color {
         switch state {
         case .idle: CodeyColor.brand
         case .selectedCorrect, .revealedCorrect: CodeyColor.success
         case .selectedWrong: CodeyColor.danger
-        }
-    }
-
-    private var icon: String? {
-        switch state {
-        case .idle: nil
-        case .selectedCorrect: "checkmark.circle.fill"
-        case .selectedWrong: "xmark.circle.fill"
-        case .revealedCorrect: "checkmark.circle"
         }
     }
 

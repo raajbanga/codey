@@ -28,6 +28,7 @@ struct StudySessionView: View {
     @State private var masteredBadge: StudyCardView.MasteredBadge?
     @State private var scoreChange: StudyCardView.ScoreChange?
     @State private var feedbackEvent: FeedbackEvent?
+    @State private var toast: XPToast?
 
     private static let swipeThreshold: CGFloat = 110
 
@@ -37,7 +38,6 @@ struct StudySessionView: View {
 
     var body: some View {
         VStack(spacing: CodeySpacing.md) {
-            topBar
             if let summary = viewModel.summary {
                 StudySummaryView(
                     deck: viewModel.deck,
@@ -53,8 +53,10 @@ struct StudySessionView: View {
         }
         .padding(.horizontal, CodeySpacing.md)
         .padding(.bottom, CodeySpacing.sm)
+        .codeyBar(.top) { topBar.padding(.horizontal, CodeySpacing.md) }
         .codeyPaperBackground()
         .background { keyboardShortcuts }
+        .xpToast($toast)
         .badgeBanner()
         .sensoryFeedback(trigger: feedbackEvent) { _, new in new?.rating.feedback }
     }
@@ -62,23 +64,25 @@ struct StudySessionView: View {
     // MARK: Top bar
 
     private var topBar: some View {
-        HStack(spacing: CodeySpacing.md) {
-            CloseButton(label: "Close", hint: "Your progress is saved") { dismiss() }
-                .accessibilityIdentifier("study.close")
-
-            if viewModel.summary == nil {
-                ProgressBar(value: viewModel.queue.progress)
-                Text(counterText)
-                    .font(.codeyNumericSmall)
-                    .foregroundStyle(CodeyColor.textSecondary)
-                    .contentTransition(.numericText())
-                    .accessibilityLabel(counterAccessibilityLabel)
-                    .accessibilityIdentifier("study.counter")
-            } else {
-                Spacer()
-            }
+        SessionTopBar(
+            closeLabel: "Close",
+            closeHint: "Your progress is saved",
+            closeID: "study.close",
+            isActive: viewModel.summary == nil,
+            close: { dismiss() }
+        ) {
+            ProgressBar(value: viewModel.queue.progress)
+            Text(counterText)
+                .font(.codeyNumericSmall)
+                .foregroundStyle(CodeyColor.textSecondary)
+                .contentTransition(.numericText())
+                .accessibilityLabel(counterAccessibilityLabel)
+                .accessibilityIdentifier("study.counter")
+        } trailing: {
+            // XP so far, as in a quiz (S41): +5 a card moved up.
+            SessionXP(amount: viewModel.xpEarned)
+                .accessibilityIdentifier("study.xp")
         }
-        .padding(.top, CodeySpacing.xs)
     }
 
     /// "3 / 12", "3 / 12 · +1 repeat", or "Repeat 1 of 2" (S19): cards that
@@ -243,8 +247,15 @@ struct StudySessionView: View {
             masteredBadge = nil
             scoreChange = nil
             drag = .zero
+            var outcome: StudySessionViewModel.RatingOutcome?
             withCodeyAnimation(CodeyMotion.snappy, reduceMotion: reduceMotion) {
-                _ = viewModel.rate(rating)
+                outcome = viewModel.rate(rating)
+            }
+            // A bonus outranks the card's own +5.
+            if let bonus = outcome?.bonuses.last {
+                withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .bonus(bonus) }
+            } else if let xp = outcome?.xp, xp > 0 {
+                withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .xp(xp) }
             }
             isCommitting = false
         }

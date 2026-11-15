@@ -9,6 +9,11 @@ enum CodeyChipVariant: Equatable {
     case success
     case warning
     case danger
+    /// What something pays: XP ink on XP soft, same in both modes (S41).
+    case xp
+    /// A status word on a topic's pastel ("Up next", "This week"): the
+    /// pastel's ink, outlined, no fill.
+    case outline(Color)
 
     /// Text/icon color; also the tint for anything themed by this variant.
     var color: Color {
@@ -19,6 +24,8 @@ enum CodeyChipVariant: Equatable {
         case .success: CodeyColor.success
         case .warning: CodeyColor.warning
         case .danger: CodeyColor.danger
+        case .xp: CodeyColor.xp
+        case .outline(let color): color
         }
     }
 
@@ -33,12 +40,20 @@ enum CodeyChipVariant: Equatable {
         case .success: CodeyColor.Soft.success
         case .warning: CodeyColor.Soft.warning
         case .danger: CodeyColor.Soft.danger
+        case .xp: CodeyColor.xpSoft
+        case .outline: .clear
         }
+    }
+
+    var isOutline: Bool {
+        if case .outline = self { return true }
+        return false
     }
 }
 
-/// Single-line pill for status, tier, and counts. Capsule is allowed here
-/// because the text never wraps (lineLimit 1, scales down instead).
+/// The app's one tag (S41): tier, status, XP, sync state, counts. Every
+/// pill-shaped label is a CodeyChip so they share size, type, and padding.
+/// Capsule is allowed because the text never wraps (lineLimit 1).
 struct CodeyChip: View {
     let title: String
     var systemImage: String?
@@ -53,6 +68,11 @@ struct CodeyChip: View {
     /// A tier chip: tier color + tier symbol + label (never color alone).
     init(tier: Difficulty) {
         self.init(tier.style.label, systemImage: tier.style.symbol, variant: .tier(tier))
+    }
+
+    /// "+10 XP" in XP gold.
+    init(xp: Int) {
+        self.init("+\(xp) XP", variant: .xp)
     }
 
     var body: some View {
@@ -71,13 +91,19 @@ struct CodeyChip: View {
         .foregroundStyle(variant.color)
         .padding(.horizontal, title.isEmpty ? CodeySpacing.sm : CodeySpacing.sm + CodeySpacing.xxs)
         .padding(.vertical, CodeySpacing.xs)
+        .monospacedDigit()
         .background(variant.softColor, in: Capsule())
+        .overlay {
+            if variant.isOutline {
+                Capsule().strokeBorder(variant.color.opacity(0.6), lineWidth: 1)
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
     }
 
     private var accessibilityText: String {
         if case .tier(let tier) = variant { return tier.style.accessibilityLabel }
-        return title
+        return title.replacingOccurrences(of: "+", with: "plus ")
     }
 }

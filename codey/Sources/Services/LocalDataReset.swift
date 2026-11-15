@@ -11,6 +11,9 @@ enum LocalDataReset {
     static func resetProgress(context: ModelContext, weeklyXP: WeeklyXPStore = WeeklyXPStore()) throws {
         let profile = DataSeeder.ensureProfile(context: context)
         profile.totalXP = 0
+        profile.solvedExerciseIds = []
+        profile.goalBonusDay = nil
+        profile.challengeBonusWeek = nil
 
         for card in try context.fetch(FetchDescriptor<Flashcard>()) {
             card.resetMastery()

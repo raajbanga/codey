@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Coding exercises (FR-39), the Quiz tab's Exercises side: the bundled
-/// exercises grouped by topic, a bento grid per topic. No progress is kept
-/// (S31), so the list is the same on every visit.
-struct ExerciseList: View {
+/// Coding exercises (FR-39) on Play (S41): one GameTile each, with what a
+/// first solve pays (+10 XP a blank) or Solved once done. Goes inside a
+/// BentoSection.
+struct ExerciseTiles: View {
     let topics: [Topic]
+    let solved: Set<String>
 
     @State private var exercises: [Exercise] = []
     @State private var loadError: String?
@@ -12,30 +13,36 @@ struct ExerciseList: View {
     var body: some View {
         Group {
             if let loadError {
-                EmptyStateView(systemImage: "exclamationmark.triangle", title: "Exercises didn't load", message: loadError)
-                    .padding(.top, CodeySpacing.xl)
+                GameTile(icon: "exclamationmark.triangle", title: "Exercises didn't load", detail: loadError, hue: .rose, filled: false)
             } else {
-                VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                    ForEach(sections, id: \.title) { section in
-                        BentoSection(section.title) {
-                            ForEach(section.exercises) { exercise in
-                                NavigationLink {
-                                    ExerciseView(exercise: exercise)
-                                } label: {
-                                    BentoTile(
-                                        icon: "chevron.left.forwardslash.chevron.right",
-                                        title: exercise.title,
-                                        detail: "\(exercise.language.displayName), \(exercise.blanks.count.counted("blank"))",
-                                        minHeight: 0
-                                    )
-                                    .accessibilityElement(children: .combine)
-                                    .accessibilityHint("Opens the exercise")
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("exercise.\(exercise.id)")
-                            }
+                ForEach(ordered) { exercise in
+                    let done = solved.contains(exercise.id)
+                    NavigationLink {
+                        ExerciseView(exercise: exercise)
+                    } label: {
+                        // Same tile as a topic, on the plain note so the
+                        // section reads apart from the topics above (S41).
+                        GameTile(
+                            icon: done ? "checkmark.circle.fill" : "chevron.left.forwardslash.chevron.right",
+                            title: exercise.title,
+                            detail: exercise.language.displayName,
+                            hue: .of(topicID: exercise.topicId),
+                            filled: false,
+                            action: TileAction(
+                                done ? "Again" : "Solve",
+                                icon: done ? "arrow.counterclockwise" : "play",
+                                prominent: !done
+                            )
+                        ) {
+                            if done { CodeyChip("Solved", systemImage: "checkmark", variant: .success) }
+                        } tags: {
+                            if !done { CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count) }
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityHint("Opens the exercise")
                     }
+                    .buttonStyle(TilePressStyle())
+                    .accessibilityIdentifier("exercise.\(exercise.id)")
                 }
             }
         }
@@ -49,11 +56,16 @@ struct ExerciseList: View {
         }
     }
 
-    /// Exercises by topic, in the Quiz tab's topic order.
-    private var sections: [(title: String, exercises: [Exercise])] {
-        let titles = Dictionary(topics.map { ($0.id, $0.title) }, uniquingKeysWith: { first, _ in first })
-        return Dictionary(grouping: exercises, by: \.topicId)
-            .map { (title: titles[$0.key] ?? $0.key, exercises: $0.value) }
-            .sorted { $0.title < $1.title }
+    private func topicTitle(_ exercise: Exercise) -> String {
+        topics.first { $0.id == exercise.topicId }?.title ?? exercise.topicId
+    }
+
+    /// Unsolved first, then by topic and title.
+    private var ordered: [Exercise] {
+        exercises.sorted {
+            let a = solved.contains($0.id), b = solved.contains($1.id)
+            if a != b { return !a }
+            return (topicTitle($0), $0.title) < (topicTitle($1), $1.title)
+        }
     }
 }
