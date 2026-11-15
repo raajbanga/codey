@@ -7,7 +7,7 @@ let appBundleId = "edu.wku.cs360.codey"
 let project = Project(
     name: "codey",
     options: .options(
-        automaticSchemesOptions: .enabled(codeCoverageEnabled: true)
+        automaticSchemesOptions: .disabled
     ),
     settings: .settings(
         base: ["SWIFT_VERSION": "6"],
@@ -94,6 +94,25 @@ let project = Project(
                 "codey/UITests"
             ],
             dependencies: [.target(name: "codey")]
+        ),
+    ],
+    // One shared scheme. Run uses Release, so the app on a phone is the build
+    // we ship (no DEBUG test clients, optimized); tests stay on Debug, which
+    // the UI tests' launch arguments need.
+    schemes: [
+        .scheme(
+            name: "codey",
+            shared: true,
+            buildAction: .buildAction(targets: ["codey"]),
+            testAction: .targets(
+                ["codeyTests", "codeyUITests"],
+                configuration: .debug,
+                options: .options(coverage: true, codeCoverageTargets: ["codey"])
+            ),
+            runAction: .runAction(configuration: .release, executable: "codey"),
+            archiveAction: .archiveAction(configuration: .release),
+            profileAction: .profileAction(configuration: .release, executable: "codey"),
+            analyzeAction: .analyzeAction(configuration: .debug)
         ),
     ],
     // Xcode already generates typed asset symbols (Color(.brand)); Tuist's
