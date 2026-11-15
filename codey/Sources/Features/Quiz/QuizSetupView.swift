@@ -25,6 +25,8 @@ struct QuizSetupView: View {
     }
 
     private var config: GatingConfig { .standard }
+    private var hue: CodeyColor.TopicHue { .of(topicID: topic.id) }
+    private var bestTier: Difficulty { tiers.last(where: \.isUnlocked)?.difficulty ?? .easy }
     private var progress: [String: QuestionProgress] { progressRows.keyed(by: \.questionId) }
     private var xp: Int { profiles.first?.totalXP ?? 0 }
     private var tiers: [TierAvailability] {
@@ -74,16 +76,19 @@ struct QuizSetupView: View {
     @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 44
 
     private var header: some View {
-        HStack(alignment: .top, spacing: CodeySpacing.md) {
-            IconTile(systemName: topic.iconName, size: iconSize, radius: CodeyRadius.sm)
+        HStack(alignment: .center, spacing: CodeySpacing.md) {
+            // The topic in its own color, as on its Play tile (S41).
+            Icon(topic.iconName, size: 24, relativeTo: .title2)
+                .foregroundStyle(hue.ink)
+                .frame(width: iconSize, height: iconSize)
+                .background(hue.soft, in: .codey(CodeyRadius.sm))
             VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                 Text(topic.title)
-                    .font(.codeyTitle)
+                    .font(.codeyTitle.weight(.semibold))
                     .foregroundStyle(CodeyColor.textPrimary)
-                Text(topic.summary)
+                Text("Up to \(XPPolicy.base(bestTier)) XP a question")
                     .font(.codeySubheadline)
                     .foregroundStyle(CodeyColor.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
@@ -95,24 +100,19 @@ struct QuizSetupView: View {
 
     private var picker: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            Picker("Questions", selection: $choice) {
-                Text("Mixed").tag(QuizMode.mixed)
-                ForEach(Difficulty.allCases.filter(unlocked.contains), id: \.self) { tier in
-                    Text(tier.style.label).tag(QuizMode.tier(tier))
-                }
-            }
-            .pickerStyle(.segmented)
+            ChoiceChips(
+                "Questions",
+                selection: $choice,
+                options: [(.mixed, "Mixed")] + Difficulty.allCases.filter(unlocked.contains).map { (.tier($0), $0.style.label) },
+                fills: true
+            )
             .accessibilityIdentifier("quizSetup.mode")
 
             Text(choice == .mixed
-                 ? "Mixed (recommended): mostly your highest unlocked tier, plus some review of lower tiers."
-                 : "Only \(choiceLabel) questions.")
+                 ? "\(countText), mostly your top tier with some review."
+                 : "\(countText), \(choiceLabel) only.")
                 .font(.codeySubheadline)
                 .foregroundStyle(CodeyColor.textSecondary)
-
-            Label(countText, systemImage: "number")
-                .font(.codeyCallout)
-                .foregroundStyle(CodeyColor.textPrimary)
         }
     }
 
@@ -140,13 +140,13 @@ struct QuizSetupView: View {
     private var startButton: some View {
         Group {
             if isMastered {
-                CodeyButton("Review Retired Questions", systemImage: "arrow.counterclockwise", kind: .primary, fullWidth: true) {
+                CodeyButton("Review Retired Questions", systemImage: "arrow.counterclockwise", kind: .hue(hue), fullWidth: true) {
                     start(.review)
                 }
                 .disabled(retiredCount == 0)
                 .accessibilityHint("Practice only. No XP.")
             } else {
-                CodeyButton("Start", systemImage: "play.fill", kind: .primary, fullWidth: true) {
+                CodeyButton("Start", systemImage: "play", kind: .hue(hue), fullWidth: true) {
                     start(choice)
                 }
                 .disabled(activeCount == 0)

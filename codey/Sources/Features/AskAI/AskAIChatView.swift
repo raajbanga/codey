@@ -26,7 +26,7 @@ struct AskAIChatView: View {
 
     private var header: some View {
         HStack(spacing: CodeySpacing.sm) {
-            IconTile(systemName: "sparkles", size: 40, radius: CodeyRadius.sm)
+            IconTile(systemName: "ask.ai", size: 40, radius: CodeyRadius.sm)
             VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                 Text("Ask AI")
                     .font(.codeyHeadline)

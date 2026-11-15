@@ -6,13 +6,19 @@ struct ProgressBar: View {
     let value: Double
     var label: String?
     var tint: Color = CodeyColor.brand
+    /// 4 pt by default; the level bar on Play is thicker (S41).
+    var height: CGFloat = 4
+    /// The paper-dot ink by default; a colored card passes its own tint.
+    var track: Color = CodeyColor.paperDot
 
     @State private var shown: Double = 0
 
-    init(value: Double, label: String? = nil, tint: Color = CodeyColor.brand) {
+    init(value: Double, label: String? = nil, tint: Color = CodeyColor.brand, height: CGFloat = 4, track: Color = CodeyColor.paperDot) {
         self.value = min(max(value, 0), 1)
         self.label = label
         self.tint = tint
+        self.height = height
+        self.track = track
     }
 
     var body: some View {
@@ -22,14 +28,16 @@ struct ProgressBar: View {
                     .font(.codeyCaption)
                     .foregroundStyle(CodeyColor.textSecondary)
             }
+            // Track in the dot-grid ink, which reads on paper and on white
+            // tiles alike (FillNeutral was nearly invisible on both, S40).
             Capsule()
-                .fill(CodeyColor.fillNeutral)
-                .frame(height: 4)
+                .fill(track)
+                .frame(height: height)
                 .overlay(alignment: .leading) {
                     GeometryReader { proxy in
                         Capsule()
                             .fill(tint)
-                            .frame(width: max(proxy.size.width * shown, shown > 0 ? 4 : 0))
+                            .frame(width: max(proxy.size.width * shown, shown > 0 ? height : 0))
                     }
                 }
                 .clipShape(Capsule())

@@ -207,6 +207,28 @@ struct MigrationTests {
         #expect(vm.queue.position == 1)
     }
 
+    /// S41: a V8 profile opens as V9 with its XP kept and no rewards
+    /// marked as paid yet.
+    @Test func v8ProfileMigratesToV9WithNothingPaid() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV8.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let profile = CodeySchemaV7.UserProfile(username: "Learner")
+            profile.totalXP = 420
+            context.insert(profile)
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
+        #expect(profile.totalXP == 420)
+        #expect(profile.solvedExerciseIds.isEmpty)
+        #expect(profile.goalBonusDay == nil)
+        #expect(profile.challengeBonusWeek == nil)
+    }
+
     @Test func decksPersistAcrossReopen() throws {
         let url = try TestSupport.temporaryStoreURL()
         let deckId: UUID

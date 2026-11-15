@@ -112,17 +112,14 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.buttons["study.done"].tap()
 
         // Quiz: topics, setup, a question before and after answering.
-        app.tabBars.buttons["Quiz"].tap()
-        let quizTopic = app.buttons["quizTopic.Algorithms"]
+        app.tabBars.buttons["Play"].tap()
+        let quizTopic = app.buttons["play.topic.Algorithms.quiz"]
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
-        try audit("quiz.topics")
 
-        // Coding exercises (FR-39 to FR-41): list, exercise, checked result.
-        app.buttons["Exercises"].tap()
+        // Coding exercises (FR-39 to FR-41), at the bottom of Play (S41).
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
-        try audit("exercises.list")
-        for _ in 0..<4 where !exercise.isHittable { app.swipeUp() }
+        for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }
         exercise.tap()
         let blank = app.textFields["exercise.blank.1"]
         XCTAssertTrue(blank.waitForExistence(timeout: 5))
@@ -134,11 +131,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         try audit("exercise.result")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
-        app.buttons["Quizzes"].tap()
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
-
-        // The row's lower half is its tier chips, which are buttons of their own.
-        quizTopic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)).tap()
+        for _ in 0..<8 where !quizTopic.isHittable { app.swipeDown() }
+        quizTopic.tap()
         XCTAssertTrue(app.buttons["quizSetup.start"].waitForExistence(timeout: 5))
         try audit("quiz.setup")
         app.buttons["quizSetup.start"].tap()

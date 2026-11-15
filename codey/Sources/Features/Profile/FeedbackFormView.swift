@@ -50,8 +50,7 @@ struct FeedbackFormView: View {
             }
         }
         .codeyListBackground()
-        .navigationTitle("Report an Issue")
-        .navigationBarTitleDisplayMode(.inline)
+        .codeyPageTitle("Report an Issue")
         .toolbar {
             if backend.currentUser != nil, !sent {
                 ToolbarItem(placement: .confirmationAction) {

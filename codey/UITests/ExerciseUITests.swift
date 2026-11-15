@@ -1,7 +1,7 @@
 import XCTest
 
 /// FR-39 to FR-41 end to end (system test ST-05 in the Sprint 4 doc §18e):
-/// Quiz tab → Coding Exercises → "Exit early with guard" → one right and
+/// Quiz tab → Exercises switch → "Exit early with guard" → one right and
 /// one wrong blank → per-blank pass/fail → Try Again → both right → all
 /// tests pass. Screenshots are attached to the result bundle.
 @MainActor
@@ -16,17 +16,9 @@ final class ExerciseUITests: XCTestCase {
     }
 
     func testSolveGuardExercise() throws {
-        let quizTab = app.tabBars.buttons["Quiz"]
-        XCTAssertTrue(quizTab.waitForExistence(timeout: 15))
-        quizTab.tap()
-
-        let entry = app.buttons["Exercises"]
-        XCTAssertTrue(entry.waitForExistence(timeout: 5))
-        snapshot("quiz-tab")
-        entry.tap()
-
+        // Exercises sit at the bottom of Play (S41).
         let exercise = app.buttons["exercise.ex-swift-guard"]
-        XCTAssertTrue(exercise.waitForExistence(timeout: 5))
+        XCTAssertTrue(exercise.waitForExistence(timeout: 15))
         snapshot("exercise-list")
         hittable(exercise).tap()
 

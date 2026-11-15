@@ -110,15 +110,7 @@ enum BadgeEvaluator {
             facts.totalXP = profile?.totalXP ?? 0
         }
         if badges.contains(.weeklyChallenge) {
-            var topics = FetchDescriptor<Topic>()
-            topics.propertiesToFetch = [\.id]
-            if let topic = WeeklyChallenge.topicID(for: now, topicIDs: try context.fetch(topics).map(\.id)) {
-                let start = UTCWeek.start(of: now)
-                let correct = try context.fetchCount(FetchDescriptor<QuizAnswerRecord>(
-                    predicate: #Predicate { $0.topicId == topic && $0.correct == true && $0.answeredAt >= start }
-                ))
-                facts.weeklyChallengesCompleted = correct >= WeeklyChallenge.goal ? 1 : 0
-            }
+            facts.weeklyChallengesCompleted = try WeeklyChallenge.isComplete(context: context, now: now) ? 1 : 0
         }
         return facts
     }

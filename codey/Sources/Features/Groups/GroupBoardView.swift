@@ -41,8 +41,7 @@ struct GroupBoardView: View {
             }
         }
         .codeyListBackground()
-        .navigationTitle(group.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .codeyPageTitle(group.name)
         .overlay {
             if board.isLoading, board.items.isEmpty { ProgressView() }
         }

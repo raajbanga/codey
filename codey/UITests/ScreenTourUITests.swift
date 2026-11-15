@@ -43,25 +43,22 @@ final class ScreenTourUITests: XCTestCase {
             }
         }
 
-        app.tabBars.buttons["Quiz"].tap()
-        let topic = app.buttons["quizTopic.Algorithms"]
+        app.tabBars.buttons["Play"].tap()
+        let topic = app.buttons["play.topic.Algorithms.quiz"]
         XCTAssertTrue(topic.waitForExistence(timeout: 5))
-        shot("quiz-topics", appearance)
-        openExercises()
         let exercise = app.buttons["exercise.ex-swift-guard"]
         if exercise.waitForExistence(timeout: 5) {
+            for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }
             shot("exercises", appearance)
-            for _ in 0..<4 where !exercise.isHittable { app.swipeUp() }
             exercise.tap()
             if app.textFields["exercise.blank.1"].waitForExistence(timeout: 5) {
                 shot("exercise", appearance)
             }
             app.navigationBars.buttons.firstMatch.tap()
         }
-        closeExercises()
-
         XCTAssertTrue(topic.waitForExistence(timeout: 5))
-        topic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
+        for _ in 0..<8 where !topic.isHittable { app.swipeDown() }
+        topic.tap()
         if app.buttons["quizSetup.start"].waitForExistence(timeout: 5) {
             shot("quiz-setup", appearance)
             app.buttons["quizSetup.start"].tap()
@@ -75,9 +72,7 @@ final class ScreenTourUITests: XCTestCase {
         }
     }
 
-    private func openExercises() { app.buttons["Exercises"].tap() }
 
-    private func closeExercises() { app.buttons["Quizzes"].tap() }
 
     private func shot(_ name: String, _ appearance: String) {
         sleep(1)

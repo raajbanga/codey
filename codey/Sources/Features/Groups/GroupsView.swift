@@ -44,8 +44,7 @@ struct GroupsView: View {
             }
         }
         .codeyListBackground()
-        .navigationTitle("Groups")
-        .navigationBarTitleDisplayMode(.inline)
+        .codeyPageTitle("Groups")
         .toolbar {
             if backend.currentUser != nil {
                 ToolbarItem(placement: .primaryAction) {
@@ -159,8 +158,7 @@ struct CreateGroupView: View {
             }
         }
         .codeyListBackground()
-        .navigationTitle(created == nil ? "New Group" : created!.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .codeyPageTitle(created == nil ? "New Group" : created!.name)
         .toolbar {
             if created == nil {
                 ToolbarItem(placement: .cancellationAction) {
@@ -230,8 +228,7 @@ struct JoinGroupView: View {
             }
         }
         .codeyListBackground()
-        .navigationTitle("Join a Group")
-        .navigationBarTitleDisplayMode(.inline)
+        .codeyPageTitle("Join a Group")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }

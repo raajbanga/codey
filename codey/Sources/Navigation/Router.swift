@@ -1,11 +1,10 @@
 import Foundation
 import Observation
 
-/// The three tabs (D8 r3).
+/// The two tabs (S41): Play (the game board) and Decks.
 enum AppTab: Hashable {
     case home
     case decks
-    case quiz
 }
 
 /// Owns tab selection and every app-level presentation, so any screen can

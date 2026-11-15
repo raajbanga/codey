@@ -166,11 +166,9 @@ private struct WelcomeStep: View {
 
         var body: some View {
             HStack(alignment: .top, spacing: CodeySpacing.md) {
-                Image(systemName: symbol)
-                    .font(.codeyTitle)
+                Icon(symbol, size: 28, relativeTo: .title)
                     .foregroundStyle(CodeyColor.brand)
                     .frame(width: 36)
-                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                     Text(title).font(.codeyHeadline)
                     Text(detail)
@@ -223,14 +221,11 @@ private struct TopicPickStep: View {
             Button(action: toggle) {
                 VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                     HStack {
-                        Image(systemName: topic.iconName)
-                            .font(.codeyTitle)
+                        Icon(topic.iconName, size: 28, relativeTo: .title)
                             .foregroundStyle(CodeyColor.brand)
                         Spacer()
-                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .font(.codeyTitle)
+                        Icon(isSelected ? "checkmark.circle" : "circle", size: 26, relativeTo: .title)
                             .foregroundStyle(isSelected ? CodeyColor.brand : CodeyColor.textSecondary)
-                            .contentTransition(.symbolEffect(.replace))
                     }
                     Text(topic.title)
                         .font(.codeyHeadline)
@@ -265,9 +260,7 @@ private struct SyncStep: View {
     var body: some View {
         ScrollView {
             VStack(spacing: CodeySpacing.lg) {
-                Image(systemName: "icloud.and.arrow.up")
-                    .font(.codeyDisplay)
-                    .imageScale(.large)
+                Icon("icloud.and.arrow.up", size: 56, relativeTo: .largeTitle)
                     .foregroundStyle(CodeyColor.brand)
                     .padding(.top, CodeySpacing.xl)
                     .accessibilityHidden(true)

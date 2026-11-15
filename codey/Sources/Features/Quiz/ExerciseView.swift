@@ -1,14 +1,18 @@
 import SwiftUI
+import os
 
 /// One code-completion exercise (FR-39 to FR-41): the highlighted snippet
 /// with numbered blanks, one monospaced field per blank, and Check, which
 /// runs each blank's test case and shows pass or fail per blank plus the
-/// explanation. Nothing is saved (S31).
+/// explanation. The first full solve pays XP (S41); nothing else is saved.
 struct ExerciseView: View {
     let exercise: Exercise
 
     @State private var answers: [String]
     @State private var result: ExerciseResult?
+    /// XP the last Check paid (S41): 0 if already solved before.
+    @State private var xpPaid = 0
+    @Environment(\.modelContext) private var context
     @FocusState private var focusedBlank: Int?
     /// Ask AI (S39): lives as long as this exercise is on screen (FR-68).
     @State private var askAI: AskAISession?
@@ -61,7 +65,9 @@ struct ExerciseView: View {
                 } else {
                     CodeyButton("Check", systemImage: "checkmark", fullWidth: true) {
                         focusedBlank = nil
-                        result = ExerciseValidator.check(answers, for: exercise)
+                        let checked = ExerciseValidator.check(answers, for: exercise)
+                        result = checked
+                        xpPaid = checked.allPassed ? payXP() : 0
                     }
                     .accessibilityIdentifier("exercise.submit")
                 }
@@ -70,15 +76,16 @@ struct ExerciseView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .codeyPaperBackground()
-        .navigationTitle(exercise.title)
-        .navigationBarTitleDisplayMode(.inline)
+        .codeyPageTitle(exercise.title)
         .toolbar {
             if let client = AskAI.client {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Ask AI", systemImage: "sparkles") {
+                    Button {
                         focusedBlank = nil
                         askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
                         router.askAI = askAI
+                    } label: {
+                        Label("Ask AI", icon: "ask.ai")
                     }
                     .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
                     .accessibilityIdentifier("askAI.open")
@@ -125,6 +132,7 @@ struct ExerciseView: View {
     private func summary(_ result: ExerciseResult) -> some View {
         let total = result.blanks.count
         return CodeyCard(tint: result.allPassed ? CodeyColor.Soft.success : CodeyColor.Soft.warning) {
+            HStack {
             Label(
                 result.allPassed
                     ? "All \(total) \(total == 1 ? "test" : "tests") passed"
@@ -133,8 +141,26 @@ struct ExerciseView: View {
             )
             .font(.codeyHeadline)
             .foregroundStyle(CodeyColor.textPrimary)
+                Spacer(minLength: 0)
+                if xpPaid > 0 {
+                    CodeyChip(xp: xpPaid)
+                }
+            }
         }
         .accessibilityIdentifier("exercise.summary")
+    }
+
+    /// The first full solve pays 10 XP per blank (XPRewards).
+    private func payXP() -> Int {
+        let profile = DataSeeder.ensureProfile(context: context)
+        let paid = XPRewards.solveExercise(id: exercise.id, blanks: exercise.blanks.count, profile: profile, weeklyXP: WeeklyXPStore(), now: .now)
+        do {
+            try BadgeEvaluator.award(context: context, now: .now)
+            try context.save()
+        } catch {
+            Logger.quiz.error("Saving exercise XP failed: \(String(describing: error))")
+        }
+        return paid
     }
 }
 

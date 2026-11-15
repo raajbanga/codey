@@ -6,15 +6,18 @@ struct IconTile: View {
     let systemName: String
     let size: CGFloat
     var radius: CGFloat = CodeyRadius.md
+    /// Ink and tile colors; a topic's hue on Play tiles (S41).
+    var ink: Color = CodeyColor.brand
+    var tile: Color = CodeyColor.brandSoft
 
     var body: some View {
         CodeyIcon.image(systemName)
             .resizable()
             .scaledToFit()
             .frame(width: size * 0.56, height: size * 0.56)
-            .foregroundStyle(CodeyColor.brand)
+            .foregroundStyle(ink)
             .frame(width: size, height: size)
-            .background(CodeyColor.brandSoft, in: .codey(radius))
+            .background(tile, in: .codey(radius))
             .accessibilityHidden(true)
     }
 }
