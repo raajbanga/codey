@@ -15,6 +15,9 @@ struct CodeyApp: App {
         WindowGroup {
             LoadingView()
                 .preferredColorScheme(appearance.colorScheme)
+                // No scroll bars anywhere (S42): cleaner pages. Sheets and
+                // covers inherit it from here.
+                .scrollIndicators(.hidden)
         }
     }
 }

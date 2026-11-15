@@ -147,7 +147,12 @@ struct GameTile<Status: View, Tags: View>: View {
                     .foregroundStyle(filled ? hue.ink : CodeyColor.textSecondary)
                     .lineLimit(3)
             }
-            HStack(spacing: CodeySpacing.xs) { tags }
+            // Side by side when they fit; stacked rather than truncated
+            // ("Me…") on a half-width tile.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: CodeySpacing.xs) { tags }
+                VStack(alignment: .leading, spacing: CodeySpacing.xs) { tags }
+            }
             Spacer(minLength: CodeySpacing.sm)
             if let progress {
                 ProgressBar(value: progress, tint: hue.fill, height: 8, track: hue.fill.opacity(0.22))
