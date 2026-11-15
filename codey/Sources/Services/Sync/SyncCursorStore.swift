@@ -38,4 +38,15 @@ struct SyncCursorStore {
     func setProgressPushedAt(_ date: Date?, for userID: UUID) {
         defaults.set(date, forKey: "codey.sync.progressPushedAt.\(userID.uuidString)")
     }
+
+    /// S43 history (quiz answers, days, badges) has its own push marker, so
+    /// the first sync after the update sends the whole history once, not
+    /// only what changed since the last progress push.
+    func historyPushedAt(for userID: UUID) -> Date? {
+        defaults.object(forKey: "codey.sync.historyPushedAt.\(userID.uuidString)") as? Date
+    }
+
+    func setHistoryPushedAt(_ date: Date?, for userID: UUID) {
+        defaults.set(date, forKey: "codey.sync.historyPushedAt.\(userID.uuidString)")
+    }
 }

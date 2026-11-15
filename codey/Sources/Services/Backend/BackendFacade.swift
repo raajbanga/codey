@@ -179,6 +179,7 @@ final class BackendFacade: DeckBackend {
             // FR-61: the next sign-in pulls and pushes all progress again.
             cursors.setProgressCursor(nil, for: signedOutUser)
             cursors.setProgressPushedAt(nil, for: signedOutUser)
+            cursors.setHistoryPushedAt(nil, for: signedOutUser)
         }
         groupCache.clear()
         authState = .signedOut

@@ -282,7 +282,7 @@ final class SyncEngine {
     /// push, minus echoes of what was just pulled. The push marker only moves
     /// after a successful push, so a failed cycle resends next time.
     private func syncProgress(remote: any RemoteDeckStore, userID: UUID) async throws {
-        let progress = ProgressSync(context: context)
+        let progress = ProgressSync(context: context, deviceId: deviceID ?? "local")
 
         let since = cursors.progressCursor(for: userID).map { $0.addingTimeInterval(-Self.pullOverlap) }
         let changes = try await remote.fetchProgressChanges(since: since)
@@ -293,19 +293,22 @@ final class SyncEngine {
         }
 
         let pushStartedAt = now()
-        let local = try progress.localChanges(since: cursors.progressPushedAt(for: userID))
+        let local = try progress.localChanges(since: cursors.progressPushedAt(for: userID),
+                                              historySince: cursors.historyPushedAt(for: userID))
             .subtracting(changes.progress)
         if !local.isEmpty {
             try await remote.upsertProgress(local)
             Logger.sync.notice("Pushed \(local.count) progress row(s)")
         }
         cursors.setProgressPushedAt(pushStartedAt, for: userID)
+        cursors.setHistoryPushedAt(pushStartedAt, for: userID)
     }
 
     // MARK: Profile (D10)
 
     /// total_xp = max(local, remote): XP only goes up, except an explicit
     /// "Reset progress" (a queued profile operation), which writes local as-is.
+    /// Solved exercises merge the same way, as a union.
     /// display_name and avatar_id (FR-04): last write wins. A local edit
     /// queues a profile operation, so a queued operation means local is
     /// newer; otherwise the remote values win.
@@ -318,13 +321,19 @@ final class SyncEngine {
         let xp = explicit ? profile.totalXP : max(profile.totalXP, remoteProfile.totalXP)
         let name = explicit ? profile.username : remoteProfile.displayName
         let avatar = explicit ? profile.avatarId : remoteProfile.avatarId
+        // Solved exercises (S43): a union, like XP only grows; a reset wins.
+        let solved = explicit
+            ? profile.solvedExerciseIds
+            : profile.solvedExerciseIds + remoteProfile.solvedExerciseIds.filter { !profile.solvedExerciseIds.contains($0) }
         profile.totalXP = xp
         profile.username = name
         profile.avatarId = avatar
+        if profile.solvedExerciseIds != solved { profile.solvedExerciseIds = solved }
         try context.save()
 
-        if remoteProfile.totalXP != xp || remoteProfile.displayName != name || remoteProfile.avatarId != avatar {
-            try await remote.upsertProfile(ProfilePayload(displayName: name, avatarId: avatar, totalXP: xp))
+        if remoteProfile.totalXP != xp || remoteProfile.displayName != name || remoteProfile.avatarId != avatar
+            || Set(remoteProfile.solvedExerciseIds) != Set(solved) {
+            try await remote.upsertProfile(ProfilePayload(displayName: name, avatarId: avatar, totalXP: xp, solvedExerciseIds: solved))
         }
         try queue.markDone(operations)
     }

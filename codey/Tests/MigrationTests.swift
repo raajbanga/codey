@@ -229,6 +229,28 @@ struct MigrationTests {
         #expect(profile.challengeBonusWeek == nil)
     }
 
+    /// S43: a V9 store opens as V10 with its own daily activity kept and no
+    /// other devices' rows yet, so the streak reads the same.
+    @Test func v9StoreMigratesToV10KeepingTheStreak() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let today = DailyActivity.dayKey(for: .now)
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV9.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let day = CodeySchemaV3.DailyActivity(day: today)
+            day.quizAnswers = 20
+            context.insert(day)
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        #expect(try context.fetch(FetchDescriptor<DeviceDayActivity>()).isEmpty)
+        let totals = try StreakCalculator.dayTotals(for: [today], context: context)
+        #expect(totals[today] == 20)
+        #expect(StreakCalculator.currentStreak(endingOn: .now, totals: totals) == 1)
+    }
+
     @Test func decksPersistAcrossReopen() throws {
         let url = try TestSupport.temporaryStoreURL()
         let deckId: UUID

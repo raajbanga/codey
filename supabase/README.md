@@ -21,9 +21,12 @@ a teammate should be able to reproduce the whole backend from this page.
 | `migrations/20261030200802_s3_advisor_fixes.sql` | Advisor fixes: revoke API access to `rls_auto_enable()`, index `groups.created_by`, one profiles SELECT policy |
 | `migrations/20261102182604_weekly_xp_rate_limit.sql` | Clamps `weekly_xp` growth to 600 XP per minute of server time (30 minutes' worth on a week's first write); clamped, never rejected |
 | `migrations/20261110034534_study_progress.sql` | FR-61 `card_progress`, `question_progress`, `topic_progress`: owner-only RLS, CHECKs that mirror the app, merge triggers (latest review wins; tier unlocks are sticky) |
+| `migrations/20261115045606_avatar_colors.sql` | FR-04/FR-60 avatar CHECK accepts `symbol@color` (32 symbols, 7 colors) |
+| `migrations/20261115172929_progress_history.sql` | FR-61 (S43) `quiz_answers` (append-only), `daily_activity` (per device and day; larger counter wins), `badge_awards` (earliest kept), `profiles.solved_exercise_ids` |
 | `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
 | `tests/progress.sql` | pgTAP tests for the FR-61 progress tables: RLS, CHECKs, and both merge rules |
-| `checks/rls_live_check.sql` | 57 of the same checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
+| `tests/history.sql` | pgTAP tests for the S43 history tables: RLS, CHECKs, duplicates ignored, larger counter, earliest badge |
+| `checks/rls_live_check.sql` | 63 of the same checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
 
 Rules: never edit a migration that has been pushed, add a new file instead.
 File versions must equal the remote migration versions (`list_migrations` in
@@ -120,13 +123,15 @@ applied via the Supabase MCP (the file names equal the remote versions),
 including the three from 2026-10-30 (avatar set + insert-only
 `feedback_reports`, groups + `group_members` + `weekly_xp` + the
 `group_leaderboard` view + `join_group()`, and the Security Advisor fixes) and
-the weekly-XP rate limit from 2026-11-02, and the FR-61 study-progress tables
-from 2026-11-10.
-RLS is on for 11 of 11 tables. Security Advisor: `rls_auto_enable()` revoked;
+the weekly-XP rate limit from 2026-11-02, the FR-61 study-progress tables
+from 2026-11-10, avatar colors and the S43 progress-history tables from
+2026-11-15.
+RLS is on for 14 of 14 tables. Security Advisor: `rls_auto_enable()` revoked;
 the one remaining warning is `join_group` (SECURITY DEFINER, justified: it must
 find a group the caller cannot see yet). `checks/rls_live_check.sql`, last run
 2026-11-10, after the study-progress migration: **0 failed of 57**, everything
-rolled back. (2026-10-30: 0 of 48, before the rate limit.)
+rolled back. Checks 58–63 (history tables, 2026-11-15) pass on the local stack
+(0 failed of 63); the live run of those six was not made. (2026-10-30: 0 of 48, before the rate limit.)
 (2026-10-08: 0 of 30, before the groups and feedback tables.) Google provider:
 enabled with the Web + iOS client IDs; the app sends a nonce (BUG-02, Nov 9).
 

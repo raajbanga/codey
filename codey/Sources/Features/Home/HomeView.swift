@@ -36,6 +36,8 @@ struct HomeView: View {
     /// by QuizProgressStore's per-topic history cap.
     @Query(sort: \QuizAnswerRecord.answeredAt, order: .reverse) private var records: [QuizAnswerRecord]
     @Query private var activity: [DailyActivity]
+    /// Other devices' daily counters (S43), so the goal and streak add up.
+    @Query private var otherActivity: [DeviceDayActivity]
     @Query private var progressRows: [QuestionProgress]
     @Query private var topicProgress: [TopicProgress]
 
@@ -115,7 +117,7 @@ struct HomeView: View {
     // MARK: Header
 
     private var header: some View {
-        let streak = StreakCalculator.currentStreak(endingOn: .now, activity: activity)
+        let streak = StreakCalculator.currentStreak(endingOn: .now, totals: dayTotals)
         return TabHeader(eyebrow: HomeLogic.greeting(at: .now), title: profile?.username ?? UserProfile.defaultUsername) {
             // Always shown, 0 included (FR-37: the current streak).
             Label("\(streak)", icon: "flame")
@@ -165,8 +167,12 @@ struct HomeView: View {
 
     // MARK: Quests (FR-32, FR-42, S41 bonuses)
 
+    private var dayTotals: [String: Int] {
+        StreakCalculator.dayTotals(own: activity, others: otherActivity)
+    }
+
     private var todayCount: Int {
-        StreakCalculator.progress(of: activity.first { $0.day == DailyActivity.dayKey(for: .now) })
+        dayTotals[DailyActivity.dayKey(for: .now)] ?? 0
     }
 
     private var challenge: WeeklyChallenge.Status? {

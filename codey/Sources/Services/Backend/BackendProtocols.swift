@@ -68,6 +68,8 @@ struct ProfilePayload: Equatable, Sendable {
     var displayName: String
     var avatarId: String?
     var totalXP: Int
+    /// FR-61 (S43): exercises already paid for; merged as a union.
+    var solvedExerciseIds: [String] = []
 }
 
 /// FR-49: one UI/UX issue report. The id is made on the device, so a
@@ -139,21 +141,53 @@ struct TopicProgressPayload: Equatable, Sendable {
     var hardUnlockedAt: Date?
 }
 
+/// FR-61: one graded quiz answer (quiz_answers). Append-only; the question
+/// and time identify it.
+struct QuizAnswerPayload: Equatable, Sendable {
+    var questionId: String
+    var topicId: String
+    var correct: Bool
+    var answeredAt: Date
+}
+
+/// FR-61: one device's counters for one local day (daily_activity). The
+/// larger counter wins; a day's total is the sum over devices.
+struct DailyActivityPayload: Equatable, Sendable {
+    var deviceId: String
+    var day: String
+    var cardsRated: Int
+    var quizAnswers: Int
+}
+
+/// FR-61: one earned badge (badge_awards). The earliest date wins.
+struct BadgeAwardPayload: Equatable, Sendable {
+    var badge: String
+    var earnedAt: Date
+}
+
 /// FR-61: progress rows going up or coming down in one sync cycle.
 struct ProgressBatch: Equatable, Sendable {
     var cards: [CardProgressPayload] = []
     var questions: [QuestionProgressPayload] = []
     var topics: [TopicProgressPayload] = []
+    var answers: [QuizAnswerPayload] = []
+    var days: [DailyActivityPayload] = []
+    var badges: [BadgeAwardPayload] = []
 
-    var isEmpty: Bool { cards.isEmpty && questions.isEmpty && topics.isEmpty }
-    var count: Int { cards.count + questions.count + topics.count }
+    var isEmpty: Bool { count == 0 }
+    var count: Int {
+        cards.count + questions.count + topics.count + answers.count + days.count + badges.count
+    }
 
     /// Rows not already in `other` (drops echoes of what was just pulled).
     func subtracting(_ other: ProgressBatch) -> ProgressBatch {
         ProgressBatch(
             cards: cards.filter { !other.cards.contains($0) },
             questions: questions.filter { !other.questions.contains($0) },
-            topics: topics.filter { !other.topics.contains($0) }
+            topics: topics.filter { !other.topics.contains($0) },
+            answers: answers.filter { !other.answers.contains($0) },
+            days: days.filter { !other.days.contains($0) },
+            badges: badges.filter { !other.badges.contains($0) }
         )
     }
 }

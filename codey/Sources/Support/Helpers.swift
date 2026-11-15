@@ -11,6 +11,13 @@ extension Sequence {
     }
 }
 
+extension Array {
+    /// Consecutive slices of at most `size` (one request each).
+    func chunked(into size: Int) -> [ArraySlice<Element>] {
+        stride(from: 0, to: count, by: size).map { self[$0..<Swift.min($0 + size, count)] }
+    }
+}
+
 extension Double {
     /// 0.42 → "42%".
     var percentText: String { formatted(.percent.precision(.fractionLength(0))) }

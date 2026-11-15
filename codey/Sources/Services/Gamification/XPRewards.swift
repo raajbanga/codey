@@ -72,7 +72,7 @@ enum XPRewards {
         var paid: [Bonus] = []
         let day = DailyActivity.dayKey(for: now, calendar: calendar)
         if profile.goalBonusDay != day,
-           StreakCalculator.isGoalMet(try context.fetch(FetchDescriptor<DailyActivity>(predicate: #Predicate { $0.day == day })).first) {
+           (try StreakCalculator.dayTotals(for: [day], context: context)[day] ?? 0) >= GatingConfig.standard.dailyGoal {
             profile.goalBonusDay = day
             grant(Bonus.dailyGoal.amount, to: profile, weeklyXP: weeklyXP, now: now)
             paid.append(.dailyGoal)
