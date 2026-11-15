@@ -4,7 +4,7 @@
     python3 scripts/icons/icons.py
 
 One 24 pt grid, 2 pt rounded strokes, no fills except the play
-triangle: quiet line drawings that sit with the pastel-ink palette instead
+triangle (rounded by its own stroke): quiet line drawings that sit with the pastel-ink palette instead
 of SF Symbols' filled glyphs. Every icon is our own drawing (no icon pack is
 bundled). The Swift side is `Icon` (DesignSystem/Components/Icon.swift):
 it maps the SF Symbol names the app already stores (topic `iconName`, tier
@@ -62,7 +62,8 @@ ICONS = {
                '<path d="M12 3.5c4.7 0 8.5 3.2 8.5 7.2s-3.8 7.2-8.5 7.2c-1 0-1.9-.1-2.8-.4L4.5 20l1.2-3.8C4.3 14.8 3.5 12.9 3.5 10.7c0-4 3.8-7.2 8.5-7.2z"/>'
                '<path d="M12 7.2l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/>'),
     'play': (['play.fill', 'play'],
-             '<path d="M8 5.5v13l10.5-6.5z" fill="#000"/>'),
+             # Fills the grid like the line icons; the 4 pt round stroke rounds the corners.
+             '<path d="M8.6 6.2v11.6L18.6 12z" fill="#000" stroke-width="4"/>'),
     'plus': (['plus'], '<path d="M12 5v14M5 12h14"/>'),
     'plus-circle': (['plus.circle.fill', 'plus.circle'],
                     '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>'),

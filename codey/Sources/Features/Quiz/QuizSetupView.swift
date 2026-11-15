@@ -78,10 +78,7 @@ struct QuizSetupView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: CodeySpacing.md) {
             // The topic in its own color, as on its Play tile (S41).
-            Icon(topic.iconName, size: 24, relativeTo: .title2)
-                .foregroundStyle(hue.ink)
-                .frame(width: iconSize, height: iconSize)
-                .background(hue.soft, in: .codey(CodeyRadius.sm))
+            IconTile(systemName: topic.iconName, size: iconSize, radius: CodeyRadius.sm, ink: hue.ink, tile: hue.soft)
             VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                 Text(topic.title)
                     .font(.codeyTitle.weight(.semibold))
