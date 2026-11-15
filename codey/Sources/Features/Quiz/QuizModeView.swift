@@ -79,7 +79,12 @@ struct QuizModeView: View {
             isActive: !viewModel.isFinished && !viewModel.questions.isEmpty,
             close: { dismiss() }
         ) {
-            SegmentedQuizProgress(results: viewModel.results, current: viewModel.index)
+            SessionProgress(
+                done: viewModel.results.compactMap { $0.map { $0 ? CodeyColor.success : CodeyColor.danger } },
+                total: viewModel.results.count,
+                accessibilityLabel: "Question \(min(viewModel.index + 1, viewModel.results.count)) of \(viewModel.results.count)",
+                accessibilityValue: "\(viewModel.results.filter { $0 == true }.count) correct so far"
+            )
         } trailing: {
             if !viewModel.isPractice {
                 // XP earned this quiz (S41 mockup).
@@ -249,33 +254,3 @@ struct QuizModeView: View {
     }
 }
 
-/// One tick per question, colored correct / wrong as you go; the current
-/// one is brand. Ticks are fixed-height bars (radius = half the height).
-private struct SegmentedQuizProgress: View {
-    let results: [Bool?]
-    let current: Int
-
-    var body: some View {
-        HStack(spacing: CodeySpacing.xxs) {
-            ForEach(results.indices, id: \.self) { index in
-                RoundedRectangle.codey(CodeyRadius.xs / 2)
-                    .fill(color(index))
-                    .frame(height: 6)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Question \(min(current + 1, results.count)) of \(results.count)")
-        .accessibilityValue("\(results.filter { $0 == true }.count) correct so far")
-    }
-
-    private func color(_ index: Int) -> Color {
-        switch results[index] {
-        case .some(true): CodeyColor.success
-        case .some(false): CodeyColor.danger
-        // Track in the dot-grid ink: FillNeutral is made for white tiles and
-        // all but vanished on the paper (S40).
-        case nil: index == current ? CodeyColor.brand : CodeyColor.paperDot
-        }
-    }
-}

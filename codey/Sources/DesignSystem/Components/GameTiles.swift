@@ -55,6 +55,10 @@ struct XPToast: Equatable, Identifiable {
         XPToast(title: "\(bonus.title) +\(bonus.amount) XP", icon: "trophy.fill")
     }
     static func level(_ level: Int) -> XPToast { XPToast(title: "Level \(level)!", icon: "arrow.up.circle.fill") }
+    /// A swiped card flies off before its dots can show the change (§3b).
+    static func mastered(xp: Int) -> XPToast {
+        XPToast(title: xp > 0 ? "Mastered +\(xp) XP" : "Mastered", icon: "checkmark.seal.fill")
+    }
 }
 
 extension View {

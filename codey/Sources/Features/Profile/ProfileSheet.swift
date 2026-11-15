@@ -128,7 +128,7 @@ struct ProfileSheet: View {
     private var accountSection: some View {
         if backend.currentUser != nil {
             SettingsGroup("Account", footer: backend.engine.lastError.map { "Last sync failed: \($0) Codey will retry automatically." }
-                          ?? "Your decks, display name, and XP sync across devices.") {
+                          ?? "Your decks, progress, streak, badges, and XP sync across devices.") {
                 SettingsRow(icon: "arrow.triangle.2.circlepath", title: "Last synced") {
                     if let date = backend.lastSyncedAt {
                         Text(date, format: .relative(presentation: .named))

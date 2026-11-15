@@ -70,6 +70,9 @@ final class StudySessionViewModel {
     private let config: GatingConfig
     private let weeklyXP: WeeklyXPStore
     private(set) var xpEarned = 0
+    /// This session's ratings in order, for the top bar's colored ticks
+    /// (empty for cards rated before a resume).
+    private(set) var ratings: [CardRating] = []
     private var cardsByID: [UUID: Flashcard] = [:]
     private var reviewedCount = 0
     /// Each rated card's score before its first rating this session.
@@ -143,6 +146,7 @@ final class StudySessionViewModel {
             retired: !wasRetired && card.retiredAt != nil
         )
         reviewedCount += 1
+        ratings.append(rating)
         queue.record(rating)
         isRevealed = false
         hasRevealedCurrent = false
@@ -216,6 +220,7 @@ final class StudySessionViewModel {
 
     private func resetStats() {
         reviewedCount = 0
+        ratings = []
         xpEarned = 0
         startScores = [:]
         startProgressRate = deck.progressRate

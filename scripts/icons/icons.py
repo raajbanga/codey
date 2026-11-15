@@ -25,6 +25,10 @@ ICONS = {
     'cards': (['rectangle.stack.fill', 'rectangle.stack', 'rectangle.stack.badge.plus', 'rectangle.on.rectangle',
                'rectangle.on.rectangle.angled', 'rectangle.stack.badge.person.crop.fill'],
               '<rect x="4" y="8" width="13" height="12" rx="2"/><path d="M8 4.5h10a2 2 0 0 1 2 2V16"/>'),
+    # Play tab (§3b): a controller drawn as a line, replacing the filled SF Symbol.
+    'controller': (['gamecontroller.fill', 'gamecontroller'],
+                   '<path d="M7.5 6.5h9a4.5 4.5 0 0 1 4.4 3.6l1 5.3a2.7 2.7 0 0 1-4.7 2.3L15.5 16h-7l-1.7 1.7a2.7 2.7 0 0 1-4.7-2.3l1-5.3a4.5 4.5 0 0 1 4.4-3.6z"/>'
+                   '<path d="M8 9.5v4M6 11.5h4M15.5 10.5h.01M17.5 12.5h.01"/>'),
     'quiz': (['questionmark.bubble.fill', 'questionmark.bubble'],
              '<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-4.5 3.5V17H6a2 2 0 0 1-2-2z"/>'
              '<path d="M10 8.7a2 2 0 1 1 2.7 1.9c-.4.2-.7.5-.7.9v.3M12 14h.01"/>'),
