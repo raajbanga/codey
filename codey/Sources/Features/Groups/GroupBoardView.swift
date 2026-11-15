@@ -176,7 +176,7 @@ private struct PodiumColumn: View {
                     .font(.codeySubheadline.weight(.medium).monospacedDigit())
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(hue.onFill)
             .padding(.top, CodeySpacing.sm)
             .frame(maxWidth: .infinity)
             .frame(height: grown || reduceMotion ? height : height * 0.3)

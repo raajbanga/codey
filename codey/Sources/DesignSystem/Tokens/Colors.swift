@@ -66,6 +66,8 @@ enum CodeyColor {
         let ink: Color
         let soft: Color
         let fill: Color
+        /// Text and icons on `fill`: white in both modes.
+        var onFill: Color { .white }
 
         static let teal = TopicHue(ink: Color(.topicTeal), soft: Color(.topicTealSoft), fill: Color(.topicTealFill))
         static let sand = TopicHue(ink: Color(.topicSand), soft: Color(.topicSandSoft), fill: Color(.topicSandFill))
