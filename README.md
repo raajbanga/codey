@@ -13,13 +13,13 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 ![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase&logoColor=white)
 ![Tuist](https://img.shields.io/badge/Build-Tuist-6236FF)
 
-<img src="docs/screenshots/home-light.png" width="180" alt="Home">&nbsp;
+<img src="docs/screenshots/play-light.png" width="180" alt="Play">&nbsp;
 <img src="docs/screenshots/decks.png" width="180" alt="Decks">&nbsp;
-<img src="docs/screenshots/study.png" width="180" alt="Study session">
+<img src="docs/screenshots/quiz.png" width="180" alt="Quiz question">
 <br><br>
-<img src="docs/screenshots/quiz.png" width="180" alt="Quiz">&nbsp;
-<img src="docs/screenshots/builder.png" width="180" alt="Deck builder">&nbsp;
-<img src="docs/screenshots/home-dark.png" width="180" alt="Home in dark mode">
+<img src="docs/screenshots/ask-ai-dark.png" width="180" alt="Ask AI tutor in dark mode">&nbsp;
+<img src="docs/screenshots/exercise-dark.png" width="180" alt="Coding exercise in dark mode">&nbsp;
+<img src="docs/screenshots/study.png" width="180" alt="Study card in dark mode">
 
 </div>
 
@@ -103,13 +103,14 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 | `supabase/` | Database migrations, RLS policies, tests |
 | `scripts/` | Repo checks, perf + backup tools |
 | `.github/workflows/` | CI (tests) + Supabase keep-alive |
-| `docs/` | Sprint reports (PDF); LaTeX sources in `docs/source/`; course material in `docs/course/` |
+| `docs/` | Final and sprint reports (PDF); LaTeX sources in `docs/source/`; course material in `docs/course/` |
 
 ## Docs
 
+- [Final report](docs/Final_Documentation.pdf) · [reading copy](docs/Final_Documentation_reading.pdf)
 - [Sprint 3 report](docs/Sprint3_Documentation.pdf) · [reading copy](docs/Sprint3_Documentation_reading.pdf)
 - [Sprint 2 report](docs/Sprint2_Documentation.pdf)
-- Full build guide → Appendix A of the Sprint 3 report
+- Full build guide → Appendix A of the final report
 
 ## Team
 

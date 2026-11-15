@@ -17,11 +17,18 @@ struct PlayTopicTile: View {
         stats.tiers.last(where: \.isUnlocked)?.difficulty ?? .easy
     }
 
+    /// FR-37: the topic's accuracy over its last 50 answers (FR-36), or
+    /// nothing before the first answer.
+    private var accuracyText: String? {
+        stats.accuracy.map { "\($0.percentText) correct" }
+    }
+
     var body: some View {
         Button(action: play) {
             GameTile(
                 icon: topic.iconName,
                 title: topic.title,
+                detail: accuracyText,
                 hue: hue,
                 action: TileAction("Play")
             ) {
@@ -33,7 +40,7 @@ struct PlayTopicTile: View {
         }
         .buttonStyle(TilePressStyle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Play \(topic.title). \(bestTier.style.label) tier, \(XPPolicy.base(bestTier)) XP a question\(inPlan ? ", in this week's plan" : "")")
+        .accessibilityLabel("Play \(topic.title). \(accuracyText.map { "\($0). " } ?? "")\(bestTier.style.label) tier, \(XPPolicy.base(bestTier)) XP a question\(inPlan ? ", in this week's plan" : "")")
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("play.topic.\(topic.title).quiz")
     }
@@ -80,13 +87,14 @@ struct PlayRow: View {
     let icon: String
     let title: String
     let detail: String
-    var tint: Color = CodeyColor.brand
+    /// The deck's topic color, on a soft tile as in the quiz-setup header.
+    var hue: CodeyColor.TopicHue = .slate
+
+    @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 44
 
     var body: some View {
         HStack(spacing: CodeySpacing.md) {
-            Icon(icon, size: 24, relativeTo: .title3)
-                .foregroundStyle(tint)
-                .frame(width: 28)
+            IconTile(systemName: icon, size: iconSize, radius: CodeyRadius.sm, ink: hue.ink, tile: hue.soft)
             VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
                 Text(title)
                     .font(.codeyHeadline)

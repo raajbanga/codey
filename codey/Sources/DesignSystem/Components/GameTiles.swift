@@ -224,7 +224,8 @@ struct TileActionLabel: View {
     var body: some View {
         HStack(spacing: CodeySpacing.xs) {
             if let icon = action.icon {
-                Icon(icon, size: 14, relativeTo: .headline)
+                // Same icon size as CodeyButton: about 0.8 of the text, as in a tag.
+                Icon(icon, size: 18, relativeTo: .title2)
             }
             Text(action.title)
                 .font(.codeyHeadline)

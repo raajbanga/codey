@@ -7,8 +7,16 @@ struct ExerciseTiles: View {
     let topics: [Topic]
     let solved: Set<String>
 
-    @State private var exercises: [Exercise] = []
-    @State private var loadError: String?
+    /// Loaded once from the bundle. Not in `.task`: before the load the
+    /// view has no content (an empty ForEach), so it never appears and the
+    /// task never ran, which left the section empty.
+    private static let loaded: Result<[Exercise], Error> = Result { try ExerciseLoader.load() }
+
+    private var exercises: [Exercise] { (try? Self.loaded.get()) ?? [] }
+    private var loadError: String? {
+        if case .failure(let error) = Self.loaded { return String(describing: error) }
+        return nil
+    }
 
     var body: some View {
         Group {
@@ -44,14 +52,6 @@ struct ExerciseTiles: View {
                     .buttonStyle(TilePressStyle())
                     .accessibilityIdentifier("exercise.\(exercise.id)")
                 }
-            }
-        }
-        .task {
-            guard exercises.isEmpty, loadError == nil else { return }
-            do {
-                exercises = try ExerciseLoader.load()
-            } catch {
-                loadError = String(describing: error)
             }
         }
     }

@@ -1,6 +1,6 @@
 /// XP per correct quiz answer (FR-30 as amended by D5): tier base plus a
-/// streak bonus capped at 25, so at most 45 XP per answer. Flashcard study
-/// awards no XP (O2).
+/// streak bonus capped at 25, so at most 45 XP per answer. Study, exercise,
+/// and quest XP (S41, replacing O2's "study pays no XP") are in XPRewards.
 enum XPPolicy {
     static let streakBonusStep = 5
     static let streakBonusCap = 25

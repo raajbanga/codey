@@ -51,7 +51,7 @@ struct CodeyButton: View {
         } label: {
             HStack(spacing: CodeySpacing.sm) {
                 if let systemImage {
-                    Icon(systemImage, size: 18, relativeTo: .headline)
+                    Icon(systemImage, size: 18, relativeTo: .title2)
                 }
                 Text(title)
                     .lineLimit(1)

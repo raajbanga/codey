@@ -105,7 +105,7 @@ struct HomeView: View {
             Button {
                 router.study = StudyRequest(deck: pick.deck, start: pick.resume ? .resume : .fresh(tierFilter: nil))
             } label: {
-                PlayRow(icon: "rectangle.stack", title: pick.title, detail: pick.detail, tint: CodeyColor.TopicHue.slate.fill)
+                PlayRow(icon: "rectangle.stack", title: pick.title, detail: pick.detail, hue: .of(topicID: pick.deck.topicId))
             }
             .buttonStyle(TilePressStyle())
             .accessibilityIdentifier("home.upNext")
@@ -117,16 +117,15 @@ struct HomeView: View {
     private var header: some View {
         let streak = StreakCalculator.currentStreak(endingOn: .now, activity: activity)
         return TabHeader(eyebrow: HomeLogic.greeting(at: .now), title: profile?.username ?? UserProfile.defaultUsername) {
-            if streak > 0 {
-                Label("\(streak)", icon: "flame")
-                    .font(.codeyHeadline.monospacedDigit())
-                    .foregroundStyle(CodeyColor.xp)
-                    .padding(.horizontal, CodeySpacing.md)
-                    .frame(height: 44)
-                    .background(CodeyColor.xpSoft, in: Capsule())
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(streak) day streak")
-            }
+            // Always shown, 0 included (FR-37: the current streak).
+            Label("\(streak)", icon: "flame")
+                .font(.codeyHeadline.monospacedDigit())
+                .foregroundStyle(CodeyColor.xp)
+                .padding(.horizontal, CodeySpacing.md)
+                .frame(height: 44)
+                .background(CodeyColor.xpSoft, in: Capsule())
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(streak) day streak")
             NavigationLink {
                 GroupsView()
             } label: {
