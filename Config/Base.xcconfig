@@ -14,4 +14,9 @@ GOOGLE_SERVER_CLIENT_ID =
 OPENROUTER_API_KEY =
 OPENROUTER_MODEL =
 
+// Signing (automatic). Each developer sets their own team ID in
+// Secrets.xcconfig; empty builds for the Simulator only.
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM =
+
 #include? "Secrets.xcconfig"
