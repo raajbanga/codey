@@ -95,3 +95,10 @@ enum CodeyColor {
     /// (editor). Syntax colors are SyntaxRole.color.
     static let codeBackground = Color(.codeBackground)
 }
+
+extension EnvironmentValues {
+    /// The learner's avatar color as the app's own accent (S42): tab tint,
+    /// level card, header buttons, primary and secondary buttons. Nil is
+    /// the default slate and brand ink. Topic tiles keep their topic hues.
+    @Entry var appHue: CodeyColor.TopicHue?
+}

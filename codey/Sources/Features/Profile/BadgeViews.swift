@@ -26,14 +26,15 @@ private struct BadgeCell: View {
     let isEarned: Bool
 
     @ScaledMetric(relativeTo: .title2) private var size: CGFloat = 52
+    @Environment(\.appHue) private var appHue
 
     var body: some View {
         VStack(spacing: CodeySpacing.xs) {
             Image(systemName: isEarned ? badge.symbol : "lock.fill")
                 .font(isEarned ? .codeyTitle : .codeyHeadline)
-                .foregroundStyle(isEarned ? CodeyColor.brand : CodeyColor.textSecondary)
+                .foregroundStyle(isEarned ? (appHue ?? .slate).ink : CodeyColor.textSecondary)
                 .frame(width: size, height: size)
-                .background(isEarned ? CodeyColor.brandSoft : CodeyColor.fillNeutral, in: Circle())
+                .background(isEarned ? (appHue ?? .slate).soft : CodeyColor.fillNeutral, in: Circle())
             Text(badge.title)
                 .font(.codeyCaption.weight(.medium))
                 .foregroundStyle(isEarned ? CodeyColor.textPrimary : CodeyColor.textSecondary)

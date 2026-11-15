@@ -134,7 +134,7 @@ struct HomeView: View {
             .buttonStyle(TilePressStyle())
             .accessibilityLabel("Groups and leaderboard")
             .accessibilityIdentifier("home.groups")
-            CircleIconButton(systemImage: ProfileAvatar.symbol(for: profile?.avatarId), label: "Profile", kind: .soft) {
+            CircleIconButton(systemImage: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: profile?.avatarId)), label: "Profile", kind: .soft) {
                 router.showProfile = true
             }
             .accessibilityIdentifier("home.profile")

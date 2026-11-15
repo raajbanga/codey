@@ -11,7 +11,8 @@ import SwiftUI
 ///     180 XP to Level 4
 struct LevelHero: View {
     let xp: Int
-    private let hue = CodeyColor.TopicHue.slate
+    @Environment(\.appHue) private var appHue
+    private var hue: CodeyColor.TopicHue { appHue ?? .slate }
 
     private var level: Int { LevelCalculator.level(forXP: xp) }
 
@@ -144,7 +145,7 @@ struct GameTile<Status: View, Tags: View>: View {
                     .font(.codeySubheadline)
                     .monospacedDigit()
                     .foregroundStyle(filled ? hue.ink : CodeyColor.textSecondary)
-                    .lineLimit(2)
+                    .lineLimit(3)
             }
             HStack(spacing: CodeySpacing.xs) { tags }
             Spacer(minLength: CodeySpacing.sm)

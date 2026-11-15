@@ -28,7 +28,7 @@ struct TabHeader<Trailing: View>: View {
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
                 Text(title)
-                    .font(.codeyTitle.weight(.semibold))
+                    .font(.codeyDisplay)
                     .foregroundStyle(CodeyColor.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
