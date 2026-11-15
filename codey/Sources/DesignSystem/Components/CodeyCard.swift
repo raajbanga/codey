@@ -15,15 +15,19 @@ struct CodeyCard<Content: View>: View {
     }
 
     var body: some View {
-        content
-            .padding(CodeySpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .codeyNote(edge: tint)
-            .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
+        content.codeyCard(tint: tint)
     }
 }
 
 extension View {
+    /// CodeyCard as a modifier, for a view that is already a stack.
+    func codeyCard(tint: Color? = nil) -> some View {
+        padding(CodeySpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .codeyNote(edge: tint)
+            .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
+    }
+
     /// A rounded note lying on the paper: a raised (or tinted) fill, a
     /// hairline edge, and a barely-there lift. Used by CodeyCard, Home's
     /// topic notes, and the Up-next note.
@@ -40,10 +44,18 @@ extension View {
     }
 
     /// A flat raised surface with a hairline outline, for toasts and other
-    /// small things floating over content (replaces custom glass, S9).
+    /// small things floating over content (toasts, undo bars).
     func codeyFloatingSurface(in shape: some InsettableShape = RoundedRectangle.codey(CodeyRadius.xl)) -> some View {
         background(CodeyColor.surfaceRaised, in: shape)
             .overlay { shape.strokeBorder(CodeyColor.separator, lineWidth: 1) }
+    }
+
+    /// The inside of every floating card (quiz setup, Ask Codey, dialogs,
+    /// celebrations; Nov 15): page-margin sides, roomier top and bottom,
+    /// so their content lines up with each other and with the page.
+    func codeyPanelPadding() -> some View {
+        padding(.horizontal, CodeySpacing.md)
+            .padding(.vertical, CodeySpacing.lg)
     }
 
     /// The lifted-note surface (S40) for centered floating cards:
@@ -61,13 +73,12 @@ extension View {
     /// tints the page in brand ink: sheets don't inherit RootView's tint, so
     /// list buttons in them (Sign in with Google) fell back to system blue.
     ///
-    /// S41: every scroll view on the paper gets the soft scroll edge effect
-    /// on all edges, so content fades and blurs as it passes under the
-    /// status bar, a nav bar, or a `codeyBar` (quiz, study) instead of being
-    /// cut off. It shows only while something is under the edge.
+    /// Content passing under the status bar or a `codeyBar` fades into
+    /// our own EdgeFade; the system's scroll edge effect is off so the
+    /// look is the same on every platform (Nov 15).
     func codeyPaperBackground() -> some View {
         background { PaperBackground().ignoresSafeArea() }
-            .scrollEdgeEffectStyle(.soft, for: .all)
+            .scrollEdgeEffectHidden(true, for: .all)
             .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
             .tint(CodeyColor.brand)
     }
@@ -76,27 +87,28 @@ extension View {
     /// Next, summary buttons). Scroll views under it treat it as a bar, so
     /// the soft edge effect sits behind it rather than a hard cut.
     ///
-    /// Content is inset by the fade's overshoot (`EdgeFade.overshoot`), so at
+    /// Content is inset by the fade's overshoot (`EdgeFade.overshoot(_:)`), so at
     /// rest the first and last rows sit clear of it and only fade once they
     /// scroll under.
     func codeyBar<Bar: View>(_ edge: VerticalEdge, @ViewBuilder _ bar: () -> Bar) -> some View {
-        safeAreaBar(edge: edge, spacing: EdgeFade.overshoot) {
+        safeAreaBar(edge: edge, spacing: EdgeFade.overshoot(edge)) {
             bar()
                 .background {
                     // Paper fading out past the bar's inner edge, under the
                     // status bar / home indicator too.
                     EdgeFade(edge: edge)
-                        .padding(edge == .top ? .bottom : .top, -EdgeFade.overshoot)
+                        .padding(edge == .top ? .bottom : .top, -EdgeFade.feather(edge))
                         .ignoresSafeArea(edges: edge == .top ? .top : .bottom)
                 }
         }
     }
+}
 
-    /// Puts a List on the dotted paper. Rows keep the system grouped row
-    /// color, which matches SurfaceRaised closely in both modes.
-    func codeyListBackground() -> some View {
-        scrollContentBackground(.hidden)
-            .codeyPaperBackground()
+/// A 1 pt line in the separator color (menu rows, a card's prompt and
+/// answer): ours, not the system Divider, so it ports as is.
+struct HairlineDivider: View {
+    var body: some View {
+        Rectangle().fill(CodeyColor.separator).frame(height: 1).accessibilityHidden(true)
     }
 }
 
@@ -151,43 +163,67 @@ struct PaperBackground: View {
     }
 }
 
-/// Paper with a light blur that fades out toward the page (S41): behind
-/// every pinned bar and the status bar area, so content scrolling under
-/// them softens instead of being cut off or colliding with the bar. Over
-/// bare paper it is nearly invisible, so it reads as there only when
-/// something passes under it.
+/// The soft edge where content scrolls under the top or bottom of the
+/// screen (S41; Nov 15: pure blur, feathered, shorter at the top). A
+/// backdrop blur with no tint layer, strongest at the screen edge and
+/// eased to clear over the bar or inset plus `feather`, so there is no
+/// visible line or darker band. It is our own element: on Android it is
+/// the same thing (a RenderEffect backdrop blur, e.g. Haze, under the same
+/// gradient mask). The tab bar is the one system-drawn piece.
 struct EdgeFade: View {
-    /// How far the fade reaches past a bar or the status bar. Pages inset
-    /// their content by the same amount so nothing starts under it.
-    static let overshoot = CodeySpacing.lg
+    /// How far the blur reaches past a bar or the screen edge: short at
+    /// the top, where the status bar is already clear space, longer at the
+    /// bottom over the tab bar and home indicator (Nov 15).
+    static func feather(_ edge: VerticalEdge) -> CGFloat {
+        edge == .top ? CodeySpacing.sm + CodeySpacing.xs : CodeySpacing.xxl + CodeySpacing.md
+    }
+    /// How far pages inset their content past the edge, so at rest the
+    /// first and last rows sit clear of the blur. Just past the top
+    /// feather, so pages start high (Nov 15).
+    static func overshoot(_ edge: VerticalEdge) -> CGFloat {
+        edge == .top ? CodeySpacing.md : CodeySpacing.xl
+    }
 
     var edge: VerticalEdge = .top
 
     var body: some View {
-        let start: UnitPoint = edge == .top ? .top : .bottom
-        let end: UnitPoint = edge == .top ? .bottom : .top
-        ZStack {
-            Rectangle().fill(.ultraThinMaterial)
-            CodeyColor.surface.opacity(0.75)
-        }
-        .mask {
-            LinearGradient(
-                stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.5), .init(color: .clear, location: 1)],
-                startPoint: start, endPoint: end
-            )
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+        Rectangle()
+            .fill(.ultraThinMaterial)
+            .mask {
+                LinearGradient(
+                    stops: Self.stops,
+                    startPoint: edge == .top ? .top : .bottom,
+                    endPoint: edge == .top ? .bottom : .top
+                )
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
+
+    /// One smoothstep from the screen edge to clear over the whole height
+    /// (no steady part, so no visible step anywhere, Nov 15).
+    private static let stops: [Gradient.Stop] = (0...16).map { i in
+        let t = CGFloat(i) / 16
+        let eased = t * t * (3 - 2 * t)
+        return .init(color: .black.opacity(strength * (1 - eased)), location: t)
+    }
+
+    /// Peak strength, at the very edge: enough to soften what passes
+    /// under, not so much that the material's frost reads as a haze.
+    private static let strength = 0.7
 }
 
-/// EdgeFade over the status bar area, for pages without a top bar.
-struct StatusBarFade: View {
+/// EdgeFade over the screen's top or bottom inset (status bar, home
+/// indicator, tab bar), for pages without a bar of their own there.
+struct ScreenEdgeFade: View {
+    let edge: VerticalEdge
+
     var body: some View {
         GeometryReader { proxy in
-            EdgeFade(edge: .top)
-                .frame(height: proxy.safeAreaInsets.top + EdgeFade.overshoot)
-                .offset(y: -proxy.safeAreaInsets.top)
+            let inset = edge == .top ? proxy.safeAreaInsets.top : proxy.safeAreaInsets.bottom
+            EdgeFade(edge: edge)
+                .frame(height: inset + EdgeFade.feather(edge))
+                .offset(y: edge == .top ? -inset : proxy.size.height - EdgeFade.feather(edge))
         }
         .allowsHitTesting(false)
     }

@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// One deck in the library's grid: the same GameTile as a Play topic (S41),
-/// with the card count, progress, and room for the Study button the library
-/// lays over the bottom.
+/// One deck in the library's grid, laid out exactly like a Play topic
+/// tile (S41; Nov 15): what studying pays top right, the title, then one
+/// row of tags (card count, and an icon tag for sync state or hidden)
+/// above the progress bar and the Study button the library lays over it.
 struct DeckTile: View {
     let deck: FlashcardDeck
     let topic: Topic?
@@ -13,19 +14,19 @@ struct DeckTile: View {
         GameTile(
             icon: topic?.iconName ?? "rectangle.stack",
             title: deck.title,
-            detail: deck.cardCount.counted("card"),
             hue: .of(topicID: deck.topicId),
             progress: deck.progressRate,
             reservesAction: reservesStudyButton
         ) {
-            // Starter is the default; only a user deck's sync state or a
-            // hidden deck is worth a chip.
-            if deck.origin == .user || deck.isHidden {
-                DeckStatusChip(deck: deck)
-            }
-        } tags: {
             // What a card moved up pays (S41).
             if deck.cardCount > 0 { CodeyChip(xp: XPRewards.cardMovedUp) }
+        } tags: {
+            CodeyChip(deck.cardCount.counted("card"), systemImage: "rectangle.stack")
+            if deck.isHidden {
+                CodeyChip("", systemImage: "eye.slash").accessibilityLabel("Hidden")
+            } else if deck.origin == .user {
+                DeckStatusChip(deck: deck, compact: true)
+            }
         }
         .opacity(deck.isHidden ? 0.6 : 1)
         .accessibilityElement(children: .combine)

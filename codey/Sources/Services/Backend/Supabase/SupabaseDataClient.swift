@@ -368,7 +368,7 @@ private struct DeckVersionRow: Decodable {
 
 /// Mastery isn't a flashcards column: it syncs per user in card_progress (FR-61).
 private struct CardRow: Codable {
-    static let columns = "id,deck_id,prompt,answer,code_language,code_source,difficulty,sort_index,created_at,updated_at,deleted_at,server_updated_at"
+    static let columns = "id,deck_id,prompt,answer,code_language,code_source,difficulty,sort_index,created_at,updated_at,deleted_at,is_hidden,server_updated_at"
 
     var id: UUID
     var deckId: UUID
@@ -381,8 +381,9 @@ private struct CardRow: Codable {
     var createdAt: Date
     var updatedAt: Date
     var deletedAt: Date?
+    /// Rows written before the column existed decode as visible.
+    var isHidden: Bool?
     var serverUpdatedAt: Date?
-
 
     init(_ remote: RemoteCard) {
         let card = remote.card
@@ -398,6 +399,7 @@ private struct CardRow: Codable {
         createdAt = card.createdAt ?? now
         updatedAt = card.updatedAt ?? now
         deletedAt = card.deletedAt
+        isHidden = card.isHidden ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -414,12 +416,14 @@ private struct CardRow: Codable {
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
         try container.encode(deletedAt, forKey: .deletedAt)
+        try container.encode(isHidden ?? false, forKey: .isHidden)
     }
 
     var remoteCard: RemoteCard {
         RemoteCard(deckId: deckId, card: FlashcardPayload(
             id: id, prompt: prompt, answer: answer, codeLanguage: codeLanguage, codeSource: codeSource,
-            difficulty: difficulty, sortIndex: sortIndex, createdAt: createdAt, updatedAt: updatedAt, deletedAt: deletedAt
+            difficulty: difficulty, sortIndex: sortIndex, createdAt: createdAt, updatedAt: updatedAt, deletedAt: deletedAt,
+            isHidden: isHidden
         ))
     }
 }

@@ -52,7 +52,8 @@ struct OpenRouterClientTests {
         let prompt = AskAIPrompt.system
         #expect(prompt.contains("Never reveal or confirm the answer"))
         #expect(prompt.contains("never write the missing token"))
-        #expect(prompt.contains("bullets with sub-bullets"))
+        #expect(prompt.contains("Never more than 60 words"))
+        #expect(prompt.contains("no nested bullets"))
         #expect(prompt.contains("exactly one short line"))
     }
 

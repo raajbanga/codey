@@ -69,18 +69,13 @@ struct DeckHeaderEditor: View {
 
     /// The topic as a tag that opens a menu, instead of a bare menu label.
     private var topicMenu: some View {
-        Menu {
-            Picker("Topic", selection: $viewModel.draft.topicId) {
-                ForEach(topics) { topic in
-                    Label(topic.title, systemImage: topic.iconName).tag(topic.id)
+        CodeyMenu(topic.map { .value($0.title, systemImage: $0.iconName, variant: .outline(hue.ink)) } ?? .placeholder("Pick a topic", color: hue.ink)) {
+            for topic in topics {
+                CodeyMenuItem(topic.title, systemImage: topic.iconName, isSelected: topic.id == viewModel.draft.topicId) {
+                    viewModel.draft.topicId = topic.id
                 }
             }
-        } label: {
-            CodeyChip(topic?.title ?? "Pick a topic", systemImage: "chevron.up.chevron.down", variant: .outline(hue.ink))
-                .frame(minHeight: 44)
-                .contentShape(.rect)
         }
-        .buttonStyle(.plain)
         .accessibilityLabel("Topic")
         .accessibilityValue(topic?.title ?? "None")
         .accessibilityIdentifier("builder.topic")

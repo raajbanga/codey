@@ -100,6 +100,8 @@ struct SessionSummary<Hero: View, Details: View>: View {
     /// nil hides the XP pill (practice, nothing to study).
     var xpEarned: Int?
     let againTitle: String
+    /// "Quiz Again" restarts; an exercise's "Next Challenge" moves on.
+    var againSystemImage = "arrow.clockwise"
     let againID: String
     let doneID: String
     /// nil hides Again.
@@ -143,7 +145,7 @@ struct SessionSummary<Hero: View, Details: View>: View {
             .codeyBar(.bottom) {
                 VStack(spacing: CodeySpacing.sm) {
                     if let again {
-                        CodeyButton(againTitle, systemImage: "arrow.clockwise", kind: .secondary, fullWidth: true, action: again)
+                        CodeyButton(againTitle, systemImage: againSystemImage, kind: .secondary, fullWidth: true, action: again)
                             .accessibilityIdentifier(againID)
                     }
                     CodeyButton("Done", kind: .primary, fullWidth: true, action: done)

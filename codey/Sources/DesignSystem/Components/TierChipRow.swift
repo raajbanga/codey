@@ -10,17 +10,19 @@ struct TierAvailability: Identifiable, Equatable {
     var id: Difficulty { difficulty }
 }
 
-/// Easy ✓ / Medium ✓ / Hard 🔒. Tapping a locked tier shows why it's locked.
-struct TierChipRow: View {
+/// The next locked tier and what opens it, one line under a tier picker
+/// (quiz setup, a starter deck's Study block; Nov 15). Replaces the row of
+/// tier tags that repeated the picker's own choices.
+struct TierLockNote: View {
     let tiers: [TierAvailability]
-    /// Icon-only chips for half-width bento tiles (labels stay in VoiceOver).
-    var compact = false
 
     var body: some View {
-        HStack(spacing: CodeySpacing.xs) {
-            ForEach(tiers) { tier in
-                TierChip(tier: tier, compact: compact)
-            }
+        if let locked = tiers.first(where: { !$0.isUnlocked }), let reason = locked.lockReason {
+            Label("\(locked.difficulty.style.label) unlocks: \(reason)", systemImage: "lock")
+                .font(.codeySubheadline)
+                .foregroundStyle(CodeyColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("tier.locked")
         }
     }
 }
@@ -44,32 +46,3 @@ struct TierUnlockedBanner: View {
     }
 }
 
-private struct TierChip: View {
-    let tier: TierAvailability
-    let compact: Bool
-    @State private var showReason = false
-
-    private var title: String { compact ? "" : tier.difficulty.style.label }
-
-    var body: some View {
-        if tier.isUnlocked {
-            CodeyChip(title, systemImage: tier.difficulty.style.symbol, variant: .tier(tier.difficulty))
-                .accessibilityLabel("\(tier.difficulty.style.label) unlocked")
-        } else {
-            Button {
-                showReason = true
-            } label: {
-                CodeyChip(title, systemImage: "lock.fill", variant: .neutral)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(tier.difficulty.style.label) locked")
-            .accessibilityHint(tier.lockReason ?? "")
-            .popover(isPresented: $showReason) {
-                Text(tier.lockReason ?? "Keep practicing to unlock.")
-                    .font(.codeyCallout)
-                    .padding(CodeySpacing.md)
-                    .presentationCompactAdaptation(.popover)
-            }
-        }
-    }
-}

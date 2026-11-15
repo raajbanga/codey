@@ -95,6 +95,7 @@ private struct BadgeBannerModifier: ViewModifier {
 }
 
 #Preview {
-    List { Section("Badges") { BadgesRow() } }
+    BadgesRow()
+        .padding()
         .modelContainer(ModelContainerFactory.makePreview())
 }

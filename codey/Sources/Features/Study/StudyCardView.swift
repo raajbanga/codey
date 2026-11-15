@@ -1,9 +1,7 @@
 import SwiftUI
 
-/// The study card (B15 rebuild). Two separate faces in a ZStack, each
-/// rotating on its own: the front turns 0→90°, then the back turns −90→0°.
-/// Neither face is ever mirrored, so text stays readable and selectable.
-/// Under Reduce Motion the faces crossfade instead.
+/// The study card (B15 rebuild): the prompt and answer faces on a shared
+/// FlipCard.
 struct StudyCardView: View {
     let card: Flashcard
     let isRevealed: Bool
@@ -27,7 +25,6 @@ struct StudyCardView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let halfFlip = 0.18
     /// Shortest card, so a one-line prompt still reads as a card.
     static let minHeight: CGFloat = 260
 
@@ -51,45 +48,12 @@ struct StudyCardView: View {
         }
     }
 
-    /// Both faces at the taller one's height (MatchedFaces), so the card
-    /// doesn't change size as it flips.
     private var faces: some View {
-        MatchedFaces {
-            face(isFront: true)
-                .rotation3DEffect(
-                    .degrees(reduceMotion ? 0 : (isRevealed ? 90 : 0)),
-                    axis: (x: 0, y: 1, z: 0),
-                    perspective: 0.5
-                )
-                .opacity(isRevealed ? 0 : 1)
-                .animation(faceAnimation(showing: !isRevealed), value: isRevealed)
-            face(isFront: false)
-                .rotation3DEffect(
-                    .degrees(reduceMotion ? 0 : (isRevealed ? 0 : -90)),
-                    axis: (x: 0, y: 1, z: 0),
-                    perspective: 0.5
-                )
-                .opacity(isRevealed ? 1 : 0)
-                .animation(faceAnimation(showing: isRevealed), value: isRevealed)
+        FlipCard(isFlipped: isRevealed) {
+            CardFace(card: card, isFront: true, scoreChange: scoreChange, isRepeat: isRepeat)
+        } back: {
+            CardFace(card: card, isFront: false, scoreChange: scoreChange, isRepeat: isRepeat)
         }
-    }
-
-    /// The face being hidden turns away first (ease-in); the face being shown
-    /// turns in after it (ease-out, delayed). Reduce Motion: a crossfade.
-    private func faceAnimation(showing: Bool) -> Animation {
-        if reduceMotion { return CodeyMotion.reduced }
-        return showing
-            ? .easeOut(duration: Self.halfFlip).delay(Self.halfFlip)
-            : .easeIn(duration: Self.halfFlip)
-    }
-
-    private func face(isFront: Bool) -> some View {
-        let visible = isFront != isRevealed
-        return CardFace(
-            card: card, isFront: isFront, scoreChange: scoreChange, isRepeat: isRepeat
-        )
-            .allowsHitTesting(visible)
-            .accessibilityHidden(!visible)
     }
 }
 
@@ -140,26 +104,6 @@ private struct CardFace: View {
             CardMarkdownView(markdown: card.prompt, snippet: card.codeSnippet, font: .codeyCardText, isSelectable: false)
         } else {
             CardMarkdownView(markdown: card.answer, font: .codeyCardText, isSelectable: false)
-        }
-    }
-}
-
-/// Stacks the two faces and gives both the taller face's height for the
-/// width offered. It measures on every layout, so a card is never stuck at
-/// a height from an earlier pass (the old `faceHeight` only ever grew, and
-/// one tall pass left a short card huge).
-private struct MatchedFaces: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let sizes = subviews.map { $0.sizeThatFits(proposal) }
-        return CGSize(
-            width: proposal.width ?? sizes.map(\.width).max() ?? 0,
-            height: sizes.map(\.height).max() ?? 0
-        )
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        for face in subviews {
-            face.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
         }
     }
 }

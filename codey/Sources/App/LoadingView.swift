@@ -77,18 +77,14 @@ struct LoadingView: View {
             Spacer()
             Spacer()
         }
-        .confirmationDialog(
+        .codeyConfirm(
             "Reset local data?",
             isPresented: $showResetConfirmation,
-            titleVisibility: .visible
+            message: "Codey couldn't open its data. Resetting deletes your decks, XP, and progress on this device."
         ) {
-            Button("Delete Local Data", role: .destructive) {
-                resetStoreAndRetry()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Codey couldn't open its data. Resetting deletes your decks, XP, and progress on this device.")
+            [CodeyDialog.Action("Delete Local Data", isDestructive: true, action: resetStoreAndRetry)]
         }
+        .codeyOverlayHost()
     }
 
     private func retryBoot() {

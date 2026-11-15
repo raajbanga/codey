@@ -2,8 +2,8 @@ import SwiftData
 import SwiftUI
 
 /// Deck screen's "Study" block: Continue / Start over, and a tier picker
-/// limited to unlocked tiers (FR-29). Starter decks show the lock state of
-/// each tier (D9); user decks are never locked.
+/// limited to unlocked tiers (FR-29). Starter decks say what opens the next
+/// locked tier (D9); user decks are never locked.
 struct StudyLauncherSection: View {
     let deck: FlashcardDeck
     /// The deck's topic color for the Study button (S41).
@@ -36,11 +36,7 @@ struct StudyLauncherSection: View {
     }
 
     var body: some View {
-        Section {
-            if deck.origin == .starter {
-                TierChipRow(tiers: tiers)
-            }
-
+        NoteGroup("Study", footer: footer) {
             if !taggedTiers.isEmpty {
                 // The same pills as quiz setup (S41): Mixed or one tier.
                 ChoiceChips(
@@ -51,10 +47,13 @@ struct StudyLauncherSection: View {
                 )
                 .accessibilityIdentifier("deck.tierFilter")
             }
+            if deck.origin == .starter {
+                TierLockNote(tiers: tiers)
+            }
 
-            if let snapshot {
+            if snapshot != nil {
                 CodeyButton(
-                    "Continue · \(snapshot.queue.displayPosition)/\(snapshot.queue.distinctTotal)",
+                    "Continue",
                     systemImage: "play",
                     kind: .hue(hue),
                     fullWidth: true
@@ -69,14 +68,7 @@ struct StudyLauncherSection: View {
                 }
                 .accessibilityIdentifier("deck.study")
             }
-        } header: {
-            Text("Study")
-        } footer: {
-            Text(footer)
         }
-        // Chips and buttons, not list rows: separators between them start
-        // at each row's text inset and read as stray lines (§3b).
-        .listRowSeparator(.hidden)
         .onChange(of: unlocked) { _, open in
             if let tierFilter, !open.contains(tierFilter) { self.tierFilter = nil }
         }

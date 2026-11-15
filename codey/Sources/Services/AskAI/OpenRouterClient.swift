@@ -24,7 +24,7 @@ enum AskAIError: Error, Equatable, Sendable {
         switch self {
         case .offline: "You're offline. Connect to the internet and try again."
         case .timeout: "The tutor took too long to answer. Try again."
-        case .unauthorized: "Ask AI isn't set up correctly (the API key was rejected)."
+        case .unauthorized: "Ask Codey isn't set up correctly (the API key was rejected)."
         case .rateLimited: "The free tutor is busy right now. Wait a moment and try again."
         case .modelUnavailable: "The tutor model is unavailable right now. Try again later."
         case .server: "Something went wrong on the tutor's side. Try again."

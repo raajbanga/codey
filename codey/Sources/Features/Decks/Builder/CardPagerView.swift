@@ -5,21 +5,34 @@ struct CardPagerView: View {
     let viewModel: DeckViewModel
     @Binding var page: PagerPage?
     @Binding var focusRequest: FocusRequest?
+    /// Off while the keyboard is up, to give the card the room.
+    var showsPosition = true
+    /// Deletes with undo (DeckBuilderView's toast).
+    let onDelete: (UUID) -> Void
 
     private var cards: [CardDraft] { viewModel.draft.cards }
 
     var body: some View {
         VStack(spacing: CodeySpacing.xs) {
-            Text(positionLabel)
-                .font(.codeyCaption.weight(.semibold))
-                .foregroundStyle(CodeyColor.textSecondary)
-                .contentTransition(.numericText())
-                .accessibilityIdentifier("pager.position")
+            if showsPosition {
+                Text(positionLabel)
+                    .font(.codeyCaption.weight(.semibold))
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .contentTransition(.numericText())
+                    .accessibilityIdentifier("pager.position")
+            }
 
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 0) {
                     ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
-                        CardPageEditor(card: binding(for: card.id, at: index), viewModel: viewModel, focusRequest: $focusRequest)
+                        CardPageEditor(
+                            card: binding(for: card.id, at: index), viewModel: viewModel, focusRequest: $focusRequest,
+                            duplicate: {
+                                guard let id = viewModel.duplicateCard(cardID: card.id) else { return }
+                                withAnimation(CodeyMotion.snappy) { page = .card(id) }
+                            },
+                            delete: { onDelete(card.id) }
+                        )
                             .padding(.horizontal, CodeySpacing.md)
                             .containerRelativeFrame(.horizontal)
                             .id(PagerPage.card(card.id))

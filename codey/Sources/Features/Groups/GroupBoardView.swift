@@ -26,49 +26,40 @@ struct GroupBoardView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                if let error = board.error {
-                    StaleNotice(message: error, fetchedAt: board.fetchedAt)
-                        .padding(CodeySpacing.md)
-                        .codeyNote()
-                }
-                if !rows.isEmpty {
-                    VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                        SectionTitle(standing)
-                        Podium(rows: Array(rows.prefix(3)))
-                        ForEach(rows.dropFirst(3)) { row in
-                            BoardRow(row: row, leaderXP: rows.first?.entry.xp ?? 0)
-                        }
-                        Text("XP from quizzes since Monday 00:00 UTC.")
-                            .font(.codeyCaption)
-                            .foregroundStyle(CodeyColor.textSecondary)
-                            .padding(.horizontal, CodeySpacing.xs)
-                    }
-                }
-                VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                    SectionTitle("Invite")
-                    InviteCodeCard(group: group)
-                }
-                CodeyButton("Leave Group", systemImage: "xmark", kind: .destructive, fullWidth: true) {
-                    confirmLeave = true
-                }
-                .accessibilityIdentifier("groups.leave")
+        CodeyPage(group.name, subtitle: standing, icon: "person.3", hue: group.hue) {
+            if let error = board.error {
+                StaleNotice(message: error, fetchedAt: board.fetchedAt)
+                    .codeyCard()
             }
-            .padding(CodeySpacing.md)
+            if !rows.isEmpty {
+                VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                    SectionTitle("This week")
+                    Podium(rows: Array(rows.prefix(3)))
+                    ForEach(rows.dropFirst(3)) { row in
+                        BoardRow(row: row, leaderXP: rows.first?.entry.xp ?? 0)
+                    }
+                    Text("XP from quizzes since Monday 00:00 UTC.")
+                        .font(.codeyCaption)
+                        .foregroundStyle(CodeyColor.textSecondary)
+                        .padding(.horizontal, CodeySpacing.xs)
+                }
+            }
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                SectionTitle("Invite")
+                InviteCodeCard(group: group)
+            }
+            CodeyButton("Leave Group", systemImage: "xmark", kind: .destructive, fullWidth: true) {
+                confirmLeave = true
+            }
+            .accessibilityIdentifier("groups.leave")
         }
-        .codeyPaperBackground()
-        .codeyPageTitle(group.name)
         .overlay {
             if board.isLoading, board.items.isEmpty { ProgressView() }
         }
         .refreshable { await load() }
         .task { await load() }
-        .confirmationDialog("Leave \(group.name)?", isPresented: $confirmLeave, titleVisibility: .visible) {
-            Button("Leave Group", role: .destructive, action: leave)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("You can join again with the code.")
+        .codeyConfirm("Leave \(group.name)?", isPresented: $confirmLeave, message: "You can join again with the code.") {
+            [CodeyDialog.Action("Leave Group", isDestructive: true, action: leave)]
         }
         .errorAlert($actionError)
     }
@@ -224,8 +215,7 @@ private struct BoardRow: View {
                             tint: hue.fill, height: 8, track: hue.fill.opacity(0.22))
             }
         }
-        .padding(CodeySpacing.md)
-        .codeyNote()
+        .codeyCard()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Rank \(row.rank), \(row.entry.displayName)\(row.isMe ? ", you" : ""), \(row.entry.xp) XP")
     }

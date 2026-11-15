@@ -39,7 +39,7 @@ final class ScreenTourUITests: XCTestCase {
                     shot("study", appearance)
                     app.buttons["study.close"].firstMatch.tap()
                 }
-                app.navigationBars.buttons.firstMatch.tap()
+                app.swipeBack()
             }
         }
 
@@ -54,7 +54,7 @@ final class ScreenTourUITests: XCTestCase {
             if app.textFields["exercise.blank.1"].waitForExistence(timeout: 5) {
                 shot("exercise", appearance)
             }
-            app.navigationBars.buttons.firstMatch.tap()
+            app.swipeBack()
         }
         XCTAssertTrue(topic.waitForExistence(timeout: 5))
         for _ in 0..<8 where !topic.isHittable { app.swipeDown() }

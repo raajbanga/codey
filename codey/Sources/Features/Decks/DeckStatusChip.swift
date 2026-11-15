@@ -4,13 +4,17 @@ import SwiftUI
 /// state as symbol + label (never color alone).
 struct DeckStatusChip: View {
     let deck: FlashcardDeck
+    /// Icon only, for a half-width tile's tag row (the name stays in
+    /// VoiceOver).
+    var compact = false
 
     var body: some View {
         if deck.origin == .starter {
-            CodeyChip("Starter", systemImage: "sparkles", variant: .brand)
+            CodeyChip(compact ? "" : "Starter", systemImage: "sparkles", variant: .brand)
+                .accessibilityLabel("Starter deck")
         } else {
             let state = deck.syncState
-            CodeyChip(state.displayName, systemImage: state.symbol, variant: state.chipVariant)
+            CodeyChip(compact ? "" : state.displayName, systemImage: state.symbol, variant: state.chipVariant)
                 .symbolEffect(.rotate, isActive: state == .syncing)
                 .accessibilityLabel("Sync status: \(state.displayName)")
                 .accessibilityIdentifier("syncStatus")

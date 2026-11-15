@@ -6,14 +6,15 @@ import SwiftUI
 ///
 ///     ░░░░░░░░░░░░░░░░░░░░░░   ← the screen, dimmed (tap to close)
 ///     ░ ╭─────────────────╮ ░
-///     ░ │ panel content   │ ░  ← centered; drag down to close
+///     ░ │ panel content   │ ░  ← centered; swipe any way to close
 ///     ░ ╰─────────────────╯ ░
 ///     ░░░░░░░░░░░░░░░░░░░░░░
 ///
 /// It pops in from the center (`CodeyMotion.pop`: a slight scale and fade,
-/// shared with every floating card in the app) and closes by dragging down,
-/// a tap on the dimmed screen, the content's own close button
-/// (`\.dismissPanel`), or the VoiceOver escape gesture. Short content sizes
+/// shared with every floating card in the app) and closes by a swipe in
+/// any direction, a tap on the dimmed screen, the content's own close
+/// button if it has one (`\.dismissPanel`), or the VoiceOver escape
+/// gesture. Short content sizes
 /// to fit (scrolling only when it must); `fillsHeight` panels (a chat) take
 /// most of the screen.
 private struct FloatingPanelModifier<Item: Identifiable, Panel: View>: ViewModifier {
@@ -22,7 +23,7 @@ private struct FloatingPanelModifier<Item: Identifiable, Panel: View>: ViewModif
     let panel: (Item) -> Panel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var dragOffset: CGFloat = 0
+    @State private var dragOffset = CGSize.zero
 
     /// Past this (or a fast flick) a drag closes the panel.
     private let dismissDistance: CGFloat = 120
@@ -70,9 +71,10 @@ private struct FloatingPanelModifier<Item: Identifiable, Panel: View>: ViewModif
         .codeyFloatingCard()
         .padding(.horizontal, CodeySpacing.md)
         .padding(.vertical, fillsHeight ? CodeySpacing.xl : CodeySpacing.xxl)
-        // Follows a downward drag, eased so it reads as "let go to close".
-        .offset(y: max(dragOffset, 0) * 0.6)
-        .scaleEffect(1 - min(max(dragOffset, 0) / 2000, 0.05))
+        // Follows a drag in any direction, eased so it reads as "let go
+        // to close" (Nov 15: no ✕; swipe it away).
+        .offset(x: dragOffset.width * 0.6, y: dragOffset.height * 0.6)
+        .scaleEffect(1 - min(Self.distance(dragOffset) / 2000, 0.05))
         .gesture(drag)
         .environment(\.dismissPanel, DismissPanelAction(close))
         .accessibilityElement(children: .contain)
@@ -82,14 +84,17 @@ private struct FloatingPanelModifier<Item: Identifiable, Panel: View>: ViewModif
 
     private var drag: some Gesture {
         DragGesture(minimumDistance: 8)
-            .onChanged { dragOffset = $0.translation.height }
+            .onChanged { dragOffset = $0.translation }
             .onEnded { value in
-                if value.translation.height > dismissDistance || value.predictedEndTranslation.height > dismissDistance * 2.5 {
+                if Self.distance(value.translation) > dismissDistance
+                    || Self.distance(value.predictedEndTranslation) > dismissDistance * 2.5 {
                     close()
                 }
-                withAnimation(CodeyMotion.resolve(CodeyMotion.pop, reduceMotion: reduceMotion)) { dragOffset = 0 }
+                withAnimation(CodeyMotion.resolve(CodeyMotion.pop, reduceMotion: reduceMotion)) { dragOffset = .zero }
             }
     }
+
+    private static func distance(_ size: CGSize) -> CGFloat { hypot(size.width, size.height) }
 
     private func close() {
         item = nil

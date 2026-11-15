@@ -27,8 +27,7 @@ struct CelebrationOverlay: View {
                         .foregroundStyle(CodeyColor.textPrimary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.vertical, CodeySpacing.lg)
-                .padding(.horizontal, CodeySpacing.xl)
+                .codeyPanelPadding()
                 // S40: the same lifted note and pop as FloatingPanel.
                 .codeyFloatingCard()
                 .padding(.horizontal, CodeySpacing.md)

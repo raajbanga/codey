@@ -36,7 +36,7 @@ enum HomeLogic {
         return best?.id
     }
 
-    /// The single suggestion on Home's "Up next" card.
+    /// What Play's warm-up quest suggests.
     enum UpNext: Equatable {
         /// A saved study session (newest first).
         case resume(deckID: UUID, position: Int, total: Int)

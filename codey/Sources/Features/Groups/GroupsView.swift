@@ -9,67 +9,51 @@ struct GroupsView: View {
     @State private var sheet: GroupSheet?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.md) {
-                if backend.currentUser == nil {
-                    EmptyStateView(
-                        systemImage: "person.2",
-                        title: "Sign in for groups",
-                        message: "Sign in from your profile to create or join a group."
-                    )
-                } else {
-                    if let error = list.error {
-                        StaleNotice(message: error, fetchedAt: list.fetchedAt)
-                            .padding(CodeySpacing.md)
-                            .codeyNote()
-                    }
-                    if list.items.isEmpty, !list.isLoading {
-                        EmptyStateView(
-                            systemImage: "person.3",
-                            title: "No groups yet",
-                            message: "Groups rank members by XP earned this week. Create one and share its code, or join with a friend's code.",
-                            actionTitle: "Create Group"
-                        ) { sheet = .create }
-                    } else {
-                        BentoSection("Your groups") {
-                            ForEach(list.items) { group in
-                                NavigationLink {
-                                    GroupBoardView(group: group)
-                                } label: {
-                                    GameTile(
-                                        icon: "person.3",
-                                        title: group.name,
-                                        detail: "Code \(group.inviteCode)",
-                                        hue: group.hue,
-                                        action: TileAction("Board", icon: "trophy")
-                                    )
-                                }
-                                .buttonStyle(TilePressStyle())
-                                .accessibilityIdentifier("groups.row")
-                            }
-                        }
-                        Text("Weeks reset Monday 00:00 UTC.")
-                            .font(.codeyCaption)
-                            .foregroundStyle(CodeyColor.textSecondary)
-                            .padding(.horizontal, CodeySpacing.xs)
-                    }
-                }
-            }
-            .padding(CodeySpacing.md)
-        }
-        .codeyPaperBackground()
-        .codeyPageTitle("Groups")
-        .toolbar {
+        CodeyPage("Groups", subtitle: "Weekly XP boards, reset Monday 00:00 UTC", icon: "trophy") {
             if backend.currentUser != nil {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button("Create Group", systemImage: "plus") { sheet = .create }
-                        Button("Join with Code", systemImage: "number") { sheet = .join }
-                    } label: {
-                        Image(systemName: "plus")
+                CodeyMenu(.icon("plus", label: "Add group")) {
+                    CodeyMenuItem("Create Group", systemImage: "plus") { sheet = .create }
+                    CodeyMenuItem("Join with Code", systemImage: "number") { sheet = .join }
+                }
+                .accessibilityIdentifier("groups.add")
+            }
+        } content: {
+            if backend.currentUser == nil {
+                EmptyStateView(
+                    systemImage: "person.2",
+                    title: "Sign in for groups",
+                    message: "Sign in from your profile to create or join a group."
+                )
+            } else {
+                if let error = list.error {
+                    StaleNotice(message: error, fetchedAt: list.fetchedAt)
+                        .codeyCard()
+                }
+                if list.items.isEmpty, !list.isLoading {
+                    EmptyStateView(
+                        systemImage: "person.3",
+                        title: "No groups yet",
+                        message: "Groups rank members by XP earned this week. Create one and share its code, or join with a friend's code.",
+                        actionTitle: "Create Group"
+                    ) { sheet = .create }
+                } else {
+                    BentoSection("Your groups") {
+                        ForEach(list.items) { group in
+                            NavigationLink {
+                                GroupBoardView(group: group)
+                            } label: {
+                                GameTile(
+                                    icon: "person.3",
+                                    title: group.name,
+                                    detail: "Code \(group.inviteCode)",
+                                    hue: group.hue,
+                                    action: TileAction("Board", icon: "trophy")
+                                )
+                            }
+                            .buttonStyle(TilePressStyle())
+                            .accessibilityIdentifier("groups.row")
+                        }
                     }
-                    .accessibilityLabel("Add group")
-                    .accessibilityIdentifier("groups.add")
                 }
             }
         }
@@ -85,6 +69,7 @@ struct GroupsView: View {
                 case .join: JoinGroupView { add($0) }
                 }
             }
+            .codeyOverlayHost()
         }
     }
 
@@ -140,11 +125,11 @@ struct StaleNotice: View {
 
 /// FR-50: name → the server makes a code → share it.
 struct CreateGroupView: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(BackendFacade.self) private var backend
     let onCreated: (GroupSummary) -> Void
 
     @State private var name = ""
+    @FocusState private var focused: Bool
     @State private var created: GroupSummary?
     @State private var isSaving = false
     @State private var actionError: String?
@@ -154,52 +139,34 @@ struct CreateGroupView: View {
     private var isValid: Bool { ModelValidator.validateGroupName(name).isEmpty }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                if let created {
-                    InviteCodeCard(group: created)
-                    FieldNote("Anyone with this code can join and see the group's weekly board.")
-                } else {
-                    TextField("Group name", text: $name)
-                        .font(.codeyBody)
-                        .submitLabel(.done)
-                        .onSubmit(create)
-                        .padding(CodeySpacing.md)
-                        .codeyNote()
-                        .accessibilityIdentifier("groups.create.name")
-                    HStack {
-                        FieldNote("You'll get a code to share.")
-                        Spacer()
-                        Text("\(length)/\(limit)")
-                            .font(.codeyCaption)
-                            .monospacedDigit()
-                            .foregroundStyle(length > limit ? CodeyColor.danger : CodeyColor.textSecondary)
-                            .padding(.horizontal, CodeySpacing.xs)
-                    }
-                }
-            }
-            .padding(CodeySpacing.md)
-        }
-        .codeyPaperBackground()
-        .codeyPageTitle(created == nil ? "New Group" : created!.name)
-        .toolbar {
+        CodeyPage(
+            created?.name ?? "New Group",
+            subtitle: created == nil ? "You'll get a code to share." : "Share this code to invite people.",
+            icon: "person.3",
+            closes: true,
+            closeID: "groups.create.close"
+        ) {
             if created == nil {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSaving {
-                        ProgressView()
-                    } else {
-                        Button("Create", action: create)
-                            .disabled(!isValid)
-                            .accessibilityIdentifier("groups.create.save")
-                    }
-                }
+                PageAction(systemImage: "checkmark", label: "Create", isWorking: isSaving, action: create)
+                    .disabled(!isValid)
+                    .accessibilityIdentifier("groups.create.save")
+            }
+        } content: {
+            if let created {
+                InviteCodeCard(group: created)
+                FieldNote("Anyone with this code can join and see the group's weekly board.")
             } else {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
+                TextField("Group name", text: $name)
+                    .font(.codeyBody)
+                    .submitLabel(.done)
+                    .onSubmit(create)
+                    .focused($focused)
+                    .onAppear { focused = true }
+                    .codeyField()
+                    .accessibilityIdentifier("groups.create.name")
+                LimitCounter(count: length, limit: limit)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.horizontal, CodeySpacing.xs)
             }
         }
         .errorAlert($actionError)
@@ -226,49 +193,41 @@ struct JoinGroupView: View {
     let onJoined: (GroupSummary) -> Void
 
     @State private var code = ""
+    @FocusState private var focused: Bool
     @State private var isJoining = false
     @State private var actionError: String?
 
     private var isValid: Bool { ModelValidator.validateInviteCode(code).isEmpty }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                TextField("ABC234", text: $code)
-                    .font(.codeyNumeric)
-                    .kerning(4)
-                    .multilineTextAlignment(.center)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                    .onChange(of: code) { _, new in
-                        let cleaned = String(ModelValidator.normalizedInviteCode(new).prefix(ModelValidator.Limits.inviteCodeLength))
-                        if cleaned != new { code = cleaned }
-                    }
-                    .submitLabel(.join)
-                    .onSubmit(join)
-                    .padding(CodeySpacing.md)
-                    .codeyNote()
-                    .accessibilityLabel("Invite code")
-                    .accessibilityIdentifier("groups.join.code")
-                FieldNote("Ask a group member for its 6-character code.")
-            }
-            .padding(CodeySpacing.md)
-        }
-        .codeyPaperBackground()
-        .codeyPageTitle("Join a Group")
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                if isJoining {
-                    ProgressView()
-                } else {
-                    Button("Join", action: join)
-                        .disabled(!isValid)
-                        .accessibilityIdentifier("groups.join.save")
+        CodeyPage(
+            "Join a Group",
+            subtitle: "Ask a group member for its 6-character code.",
+            icon: "number",
+            closes: true,
+            closeID: "groups.join.close"
+        ) {
+            PageAction(systemImage: "checkmark", label: "Join", isWorking: isJoining, action: join)
+                .disabled(!isValid)
+                .accessibilityIdentifier("groups.join.save")
+        } content: {
+            TextField("ABC234", text: $code)
+                .font(.codeyNumeric)
+                .kerning(4)
+                .multilineTextAlignment(.center)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .onChange(of: code) { _, new in
+                    let cleaned = String(ModelValidator.normalizedInviteCode(new).prefix(ModelValidator.Limits.inviteCodeLength))
+                    if cleaned != new { code = cleaned }
                 }
-            }
+                .submitLabel(.join)
+                .onSubmit(join)
+                .focused($focused)
+                .onAppear { focused = true }
+                .codeyField()
+                .accessibilityLabel("Invite code")
+                .accessibilityIdentifier("groups.join.code")
         }
         .errorAlert($actionError)
     }

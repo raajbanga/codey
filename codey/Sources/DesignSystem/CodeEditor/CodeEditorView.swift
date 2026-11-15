@@ -200,10 +200,7 @@ extension CodeKeyboardAccessory: UIInputViewAudioFeedback {
     @Previewable @State var source = "def greet(name):\n    return f\"Hi {name}\"\n"
     @Previewable @State var language = CodeLanguage.python
     VStack {
-        Picker("Language", selection: $language) {
-            ForEach(CodeLanguage.allCases) { Text($0.displayName).tag($0) }
-        }
-        .pickerStyle(.segmented)
+        ChoiceChips("Language", selection: $language, options: CodeLanguage.allCases.map { ($0, $0.displayName) })
         CodeEditorView(text: $source, language: language)
             .frame(height: 220)
             .clipShape(.codey(CodeyRadius.md))

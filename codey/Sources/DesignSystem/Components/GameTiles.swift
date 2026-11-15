@@ -1,47 +1,6 @@
 import SwiftUI
 
-// The game layer's pieces (S41): XP rewards and the level hero on Play.
-
-/// The top of Play (S41 mockup): level and XP toward the next one on a
-/// slate card. Streak and today's goal live elsewhere (header, quests),
-/// so this card says one thing.
-///
-///     Level 3                     320 / 500 XP
-///     ████████████░░░░░░
-///     180 XP to Level 4
-struct LevelHero: View {
-    let xp: Int
-    @Environment(\.appHue) private var appHue
-    private var hue: CodeyColor.TopicHue { appHue ?? .slate }
-
-    private var level: Int { LevelCalculator.level(forXP: xp) }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Level \(level)")
-                    .font(.codeyTitle.weight(.semibold))
-                    .contentTransition(.numericText(value: Double(level)))
-                Spacer(minLength: 0)
-                Text("\(LevelCalculator.xpIntoLevel(xp)) / \(LevelCalculator.xpPerLevel) XP")
-                    .font(.codeySubheadline.weight(.medium).monospacedDigit())
-                    .contentTransition(.numericText(value: Double(xp)))
-            }
-            ProgressBar(value: LevelCalculator.progressFraction(xp), tint: hue.fill, height: 10, track: hue.fill.opacity(0.22))
-            Text("\(LevelCalculator.xpToNextLevel(xp)) XP to Level \(level + 1)")
-                .font(.codeySubheadline)
-        }
-        .foregroundStyle(hue.ink)
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
-        .padding(CodeySpacing.md)
-        .background(hue.soft, in: .codey(CodeyRadius.lg))
-        .codeyAnimation(CodeyMotion.snappy, value: xp)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Level \(level), \(xp) XP, \(LevelCalculator.xpToNextLevel(xp)) to the next level")
-        .accessibilityIdentifier("play.level")
-    }
-}
+// The game layer's pieces (S41): XP rewards (the level is on Play's HeroCard).
 
 /// A reward that just landed, floating at the top of a quiz or study
 /// session for a moment: "+5 XP", "Daily goal met +50 XP", "Level 4!".
@@ -81,8 +40,8 @@ private struct XPToastModifier: ViewModifier {
                         .foregroundStyle(CodeyColor.xp)
                         .padding(.horizontal, CodeySpacing.lg)
                         .padding(.vertical, CodeySpacing.sm)
-                        .background(CodeyColor.xpSoft, in: Capsule())
-                        .overlay { Capsule().strokeBorder(CodeyColor.xp.opacity(0.25), lineWidth: 1) }
+                        .background(CodeyColor.xpSoft, in: .tag)
+                        .overlay { RoundedRectangle.tag.strokeBorder(CodeyColor.xp.opacity(0.25), lineWidth: 1) }
                         .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
                         .padding(.top, CodeySpacing.xxl)
                         .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
@@ -106,16 +65,18 @@ private struct XPToastModifier: ViewModifier {
 /// The one tile on Play and Decks (S41): topics, quests, exercises and
 /// decks all share it, so every tile reads the same way.
 ///
-///     ╭ ⋀          (Up next) ╮   ← icon, one status tag
-///     │ Algorithms           │   ← title
-///     │ [Easy] [+10 XP]      │   ← fact tags (CodeyChip): tier, what it pays
-///     │ ━━━━━━──────         │   ← optional progress
-///     │ [     ▶ Play       ] │   ← the action
+///     ╭ ⋀           [+10 XP] ╮   ← icon, one status tag (what it pays,
+///     │ Algorithms           │     as on the quests)
+///     │ optional detail      │
+///     │                      │
+///     │ [Easy] [▦]           │   ← fact tags, one row, pinned to the
+///     │ ━━━━━━──────         │     bottom so they line up across a row
+///     │ [      ▶ Play      ] │   ← optional progress, then the action
 ///     ╰──────────────────────╯
 ///
 /// `filled` puts the tile in its topic's pastel (text in its ink); off, it's
 /// the plain note (text in primary / secondary). Callers wrap it in a Button
-/// or NavigationLink; the action capsule is a label, not its own button.
+/// or NavigationLink; the action pill is a label, not its own button.
 struct GameTile<Status: View, Tags: View>: View {
     let icon: String
     let title: String
@@ -151,13 +112,13 @@ struct GameTile<Status: View, Tags: View>: View {
                     .foregroundStyle(filled ? hue.ink : CodeyColor.textSecondary)
                     .lineLimit(3)
             }
-            // Side by side when they fit; stacked rather than truncated
-            // ("Me…") on a half-width tile.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: CodeySpacing.xs) { tags }
-                VStack(alignment: .leading, spacing: CodeySpacing.xs) { tags }
-            }
             Spacer(minLength: CodeySpacing.sm)
+            // Pinned above the action, so tags line up across a row whether
+            // or not a tile has a detail line.
+            if Tags.self != EmptyView.self {
+                HStack(spacing: CodeySpacing.xs) { tags }
+                    .padding(.bottom, CodeySpacing.xs)
+            }
             if let progress {
                 ProgressBar(value: progress, tint: hue.fill, height: 8, track: hue.fill.opacity(0.22))
                     .padding(.bottom, CodeySpacing.xs)
@@ -191,15 +152,6 @@ extension GameTile where Tags == EmptyView {
     }
 }
 
-extension GameTile where Status == EmptyView {
-    init(icon: String, title: String, detail: String? = nil, hue: CodeyColor.TopicHue, filled: Bool = true,
-         progress: Double? = nil, action: TileAction? = nil, reservesAction: Bool = false,
-         @ViewBuilder tags: () -> Tags) {
-        self.init(icon: icon, title: title, detail: detail, hue: hue, filled: filled, progress: progress,
-                  action: action, reservesAction: reservesAction, status: { EmptyView() }, tags: tags)
-    }
-}
-
 extension GameTile where Status == EmptyView, Tags == EmptyView {
     init(icon: String, title: String, detail: String? = nil, hue: CodeyColor.TopicHue, filled: Bool = true,
          progress: Double? = nil, action: TileAction? = nil, reservesAction: Bool = false) {
@@ -208,11 +160,11 @@ extension GameTile where Status == EmptyView, Tags == EmptyView {
     }
 }
 
-/// What a tile's capsule says: "Play", "Study", "Solve".
+/// What a tile's action pill says: "Play", "Study", "Solve".
 struct TileAction {
     let title: String
     var icon: String?
-    /// The topic fill with white text; off, a quiet neutral capsule for a
+    /// The topic fill with white text; off, a quiet neutral pill for a
     /// tile that isn't the next thing to do.
     var prominent = true
 
@@ -223,7 +175,7 @@ struct TileAction {
     }
 }
 
-/// The capsule at the bottom of a GameTile. Also the label of the Study
+/// The pill at the bottom of a GameTile. Also the label of the Study
 /// button Decks lays over a tile, so both are the same size.
 struct TileActionLabel: View {
     let action: TileAction
@@ -246,7 +198,7 @@ struct TileActionLabel: View {
         .padding(.horizontal, CodeySpacing.sm)
         .frame(maxWidth: .infinity)
         .frame(height: height)
-        .background(action.prominent ? hue.fill : CodeyColor.fillNeutral, in: Capsule())
+        .background(action.prominent ? hue.fill : CodeyColor.fillNeutral, in: .pill)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(action.title)
     }
