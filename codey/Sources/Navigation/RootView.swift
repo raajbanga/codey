@@ -7,6 +7,7 @@ import SwiftUI
 /// Every study session and quiz is presented from here, via the Router.
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(BackendFacade.self) private var backend
     @State private var router = Router()
     @Query private var profiles: [UserProfile]
 
@@ -64,8 +65,10 @@ struct RootView: View {
         .codeyOverlayHost()
         .sheet(isPresented: $router.showProfile) {
             ProfileSheet()
-                // iPad: the larger page sheet, not the small form sheet.
-                .presentationSizing(.page)
+                .codeyPageSheet()
+                // Passed in by hand: on Mac Catalyst presented content doesn't
+                // inherit Observable objects (opening Profile crashed, Nov 16).
+                .environment(backend)
         }
         .environment(router)
         .environment(\.appHue, appHue)

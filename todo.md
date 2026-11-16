@@ -46,6 +46,9 @@ Goal: the Expo demo runs on iPad in landscape. Mockups: https://claude.ai/artifa
 - [ ] Tests: unit + UI suites still pass on iPhone 17 (CI unchanged); one run of the UI suite on `DESTINATION='platform=iOS Simulator,name=iPad (A16)' scripts/test.sh -only-testing:codeyUITests`. Fix or list any failures caused by the tab bar moving to the top; don't skip tests.
 - [x] Docs: say "iPhone and iPad" where the platform is named, and add one iPad screenshot. No new FR/NFR numbers (rule above). Anything not done by the freeze goes under Limitations / Future Work.
 - [ ] Expo: rehearse the demo on iPad in landscape (add this to ES's rehearsal task above).
+- [x] Mac (Mac Catalyst, Nov 16): `.macCatalyst` destination, signed with the team so the keychain entitlement (`codey/codey.entitlements`) is kept; Google sign-in needs that keychain. Sign-in checked; Profile sheet sized to the window (`codeyPageSheet`).
+- [x] Retake the screenshots once the iPad/Mac layout is final (README and report: iPhone, iPad, and Mac if it ships), after the text and tile size bump.
+- [ ] Simplify the commit history on `main` (fewer, clearer squash commits) before tagging `final`.
 
 ## 4. Schedule
 

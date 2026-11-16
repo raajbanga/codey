@@ -86,6 +86,9 @@ struct GroupsView: View {
                 }
             }
             .codeyOverlayHost()
+            // Passed in by hand: on Mac Catalyst presented content doesn't
+            // inherit Observable objects (opening Profile crashed, Nov 16).
+            .environment(backend)
         }
     }
 

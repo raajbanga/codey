@@ -314,7 +314,10 @@ into two columns (Play's quests beside This week, a deck's Study beside its card
 study, quizzes and exercises keep a readable width; and the tab bar floats on the
 same line as the page's buttons. Split view and narrow Stage Manager windows get
 the iPhone layout. The iPad layout was checked by hand on the iPad (A16) Simulator in
-both orientations.
+both orientations. The same build runs on the Mac through Mac Catalyst
+(Figure~\ref{fig:mac}), which gets the iPad's landscape layout in a resizable window;
+its sheets are sized to the window, and Google sign-in keeps its session in the
+keychain through a keychain access group entitlement.
 Figure~\ref{fig:screens} shows the main screens; the
 storyboard, wireframes, and navigation diagram are in the Sprint~3 document.
 
@@ -336,8 +339,16 @@ storyboard, wireframes, and navigation diagram are in the Sprint~3 document.
 \centering
 \includegraphics[width=0.49\textwidth]{final-ipad-play.png}\hfill
 \includegraphics[width=0.49\textwidth]{final-ipad-deck.png}
-\caption{iPad (A16) Simulator in landscape, November 16. Left, Light Mode: Play split into two columns, with the level and today's quests beside this week's topics, and the tab bar on the same line as the streak and the page's buttons. Right, Dark Mode: a deck's page with Study beside its cards.}
+\caption{iPad (A16) Simulator in landscape, November 16. Left, Light Mode: Play split into two columns, with the level and today's quests beside this week's topics, and the tab bar on the same line as the streak and the page's buttons. Right: a deck's page with Study beside its cards.}
 \label{fig:ipad}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.49\textwidth]{final-mac-play.png}\hfill
+\includegraphics[width=0.49\textwidth]{final-mac-decks.png}
+\caption{Mac Catalyst on macOS, November 16, signed out. Left: Play, the same two-column layout as iPad landscape. Right: Decks, with the starter decks spread to three columns.}
+\label{fig:mac}
 \end{figure}
 
 \subsection{Changes Since Sprint 3}
@@ -2559,7 +2570,7 @@ PostgreSQL & SQL & -- \\
   \node[artifact, text width=2.6cm] (cc) at (0,-2.6) {\st{artifact}\\Content cache (last good download)};
   \draw[dep] (app.south) -- (cc.north);
   \node[anchor=south, font=\sffamily\scriptsize\bfseries, align=center] (t1) at (0,0.9)
-       {\st{device}\\Client Node: Apple iPhone or iPad / iOS Simulator (iOS 26+)};
+       {\st{device}\\Client Node: Apple iPhone, iPad or Mac / iOS Simulator (iOS 26+)};
   \begin{scope}[on background layer]
     \node[draw, line width=0.6pt, fill=magenta!6, inner sep=0.3cm, fit=(t1)(app)(sq)(kc)(cc)] (n1) {};
     \nodebox{n1}{magenta}
