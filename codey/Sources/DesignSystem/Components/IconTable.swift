@@ -51,6 +51,7 @@ extension CodeyIcon {
         "lock.fill": "icon-lock",
         "lock.open": "icon-unlock",
         "lock.open.fill": "icon-unlock",
+        "medal": "icon-medal",
         "network": "icon-globe",
         "number": "icon-hash",
         "pencil": "icon-pencil",

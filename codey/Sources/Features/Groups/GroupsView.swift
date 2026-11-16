@@ -7,9 +7,14 @@ struct GroupsView: View {
 
     @State private var list = CachedList<GroupSummary>()
     @State private var sheet: GroupSheet?
+    /// Your rank on each group's board (shared ranks, FR-42).
+    @State private var ranks: [UUID: Int] = [:]
+    /// Your XP this week: this device's count, or your row on a board if
+    /// that's higher (it adds up every device).
+    @State private var weeklyXP = WeeklyXPStore().xp()
 
     var body: some View {
-        CodeyPage("Groups", subtitle: "Weekly XP boards, reset Monday 00:00 UTC", icon: "trophy") {
+        CodeyPage("Groups", subtitle: "Weekly XP Boards", icon: "trophy") {
             if backend.currentUser != nil {
                 CodeyMenu(.icon("plus", label: "Add group")) {
                     CodeyMenuItem("Create Group", systemImage: "plus") { sheet = .create }
@@ -17,6 +22,11 @@ struct GroupsView: View {
                 }
                 .accessibilityIdentifier("groups.add")
             }
+        } leading: {
+            // What you've earned this week, the number the boards rank.
+            HeaderBadge(value: weeklyXP, icon: "bolt", ink: CodeyColor.xp, fill: CodeyColor.xpSoft, unit: "XP")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(weeklyXP) XP this week")
         } content: {
             if backend.currentUser == nil {
                 EmptyStateView(
@@ -48,7 +58,13 @@ struct GroupsView: View {
                                     detail: "Code \(group.inviteCode)",
                                     hue: group.hue,
                                     action: TileAction("Board", icon: "trophy")
-                                )
+                                ) {
+                                    // Your place on this board, top right like a quest's XP.
+                                    if let rank = ranks[group.id] {
+                                        CodeyChip(GroupBoardView.ordinal(rank), systemImage: "medal", variant: .xp)
+                                            .accessibilityLabel("You're \(GroupBoardView.ordinal(rank))")
+                                    }
+                                }
                             }
                             .buttonStyle(TilePressStyle())
                             .accessibilityIdentifier("groups.row")
@@ -80,6 +96,23 @@ struct GroupsView: View {
             failure: "Couldn't refresh groups.",
             fetch: backend.fetchGroups
         )
+        await loadRanks()
+    }
+
+    /// Your rank and XP from the saved boards first, then fresh ones.
+    private func loadRanks() async {
+        let me = backend.currentUser?.id
+        func apply(_ entries: [LeaderboardEntry], to group: UUID) {
+            guard let row = LeaderboardRanking.rank(entries, me: me).first(where: \.isMe) else { return }
+            ranks[group] = row.rank
+            weeklyXP = max(weeklyXP, row.entry.xp)
+        }
+        for group in list.items {
+            if let cached = backend.cachedLeaderboard(for: group.id) { apply(cached.entries, to: group.id) }
+        }
+        for group in list.items {
+            if let entries = try? await backend.fetchLeaderboard(for: group.id) { apply(entries, to: group.id) }
+        }
     }
 
     private func add(_ group: GroupSummary) {
