@@ -14,7 +14,7 @@ final class DeckBuilderUITests: XCTestCase {
     }
 
     func testCreateDeckWithPythonSnippet() throws {
-        let decksTab = app.tabBars.buttons["Decks"]
+        let decksTab = app.tab("Decks")
         XCTAssertTrue(decksTab.waitForExistence(timeout: 15))
         decksTab.tap()
 
@@ -69,7 +69,7 @@ final class DeckBuilderUITests: XCTestCase {
     /// A guest deck has never synced, so deleting it is a hard delete. The
     /// detail screen must survive its own pop animation without reading it.
     func testDeleteUnsyncedDeckFromDetail() throws {
-        let decksTab = app.tabBars.buttons["Decks"]
+        let decksTab = app.tab("Decks")
         XCTAssertTrue(decksTab.waitForExistence(timeout: 15))
         decksTab.tap()
 

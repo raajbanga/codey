@@ -38,7 +38,9 @@ struct QuizModeView: View {
                     .padding(.horizontal, CodeySpacing.md)
             } else if let question = viewModel.currentQuestion {
                 questionView(question)
-                    .codeyBar(.top) { topBar }
+                    .codeyReadableWidth()
+                    // Full-width bar and fade; controls in the readable column.
+                    .codeyBar(.top) { topBar.codeyReadableWidth() }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

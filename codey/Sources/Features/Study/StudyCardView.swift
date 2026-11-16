@@ -62,6 +62,7 @@ private struct CardFace: View {
     let isFront: Bool
     let scoreChange: StudyCardView.ScoreChange?
     let isRepeat: Bool
+    @Environment(\.codeyLayout) private var layout
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.md) {
@@ -93,9 +94,12 @@ private struct CardFace: View {
             )
         }
         .padding(CodeySpacing.lg)
-        .frame(maxWidth: .infinity, minHeight: StudyCardView.minHeight, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: layout.flashcard.minHeight, alignment: .topLeading)
         .codeyNote()
         .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
+        // iPad: an index card, not a full-width banner, centred.
+        .frame(maxWidth: layout.flashcard.maxWidth)
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder

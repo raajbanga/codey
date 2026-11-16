@@ -13,7 +13,7 @@ final class StudySessionUITests: XCTestCase {
     }
 
     func testStudyRateCloseAndResume() throws {
-        let decksTab = app.tabBars.buttons["Decks"]
+        let decksTab = app.tab("Decks")
         XCTAssertTrue(decksTab.waitForExistence(timeout: 15))
         decksTab.tap()
 

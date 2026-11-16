@@ -84,6 +84,7 @@ struct QuestTile: View {
     var isLarge = false
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.codeyLayout) private var layout
 
     private var filled: Bool { isLarge && !isPaid }
 
@@ -91,7 +92,7 @@ struct QuestTile: View {
         Group {
             if isLarge { large } else { small }
         }
-        .padding(isLarge ? CodeySpacing.md : CodeySpacing.sm + CodeySpacing.xs)
+        .padding(isLarge ? layout.cardPadding : layout.gridGap)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .codeyNote(fill: filled ? hue.soft : CodeyColor.surfaceRaised, edge: filled ? hue.soft : nil)
         // A pastel is light in both modes (two-tone), like GameTile.

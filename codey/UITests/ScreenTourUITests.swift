@@ -7,11 +7,21 @@ import XCTest
 @MainActor
 final class ScreenTourUITests: XCTestCase {
     private var app: XCUIApplication!
+    private var suffix = ""
 
     func testTourLight() throws { try tour("light") }
     func testTourDark() throws { try tour("dark") }
 
-    private func tour(_ appearance: String) throws {
+    /// iPad: the same tour in landscape, where pages split into two columns.
+    func testTourLandscape() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "Landscape tour is for iPad")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try tour("light", suffix: "-landscape")
+    }
+
+    private func tour(_ appearance: String, suffix: String = "") throws {
+        self.suffix = suffix
         continueAfterFailure = true
         app = XCUIApplication()
         app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-appearance", appearance]
@@ -26,7 +36,18 @@ final class ScreenTourUITests: XCTestCase {
         app.swipeDown()
         app.swipeDown()
 
-        app.tabBars.buttons["Decks"].tap()
+        app.buttons["home.profile"].tap()
+        if app.buttons["profile.done"].waitForExistence(timeout: 5) {
+            shot("profile", appearance)
+            app.buttons["profile.done"].tap()
+        }
+
+        app.tab("Library").tap()
+        if app.buttons["library.add"].waitForExistence(timeout: 5) {
+            shot("library", appearance)
+        }
+
+        app.tab("Decks").tap()
         XCTAssertTrue(app.buttons["decks.add"].waitForExistence(timeout: 5))
         shot("decks", appearance)
         let tile = app.buttons["deckTile.Data Structures Essentials"].firstMatch
@@ -76,8 +97,11 @@ final class ScreenTourUITests: XCTestCase {
 
     private func shot(_ name: String, _ appearance: String) {
         sleep(1)
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "\(name)-\(appearance)"
+        // In landscape the screen's screenshot comes out rotated and cropped
+        // on iPad; the window's is the right way up.
+        let image = suffix.isEmpty ? app.screenshot() : app.windows.firstMatch.screenshot()
+        let attachment = XCTAttachment(screenshot: image)
+        attachment.name = "\(name)-\(appearance)\(suffix)"
         attachment.lifetime = .keepAlways
         add(attachment)
     }

@@ -30,10 +30,22 @@ extension View {
 /// A section heading above a grid or note.
 struct SectionTitle: View {
     let title: String
+    @Environment(\.codeyLeadsColumn) private var leadsColumn
 
     init(_ title: String) { self.title = title }
 
     var body: some View {
+        if leadsColumn {
+            // A split page's second column: the title sits above the line
+            // the columns share, so the tiles under it start level with
+            // the hero. Every titled section puts `sm` under its title.
+            label.alignmentGuide(.codeyColumnTop) { $0[.bottom] + CodeySpacing.sm }
+        } else {
+            label
+        }
+    }
+
+    private var label: some View {
         Text(title)
             .font(.codeyHeadline)
             .foregroundStyle(CodeyColor.textSecondary)
@@ -45,36 +57,63 @@ struct SectionTitle: View {
 /// An optionally titled BentoGrid.
 struct BentoSection<Content: View>: View {
     let title: String?
+    var columns: BentoColumns = .pair
     @ViewBuilder let content: Content
 
-    init(_ title: String?, @ViewBuilder content: () -> Content) {
+    init(_ title: String?, columns: BentoColumns = .pair, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.columns = columns
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
             if let title { SectionTitle(title) }
-            BentoGrid { content }
+            BentoGrid(columns: columns) { content }
         }
     }
 }
 
-/// Two equal columns; a last odd tile spans the row.
+/// How many columns a bento grid has.
+///
+///     .pair    two, always (one at accessibility sizes)
+///     .spread  a page's only grid (Decks, Library): two, or three on a
+///              page wide enough for two columns (iPad landscape); three
+///              wide tiles rather than four skinny ones (Nov 16)
+enum BentoColumns: Sendable {
+    case pair
+    case spread
+
+    func count(pageIsWide: Bool, isAccessibilitySize: Bool) -> Int {
+        let base = self == .spread && pageIsWide ? 3 : 2
+        return isAccessibilitySize ? max(base - 1, 1) : base
+    }
+}
+
+/// Equal columns (two by default); in a two-column grid a last odd tile
+/// spans the row.
 struct BentoGrid<Content: View>: View {
+    var columns: BentoColumns = .pair
     @ViewBuilder let content: Content
 
     @Environment(\.dynamicTypeSize) private var typeSize
-    private let gap = CodeySpacing.sm + CodeySpacing.xs
+    @Environment(\.codeyLayout) private var layout
+    @Environment(\.codeyPageIsWide) private var pageIsWide
+
+    init(columns: BentoColumns = .pair, @ViewBuilder content: () -> Content) {
+        self.columns = columns
+        self.content = content()
+    }
 
     var body: some View {
-        let columns = typeSize.isAccessibilitySize ? 1 : 2
+        let columns = columns.count(pageIsWide: pageIsWide, isAccessibilitySize: typeSize.isAccessibilitySize)
+        let gap = layout.gridGap
         Group(subviews: content) { tiles in
             Grid(horizontalSpacing: gap, verticalSpacing: gap) {
                 ForEach(Array(stride(from: 0, to: tiles.count, by: columns)), id: \.self) { start in
                     GridRow {
                         ForEach(tiles[start..<min(start + columns, tiles.count)]) { tile in
-                            let spans = start + 1 == tiles.count && columns > 1
+                            let spans = start + 1 == tiles.count && columns == 2
                             tile
                                 .frame(maxHeight: .infinity, alignment: .top)
                                 .gridCellColumns(spans ? columns : 1)

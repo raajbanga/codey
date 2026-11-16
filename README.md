@@ -4,7 +4,7 @@
 
 # Codey
 
-**Gamified computer-science study app for iOS.**<br>
+**Gamified computer-science study app for iPhone and iPad.**<br>
 Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderboards
 
 ![iOS 26+](https://img.shields.io/badge/iOS-26%2B-black?logo=apple)
@@ -20,6 +20,9 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 <img src="docs/source/figures/final-ask-ai.png" width="180" alt="Ask AI tutor in dark mode">&nbsp;
 <img src="docs/source/figures/final-exercise.png" width="180" alt="Coding exercise in dark mode">&nbsp;
 <img src="docs/source/figures/final-study.png" width="180" alt="Study card in dark mode">
+<br><br>
+<img src="docs/source/figures/final-ipad-play.png" width="400" alt="Play on iPad in landscape, two columns">&nbsp;
+<img src="docs/source/figures/final-ipad-deck.png" width="400" alt="Deck page on iPad in landscape, in dark mode">
 
 </div>
 
@@ -53,7 +56,7 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
    ```bash
    tuist generate
    ```
-4. In Xcode: scheme **codey** → **iPhone 17** Simulator → **⌘R**
+4. In Xcode: scheme **codey** → **iPhone 17** or **iPad (A16)** Simulator → **⌘R**
 
 - No keys needed — runs in **local-only mode** (everything except sign-in, sync, groups)
 
