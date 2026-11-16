@@ -111,26 +111,19 @@ struct LoadingView: View {
             progress = 0.25
 
             let context = bootContainer.mainContext
-            let stamp = BundledContentStamp.current()
-            if let stamp, BundledContentStamp.isSeeded(stamp, context: context) {
-                // Same bundle as last launch: nothing to upsert.
+            // The last Supabase download, else the bundle (ContentFiles).
+            let (files, content) = try ContentSeeder.load()
+            progress = 0.50
+            let stamp = files.stamp
+            if BundledContentStamp.isSeeded(stamp, context: context) {
+                // Same content as last launch: nothing to upsert.
                 DataSeeder.ensureProfile(context: context)
-                Logger.seeding.info("Bundled content unchanged; seeding skipped")
+                ExerciseCatalog.shared.replace(with: content.exercises)
+                Logger.seeding.info("Content unchanged; seeding skipped")
             } else {
-                let bank = try QuestionBankLoader.loadBank()
-                progress = 0.50
-
-                try DataSeeder.seed(context: context, bank: bank)
-                progress = 0.75
-
-                do {
-                    try StarterDeckLoader.seed(context: context)
-                    if let stamp { BundledContentStamp.record(stamp) }
-                } catch {
-                    // Starter decks are optional content: log, don't block boot.
-                    Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
-                }
+                try ContentSeeder.seed(content, stamp: stamp, context: context)
             }
+            progress = 0.75
             do {
                 // Catches up badges already qualified for (an upgrade from a
                 // build without them), before any banner is watching.

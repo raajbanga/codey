@@ -242,6 +242,14 @@ protocol RemoteDeckStore: Sendable {
     func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges
     /// Merged on the server: older reviews are skipped, unlocks are sticky.
     func upsertProgress(_ batch: ProgressBatch) async throws
+
+    /// The teaching content (content_* tables), public to every client.
+    func fetchContent() async throws -> ContentFiles
+}
+
+extension RemoteDeckStore {
+    /// Fakes without content: the app keeps what it has.
+    func fetchContent() async throws -> ContentFiles { throw URLError(.resourceUnavailable) }
 }
 
 /// Network reachability (NWPathMonitor in the app).

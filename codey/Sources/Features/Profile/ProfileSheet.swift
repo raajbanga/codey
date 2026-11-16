@@ -65,7 +65,8 @@ struct ProfileSheet: View {
         ) {
             [CodeyDialog.Action("Erase Everything", isDestructive: true) {
                 $actionError.attempt {
-                    try LocalDataReset.eraseAllLocalData(context: modelContext, bank: QuestionBankLoader.loadBank())
+                    let content = try ContentSeeder.load().content
+                    try LocalDataReset.eraseAllLocalData(context: modelContext, bank: content.bank, decks: content.decks)
                 }
             }]
         }

@@ -166,7 +166,7 @@ struct ExerciseView: View {
     private var nextExercise: Exercise? {
         ExercisePicker.next(
             after: exercise,
-            in: (try? ExerciseLoader.bundled.get()) ?? [],
+            in: ExerciseCatalog.shared.all,
             solved: Set(profiles.first?.solvedExerciseIds ?? [])
         )
     }

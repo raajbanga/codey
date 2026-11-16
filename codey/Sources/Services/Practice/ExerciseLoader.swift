@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 /// One code-completion exercise (FR-39, S31): a snippet with `___` blanks.
 /// Plain values from the bundled exercises.json; not stored in SwiftData,
@@ -118,10 +119,22 @@ enum ExerciseLoader {
     }
 }
 
-extension ExerciseLoader {
-    /// The bundled exercises, loaded once: Play's tiles and an exercise's
-    /// Next Challenge / Try Another read the same list.
-    static let bundled: Result<[Exercise], Error> = Result { try load() }
+/// The exercises on screen: Library's tiles and an exercise's Next
+/// Challenge / Try Another read the same list. Loaded at boot from the
+/// current content (the Supabase download, else the bundle) and replaced
+/// when a newer download lands, which redraws whoever reads it.
+@MainActor
+@Observable
+final class ExerciseCatalog {
+    static let shared = ExerciseCatalog()
+
+    private(set) var result: Result<[Exercise], Error> = Result { try ExerciseLoader.load() }
+
+    var all: [Exercise] { (try? result.get()) ?? [] }
+
+    func replace(with exercises: [Exercise]) {
+        result = .success(exercises)
+    }
 }
 
 /// Which exercise "Next Challenge" and "Try Another" open (§3c).

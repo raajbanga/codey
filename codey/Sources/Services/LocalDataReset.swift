@@ -30,10 +30,11 @@ enum LocalDataReset {
     }
 
     /// Deletes everything local (profile, decks, cards, quiz content), then
-    /// re-seeds bundled content (quiz bank + starter decks) and a fresh
+    /// re-seeds the content (quiz bank + starter decks; the bundle's decks
+    /// when none are passed) and a fresh
     /// profile. The auth session is not touched; the UI requires sign-out
     /// first.
-    static func eraseAllLocalData(context: ModelContext, bank: QuestionBank, weeklyXP: WeeklyXPStore = WeeklyXPStore()) throws {
+    static func eraseAllLocalData(context: ModelContext, bank: QuestionBank, decks: StarterDeckFile? = nil, weeklyXP: WeeklyXPStore = WeeklyXPStore()) throws {
         try deleteAll(FlashcardDeck.self, context: context)
         try deleteAll(Flashcard.self, context: context)
         try deleteAll(StudyProgressSnapshot.self, context: context)
@@ -48,7 +49,7 @@ enum LocalDataReset {
         weeklyXP.reset()
 
         try DataSeeder.seed(context: context, bank: bank)
-        try StarterDeckLoader.seed(context: context)
+        try StarterDeckLoader.seed(context: context, file: decks ?? StarterDeckLoader.loadBundle())
         Logger.settings.notice("All local data erased by user")
     }
 

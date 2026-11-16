@@ -36,6 +36,9 @@ final class BackendFacade: DeckBackend {
     @ObservationIgnored let store: SwiftDataService
     @ObservationIgnored private var authTask: Task<Void, Never>?
     @ObservationIgnored private var started = false
+    /// When content was last checked, so becoming active doesn't refetch
+    /// every time.
+    @ObservationIgnored private var contentCheckedAt: Date?
 
     init(
         context: ModelContext,
@@ -114,10 +117,29 @@ final class BackendFacade: DeckBackend {
         }
         engine.start()
         engine.requestSync(after: .zero)
+        Task { await refreshContent() }
     }
 
     func appDidBecomeActive() {
         engine.requestSync(after: .zero)
+        Task { await refreshContent() }
+    }
+
+    /// Downloads the content from Supabase (signed in or not) and, when it
+    /// changed, caches and seeds it: new questions, exercises and decks
+    /// reach the app without an update. Offline or failing, the app keeps
+    /// what it has (the last download, else the bundle). At most every ten
+    /// minutes unless forced.
+    func refreshContent(force: Bool = false) async {
+        guard let remote, !AppLaunchOptions.usesInMemoryStore else { return }
+        if !force, let last = contentCheckedAt, now().timeIntervalSince(last) < 600 { return }
+        contentCheckedAt = now()
+        do {
+            let files = try await remote.fetchContent()
+            try ContentSeeder.apply(files, context: context)
+        } catch {
+            Logger.seeding.error("Content refresh failed: \(String(describing: error))")
+        }
     }
 
     /// FR-61: study and quiz progress isn't queued, so push it when the app

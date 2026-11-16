@@ -5,11 +5,9 @@ import SwiftUI
 /// words, big targets, color per topic, on the dotted paper.
 ///
 ///     🔥4                            (▲) (◎)  ← streak; groups, profile
-///     ╭ (avatar)                   [Level 3] ╮   ← HeroCard, app hue
-///     │ Codey Learner                        │
-///     │ Good evening                         │
+///     ╭ (avatar) Hello, Codey!     [Level 3] ╮   ← HeroCard, app hue
 ///     │ ████████████░░░░░░                   │
-///     ╰ 320 / 500 XP, 180 to Level 4         ╯
+///     ╰ 320 / 500 XP                         ╯
 ///     Today's quests
 ///     ╭ ◎ Answer 20   ╮ ╭ ⚑ 15 right in…  ╮      ← next quest large,
 ///     │ ━━━━──        │ ╰─────────────────╯         the others stacked
@@ -113,7 +111,9 @@ struct HomeView: View {
         return HeroCard(
             title: "Hello, \(firstName)!",
             icon: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: profile?.avatarId)),
-            progress: LevelCalculator.progressFraction(xp)
+            progress: LevelCalculator.progressFraction(xp),
+            // The tag says the level; the line says how far into it.
+            caption: "\(LevelCalculator.xpIntoLevel(xp)) / \(LevelCalculator.xpPerLevel) XP"
         ) {
             CodeyChip("Level \(level)", systemImage: "star.fill", variant: .xp)
                 .contentTransition(.numericText(value: Double(level)))
