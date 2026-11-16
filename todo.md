@@ -48,7 +48,7 @@ Goal: the Expo demo runs on iPad in landscape. Mockups: https://claude.ai/artifa
 - [ ] Expo: rehearse the demo on iPad in landscape (add this to ES's rehearsal task above).
 - [x] Mac (Mac Catalyst, Nov 16): `.macCatalyst` destination, signed with the team so the keychain entitlement (`codey/codey.entitlements`) is kept; Google sign-in needs that keychain. Sign-in checked; Profile sheet sized to the window (`codeyPageSheet`).
 - [x] Retake the screenshots once the iPad/Mac layout is final (README and report: iPhone, iPad, and Mac if it ships), after the text and tile size bump.
-- [ ] Simplify the commit history on `main` (fewer, clearer squash commits) before tagging `final`.
+- [x] Simplify the commit history on `main` (fewer, clearer squash commits) before tagging `final`.
 
 ## 4. Schedule
 
