@@ -825,14 +825,19 @@ Live sync and leaderboard tests (NFR-02 live, NFR-32), peer usability study, OAu
 \end{tabularx}
 \end{table}
 
-\begin{table}[H]
-\centering
-\caption{Sprint 4 decision log}
-\label{tab:decisions4}
-\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\begin{xltabular}{\textwidth}{@{}l Y@{}}
+\caption{Sprint 4 decision log}\label{tab:decisions4}\\
 \toprule
 \textbf{ID} & \textbf{Decision and reason} \\
 \midrule
+\endfirsthead
+\multicolumn{2}{@{}l}{\small\itshape Table \thetable\ continued} \\
+\toprule
+\textbf{ID} & \textbf{Decision and reason} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
 S30 & Sprint 4 scope is ``finish and test'': the only new code is FR-39 to FR-41, FR-61, and the BUG-01 fix. \\
 S31 & Coding exercises are code-completion blanks from JSON content (served from Supabase since S44, with a bundled copy as fallback): no schema change and no sync (XP for a first solve came later, with S41). Each blank is one test case, checked after whitespace normalization, so no code runs on the device. \\
 S32 & FR-61 syncs progress in a per-cycle step instead of the change queue, and the latest review wins (not the higher mastery), because rating a card ``Again'' lowers mastery on purpose. Tier unlocks are sticky. \\
@@ -848,9 +853,7 @@ S41 & Game layer: Play replaces Home and Quiz; quests with bonus XP; XP for stud
 S42 & Leaderboard as a podium of bars; avatars gain a color (stored as \texttt{symbol@color}, so stored values stay valid; the server CHECK splits on \texttt{@}) and 20 more symbols; the avatar color is the app's accent; profile, exercise, onboarding, and group screens use the shared tiles; the profile no longer shows the e-mail address; the type ramp is one step smaller to stop wrapping at large text. \\
 S43 & Sync covers quiz answer history (append-only), daily activity (one row per device and day, the larger counter wins, the day's total is the sum over devices, so streak and goal match everywhere), badges (the earliest date wins), and solved exercises (a union); an older install backfills its history once. Schema V10 adds \texttt{DeviceDayActivity} for other devices' days; V11 adds hidden cards (\texttt{Flashcard.isHidden}), synced like hidden decks. \\
 S44 & Content moves to Supabase: topics, questions, exercises, and starter decks are rows in public, read-only \texttt{content\_*} tables that the app downloads at launch and on return to the foreground (at most every 10 minutes), checks with the bundle's loaders, caches, and re-seeds by ID; the bundled JSON stays as the fallback, so new content needs no app update. A Library tab holds every topic with its quiz, exercises, and decks; Play keeps the game. \\
-\bottomrule
-\end{tabularx}
-\end{table}
+\end{xltabular}
 
 \subsection{Input Validation and Failure Handling}
 Every value a student types in the Deck Builder passes through
@@ -2496,14 +2499,19 @@ OpenID Connect interface to verify the token. PostgREST and Supabase Auth requir
 access to \emph{PostgreSQL}, and PostgREST evaluates the Row Level Security policies on
 every request. Table~\ref{tab:interfaces} lists every interface.
 
-\begin{table}[H]
-\centering
-\caption{Component interfaces}
-\label{tab:interfaces}
-\begin{tabularx}{\textwidth}{@{}L{2.8cm} Y Y@{}}
+\begin{xltabular}{\textwidth}{@{}L{2.8cm} Y Y@{}}
+\caption{Component interfaces}\label{tab:interfaces}\\
 \toprule
 \textbf{Component} & \textbf{Provided Interfaces} & \textbf{Required Interfaces} \\
 \midrule
+\endfirsthead
+\multicolumn{3}{@{}l}{\small\itshape Table \thetable\ continued} \\
+\toprule
+\textbf{Component} & \textbf{Provided Interfaces} & \textbf{Required Interfaces} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
 Presentation & -- & Exercises (Content); \texttt{DeckBackend}: save, delete, and hide decks; Facade API: auth, profile, feedback, groups, leaderboard; \texttt{ModelContext}: read decks, topics, and progress through SwiftData queries \\
 Backend \& Sync & \texttt{DeckBackend} and the Facade API (implemented by \texttt{BackendFacade} and its extensions) & \texttt{ModelContext}; \texttt{Reachability}: connectivity changes; \texttt{AuthProviding}: sign-in and session state; \texttt{RemoteDeckStore}: batched upserts, change pulls, progress, profile, sync ledger, feedback, groups, weekly XP, leaderboard, content download; Content: seed a download \\
 Local Store & \texttt{ModelContext}: the versioned SwiftData store (file-protected) & -- \\
@@ -2514,9 +2522,7 @@ Google Identity & OIDC: Google sign-in and ID-token verification & -- \\
 Supabase Auth & Auth API: exchanges a Google ID token for a session, refreshes it & OIDC; SQL \\
 PostgREST & REST API: \texttt{profiles}, \texttt{decks}, \texttt{flashcards}, \texttt{sync\_log}, \texttt{feedback\_reports} (insert only), \texttt{groups}, \texttt{group\_members}, \texttt{weekly\_xp}, \texttt{card\_progress}, \texttt{question\_progress}, \texttt{topic\_progress}, \texttt{quiz\_answers}, \texttt{daily\_activity}, \texttt{badge\_awards}, \texttt{content\_topics}, \texttt{content\_questions}, \texttt{content\_exercises}, \texttt{content\_decks}, \texttt{content\_cards} (read only), \texttt{group\_leaderboard} (view); RPC: \texttt{join\_group} & SQL (each request runs under the caller's RLS policies) \\
 PostgreSQL & SQL & -- \\
-\bottomrule
-\end{tabularx}
-\end{table}
+\end{xltabular}
 
 % =====================================================================
 \section{UML Deployment Diagram}\label{sec:deploy}
