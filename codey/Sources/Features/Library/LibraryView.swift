@@ -50,11 +50,12 @@ struct LibraryView: View {
         } hero: {
             HeroCard(
                 title: "Library",
-                subtitle: exercises.count.counted("exercise"),
                 icon: "square.stack.3d.up",
                 progress: exercises.isEmpty ? 0 : Double(solved) / Double(exercises.count),
                 caption: "\(solved) of \(exercises.count) exercises solved"
-            )
+            ) {
+                CodeyChip(exercises.count.counted("exercise"), systemImage: "chevron.left.forwardslash.chevron.right", variant: .xp)
+            }
         } content: {
             if isSearching {
                 PageSearchField(prompt: "Topic", text: $searchText, focus: $searchFocused)

@@ -283,16 +283,18 @@ struct CodeyMenu: View {
     }
 }
 
-/// The pill at the top left of a tab page (S41): Play's streak, how many
-/// decks or topics. A number with its icon, in a soft tint.
+/// The pill at the top left of a page (S41): Play's streak, how many
+/// decks or topics, Groups' XP this week. A number with its icon, in a soft tint.
 struct HeaderBadge: View {
     let value: Int
     let icon: String
     let ink: Color
     let fill: Color
+    /// "430 XP"; nil shows the number alone.
+    var unit: String?
 
     var body: some View {
-        Label("\(value)", icon: icon)
+        Label(unit.map { "\(value.formatted()) \($0)" } ?? value.formatted(), icon: icon)
             .font(.codeyHeadline.monospacedDigit())
             .foregroundStyle(ink)
             .contentTransition(.numericText(value: Double(value)))

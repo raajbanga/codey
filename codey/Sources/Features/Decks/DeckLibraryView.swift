@@ -132,13 +132,15 @@ struct DeckLibraryView: View {
         let shown = decks.filter { !$0.isHidden }
         let cards = shown.reduce(0) { $0 + $1.cardCount }
         let progress = cards == 0 ? 0 : shown.reduce(0.0) { $0 + $1.progressRate * Double($1.cardCount) } / Double(cards)
+        // The card count as a tag, like Play's level (Nov 15).
         return HeroCard(
             title: "Decks",
-            subtitle: cards.counted("card"),
             icon: "rectangle.stack",
             progress: progress,
             caption: "\(progress.percentText) progress"
-        )
+        ) {
+            CodeyChip(cards.counted("card"), systemImage: "rectangle.stack", variant: .xp)
+        }
     }
 
     // MARK: Sections
