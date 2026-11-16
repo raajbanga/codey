@@ -73,7 +73,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         }
 
         // Decks, deck detail, builder.
-        app.tabBars.buttons["Decks"].tap()
+        app.tab("Decks").tap()
         XCTAssertTrue(app.buttons["decks.add"].waitForExistence(timeout: 5))
         try audit("decks")
         app.buttons["decks.add"].tap()

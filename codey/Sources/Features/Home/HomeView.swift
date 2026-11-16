@@ -19,6 +19,8 @@ import SwiftUI
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(BackendFacade.self) private var backend
+    /// The bento gap, so the quests match the grids around them.
+    @Environment(\.codeyLayout) private var layout
     @AppStorage("home.signInNudgeDismissed") private var nudgeDismissed = false
     /// FR-38: this week's plan (JSON StudyPlan), so it doesn't reshuffle.
     @AppStorage("home.studyPlan") private var studyPlanData = Data()
@@ -51,6 +53,8 @@ struct HomeView: View {
             levelHero
         } content: {
             questsSection(stats)
+        } trailing: {
+            // iPad landscape: This week is the second column.
             topicsSection(stats)
             if showsSignInNudge {
                 signInNudge
@@ -231,10 +235,10 @@ struct HomeView: View {
             let small = all.filter { $0.id != large.id }
             VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                 SectionTitle("Today's quests")
-                HStack(alignment: .top, spacing: CodeySpacing.sm + CodeySpacing.xs) {
+                HStack(alignment: .top, spacing: layout.gridGap) {
                     questButton(large, isLarge: true)
                     if !small.isEmpty {
-                        VStack(spacing: CodeySpacing.sm + CodeySpacing.xs) {
+                        VStack(spacing: layout.gridGap) {
                             ForEach(small) { questButton($0, isLarge: false) }
                         }
                     }

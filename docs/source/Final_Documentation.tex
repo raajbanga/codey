@@ -305,6 +305,16 @@ A last pass on November 15 added the Library tab and gave every page one header 
 its tags moves under them on one line instead of wrapping. The solved exercise now
 ends on the same summary as a quiz or study session, with no back button, and its
 Ask AI button floats at the bottom right.
+On November 16 the app was extended to iPad (Figure~\ref{fig:ipad}). The layout
+reads the window's horizontal size class once, at the root, and the shared
+components (\texttt{CodeyPage}, \texttt{BentoGrid}, \texttt{GameTile},
+\texttt{HeroCard}) adapt to it, so no screen checks the device. On a regular-width
+window the margins, gaps and text are larger; a page at least 1000~pt wide splits
+into two columns (Play's quests beside This week, a deck's Study beside its cards);
+study, quizzes and exercises keep a readable width; and the tab bar floats on the
+same line as the page's buttons. Split view and narrow Stage Manager windows get
+the iPhone layout. The iPad layout was checked by hand on the iPad (A16) Simulator in
+both orientations.
 Figure~\ref{fig:screens} shows the main screens; the
 storyboard, wireframes, and navigation diagram are in the Sprint~3 document.
 
@@ -320,6 +330,14 @@ storyboard, wireframes, and navigation diagram are in the Sprint~3 document.
 \includegraphics[width=0.235\textwidth]{final-study.png}
 \caption{Main screens as a guest (iPhone 17 Simulator, November 15). Top, Light Mode: Play with the level, today's quests, and topic tiles; the deck library; quiz setup in a floating panel over Play; and a quiz question. Bottom, Dark Mode: an Ask AI chat that explains a question without naming the answer (FR-67), a topic's page in the Library with its coding exercises, an exercise after Check with one blank passed and one failed (FR-39 to FR-41) and Ask AI at the bottom right, and a study card showing its answer.}
 \label{fig:screens}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.49\textwidth]{final-ipad-play.png}\hfill
+\includegraphics[width=0.49\textwidth]{final-ipad-deck.png}
+\caption{iPad (A16) Simulator in landscape, November 16. Left, Light Mode: Play split into two columns, with the level and today's quests beside this week's topics, and the tab bar on the same line as the streak and the page's buttons. Right, Dark Mode: a deck's page with Study beside its cards.}
+\label{fig:ipad}
 \end{figure}
 
 \subsection{Changes Since Sprint 3}
@@ -825,14 +843,19 @@ Live sync and leaderboard tests (NFR-02 live, NFR-32), peer usability study, OAu
 \end{tabularx}
 \end{table}
 
-\begin{table}[H]
-\centering
-\caption{Sprint 4 decision log}
-\label{tab:decisions4}
-\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\begin{xltabular}{\textwidth}{@{}l Y@{}}
+\caption{Sprint 4 decision log}\label{tab:decisions4}\\
 \toprule
 \textbf{ID} & \textbf{Decision and reason} \\
 \midrule
+\endfirsthead
+\multicolumn{2}{@{}l}{\small\itshape Table \thetable\ continued} \\
+\toprule
+\textbf{ID} & \textbf{Decision and reason} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
 S30 & Sprint 4 scope is ``finish and test'': the only new code is FR-39 to FR-41, FR-61, and the BUG-01 fix. \\
 S31 & Coding exercises are code-completion blanks from JSON content (served from Supabase since S44, with a bundled copy as fallback): no schema change and no sync (XP for a first solve came later, with S41). Each blank is one test case, checked after whitespace normalization, so no code runs on the device. \\
 S32 & FR-61 syncs progress in a per-cycle step instead of the change queue, and the latest review wins (not the higher mastery), because rating a card ``Again'' lowers mastery on purpose. Tier unlocks are sticky. \\
@@ -848,9 +871,7 @@ S41 & Game layer: Play replaces Home and Quiz; quests with bonus XP; XP for stud
 S42 & Leaderboard as a podium of bars; avatars gain a color (stored as \texttt{symbol@color}, so stored values stay valid; the server CHECK splits on \texttt{@}) and 20 more symbols; the avatar color is the app's accent; profile, exercise, onboarding, and group screens use the shared tiles; the profile no longer shows the e-mail address; the type ramp is one step smaller to stop wrapping at large text. \\
 S43 & Sync covers quiz answer history (append-only), daily activity (one row per device and day, the larger counter wins, the day's total is the sum over devices, so streak and goal match everywhere), badges (the earliest date wins), and solved exercises (a union); an older install backfills its history once. Schema V10 adds \texttt{DeviceDayActivity} for other devices' days; V11 adds hidden cards (\texttt{Flashcard.isHidden}), synced like hidden decks. \\
 S44 & Content moves to Supabase: topics, questions, exercises, and starter decks are rows in public, read-only \texttt{content\_*} tables that the app downloads at launch and on return to the foreground (at most every 10 minutes), checks with the bundle's loaders, caches, and re-seeds by ID; the bundled JSON stays as the fallback, so new content needs no app update. A Library tab holds every topic with its quiz, exercises, and decks; Play keeps the game. \\
-\bottomrule
-\end{tabularx}
-\end{table}
+\end{xltabular}
 
 \subsection{Input Validation and Failure Handling}
 Every value a student types in the Deck Builder passes through
@@ -2496,14 +2517,19 @@ OpenID Connect interface to verify the token. PostgREST and Supabase Auth requir
 access to \emph{PostgreSQL}, and PostgREST evaluates the Row Level Security policies on
 every request. Table~\ref{tab:interfaces} lists every interface.
 
-\begin{table}[H]
-\centering
-\caption{Component interfaces}
-\label{tab:interfaces}
-\begin{tabularx}{\textwidth}{@{}L{2.8cm} Y Y@{}}
+\begin{xltabular}{\textwidth}{@{}L{2.8cm} Y Y@{}}
+\caption{Component interfaces}\label{tab:interfaces}\\
 \toprule
 \textbf{Component} & \textbf{Provided Interfaces} & \textbf{Required Interfaces} \\
 \midrule
+\endfirsthead
+\multicolumn{3}{@{}l}{\small\itshape Table \thetable\ continued} \\
+\toprule
+\textbf{Component} & \textbf{Provided Interfaces} & \textbf{Required Interfaces} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
 Presentation & -- & Exercises (Content); \texttt{DeckBackend}: save, delete, and hide decks; Facade API: auth, profile, feedback, groups, leaderboard; \texttt{ModelContext}: read decks, topics, and progress through SwiftData queries \\
 Backend \& Sync & \texttt{DeckBackend} and the Facade API (implemented by \texttt{BackendFacade} and its extensions) & \texttt{ModelContext}; \texttt{Reachability}: connectivity changes; \texttt{AuthProviding}: sign-in and session state; \texttt{RemoteDeckStore}: batched upserts, change pulls, progress, profile, sync ledger, feedback, groups, weekly XP, leaderboard, content download; Content: seed a download \\
 Local Store & \texttt{ModelContext}: the versioned SwiftData store (file-protected) & -- \\
@@ -2514,9 +2540,7 @@ Google Identity & OIDC: Google sign-in and ID-token verification & -- \\
 Supabase Auth & Auth API: exchanges a Google ID token for a session, refreshes it & OIDC; SQL \\
 PostgREST & REST API: \texttt{profiles}, \texttt{decks}, \texttt{flashcards}, \texttt{sync\_log}, \texttt{feedback\_reports} (insert only), \texttt{groups}, \texttt{group\_members}, \texttt{weekly\_xp}, \texttt{card\_progress}, \texttt{question\_progress}, \texttt{topic\_progress}, \texttt{quiz\_answers}, \texttt{daily\_activity}, \texttt{badge\_awards}, \texttt{content\_topics}, \texttt{content\_questions}, \texttt{content\_exercises}, \texttt{content\_decks}, \texttt{content\_cards} (read only), \texttt{group\_leaderboard} (view); RPC: \texttt{join\_group} & SQL (each request runs under the caller's RLS policies) \\
 PostgreSQL & SQL & -- \\
-\bottomrule
-\end{tabularx}
-\end{table}
+\end{xltabular}
 
 % =====================================================================
 \section{UML Deployment Diagram}\label{sec:deploy}
@@ -2535,7 +2559,7 @@ PostgreSQL & SQL & -- \\
   \node[artifact, text width=2.6cm] (cc) at (0,-2.6) {\st{artifact}\\Content cache (last good download)};
   \draw[dep] (app.south) -- (cc.north);
   \node[anchor=south, font=\sffamily\scriptsize\bfseries, align=center] (t1) at (0,0.9)
-       {\st{device}\\Client Node: Apple iPhone / iOS Simulator (iOS 26+)};
+       {\st{device}\\Client Node: Apple iPhone or iPad / iOS Simulator (iOS 26+)};
   \begin{scope}[on background layer]
     \node[draw, line width=0.6pt, fill=magenta!6, inner sep=0.3cm, fit=(t1)(app)(sq)(kc)(cc)] (n1) {};
     \nodebox{n1}{magenta}
@@ -2608,7 +2632,7 @@ PostgreSQL & SQL & -- \\
 Figure~\ref{fig:deploy} shows the five nodes on which Codey is deployed and the
 artifacts each node hosts.
 \begin{itemize}
-  \item \textbf{Client node} (\st{device}): an iPhone or the iOS Simulator running
+  \item \textbf{Client node} (\st{device}): an iPhone, an iPad, or the iOS Simulator running
         iOS 26 or later. It hosts the \texttt{Codey.app} bundle (including the Google
         Sign-In and Supabase client libraries), the SwiftData SQLite store that
         supports offline use, and the iOS Keychain item that holds the Supabase
@@ -2828,7 +2852,7 @@ the device locks), so no gap remains; only the on-device check of the attribute 
 outstanding (TC-S10, Table~\ref{tab:sectests}).
 
 \subsection{Trust Boundary Analysis}
-The critical trust boundary is between the iPhone app and the Supabase cloud (the
+The critical trust boundary is between the iPhone and iPad app and the Supabase cloud (the
 PostgREST API and PostgreSQL), crossed over the public internet. Everything on the
 device side, including the app's own validation, must be assumed to be bypassable:
 the public anon key ships inside the app and can be extracted to call the API
@@ -2838,7 +2862,7 @@ history, and content tables.
 
 \begin{table}[H]
 \centering
-\caption{Trust boundary: iPhone app $\to$ Supabase over the internet (Activity 10.1, updated)}
+\caption{Trust boundary: iPhone and iPad app $\to$ Supabase over the internet (Activity 10.1, updated)}
 \label{tab:boundary}
 \begin{tabularx}{\textwidth}{@{}Y Y@{}}
 \toprule
@@ -2942,7 +2966,7 @@ and elements that cross a boundary.
   \draw[fl] (p6.235) to[out=205, in=-15] node[fn, pos=0.25] {19} (p3.-20);
   % Trust boundaries
   \draw[tb] (0.8,-6.1) rectangle (12.6,5.0);
-  \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (4.3,5.0) {TB1: iPhone app (device)};
+  \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (4.3,5.0) {TB1: iPhone/iPad app (device)};
   \draw[tb] (13.4,-1.6) rectangle (20.2,5.3);
   \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (13.5,5.3) {TB2: Supabase cloud};
 \end{tikzpicture}}
@@ -3056,7 +3080,7 @@ and 21 of the course table, plus items 12, 13, 18, and 22), with the final resul
 1 & Security review in every phase & Security items in the PR template, checked before each merge to \texttt{main}; security walkthrough at each sprint review. & In use since Sprint 2; the Sprint 4 progress migration was checked against it before it was applied (Nov 9), and CI now runs the automated checks on every push. \\
 2 & Security metrics and trace matrix & Security metrics compared sprint to sprint; security NFRs traced to test cases. & Sprint 3 vs final values in Table~\ref{tab:metrics}; NFR-21--27 traced to TC-S01--S12. \\
 3 & Stakeholders and their security needs & Students: private, encrypted progress; client: no cost, team-written code; team: no leaked keys. & Complete; group mates see only each other's profile row and weekly XP; content is public and holds no user data. \\
-4 & Usage context and operating environment & iPhone app, offline-capable, Supabase Free plan over the public internet, possibly public Wi-Fi. & Complete; NFR-03 to NFR-06. \\
+4 & Usage context and operating environment & iPhone and iPad app, offline-capable, Supabase Free plan over the public internet, possibly public Wi-Fi. & Complete; NFR-03 to NFR-06. \\
 5 & Language and OS risks shared before design & Swift is memory-safe; known risks: secrets in logs, ATS exceptions, tokens in \texttt{UserDefaults}, RLS off by default. & Complete; documented in \texttt{supabase/README.md}, the PR template, and the secrets template. \\
 21 & Data from app server to database & RLS on every table; server-assigned owner; CHECK constraints; parameterized queries; SSL to Postgres; AES-256 at rest. & RLS on 19 of 19 tables; 57 live checks, 0 failed (Nov 9); 67 on the local stack, 0 failed; 109 pgTAP tests pass. \\
 12 & No backdoors or bypass paths & Test sign-in compiled only in DEBUG; no admin screens; internal functions revoked from the API. & DEBUG guard in place; Release check finds none of the DEBUG-only names on every CI run (TC-S05). \\

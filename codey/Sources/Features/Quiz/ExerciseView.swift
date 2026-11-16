@@ -60,7 +60,7 @@ struct ExerciseView: View {
     /// per-blank results and Try Again / Try Another. Ask AI floats at the
     /// bottom right, by the thumb, and steps aside while typing.
     private var workspace: some View {
-        CodeyPage(exercise.title) {
+        CodeyPage(exercise.title, isReadable: true) {
             header
         } content: {
             workspaceContent

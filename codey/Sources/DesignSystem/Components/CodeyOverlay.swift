@@ -286,6 +286,7 @@ private struct MenuPanel: View {
 }
 
 private struct DialogCard: View {
+    @Environment(\.codeyLayout) private var layout
     private static let danger = CodeyColor.TopicHue(ink: CodeyColor.danger, soft: CodeyColor.Soft.danger, fill: CodeyColor.danger)
 
     let dialog: CodeyDialog
@@ -318,7 +319,7 @@ private struct DialogCard: View {
             .padding(.top, CodeySpacing.xs)
         }
         .codeyPanelPadding()
-        .frame(maxWidth: 360)
+        .frame(maxWidth: layout.dialogWidth)
         // The same lifted card as FloatingPanel and celebrations.
         .codeyFloatingCard()
         .padding(CodeySpacing.md)

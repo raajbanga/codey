@@ -96,3 +96,9 @@ __pycache__/
 
 # LaTeX build output next to the source (the deliverables are docs/*.pdf)
 docs/source/*.pdf
+
+### Coursework (instructor handouts and rubrics; kept locally, never published) ###
+docs/course/
+*rubric*
+docs/Activity*
+docs/ProjectDetails*

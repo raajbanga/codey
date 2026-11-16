@@ -64,6 +64,8 @@ struct RootView: View {
         .codeyOverlayHost()
         .sheet(isPresented: $router.showProfile) {
             ProfileSheet()
+                // iPad: the larger page sheet, not the small form sheet.
+                .presentationSizing(.page)
         }
         .environment(router)
         .environment(\.appHue, appHue)

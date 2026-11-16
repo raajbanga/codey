@@ -146,7 +146,7 @@ struct DeckLibraryView: View {
     // MARK: Sections
 
     private func section(_ title: String?, decks: [FlashcardDeck], topicsByID: [String: Topic]) -> some View {
-        BentoSection(title) {
+        BentoSection(title, columns: .spread) {
             ForEach(decks) { deck in
                 DeckTileLink(deck: deck, topic: topicsByID[deck.topicId])
             }

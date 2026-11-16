@@ -1,6 +1,14 @@
 import XCTest
 
 extension XCUIApplication {
+    /// A tab's button. iPhone draws the tab bar at the bottom (a TabBar);
+    /// iPadOS draws it floating at the top, where its items are plain
+    /// buttons outside any TabBar, so fall back to the button by label.
+    func tab(_ name: String) -> XCUIElement {
+        let bottom = tabBars.buttons[name]
+        return bottom.exists ? bottom : buttons[name].firstMatch
+    }
+
     /// Back to the previous page. Pages have no back button (§3b, Nov 15):
     /// the left-edge swipe goes back.
     func swipeBack() {
@@ -21,8 +29,8 @@ extension XCUIApplication {
     /// Pushed pages (deck detail, a topic's page) hide the tab bar, so swipe
     /// back until it shows before tapping the tab.
     func openTopic(_ title: String) {
-        for _ in 0..<4 where !tabBars.firstMatch.waitForExistence(timeout: 2) { swipeBack() }
-        tabBars.buttons["Library"].tap()
+        for _ in 0..<4 where !tab("Library").waitForExistence(timeout: 2) { swipeBack() }
+        tab("Library").tap()
         let tile = buttons["library.topic.\(title)"]
         _ = tile.waitForExistence(timeout: 15)
         for _ in 0..<4 where !tile.isHittable { swipeUp() }

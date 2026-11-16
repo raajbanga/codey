@@ -64,6 +64,8 @@ private struct FloatingPanelModifier<Item: Identifiable, Panel: View>: ViewModif
             }
         }
         .codeyFloatingCard()
+        // iPad: a note, not a full-width sheet.
+        .codeyReadableWidth()
         .padding(.horizontal, CodeySpacing.md)
         .padding(.vertical, fillsHeight ? CodeySpacing.xl : CodeySpacing.xxl)
         .modifier(SwipeToClose(close: close))

@@ -19,7 +19,7 @@ let project = Project(
     targets: [
         .target(
             name: "codey",
-            destinations: [.iPhone],
+            destinations: [.iPhone, .iPad],
             product: .app,
             bundleId: appBundleId,
             deploymentTargets: .iOS("26.0"),
@@ -73,7 +73,7 @@ let project = Project(
         ),
         .target(
             name: "codeyTests",
-            destinations: [.iPhone],
+            destinations: [.iPhone, .iPad],
             product: .unitTests,
             bundleId: "\(appBundleId).tests",
             deploymentTargets: .iOS("26.0"),
@@ -85,7 +85,7 @@ let project = Project(
         ),
         .target(
             name: "codeyUITests",
-            destinations: [.iPhone],
+            destinations: [.iPhone, .iPad],
             product: .uiTests,
             bundleId: "\(appBundleId).uitests",
             deploymentTargets: .iOS("26.0"),

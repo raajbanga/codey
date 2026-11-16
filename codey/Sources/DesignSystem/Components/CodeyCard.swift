@@ -22,7 +22,7 @@ struct CodeyCard<Content: View>: View {
 extension View {
     /// CodeyCard as a modifier, for a view that is already a stack.
     func codeyCard(tint: Color? = nil) -> some View {
-        padding(CodeySpacing.md)
+        modifier(CardPadding(panel: false))
             .frame(maxWidth: .infinity, alignment: .leading)
             .codeyNote(edge: tint)
             .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
@@ -61,7 +61,7 @@ extension View {
     /// celebrations): the same inset on all four sides (Nov 15), so the
     /// gap to the edge reads the same top, bottom, left and right.
     func codeyPanelPadding() -> some View {
-        padding(CodeySpacing.lg)
+        modifier(CardPadding(panel: true))
     }
 
     /// The lifted-note surface (S40) for centered floating cards:
@@ -240,5 +240,15 @@ struct ScreenEdgeFade: View {
                 .offset(y: edge == .top ? -inset : proxy.size.height - EdgeFade.feather(edge))
         }
         .allowsHitTesting(false)
+    }
+}
+
+/// A card's or floating card's inset, from the layout (CodeyLayout).
+private struct CardPadding: ViewModifier {
+    let panel: Bool
+    @Environment(\.codeyLayout) private var layout
+
+    func body(content: Content) -> some View {
+        content.padding(panel ? layout.panelPadding : layout.cardPadding)
     }
 }
