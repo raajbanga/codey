@@ -111,11 +111,14 @@ extension CodeyPage where Hero == HeroCard<EmptyView> {
 /// there were four). The icon and title share the first row with the tag
 /// on the right, then an optional line under the title (it wraps, so a
 /// topic's description isn't cut off), then an optional bar and caption.
+/// A title too long for that row never wraps beside the tag: the icon and
+/// tag take the first row, as on a game tile, and the title gets the full
+/// width under them, on one line (three at accessibility sizes).
 ///
-///     ╭ (icon) Title             [tag] ╮
-///     │ subtitle, as long as it needs  │
-///     │ ━━━━━━━━━━━━──────             │
-///     ╰ caption                        ╯
+///     ╭ (icon) Title             [tag] ╮     ╭ (icon)        [tag] [tag] ╮
+///     │ subtitle, as long as it needs  │     │ A Much Longer Title       │
+///     │ ━━━━━━━━━━━━──────             │     │ subtitle                  │
+///     ╰ caption                        ╯     ╰ …                         ╯
 struct HeroCard<Badge: View>: View {
     let title: String
     var subtitle: AttributedString?
@@ -125,6 +128,7 @@ struct HeroCard<Badge: View>: View {
     var caption: String?
     @ViewBuilder var badge: Badge
     @Environment(\.appHue) private var appHue
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     /// `attributedSubtitle` is styled text (an exercise's task) in place
     /// of `subtitle`.
@@ -150,15 +154,26 @@ struct HeroCard<Badge: View>: View {
     var body: some View {
         let hue = hue ?? appHue ?? .slate
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HStack(alignment: .center, spacing: CodeySpacing.sm) {
-                if let icon { Icon(icon, size: 26, relativeTo: .title2) }
-                Text(title)
-                    .font(.codeyTitle.weight(.semibold))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                badge
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: CodeySpacing.sm) {
+                    iconView
+                    titleText.lineLimit(1).fixedSize()
+                    Spacer(minLength: 0)
+                    badge
+                }
+                VStack(alignment: .leading, spacing: CodeySpacing.xs) {
+                    if icon != nil || Badge.self != EmptyView.self {
+                        HStack(alignment: .center, spacing: CodeySpacing.sm) {
+                            iconView
+                            Spacer(minLength: 0)
+                            badge
+                        }
+                    }
+                    titleText
+                        .lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                        .minimumScaleFactor(0.7)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             if let subtitle {
                 Text(subtitle)
@@ -180,6 +195,14 @@ struct HeroCard<Badge: View>: View {
         .environment(\.colorScheme, .light)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+    }
+
+    @ViewBuilder private var iconView: some View {
+        if let icon { Icon(icon, size: 26, relativeTo: .title2) }
+    }
+
+    private var titleText: some View {
+        Text(title).font(.codeyTitle.weight(.semibold))
     }
 }
 
@@ -249,13 +272,27 @@ struct CodeyMenu: View {
                 CodeyChip(title, systemImage: "chevron.up.chevron.down", variant: .outline(color))
                     .frame(minHeight: 44)
                     .contentShape(.rect)
-            case let .icon(systemImage, label, compact):
+            case let .icon(systemImage, _, compact):
                 CircleIcon(systemImage: systemImage, kind: .soft, compact: compact)
-                    .accessibilityLabel(label)
             }
         }
         .buttonStyle(.plain)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { anchor.frame = $0 }
+        .modifier(IconMenuLabel(label: iconLabel))
+    }
+
+    /// The icon is hidden from VoiceOver (`Icon`), so a label set inside
+    /// the button is lost; it goes on the button itself (BUG-05).
+    private var iconLabel: String? {
+        if case let .icon(_, label, _) = trigger { label } else { nil }
+    }
+}
+
+private struct IconMenuLabel: ViewModifier {
+    let label: String?
+
+    func body(content: Content) -> some View {
+        if let label { content.accessibilityLabel(label) } else { content }
     }
 }
 

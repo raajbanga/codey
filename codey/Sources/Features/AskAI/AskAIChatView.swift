@@ -25,6 +25,9 @@ struct AskAIChatView: View {
             inputRow.padding([.horizontal, .bottom], CodeySpacing.lg)
         }
         .sensoryFeedback(.impact(weight: .light), trigger: session.messages.count)
+        // A container, so the identifier names the panel and doesn't
+        // replace the input's own (`askAI.input`).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("askAI.chat")
         .task { await session.start() }
     }

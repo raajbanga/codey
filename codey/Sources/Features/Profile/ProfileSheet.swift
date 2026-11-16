@@ -168,7 +168,7 @@ struct ProfileSheet: View {
     }
 
     private var studySection: some View {
-        NoteGroup("Pinned topics", footer: "Pinned topics show first on Play and in Decks." + (hiddenDecks.isEmpty ? "" : " Hidden starter decks are listed below them.")) {
+        NoteGroup("Pinned topics", footer: "Pinned topics come first in Library and Decks." + (hiddenDecks.isEmpty ? "" : " Hidden starter decks are listed below them.")) {
             ForEach(topics) { topic in
                 let pinned = profile?.pinnedTopicIds.contains(topic.id) == true
                 let topicHue = CodeyColor.TopicHue.of(topicID: topic.id)
@@ -182,7 +182,7 @@ struct ProfileSheet: View {
                 }
                 .buttonStyle(TilePressStyle())
                 .accessibilityValue(pinned ? "Pinned" : "Not pinned")
-                .accessibilityHint("Pinned topics show first on Play and in Decks")
+                .accessibilityHint("Pinned topics come first in Library and Decks")
             }
             ForEach(hiddenDecks) { deck in
                 SettingsRow(icon: "eye.slash", title: deck.title) {

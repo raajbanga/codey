@@ -85,6 +85,21 @@ struct SessionXP: View {
     }
 }
 
+/// A summary's hero when it isn't a score: the session's symbol on its
+/// topic's pastel (a study deck, a solved exercise), so the end screens match.
+struct SessionSummaryIcon: View {
+    let systemImage: String
+    let hue: CodeyColor.TopicHue
+
+    var body: some View {
+        Icon(systemImage, size: 40, relativeTo: .largeTitle)
+            .foregroundStyle(hue.ink)
+            .frame(width: 72, height: 72)
+            .background(hue.soft, in: .codey(CodeyRadius.lg))
+            .accessibilityHidden(true)
+    }
+}
+
 /// End of a quiz or study session: a hero (score ring or icon), a title and
 /// line, the XP earned, details (stat tiles, banners), then Again / Done
 /// pinned at the bottom, with one quiet celebration.

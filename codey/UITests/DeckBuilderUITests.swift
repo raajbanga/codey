@@ -38,18 +38,25 @@ final class DeckBuilderUITests: XCTestCase {
         hittable(app.buttons.matching(identifier: "card.addCode")).tap()
 
         let language = hittable(app.buttons.matching(identifier: "card.language"))
+        // The list opens in the overlay; give the tap a second try if the
+        // card was still settling.
+        let python = app.buttons["Python"].firstMatch
         language.tap()
-        app.buttons["Python"].firstMatch.tap()
+        if !python.waitForExistence(timeout: 3) { language.tap() }
+        XCTAssertTrue(python.waitForExistence(timeout: 5))
+        python.tap()
 
         let editor = hittable(app.descendants(matching: .any).matching(identifier: "card.codeEditor"))
         editor.tap()
         app.typeText("print(1)")
+        // The snippet makes the card taller, so the keyboard covers flip.
+        dismissKeyboard()
 
         flipCard()
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Answer'"))).tap()
         app.typeText("1")
 
-        app.buttons["builder.save"].tap()
+        save()
 
         // The sheet's dismissal can take a few seconds on a busy Simulator
         // (e.g. right after the accessibility audit); same budget as launch.
@@ -71,7 +78,7 @@ final class DeckBuilderUITests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         enter("Doomed Deck", into: title)
         fill(prompt: "Q?", answer: "A.")
-        app.buttons["builder.save"].tap()
+        save()
 
         let tile = app.buttons["deckTile.Doomed Deck"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 15))
@@ -118,6 +125,12 @@ final class DeckBuilderUITests: XCTestCase {
         hittable(app.textViews.matching(NSPredicate(format: "label == 'Answer'"))).tap()
         app.typeText(answer)
         flipCard()
+    }
+
+    /// Save sits at the bottom, under the keyboard: close it first.
+    private func save() {
+        dismissKeyboard()
+        hittable(app.buttons.matching(identifier: "builder.save")).tap()
     }
 
     private func dismissKeyboard() {

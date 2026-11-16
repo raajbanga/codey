@@ -1,6 +1,9 @@
 import SwiftUI
 
+/// The card editor's format bar: the SF Symbol and the VoiceOver label for
+/// each Markdown format (bold, italic, inline code, bulleted list).
 extension MarkdownFormat {
+    /// Toolbar symbol for the format.
     var symbol: String {
         switch self {
         case .bold: "bold"
@@ -10,6 +13,7 @@ extension MarkdownFormat {
         }
     }
 
+    /// What VoiceOver reads for the format's toolbar button.
     var accessibilityLabel: String {
         switch self {
         case .bold: "Bold"

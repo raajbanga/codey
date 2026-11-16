@@ -26,7 +26,6 @@ struct ExerciseView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var profiles: [UserProfile]
-    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 112
 
     init(exercise: Exercise) {
         _exercise = State(initialValue: exercise)
@@ -46,6 +45,11 @@ struct ExerciseView: View {
             }
         }
         .codeyPaperBackground()
+        // The summary replaces the page, so hide the bars here too: a
+        // session's end has Done, not a back button (as quiz and study).
+        .toolbarVisibility(.hidden, for: .navigationBar)
+        .toolbarVisibility(.hidden, for: .tabBar)
+        .navigationBarBackButtonHidden(result?.allPassed == true)
         .sensoryFeedback(trigger: result) { _, new in
             guard let new else { return nil }
             return new.allPassed ? .success : .error
@@ -53,65 +57,78 @@ struct ExerciseView: View {
     }
 
     /// The task, the code, a field per blank, then Check; after a miss, the
-    /// per-blank results and Try Again / Try Another.
+    /// per-blank results and Try Again / Try Another. Ask AI floats at the
+    /// bottom right, by the thumb, and steps aside while typing.
     private var workspace: some View {
         CodeyPage(exercise.title) {
-            if let client = AskAI.client {
-                CircleIconButton(systemImage: "ask.ai", label: "Ask Codey", kind: .soft) {
-                    focusedBlank = nil
-                    askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
-                    router.askAI = askAI
-                }
-                .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
-                .accessibilityIdentifier("askAI.open")
-            }
-        } hero: {
             header
         } content: {
-            // Not selectable: the header's copy button covers copying, and
-            // a selectable text view has no accessibility label.
-            CardMarkdownView(
-                markdown: "",
-                snippet: CodeSnippet(language: exercise.language, source: exercise.displayCode),
-                isSelectable: false
-            )
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("\(exercise.language.displayName) code with \(exercise.blanks.count) numbered blanks")
-
-            ForEach(exercise.blanks.indices, id: \.self) { index in
-                blankField(index)
-            }
-
-            if let result {
-                summary(result)
-                explanation
-                HStack(spacing: CodeySpacing.sm) {
-                    CodeyButton("Try Again", systemImage: "arrow.counterclockwise", kind: .hue(hue), fullWidth: true) {
-                        retry()
-                    }
-                    .accessibilityIdentifier("exercise.retry")
-                    if let next = nextExercise {
-                        CodeyButton("Try Another", systemImage: "shuffle", kind: .secondary, fullWidth: true) {
-                            open(next)
-                        }
-                        .accessibilityIdentifier("exercise.another")
-                    }
-                }
-            } else {
-                CodeyButton("Check", systemImage: "checkmark", kind: .hue(hue), fullWidth: true) {
-                    focusedBlank = nil
-                    let checked = ExerciseValidator.check(answers, for: exercise)
-                    let paid = checked.allPassed ? payXP() : 0
-                    withCodeyAnimation(reduceMotion: reduceMotion) {
-                        xpPaid = paid
-                        result = checked
-                    }
-                }
-                .accessibilityIdentifier("exercise.submit")
+            workspaceContent
+            if AskAI.client != nil {
+                // Room to scroll the last button clear of Ask AI.
+                Color.clear.frame(height: 44).accessibilityHidden(true)
             }
         }
         // A new exercise starts at the top, not where the last one was left.
         .id(exercise.id)
+        .overlay(alignment: .bottomTrailing) {
+            if let client = AskAI.client, focusedBlank == nil {
+                CircleIconButton(systemImage: "ask.ai", label: "Ask Codey", kind: .soft) {
+                    askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
+                    router.askAI = askAI
+                }
+                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+                .padding([.trailing, .bottom], CodeySpacing.md)
+                .transition(.opacity)
+                .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
+                .accessibilityIdentifier("askAI.open")
+            }
+        }
+        .codeyAnimation(CodeyMotion.snappy, value: focusedBlank == nil)
+    }
+
+    @ViewBuilder private var workspaceContent: some View {
+        // Not selectable: the header's copy button covers copying, and
+        // a selectable text view has no accessibility label.
+        CardMarkdownView(
+            markdown: "",
+            snippet: CodeSnippet(language: exercise.language, source: exercise.displayCode),
+            isSelectable: false
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(exercise.language.displayName) code with \(exercise.blanks.count) numbered blanks")
+
+        ForEach(exercise.blanks.indices, id: \.self) { index in
+            blankField(index)
+        }
+
+        if let result {
+            summary(result)
+            explanation
+            HStack(spacing: CodeySpacing.sm) {
+                CodeyButton("Try Again", systemImage: "arrow.counterclockwise", kind: .hue(hue), fullWidth: true) {
+                    retry()
+                }
+                .accessibilityIdentifier("exercise.retry")
+                if let next = nextExercise {
+                    CodeyButton("Try Another", systemImage: "shuffle", kind: .secondary, fullWidth: true) {
+                        open(next)
+                    }
+                    .accessibilityIdentifier("exercise.another")
+                }
+            }
+        } else {
+            CodeyButton("Check", systemImage: "checkmark", kind: .hue(hue), fullWidth: true) {
+                focusedBlank = nil
+                let checked = ExerciseValidator.check(answers, for: exercise)
+                let paid = checked.allPassed ? payXP() : 0
+                withCodeyAnimation(reduceMotion: reduceMotion) {
+                    xpPaid = paid
+                    result = checked
+                }
+            }
+            .accessibilityIdentifier("exercise.submit")
+        }
     }
 
     /// The win screen: the same summary as a quiz or study session.
@@ -128,10 +145,7 @@ struct ExerciseView: View {
             again: nextExercise.map { next in { open(next) } },
             done: { dismiss() }
         ) {
-            IconTile(
-                systemName: "checkmark.seal.fill", size: heroSize, radius: CodeyRadius.xl,
-                ink: CodeyColor.success, tile: CodeyColor.Soft.success
-            )
+            SessionSummaryIcon(systemImage: "checkmark.seal", hue: hue)
         } details: {
             if xpPaid == 0 {
                 // Said, not hidden: otherwise a repeat solve looks broken.
@@ -142,6 +156,8 @@ struct ExerciseView: View {
             }
             explanation
         }
+        // A container, so the id doesn't replace its buttons' own ids.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("exercise.solved")
     }
 

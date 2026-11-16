@@ -115,7 +115,7 @@ final class AccessibilityAuditUITests: XCTestCase {
 
         // Quiz: topics, setup, a question before and after answering.
         // Coding exercises (FR-39 to FR-41), on a Library topic's page.
-        app.openTopic("Swift")
+        app.openTopic("Swift Basics")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
         for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }
