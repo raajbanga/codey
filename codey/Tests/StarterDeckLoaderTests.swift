@@ -46,10 +46,9 @@ struct StarterDeckLoaderTests {
     }
 
     @Test func everyCardPassesTheValidator() throws {
-        let validator = ModelValidator()
         for card in try StarterDeckLoader.loadBundle().decks.flatMap(\.cards) {
             let payload = card.payload(sortIndex: 0)
-            let errors = validator.validateCard(ModelValidator.CardFields(
+            let errors = ModelValidator.validateCard(ModelValidator.CardFields(
                 id: payload.id ?? UUID(),
                 prompt: payload.prompt,
                 answer: payload.answer,

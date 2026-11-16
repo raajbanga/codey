@@ -26,7 +26,6 @@ final class DeckViewModel {
     private let original: DeckDraft
     private let backend: any DeckBackend
     private let knownTopicIds: Set<String>
-    private let validator = ModelValidator()
     private let liveValidationDelay: Duration
     private var liveValidationTask: Task<Void, Never>?
 
@@ -115,7 +114,7 @@ final class DeckViewModel {
 
     @discardableResult
     func validateNow() -> ValidationResult {
-        let errors = validator.validateDeck(
+        let errors = ModelValidator.validateDeck(
             title: draft.title,
             topicId: draft.topicId,
             cards: draft.cards.map(\.validationFields),

@@ -15,7 +15,6 @@ struct FlashcardFactory {
         fileprivate init() {}
     }
 
-    private let validator = ModelValidator()
     private let now: () -> Date
 
     init(now: @escaping () -> Date = Date.init) {
@@ -46,7 +45,7 @@ struct FlashcardFactory {
     func createCard(from payload: FlashcardPayload) throws -> Flashcard {
         let input = applyDefaults(payload)
         let id = input.id ?? UUID()
-        return Flashcard(
+        let card = Flashcard(
             Token(),
             id: id,
             prompt: input.prompt,
@@ -59,6 +58,8 @@ struct FlashcardFactory {
             updatedAt: input.updatedAt ?? now(),
             deletedAt: input.deletedAt
         )
+        card.isHidden = input.isHidden ?? false
+        return card
     }
 
     /// Edits an existing card through the same normalize + validate path as
@@ -73,19 +74,28 @@ struct FlashcardFactory {
         difficulty: Difficulty?,
         sortIndex: Int
     ) throws -> Bool {
-        let input = applyDefaults(FlashcardPayload(
-            prompt: prompt, answer: answer, codeLanguage: code?.language.rawValue, codeSource: code?.source
+        try updateCard(card, from: FlashcardPayload(
+            prompt: prompt, answer: answer, codeLanguage: code?.language.rawValue, codeSource: code?.source,
+            difficulty: difficulty, sortIndex: sortIndex
         ))
+    }
+
+    /// The same edit from raw (bundle) data. The language stays a raw string
+    /// until validation, so an unknown one throws here just as it does in
+    /// createCard, instead of quietly dropping the snippet.
+    @discardableResult
+    func updateCard(_ card: Flashcard, from payload: FlashcardPayload) throws -> Bool {
+        let input = applyDefaults(payload)
         let code = try validatedSnippet(input, id: card.id)
 
         let changed = card.prompt != input.prompt || card.answer != input.answer || card.codeSnippet != code
-            || card.difficulty != difficulty || card.sortIndex != sortIndex
+            || card.difficulty != input.difficulty || card.sortIndex != input.sortIndex
         guard changed else { return false }
         card.prompt = input.prompt
         card.answer = input.answer
         card.codeSnippet = code
-        card.difficulty = difficulty
-        card.sortIndex = sortIndex
+        card.difficulty = input.difficulty
+        card.sortIndex = input.sortIndex
         card.updatedAt = now()
         return true
     }
@@ -102,12 +112,13 @@ struct FlashcardFactory {
         card.sortIndex = input.sortIndex
         card.updatedAt = input.updatedAt ?? card.updatedAt
         card.deletedAt = input.deletedAt
+        if let hidden = input.isHidden { card.isHidden = hidden }
     }
 
     /// Throws FactoryError.invalid for bad content; returns the snippet the
     /// (normalized) payload describes.
     private func validatedSnippet(_ input: FlashcardPayload, id: UUID) throws -> CodeSnippet? {
-        let errors = validator.validateCard(ModelValidator.CardFields(
+        let errors = ModelValidator.validateCard(ModelValidator.CardFields(
             id: id,
             prompt: input.prompt,
             answer: input.answer,

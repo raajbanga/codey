@@ -10,19 +10,17 @@ struct ProfileAndFeedbackTests {
     // MARK: Validator limits (±1)
 
     @Test func displayNameLimits() {
-        let validator = ModelValidator()
-        #expect(validator.validateDisplayName(String(repeating: "a", count: 30)).isEmpty)
-        #expect(validator.validateDisplayName(String(repeating: "a", count: 31)).first?.reason == .tooLong(max: 30, actual: 31))
-        #expect(validator.validateDisplayName("   ").first?.reason == .empty)
+        #expect(ModelValidator.validateDisplayName(String(repeating: "a", count: 30)).isEmpty)
+        #expect(ModelValidator.validateDisplayName(String(repeating: "a", count: 31)).first?.reason == .tooLong(max: 30, actual: 31))
+        #expect(ModelValidator.validateDisplayName("   ").first?.reason == .empty)
         // Counted after trimming, in Unicode scalars (matches char_length).
-        #expect(validator.validateDisplayName("  " + String(repeating: "é", count: 30) + "  ").isEmpty)
+        #expect(ModelValidator.validateDisplayName("  " + String(repeating: "é", count: 30) + "  ").isEmpty)
     }
 
     @Test func feedbackLimits() {
-        let validator = ModelValidator()
-        #expect(validator.validateFeedback(String(repeating: "x", count: 1_000)).isEmpty)
-        #expect(validator.validateFeedback(String(repeating: "x", count: 1_001)).first?.reason == .tooLong(max: 1_000, actual: 1_001))
-        #expect(validator.validateFeedback("\n").first?.reason == .empty)
+        #expect(ModelValidator.validateFeedback(String(repeating: "x", count: 1_000)).isEmpty)
+        #expect(ModelValidator.validateFeedback(String(repeating: "x", count: 1_001)).first?.reason == .tooLong(max: 1_000, actual: 1_001))
+        #expect(ModelValidator.validateFeedback("\n").first?.reason == .empty)
     }
 
     // MARK: FR-04
@@ -64,7 +62,21 @@ struct ProfileAndFeedbackTests {
         #expect(ProfileAvatar.symbol(for: "star.fill") == "star.fill")
         #expect(ProfileAvatar.symbol(for: "skull.fill") == ProfileAvatar.fallback)
         #expect(ProfileAvatar.symbol(for: nil) == ProfileAvatar.fallback)
-        #expect(ProfileAvatar.symbols.count == 12)
+        #expect(ProfileAvatar.symbols.count == 32)
+        #expect(Set(ProfileAvatar.symbols).count == ProfileAvatar.symbols.count)
+    }
+
+    /// S42: "symbol@color"; no color is slate; an unknown color is rejected.
+    @Test func avatarColorRoundTrips() {
+        #expect(ProfileAvatar.id(symbol: "cat", color: .teal) == "cat@teal")
+        #expect(ProfileAvatar.id(symbol: "cat", color: .slate) == "cat")
+        #expect(ProfileAvatar.parse("cat@teal")?.symbol == "cat")
+        #expect(ProfileAvatar.parse("cat@teal")?.color == .teal)
+        #expect(ProfileAvatar.color(for: "star.fill") == .slate)
+        #expect(ProfileAvatar.parse("cat@purple") == nil)
+        #expect(ProfileAvatar.parse("skull@teal") == nil)
+        #expect(ProfileAvatar.glyph(for: "star.fill") == "star")
+        #expect(ProfileAvatar.glyph(for: "cat") == "cat")
     }
 
     // MARK: FR-49

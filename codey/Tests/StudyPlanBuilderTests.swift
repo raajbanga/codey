@@ -55,9 +55,9 @@ struct StudyPlanBuilderTests {
 
     @Test func weeksStartOnMonday() {
         // 2026-10-26 is a Monday; Sunday 11-01 is still that week.
-        #expect(StudyPlanBuilder.weekStart(for: date(10, 26, hour: 0), calendar: chicago) == "2026-10-26")
-        #expect(StudyPlanBuilder.weekStart(for: date(11, 1, hour: 23), calendar: chicago) == "2026-10-26")
-        #expect(StudyPlanBuilder.weekStart(for: date(11, 2, hour: 0), calendar: chicago) == "2026-11-02")
+        #expect(chicago.mondayKey(for: date(10, 26, hour: 0)) == "2026-10-26")
+        #expect(chicago.mondayKey(for: date(11, 1, hour: 23)) == "2026-10-26")
+        #expect(chicago.mondayKey(for: date(11, 2, hour: 0)) == "2026-11-02")
     }
 
     @Test func cachedPlanHoldsForTheWeekAndRebuildsOnMonday() {

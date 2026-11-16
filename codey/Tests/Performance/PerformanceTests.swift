@@ -87,8 +87,8 @@ struct PerformanceTests {
     }
 
     /// TC-P07: pushing a 100-card deck against the in-memory backend with a
-    /// 50 ms round trip per request (the live variant is
-    /// SupabaseIntegrationTests.hundredCardPushIsUnderFiveSeconds) ≤ 5 s.
+    /// 50 ms round trip per request ≤ 5 s (NFR-02 is verified against this
+    /// mock only, S33).
     @Test func syncPush100CardsMockRTT() async throws {
         let result = try await Perf.measureAsync("sync_push_100_mock50ms", thresholdMS: 5000, setUp: { () -> (BackendFacade, FlashcardDeck) in
             let context = try TestSupport.inMemoryContext()
@@ -143,6 +143,8 @@ final class LatencyRemoteStore: RemoteDeckStore {
     func leaveGroup(id: UUID) async throws { try await wait(); try await base.leaveGroup(id: id) }
     func fetchLeaderboard(groupID: UUID) async throws -> [LeaderboardEntry] { try await wait(); return try await base.fetchLeaderboard(groupID: groupID) }
     func upsertWeeklyXP(weekStart: String, xp: Int) async throws { try await wait(); try await base.upsertWeeklyXP(weekStart: weekStart, xp: xp) }
+    func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges { try await wait(); return try await base.fetchProgressChanges(since: cursor) }
+    func upsertProgress(_ batch: ProgressBatch) async throws { try await wait(); try await base.upsertProgress(batch) }
 }
 
 /// TC-P08 fixture (Activity 9_2): writes 5 user decks of 50 cards into the

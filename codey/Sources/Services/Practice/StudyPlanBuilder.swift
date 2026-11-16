@@ -42,14 +42,6 @@ enum StudyPlanBuilder {
             .prefix(size)
             .map(\.1)
     }
-
-    /// Monday of `date`'s week, as a DailyActivity day key ("yyyy-MM-dd").
-    static func weekStart(for date: Date, calendar: Calendar = .current) -> String {
-        var mondayFirst = calendar
-        mondayFirst.firstWeekday = 2
-        let start = mondayFirst.dateInterval(of: .weekOfYear, for: date)?.start ?? date
-        return DailyActivity.dayKey(for: start, calendar: calendar)
-    }
 }
 
 /// One week's plan, as cached in @AppStorage (JSON). Only the picked
@@ -67,7 +59,7 @@ struct StudyPlan: Codable, Equatable {
         calendar: Calendar = .current,
         build: () -> [StudyPlanBuilder.Entry]
     ) -> StudyPlan {
-        let week = StudyPlanBuilder.weekStart(for: now, calendar: calendar)
+        let week = calendar.mondayKey(for: now)
         if let cached, cached.weekStart == week, !cached.topicIDs.isEmpty,
            cached.topicIDs.allSatisfy(knownTopicIDs.contains) {
             return cached

@@ -23,25 +23,26 @@ enum RemoteResult: Equatable, Sendable {
 protocol DeckSyncState {
     var kind: DeckSyncStateKind { get }
     var name: String { get }
-    func onSave(_ deck: FlashcardDeck) -> any DeckSyncState
+    // Events that stamp the deck take `now` from the caller's clock.
+    func onSave(_ deck: FlashcardDeck, at now: Date) -> any DeckSyncState
     func onEdit(_ deck: FlashcardDeck) -> any DeckSyncState
     func onPush(_ deck: FlashcardDeck) -> any DeckSyncState
-    func onRemoteResponse(_ deck: FlashcardDeck, _ result: RemoteResult) -> any DeckSyncState
-    func onResolve(_ deck: FlashcardDeck) -> any DeckSyncState
+    func onRemoteResponse(_ deck: FlashcardDeck, _ result: RemoteResult, at now: Date) -> any DeckSyncState
+    func onResolve(_ deck: FlashcardDeck, at now: Date) -> any DeckSyncState
     /// nil = deleting isn't allowed in this state.
-    func onDelete(_ deck: FlashcardDeck) -> (any DeckSyncState)?
+    func onDelete(_ deck: FlashcardDeck, at now: Date) -> (any DeckSyncState)?
 }
 
 extension DeckSyncState {
     var name: String { kind.displayName }
 
     // Default: no arrow for this event, so stay put.
-    func onSave(_ deck: FlashcardDeck) -> any DeckSyncState { ignored("save") }
+    func onSave(_ deck: FlashcardDeck, at now: Date) -> any DeckSyncState { ignored("save") }
     func onEdit(_ deck: FlashcardDeck) -> any DeckSyncState { ignored("edit") }
     func onPush(_ deck: FlashcardDeck) -> any DeckSyncState { ignored("push") }
-    func onRemoteResponse(_ deck: FlashcardDeck, _ result: RemoteResult) -> any DeckSyncState { ignored("remote response") }
-    func onResolve(_ deck: FlashcardDeck) -> any DeckSyncState { ignored("resolve") }
-    func onDelete(_ deck: FlashcardDeck) -> (any DeckSyncState)? { nil }
+    func onRemoteResponse(_ deck: FlashcardDeck, _ result: RemoteResult, at now: Date) -> any DeckSyncState { ignored("remote response") }
+    func onResolve(_ deck: FlashcardDeck, at now: Date) -> any DeckSyncState { ignored("resolve") }
+    func onDelete(_ deck: FlashcardDeck, at now: Date) -> (any DeckSyncState)? { nil }
 
     fileprivate func ignored(_ event: String) -> any DeckSyncState {
         Logger.sync.debug("\(event, privacy: .public) ignored in state \(kind.rawValue, privacy: .public)")
@@ -50,8 +51,7 @@ extension DeckSyncState {
 
     /// LocallyPersisted | Synced ──delete──▶ tombstone. The tombstoned deck
     /// waits in LocallyPersisted until the delete syncs.
-    fileprivate func tombstone(_ deck: FlashcardDeck) -> any DeckSyncState {
-        let now = Date.now
+    fileprivate func tombstone(_ deck: FlashcardDeck, at now: Date) -> any DeckSyncState {
         deck.deletedAt = now
         deck.markDirty(at: now)
         for card in deck.cards where card.deletedAt == nil {
@@ -67,8 +67,8 @@ extension DeckSyncState {
 struct DraftingState: DeckSyncState {
     let kind = DeckSyncStateKind.drafting
 
-    func onSave(_ deck: FlashcardDeck) -> any DeckSyncState {
-        deck.markDirty()
+    func onSave(_ deck: FlashcardDeck, at now: Date) -> any DeckSyncState {
+        deck.markDirty(at: now)
         return LocallyPersistedState()
     }
 
@@ -84,7 +84,7 @@ struct LocallyPersistedState: DeckSyncState {
 
     func onPush(_ deck: FlashcardDeck) -> any DeckSyncState { SyncingState() }
 
-    func onDelete(_ deck: FlashcardDeck) -> (any DeckSyncState)? { tombstone(deck) }
+    func onDelete(_ deck: FlashcardDeck, at now: Date) -> (any DeckSyncState)? { tombstone(deck, at: now) }
 }
 
 // MARK: - [Pattern: State] Concrete state
@@ -95,10 +95,10 @@ struct SyncingState: DeckSyncState {
     /// Already pushing.
     func onPush(_ deck: FlashcardDeck) -> any DeckSyncState { self }
 
-    func onRemoteResponse(_ deck: FlashcardDeck, _ result: RemoteResult) -> any DeckSyncState {
+    func onRemoteResponse(_ deck: FlashcardDeck, _ result: RemoteResult, at now: Date) -> any DeckSyncState {
         switch result {
         case .ack(let serverUpdatedAt):
-            deck.lastSyncedAt = .now
+            deck.lastSyncedAt = now
             deck.serverUpdatedAt = serverUpdatedAt
             return SyncedState()
         case .networkFailure:
@@ -116,7 +116,7 @@ struct SyncedState: DeckSyncState {
 
     func onEdit(_ deck: FlashcardDeck) -> any DeckSyncState { DraftingState() }
 
-    func onDelete(_ deck: FlashcardDeck) -> (any DeckSyncState)? { tombstone(deck) }
+    func onDelete(_ deck: FlashcardDeck, at now: Date) -> (any DeckSyncState)? { tombstone(deck, at: now) }
 }
 
 // MARK: - [Pattern: State] Concrete state
@@ -125,8 +125,8 @@ struct SyncedState: DeckSyncState {
 struct ConflictState: DeckSyncState {
     let kind = DeckSyncStateKind.conflict
 
-    func onResolve(_ deck: FlashcardDeck) -> any DeckSyncState {
-        deck.markDirty()
+    func onResolve(_ deck: FlashcardDeck, at now: Date) -> any DeckSyncState {
+        deck.markDirty(at: now)
         return LocallyPersistedState()
     }
 }
@@ -152,9 +152,11 @@ extension FlashcardDeck {
         syncState = state.kind
     }
 
-    func save() {
+    // `now` defaults to the wall clock; the facade and engine pass theirs.
+
+    func save(at now: Date = .now) {
         guard origin == .user else { return }
-        setState(currentState.onSave(self))
+        setState(currentState.onSave(self, at: now))
     }
 
     func edit() {
@@ -164,9 +166,9 @@ extension FlashcardDeck {
 
     /// Edit → save in one step: re-marks a (Synced) deck as having local
     /// changes to push.
-    func editAndSave() {
+    func editAndSave(at now: Date = .now) {
         edit()
-        save()
+        save(at: now)
     }
 
     func push() {
@@ -174,21 +176,21 @@ extension FlashcardDeck {
         setState(currentState.onPush(self))
     }
 
-    func receive(_ result: RemoteResult) {
+    func receive(_ result: RemoteResult, at now: Date = .now) {
         guard origin == .user else { return }
-        setState(currentState.onRemoteResponse(self, result))
+        setState(currentState.onRemoteResponse(self, result, at: now))
     }
 
-    func resolve() {
+    func resolve(at now: Date = .now) {
         guard origin == .user else { return }
-        setState(currentState.onResolve(self))
+        setState(currentState.onResolve(self, at: now))
     }
 
     /// Tombstones the deck if its state allows it. Returns false if not.
     /// (Never-synced decks are hard-deleted by the caller instead.)
     @discardableResult
-    func delete() -> Bool {
-        guard origin == .user, let next = currentState.onDelete(self) else { return false }
+    func delete(at now: Date = .now) -> Bool {
+        guard origin == .user, let next = currentState.onDelete(self, at: now) else { return false }
         setState(next)
         return true
     }
@@ -217,14 +219,14 @@ extension FlashcardDeck {
     /// LocallyPersisted (Drafting is otherwise an in-editor state only).
     /// Returns whether anything changed.
     @discardableResult
-    func recoverAfterLaunch() -> Bool {
+    func recoverAfterLaunch(at now: Date = .now) -> Bool {
         guard origin == .user else { return false }
         switch syncState {
         case .syncing:
-            setState(currentState.onRemoteResponse(self, .networkFailure))
+            setState(currentState.onRemoteResponse(self, .networkFailure, at: now))
             return true
         case .drafting:
-            setState(currentState.onSave(self))
+            setState(currentState.onSave(self, at: now))
             return true
         case .locallyPersisted, .synced, .conflict:
             return false

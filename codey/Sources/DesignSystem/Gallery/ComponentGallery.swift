@@ -1,7 +1,8 @@
+#if DEBUG
 import SwiftUI
 
 /// Every design-system component on one screen, for visual QA (ES) in light,
-/// dark, and large Dynamic Type. Previews only; not reachable in the app.
+/// dark, and large Dynamic Type. Previews only, so Debug builds only.
 struct ComponentGallery: View {
     @State private var answer: AnswerOptionState = .idle
     @State private var xp = 1_840
@@ -91,7 +92,7 @@ struct ComponentGallery: View {
                 CodeyChip("🔥 3", variant: .warning)
                 CodeyChip("New", variant: .brand)
             }
-            TierChipRow(tiers: [
+            TierLockNote(tiers: [
                 TierAvailability(difficulty: .easy, isUnlocked: true),
                 TierAvailability(difficulty: .medium, isUnlocked: true),
                 TierAvailability(difficulty: .hard, isUnlocked: false, lockReason: "Reach Level 3 · 420 XP to go"),
@@ -156,3 +157,4 @@ struct ComponentGallery: View {
 #Preview("XS text, dark") {
     ComponentGallery().environment(\.dynamicTypeSize, .xSmall).preferredColorScheme(.dark)
 }
+#endif

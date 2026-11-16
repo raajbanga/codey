@@ -5,21 +5,34 @@ struct CardPagerView: View {
     let viewModel: DeckViewModel
     @Binding var page: PagerPage?
     @Binding var focusRequest: FocusRequest?
+    /// Off while the keyboard is up, to give the card the room.
+    var showsPosition = true
+    /// Deletes with undo (DeckBuilderView's toast).
+    let onDelete: (UUID) -> Void
 
     private var cards: [CardDraft] { viewModel.draft.cards }
 
     var body: some View {
         VStack(spacing: CodeySpacing.xs) {
-            Text(positionLabel)
-                .font(.codeyCaption.weight(.semibold))
-                .foregroundStyle(CodeyColor.textSecondary)
-                .contentTransition(.numericText())
-                .accessibilityIdentifier("pager.position")
+            if showsPosition {
+                Text(positionLabel)
+                    .font(.codeyCaption.weight(.semibold))
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .contentTransition(.numericText())
+                    .accessibilityIdentifier("pager.position")
+            }
 
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 0) {
-                    ForEach(cards) { card in
-                        CardPageEditor(card: binding(for: card.id), viewModel: viewModel, focusRequest: $focusRequest)
+                    ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
+                        CardPageEditor(
+                            card: binding(for: card.id, at: index), viewModel: viewModel, focusRequest: $focusRequest,
+                            duplicate: {
+                                guard let id = viewModel.duplicateCard(cardID: card.id) else { return }
+                                withAnimation(CodeyMotion.snappy) { page = .card(id) }
+                            },
+                            delete: { onDelete(card.id) }
+                        )
                             .padding(.horizontal, CodeySpacing.md)
                             .containerRelativeFrame(.horizontal)
                             .id(PagerPage.card(card.id))
@@ -74,12 +87,19 @@ struct CardPagerView: View {
         .accessibilityIdentifier("pager.newCard")
     }
 
-    /// Looks cards up by id, so deleting one can't leave a stale index binding.
-    private func binding(for id: UUID) -> Binding<CardDraft> {
-        Binding(
-            get: { viewModel.draft.cards.first { $0.id == id } ?? CardDraft(id: id) },
+    /// Reads and writes at the render's index once it's checked against the
+    /// id, so a keystroke is O(1); after a delete shifts the cards, it falls
+    /// back to a search instead of editing the wrong card.
+    private func binding(for id: UUID, at hint: Int) -> Binding<CardDraft> {
+        let viewModel = viewModel
+        func index() -> Int? {
+            let cards = viewModel.draft.cards
+            return cards.indices.contains(hint) && cards[hint].id == id ? hint : cards.firstIndex { $0.id == id }
+        }
+        return Binding(
+            get: { index().map { viewModel.draft.cards[$0] } ?? CardDraft(id: id) },
             set: { newValue in
-                guard let index = viewModel.draft.cards.firstIndex(where: { $0.id == id }) else { return }
+                guard let index = index() else { return }
                 viewModel.draft.cards[index] = newValue
             }
         )

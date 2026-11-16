@@ -47,6 +47,16 @@ struct FlashcardFactoryTests {
         #expect(result.map(\.field) == [.cardPrompt(id), .cardAnswer(id)])
     }
 
+    /// An unknown language fails an update the same way it fails a
+    /// create, and the card keeps its snippet.
+    @Test func updateFromPayloadRejectsAnUnknownLanguage() throws {
+        let card = try factory.createCard(prompt: "Q", answer: "A", code: CodeSnippet(language: .swift, source: "let x = 1"))
+        let payload = FlashcardPayload(prompt: "Q", answer: "A", codeLanguage: "rust", codeSource: "fn main() {}")
+        #expect(throws: FactoryError.self) { try factory.createCard(from: payload) }
+        #expect(throws: FactoryError.self) { try factory.updateCard(card, from: payload) }
+        #expect(card.codeSnippet == CodeSnippet(language: .swift, source: "let x = 1"))
+    }
+
     @Test func snippetIsNormalized() throws {
         let messy = "\r\n\n\tdef f():  \r\n\t\treturn 1\t\n\n  \n"
         let card = try factory.createCard(prompt: "p", answer: "a", code: CodeSnippet(language: .python, source: messy))

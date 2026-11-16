@@ -9,10 +9,10 @@ extension BackendFacade {
     /// a profile push. A queued profile operation makes the local values win
     /// the next merge (last write wins). Throws the validator's FieldError.
     func updateProfile(displayName: String, avatarId: String?) throws {
-        if let error = ModelValidator().validateDisplayName(displayName).first { throw error }
+        if let error = ModelValidator.validateDisplayName(displayName).first { throw error }
         let profile = DataSeeder.ensureProfile(context: context)
         profile.username = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        profile.avatarId = avatarId.flatMap { ProfileAvatar.symbols.contains($0) ? $0 : nil }
+        profile.avatarId = avatarId.flatMap { ProfileAvatar.parse($0) == nil ? nil : $0 }
         if let userID {
             try queue.enqueue(.profile, id: profile.id, op: .upsert, ownerId: userID)
         }
@@ -24,7 +24,7 @@ extension BackendFacade {
     /// shows the error, so the user can retry when back online.
     func submitFeedback(_ text: String) async throws {
         guard let remote, currentUser != nil else { throw FeedbackError.signInRequired }
-        if let error = ModelValidator().validateFeedback(text).first { throw error }
+        if let error = ModelValidator.validateFeedback(text).first { throw error }
         try await remote.submitFeedback(FeedbackReportPayload(
             id: UUID(),
             description: text.trimmingCharacters(in: .whitespacesAndNewlines),

@@ -1,28 +1,15 @@
 import Foundation
 import Observation
-import SwiftData
 
-/// The three tabs (D8 r3).
+/// The tabs: Play (the game board), Decks, and the Library of topics.
 enum AppTab: Hashable {
     case home
     case decks
-    case quiz
+    case library
 }
 
-/// Deep-link destinations (widget, sign-in callbacks, Home shortcuts).
-enum AppRoute: Hashable {
-    case home
-    case decks
-    case deck(UUID)
-    /// Resume (or start) studying a deck.
-    case study(UUID)
-    /// Quiz setup for a topic id.
-    case quiz(String)
-    case profile
-}
-
-/// Owns tab selection and every app-level presentation, so any screen (or a
-/// deep link) can open a deck, a study session, a quiz, or the profile.
+/// Owns tab selection and every app-level presentation, so any screen can
+/// open a deck, a study session, a quiz, or the profile.
 @MainActor
 @Observable
 final class Router {
@@ -31,46 +18,17 @@ final class Router {
 
     var study: StudyRequest?
     var quiz: QuizRequest?
+    /// Quiz setup, shown as a FloatingPanel at the root (S40).
     var quizSetupTopic: Topic?
     var showProfile = false
+    /// Ask AI on a coding exercise (S39), in a root FloatingPanel so the
+    /// dimmed page covers the bars. The quiz cover hosts its own.
+    var askAI: AskAISession?
 
-    /// A quiz chosen in the setup sheet, presented once the sheet is gone.
-    private var pendingQuiz: QuizRequest?
-
-    func open(_ route: AppRoute, context: ModelContext) {
-        switch route {
-        case .home:
-            tab = .home
-        case .decks:
-            tab = .decks
-        case .deck(let id):
-            tab = .decks
-            decksPath = [DeckRoute(id: id)]
-        case .study(let id):
-            guard let deck = try? context.first(#Predicate<FlashcardDeck> { $0.id == id && $0.deletedAt == nil }) else { return }
-            let resumable = (try? StudyProgressSnapshot.fetch(deckId: id, context: context)) != nil
-            study = StudyRequest(deck: deck, start: resumable ? .resume : .fresh(tierFilter: nil))
-        case .quiz(let topicId):
-            quizSetupTopic = try? context.first(#Predicate<Topic> { $0.id == topicId })
-        case .profile:
-            showProfile = true
-        }
-    }
-
-    /// Called by the setup sheet's Start: close the sheet, then present.
+    /// The setup panel's Start: close the panel and present the quiz. The
+    /// panel is an overlay, not a sheet, so nothing has to wait for it.
     func startQuiz(_ request: QuizRequest) {
-        if quizSetupTopic == nil {
-            quiz = request
-        } else {
-            pendingQuiz = request
-            quizSetupTopic = nil
-        }
-    }
-
-    /// Setup sheet onDismiss.
-    func presentPendingQuiz() {
-        guard let pendingQuiz else { return }
-        quiz = pendingQuiz
-        self.pendingQuiz = nil
+        quizSetupTopic = nil
+        quiz = request
     }
 }

@@ -12,9 +12,12 @@ struct LoadingView: View {
     @State private var container: ModelContainer?
     @State private var backend: BackendFacade?
     @State private var showResetConfirmation = false
+    @State private var showsProgress = false
 
-    /// Keeps the launch screen up at least this long so it doesn't flash.
-    private let minimumDuration: Duration = .milliseconds(400)
+    /// The glyph and progress bar appear only if boot takes longer than
+    /// this. A fast boot shows just the paper, then Home: no flash, and no
+    /// minimum wait.
+    private let revealDelay: Duration = .milliseconds(300)
 
     var body: some View {
         Group {
@@ -32,6 +35,17 @@ struct LoadingView: View {
     }
 
     private var loadingContent: some View {
+        loadingStack
+            .opacity(showsProgress || errorMessage != nil ? 1 : 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .codeyPaperBackground()
+            .task {
+                try? await Task.sleep(for: revealDelay)
+                withAnimation(CodeyMotion.snappy) { showsProgress = true }
+            }
+    }
+
+    private var loadingStack: some View {
         VStack(spacing: CodeySpacing.lg) {
             Spacer()
             AppGlyph(size: 88)
@@ -63,20 +77,14 @@ struct LoadingView: View {
             Spacer()
             Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .codeyPaperBackground()
-        .confirmationDialog(
+        .codeyConfirm(
             "Reset local data?",
             isPresented: $showResetConfirmation,
-            titleVisibility: .visible
+            message: "Codey couldn't open its data. Resetting deletes your decks, XP, and progress on this device."
         ) {
-            Button("Delete Local Data", role: .destructive) {
-                resetStoreAndRetry()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Codey couldn't open its data. Resetting deletes your decks, XP, and progress on this device.")
+            [CodeyDialog.Action("Delete Local Data", isDestructive: true, action: resetStoreAndRetry)]
         }
+        .codeyOverlayHost()
     }
 
     private func retryBoot() {
@@ -98,23 +106,24 @@ struct LoadingView: View {
     private func runBootSequence() async {
         guard container == nil, errorMessage == nil else { return }
 
-        let started = ContinuousClock.now
         do {
             let bootContainer = try ModelContainerFactory.make(inMemory: AppLaunchOptions.usesInMemoryStore)
             progress = 0.25
 
-            let bank = try QuestionBankLoader.loadBank()
+            let context = bootContainer.mainContext
+            // The last Supabase download, else the bundle (ContentFiles).
+            let (files, content) = try ContentSeeder.load()
             progress = 0.50
-
-            try DataSeeder.seed(context: bootContainer.mainContext, bank: bank)
-            progress = 0.75
-
-            do {
-                try StarterDeckLoader.seed(context: bootContainer.mainContext)
-            } catch {
-                // Starter decks are optional content: log, don't block boot.
-                Logger.seeding.error("Starter decks failed to load: \(String(describing: error))")
+            let stamp = files.stamp
+            if BundledContentStamp.isSeeded(stamp, context: context) {
+                // Same content as last launch: nothing to upsert.
+                DataSeeder.ensureProfile(context: context)
+                ExerciseCatalog.shared.replace(with: content.exercises)
+                Logger.seeding.info("Content unchanged; seeding skipped")
+            } else {
+                try ContentSeeder.seed(content, stamp: stamp, context: context)
             }
+            progress = 0.75
             do {
                 // Catches up badges already qualified for (an upgrade from a
                 // build without them), before any banner is watching.
@@ -124,10 +133,6 @@ struct LoadingView: View {
                 Logger.seeding.error("Badge catch-up failed: \(String(describing: error))")
             }
             progress = 1.0
-            let elapsed = ContinuousClock.now - started
-            if elapsed < minimumDuration {
-                try await Task.sleep(for: minimumDuration - elapsed)
-            }
 
             let facade = AppLaunchOptions.usesInMemoryStore
                 ? BackendFacade.localOnly(context: bootContainer.mainContext)

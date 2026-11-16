@@ -3,7 +3,8 @@ import SwiftData
 
 extension CodeySchemaV4 {
     /// Quiz tier unlocks per topic (FR-25/26). STICKY: once unlocked, a tier
-    /// never relocks, even when reviews (FR-28) lower the retired count.
+    /// never relocks, even when reviews (FR-28) lower the retired count. Synced
+    /// per account; the earliest unlock wins (FR-61).
     @Model
     final class TopicProgress {
         @Attribute(.unique) var topicId: String

@@ -1,9 +1,7 @@
 import SwiftUI
 
-/// The study card (B15 rebuild). Two separate faces in a ZStack, each
-/// rotating on its own: the front turns 0→90°, then the back turns −90→0°.
-/// Neither face is ever mirrored, so text stays readable and selectable.
-/// Under Reduce Motion the faces crossfade instead.
+/// The study card (B15 rebuild): the prompt and answer faces on a shared
+/// FlipCard.
 struct StudyCardView: View {
     let card: Flashcard
     let isRevealed: Bool
@@ -27,26 +25,15 @@ struct StudyCardView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let halfFlip = 0.18
+    /// Shortest card, so a one-line prompt still reads as a card.
+    static let minHeight: CGFloat = 260
 
     var body: some View {
-        ZStack {
-            face(isFront: true)
-                .rotation3DEffect(
-                    .degrees(reduceMotion ? 0 : (isRevealed ? 90 : 0)),
-                    axis: (x: 0, y: 1, z: 0),
-                    perspective: 0.5
-                )
-                .opacity(isRevealed ? 0 : 1)
-                .animation(faceAnimation(showing: !isRevealed), value: isRevealed)
-            face(isFront: false)
-                .rotation3DEffect(
-                    .degrees(reduceMotion ? 0 : (isRevealed ? 0 : -90)),
-                    axis: (x: 0, y: 1, z: 0),
-                    perspective: 0.5
-                )
-                .opacity(isRevealed ? 1 : 0)
-                .animation(faceAnimation(showing: isRevealed), value: isRevealed)
+        // Sized to its text (at least `minHeight`); a card too tall for the
+        // screen fills it and scrolls inside instead.
+        ViewThatFits(in: .vertical) {
+            faces.fixedSize(horizontal: false, vertical: true)
+            faces
         }
         .overlay(alignment: .top) {
             if let masteredBadge {
@@ -61,20 +48,12 @@ struct StudyCardView: View {
         }
     }
 
-    /// The face being hidden turns away first (ease-in); the face being shown
-    /// turns in after it (ease-out, delayed). Reduce Motion: a crossfade.
-    private func faceAnimation(showing: Bool) -> Animation {
-        if reduceMotion { return CodeyMotion.reduced }
-        return showing
-            ? .easeOut(duration: Self.halfFlip).delay(Self.halfFlip)
-            : .easeIn(duration: Self.halfFlip)
-    }
-
-    private func face(isFront: Bool) -> some View {
-        let visible = isFront != isRevealed
-        return CardFace(card: card, isFront: isFront, scoreChange: scoreChange, isRepeat: isRepeat)
-            .allowsHitTesting(visible)
-            .accessibilityHidden(!visible)
+    private var faces: some View {
+        FlipCard(isFlipped: isRevealed) {
+            CardFace(card: card, isFront: true, scoreChange: scoreChange, isRepeat: isRepeat)
+        } back: {
+            CardFace(card: card, isFront: false, scoreChange: scoreChange, isRepeat: isRepeat)
+        }
     }
 }
 
@@ -105,7 +84,6 @@ private struct CardFace: View {
                 content
                 ScrollView { content }
                     .scrollBounceBehavior(.basedOnSize)
-                    .scrollIndicators(.visible)
             }
 
             Spacer(minLength: 0)
@@ -115,7 +93,7 @@ private struct CardFace: View {
             )
         }
         .padding(CodeySpacing.lg)
-        .frame(maxWidth: .infinity, minHeight: 260, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: StudyCardView.minHeight, alignment: .topLeading)
         .codeyNote()
         .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))
     }

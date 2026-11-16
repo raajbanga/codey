@@ -3,7 +3,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(48);
+select plan(53);
 
 -- Two users. The sign-up trigger should give each a profile.
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -109,24 +109,19 @@ select throws_ok($$
     values (gen_random_uuid(), '00000000-0000-0000-0000-00000000000a', 'spoof', 'topic-swift', now(), now())
 $$, '42501', null, 'B can''t create a deck owned by A');
 
-select is(
-    (with changed as (update public.decks set title = 'hacked' returning 1) select count(*)::int from changed),
-    0, 'B''s update of A''s deck changes 0 rows');
-select is(
-    (with gone as (delete from public.decks returning 1) select count(*)::int from gone),
-    0, 'B''s delete of A''s deck removes 0 rows');
-select is(
-    (with changed as (update public.profiles set total_xp = 999999
+with changed as (update public.decks set title = 'hacked' returning 1)
+select is(count(*)::int, 0, 'B''s update of A''s deck changes 0 rows') from changed;
+with gone as (delete from public.decks returning 1)
+select is(count(*)::int, 0, 'B''s delete of A''s deck removes 0 rows') from gone;
+with changed as (update public.profiles set total_xp = 999999
                       where id = '00000000-0000-0000-0000-00000000000a' returning 1)
-     select count(*)::int from changed),
-    0, 'B can''t change A''s XP');
+select is(count(*)::int, 0, 'B can''t change A''s XP') from changed;
 
 -- sync_log is append-only, even for your own rows.
 insert into public.sync_log (entity, entity_id, op, client_ts)
 values ('profile', '00000000-0000-0000-0000-00000000000b', 'upsert', now());
-select is(
-    (with changed as (update public.sync_log set op = 'delete' returning 1) select count(*)::int from changed),
-    0, 'sync_log rows can''t be updated');
+with changed as (update public.sync_log set op = 'delete' returning 1)
+select is(count(*)::int, 0, 'sync_log rows can''t be updated') from changed;
 
 -- ── anon sees nothing ────────────────────────────────────────────────────
 set local role anon;
@@ -146,6 +141,12 @@ $$, 'A can pick an avatar from the set');
 select throws_ok($$
     update public.profiles set avatar_id = 'skull.fill' where id = '00000000-0000-0000-0000-00000000000a'
 $$, '23514', null, 'an avatar outside the set is rejected');
+select lives_ok($$
+    update public.profiles set avatar_id = 'cat@teal' where id = '00000000-0000-0000-0000-00000000000a'
+$$, 'A can pick an avatar with a color (S42)');
+select throws_ok($$
+    update public.profiles set avatar_id = 'cat@purple' where id = '00000000-0000-0000-0000-00000000000a'
+$$, '23514', null, 'an avatar color outside the set is rejected');
 select lives_ok($$
     insert into public.feedback_reports (description, app_version, os_version) values ('Button overlaps text', '1.0 (1)', '26.0')
 $$, 'A can send a feedback report (owner_id defaults to auth.uid())');
@@ -199,10 +200,35 @@ select is((select (public.join_group(lower(current_setting('test.code')))).id),
           '30000000-0000-0000-0000-00000000000a'::uuid, 'B joins by code, in any case');
 select is((select xp from public.group_leaderboard where user_id = '00000000-0000-0000-0000-00000000000a'),
           100, 'members see each other on the board');
-select is(
-    (with gone as (delete from public.group_members where user_id = '00000000-0000-0000-0000-00000000000a' returning 1)
-     select count(*)::int from gone),
-    0, 'B can''t remove A from the group');
+with gone as (delete from public.group_members where user_id = '00000000-0000-0000-0000-00000000000a' returning 1)
+select is(count(*)::int, 0, 'B can''t remove A from the group') from gone;
+
+-- ── weekly_xp pace limit: 600 XP per minute of server time ─────────
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+insert into public.weekly_xp (week_start, xp) values (date_trunc('week', now() at time zone 'utc')::date, 22500)
+    on conflict (owner_id, week_start) do update set xp = excluded.xp;
+select is((select xp from public.weekly_xp where owner_id = '00000000-0000-0000-0000-00000000000a'),
+          100, 'a jump with no time elapsed is clamped to the last value');
+
+-- Pretend A's last accepted write was 10 minutes ago. The stamping trigger
+-- is switched off for that one update (rolled back with the rest).
+reset role;
+alter table public.weekly_xp disable trigger weekly_xp_before_update;
+update public.weekly_xp set updated_at = now() - interval '10 minutes'
+    where owner_id = '00000000-0000-0000-0000-00000000000a';
+alter table public.weekly_xp enable trigger weekly_xp_before_update;
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';
+insert into public.weekly_xp (week_start, xp) values (date_trunc('week', now() at time zone 'utc')::date, 22500)
+    on conflict (owner_id, week_start) do update set xp = excluded.xp;
+select is((select xp from public.weekly_xp where owner_id = '00000000-0000-0000-0000-00000000000a'),
+          6100, 'ten minutes later the cap is the last value + 6,000');
+
+-- A brand-new row can claim at most 30 minutes' worth (18,000).
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
+insert into public.weekly_xp (week_start, xp) values (date_trunc('week', now() at time zone 'utc')::date, 22500);
+select ok((select xp from public.weekly_xp where owner_id = '00000000-0000-0000-0000-00000000000b') <= 18000,
+          'a first write can''t claim the whole week');
 
 select * from finish();
 rollback;

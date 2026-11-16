@@ -30,6 +30,9 @@ final class StudySessionViewModel {
         let becameMastered: Bool
         /// Starter card retired by this rating (D9).
         let retired: Bool
+        /// XP this rating paid: the card moving up, plus any quest bonus (S41).
+        var xp = 0
+        var bonuses: [XPRewards.Bonus] = []
     }
 
     struct Summary: Equatable {
@@ -45,6 +48,8 @@ final class StudySessionViewModel {
         var endProgressRate: Double
         /// Tiers this session unlocked (starter decks), Easy → Hard.
         var unlockedTiers: [Difficulty]
+        /// XP earned this session (S41).
+        var xpEarned = 0
 
         var progressDelta: Double { endProgressRate - startProgressRate }
     }
@@ -63,8 +68,13 @@ final class StudySessionViewModel {
     private let context: ModelContext
     private let now: () -> Date
     private let config: GatingConfig
+    private let weeklyXP: WeeklyXPStore
+    private(set) var xpEarned = 0
+    /// This session's ratings in order, for the top bar's colored ticks
+    /// (empty for cards rated before a resume).
+    private(set) var ratings: [CardRating] = []
     private var cardsByID: [UUID: Flashcard] = [:]
-    private var reviewedCount = 0
+    private(set) var reviewedCount = 0
     /// Each rated card's score before its first rating this session.
     private var startScores: [UUID: Int] = [:]
     private var startProgressRate = 0.0
@@ -75,11 +85,13 @@ final class StudySessionViewModel {
         start: Start,
         context: ModelContext,
         config: GatingConfig = .standard,
+        weeklyXP: WeeklyXPStore = WeeklyXPStore(),
         now: @escaping () -> Date = Date.init
     ) {
         self.deck = deck
         self.context = context
         self.config = config
+        self.weeklyXP = weeklyXP
         self.now = now
         refreshCardIndex()
 
@@ -98,8 +110,10 @@ final class StudySessionViewModel {
     /// Nothing to study at all (e.g. every unlocked starter card is retired).
     var wasEmpty: Bool { isFinished && reviewedCount == 0 && queue.total == 0 }
 
-    /// Current open tiers for this deck (starter decks are gated, D9).
-    var unlockedTiers: Set<Difficulty> { TierGate.unlockedTiers(for: deck, level: currentLevel, config: config) }
+    /// Open tiers for this deck (starter decks are gated, D9), as of the
+    /// session's start or finish. Tiers only change on a rating, and only
+    /// the summary reports them, so they aren't recomputed per access.
+    private(set) var unlockedTiers: Set<Difficulty> = []
 
     // MARK: Actions
 
@@ -123,7 +137,7 @@ final class StudySessionViewModel {
         let previousScore = card.masteryScore
         if startScores[card.id] == nil { startScores[card.id] = previousScore }
         card.updateMastery(rating: rating, at: timestamp)
-        let outcome = RatingOutcome(
+        var outcome = RatingOutcome(
             rating: rating,
             cardID: card.id,
             previousScore: previousScore,
@@ -132,6 +146,7 @@ final class StudySessionViewModel {
             retired: !wasRetired && card.retiredAt != nil
         )
         reviewedCount += 1
+        ratings.append(rating)
         queue.record(rating)
         isRevealed = false
         hasRevealedCurrent = false
@@ -139,6 +154,14 @@ final class StudySessionViewModel {
 
         do {
             try DailyActivity.forDay(timestamp, context: context).cardsRated += 1
+            // XP for a card that moved up, then any quest bonus (S41).
+            let profile = DataSeeder.ensureProfile(context: context)
+            outcome.xp = XPRewards.forCard(previousScore: previousScore, newScore: card.masteryScore)
+            XPRewards.grant(outcome.xp, to: profile, weeklyXP: weeklyXP, now: timestamp)
+            outcome.bonuses = try XPRewards.payQuestBonuses(context: context, profile: profile, weeklyXP: weeklyXP, now: timestamp)
+            outcome.xp += outcome.bonuses.map(\.amount).reduce(0, +)
+            xpEarned += outcome.xp
+            lastOutcome = outcome
             // A rating can complete the daily goal → streak badge (FR-35).
             try BadgeEvaluator.award(context: context, now: timestamp)
             if queue.isFinished {
@@ -164,6 +187,7 @@ final class StudySessionViewModel {
         self.tierFilter = tierFilter
         deleteSnapshot()
         refreshCardIndex()
+        refreshUnlockedTiers()
         let pool = StudyPool.cards(in: deck, unlockedTiers: unlockedTiers, tierFilter: tierFilter)
         queue = StudyQueue(cardIDs: pool.map(\.id))
         resetStats()
@@ -187,6 +211,7 @@ final class StudySessionViewModel {
         startScores = snapshot.startScoresByCard
         startProgressRate = snapshot.startProgressRate
         startUnlockedTiers = Set(snapshot.startUnlockedTiersRaw.compactMap(Difficulty.init(rawValue:)))
+        refreshUnlockedTiers()
         isRevealed = false
         hasRevealedCurrent = false
         summary = nil
@@ -195,6 +220,8 @@ final class StudySessionViewModel {
 
     private func resetStats() {
         reviewedCount = 0
+        ratings = []
+        xpEarned = 0
         startScores = [:]
         startProgressRate = deck.progressRate
         startUnlockedTiers = unlockedTiers
@@ -205,6 +232,7 @@ final class StudySessionViewModel {
     }
 
     private func finish() {
+        refreshUnlockedTiers()
         let endUnlocked = unlockedTiers
         // Compared with the start score, so a card raised and then reset by
         // "Again" counts as neither moved up nor mastered.
@@ -216,7 +244,8 @@ final class StudySessionViewModel {
             newlyMastered: movedUp.keys.filter { cardsByID[$0]?.isMastered == true }.count,
             startProgressRate: startProgressRate,
             endProgressRate: deck.progressRate,
-            unlockedTiers: Difficulty.allCases.filter { endUnlocked.contains($0) && !startUnlockedTiers.contains($0) }
+            unlockedTiers: Difficulty.allCases.filter { endUnlocked.contains($0) && !startUnlockedTiers.contains($0) },
+            xpEarned: xpEarned
         )
         deleteSnapshot()
     }
@@ -261,11 +290,11 @@ final class StudySessionViewModel {
     }
 
     private func refreshCardIndex() {
-        cardsByID = deck.activeCards.keyed(by: \.id)
+        cardsByID = deck.unorderedActiveCards.keyed(by: \.id)
     }
 
-    private var currentLevel: Int {
+    private func refreshUnlockedTiers() {
         let profile: UserProfile? = try? context.first()
-        return profile?.level ?? 1
+        unlockedTiers = TierGate.unlockedTiers(for: deck, level: profile?.level ?? 1, config: config)
     }
 }

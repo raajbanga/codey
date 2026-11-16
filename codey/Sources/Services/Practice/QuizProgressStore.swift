@@ -83,16 +83,22 @@ struct QuizProgressStore {
     func recordAnswer(question: Question, correct: Bool, level: Int, at date: Date) throws -> AnswerResult {
         guard let topic = question.topic else { return AnswerResult(retired: false, unlocked: []) }
 
-        var progress = try progressByQuestion(topicId: topic.id)
-        let row = progress[question.id]
+        let questionID = question.id
+        let topicID = topic.id
+        let row = try context.first(#Predicate<QuestionProgress> { $0.topicId == topicID && $0.questionId == questionID })
             ?? insert(QuestionProgress(questionId: question.id, topicId: topic.id, difficulty: question.difficulty))
-        progress[question.id] = row
         let retired = row.record(correct: correct, at: date, config: config)
 
         context.insert(QuizAnswerRecord(questionId: question.id, topicId: topic.id, correct: correct, answeredAt: date))
         try pruneHistory(topicId: topic.id)
 
         let sticky = try topicProgress(topicId: topic.id) ?? insert(TopicProgress(topicId: topic.id))
+        // Unlocks are sticky: once every tier is open there's nothing to tally.
+        guard sticky.unlockedTiers.count < Difficulty.allCases.count else {
+            return AnswerResult(retired: retired, unlocked: [])
+        }
+        var progress = try progressByQuestion(topicId: topic.id)
+        progress[question.id] = row
         let earned = TierGate.unlockedTiers(
             tallies: Self.tallies(questions: topic.questions, progress: progress),
             level: level,
@@ -113,10 +119,13 @@ struct QuizProgressStore {
 
     /// Keeps the newest `answerHistoryCap` records for the topic.
     private func pruneHistory(topicId: String) throws {
+        let predicate = #Predicate<QuizAnswerRecord> { $0.topicId == topicId }
+        // Under the cap (most answers) a count is enough.
+        guard try context.fetchCount(FetchDescriptor(predicate: predicate)) > config.answerHistoryCap else { return }
         // Drop the newest in memory: SwiftData's fetchOffset ignores unsaved
         // inserts and returned every row, wiping the whole history.
         let descriptor = FetchDescriptor<QuizAnswerRecord>(
-            predicate: #Predicate { $0.topicId == topicId },
+            predicate: predicate,
             sortBy: [SortDescriptor(\.answeredAt, order: .reverse)]
         )
         for old in try context.fetch(descriptor).dropFirst(config.answerHistoryCap) {

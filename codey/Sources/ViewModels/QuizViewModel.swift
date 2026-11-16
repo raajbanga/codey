@@ -35,6 +35,8 @@ final class QuizViewModel {
     private(set) var reachedLevel: Int?
     /// Latest level-up, for the in-quiz toast (cleared by the view).
     var levelUpToast: Int?
+    /// Latest quest bonus paid (S41), for the in-quiz toast (cleared by the view).
+    var bonusToast: XPRewards.Bonus?
     private(set) var isFinished = false
     /// Questions in this set that came back from retirement (FR-28).
     private(set) var reviewIDs: Set<String> = []
@@ -44,6 +46,7 @@ final class QuizViewModel {
     private let now: () -> Date
     private let weeklyXP: WeeklyXPStore
     private var generator: AnyRandomGenerator
+    @ObservationIgnored private var cachedProfile: UserProfile?
 
     init(
         topic: Topic,
@@ -97,8 +100,7 @@ final class QuizViewModel {
             let levelBefore = profile.level
             if correct {
                 let amount = XPPolicy.xpForCorrectAnswer(tier: question.difficulty, streakAfterIncrement: streak)
-                profile.totalXP += amount
-                weeklyXP.add(amount, now: timestamp)
+                XPRewards.grant(amount, to: profile, weeklyXP: weeklyXP, now: timestamp)
                 xpEarned += amount
                 gain = XPGain(amount: amount, breakdown: XPPolicy.breakdown(tier: question.difficulty, streakAfterIncrement: streak))
             }
@@ -119,6 +121,12 @@ final class QuizViewModel {
 
         do {
             try DailyActivity.forDay(timestamp, context: context).quizAnswers += 1
+            // Quest bonuses (S41) before badges, so their XP counts toward xp1000.
+            let bonuses = try XPRewards.payQuestBonuses(context: context, profile: profile, weeklyXP: weeklyXP, now: timestamp)
+            if !bonuses.isEmpty {
+                xpEarned += bonuses.map(\.amount).reduce(0, +)
+                bonusToast = bonuses.last
+            }
             // XP, the daily goal, and the weekly challenge move here → badges (FR-35).
             try BadgeEvaluator.award(context: context, now: timestamp)
             try context.save()
@@ -171,5 +179,11 @@ final class QuizViewModel {
         isFinished = questions.isEmpty
     }
 
-    private var profile: UserProfile { DataSeeder.ensureProfile(context: context) }
+    /// Fetched once; fetched again only if the row went away (sign-out wipe).
+    private var profile: UserProfile {
+        if let cachedProfile, cachedProfile.modelContext != nil, !cachedProfile.isDeleted { return cachedProfile }
+        let profile = DataSeeder.ensureProfile(context: context)
+        cachedProfile = profile
+        return profile
+    }
 }

@@ -22,6 +22,12 @@ struct SyncQueueTests {
         try context.fetch(FetchDescriptor<SyncOperation>(sortBy: [SortDescriptor(\.enqueuedAt)]))
     }
 
+    @Test func unknownEntityIsNotReadAsADeck() {
+        let operation = SyncOperation(entity: .deck, entityId: UUID(), op: .upsert, ownerId: owner, enqueuedAt: .now)
+        operation.entityRaw = "widget"  // written by a newer build
+        #expect(operation.entity == nil)
+    }
+
     @Test func upsertReplacesAPendingUpsert() throws {
         let (queue, context) = try makeQueue()
         let id = UUID()

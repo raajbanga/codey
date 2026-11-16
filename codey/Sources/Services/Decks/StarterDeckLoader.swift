@@ -76,7 +76,13 @@ enum StarterDeckLoader {
         guard let url = bundle.url(forResource: fileName, withExtension: "json") else {
             throw StarterDeckLoaderError.fileNotFound
         }
-        let file = try JSONDecoder().decode(StarterDeckFile.self, from: Data(contentsOf: url))
+        return try decode(Data(contentsOf: url))
+    }
+
+    /// A starter-decks.json from anywhere (the bundle or the Supabase
+    /// download), validated the same way.
+    static func decode(_ data: Data) throws -> StarterDeckFile {
+        let file = try JSONDecoder().decode(StarterDeckFile.self, from: data)
         guard file.schemaVersion == expectedSchemaVersion else {
             throw StarterDeckLoaderError.unsupportedSchemaVersion(file.schemaVersion)
         }
@@ -165,16 +171,7 @@ enum StarterDeckLoader {
             kept.insert(id)
             do {
                 if let card = existing[id] {
-                    let changed = try factory.updateCard(
-                        card,
-                        prompt: payload.prompt,
-                        answer: payload.answer,
-                        code: seed.code.flatMap { code in
-                            CodeLanguage(rawValue: code.language).map { CodeSnippet(language: $0, source: code.source) }
-                        },
-                        difficulty: payload.difficulty,
-                        sortIndex: index
-                    )
+                    let changed = try factory.updateCard(card, from: payload)
                     if changed { report.updated += 1 }
                 } else {
                     let card = try factory.createCard(from: payload)

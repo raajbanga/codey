@@ -10,5 +10,13 @@ SUPABASE_ANON_KEY =
 GOOGLE_IOS_CLIENT_ID =
 GOOGLE_REVERSED_CLIENT_ID =
 GOOGLE_SERVER_CLIENT_ID =
+// Ask AI (S39). Empty key = the Ask AI button is hidden.
+OPENROUTER_API_KEY =
+OPENROUTER_MODEL =
+
+// Signing (automatic). Each developer sets their own team ID in
+// Secrets.xcconfig; empty builds for the Simulator only.
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM =
 
 #include? "Secrets.xcconfig"

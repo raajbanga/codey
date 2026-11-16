@@ -1,18 +1,20 @@
 import SwiftUI
 
-/// The three content-button roles.
-enum CodeyButtonKind {
+/// The content-button roles.
+enum CodeyButtonKind: Equatable {
     /// Pastel brand fill, ink label. One per screen: the main action.
     case primary
     /// Brand label on the soft brand tint.
     case secondary
     /// Danger label on its pastel fill.
     case destructive
+    /// A topic's mid-tone fill with a white label (S41, Play tiles): the one
+    /// strong action on a colored tile. palette.py checks the pair.
+    case hue(CodeyColor.TopicHue)
 }
 
-/// The app's content button. Flat pastel fills, no glass: since Sprint 3
-/// (S9) Liquid Glass is left to the system's own controls (tab bar,
-/// toolbars, sheets). Labels are single-line (the Capsule rule, D19); long
+/// The app's content button. Flat pastel fills, no glass (the tab bar is
+/// the only system-drawn control, Nov 15). Labels are single-line (pill rule, D19); long
 /// text scales down rather than wrapping.
 struct CodeyButton: View {
     let title: String
@@ -48,7 +50,7 @@ struct CodeyButton: View {
         } label: {
             HStack(spacing: CodeySpacing.sm) {
                 if let systemImage {
-                    Image(systemName: systemImage)
+                    Icon(systemImage, size: 18, relativeTo: .title2)
                 }
                 Text(title)
                     .lineLimit(1)
@@ -61,11 +63,13 @@ struct CodeyButton: View {
     }
 }
 
-/// Flat capsule with a pastel fill. Each fill/label pair is one that
+/// Flat `.pill` with a pastel fill. Each fill/label pair is one that
 /// scripts/palette checks at 4.5:1. Pressed state dims instead of scaling.
 struct CodeyFillButtonStyle: ButtonStyle {
     let kind: CodeyButtonKind
     var compact = false
+    /// Least side padding, for ChoiceChips rows of four.
+    var tight = false
 
     @Environment(\.isEnabled) private var isEnabled
     @ScaledMetric(relativeTo: .body) private var regularHeight: CGFloat = 50
@@ -75,19 +79,22 @@ struct CodeyFillButtonStyle: ButtonStyle {
         configuration.label
             .font(compact ? .codeySubheadline.weight(.medium) : .codeyHeadline)
             .foregroundStyle(colors.label)
-            .padding(.horizontal, compact ? CodeySpacing.md : CodeySpacing.lg)
+            .padding(.horizontal, tight ? CodeySpacing.sm : compact ? CodeySpacing.md : CodeySpacing.lg)
             .frame(minHeight: compact ? compactHeight : regularHeight)
-            .background(colors.fill, in: Capsule())
-            .contentShape(Capsule())
+            .background(colors.fill, in: .pill)
+            .contentShape(.pill)
             .opacity(configuration.isPressed ? 0.7 : (isEnabled ? 1 : 0.45))
             .animation(CodeyMotion.snappy, value: configuration.isPressed)
     }
 
+    @Environment(\.appHue) private var appHue
+
     private var colors: (fill: Color, label: Color) {
         switch kind {
-        case .primary: (CodeyColor.brandFill, CodeyColor.onBrandFill)
-        case .secondary: (CodeyColor.brandSoft, CodeyColor.brand)
+        case .primary: appHue.map { ($0.fill, .white) } ?? (CodeyColor.brandFill, CodeyColor.onBrandFill)
+        case .secondary: appHue.map { ($0.soft, $0.ink) } ?? (CodeyColor.brandSoft, CodeyColor.brand)
         case .destructive: (CodeyColor.Soft.danger, CodeyColor.danger)
+        case .hue(let hue): (hue.fill, .white)
         }
     }
 }

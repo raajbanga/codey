@@ -14,53 +14,32 @@ struct FeedbackFormView: View {
 
     private var limit: Int { ModelValidator.Limits.feedback.upperBound }
     private var length: Int { ModelValidator.measuredLength(text) }
-    private var isValid: Bool { ModelValidator().validateFeedback(text).isEmpty }
+    private var isValid: Bool { ModelValidator.validateFeedback(text).isEmpty }
 
     var body: some View {
-        Form {
+        CodeyPage("Report an Issue", subtitle: "Tell us what broke. We read every report.", icon: "exclamationmark.bubble") {
+            if backend.currentUser != nil, !sent {
+                PageAction(systemImage: "paperplane", label: "Send", isWorking: isSending, action: send)
+                    .disabled(!isValid)
+                    .accessibilityIdentifier("feedback.send")
+            }
+        } content: {
             if backend.currentUser == nil {
-                Section {
-                    Label("Sign in from your profile to send a report.", systemImage: "person.crop.circle.badge.questionmark")
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
+                status("Sign in from your profile to send a report.", icon: "person.crop.circle.badge.questionmark", color: CodeyColor.textSecondary)
             } else if sent {
-                Section {
-                    Label("Thanks. Your report was sent.", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(CodeyColor.success)
-                }
+                status("Thanks. Your report was sent.", icon: "checkmark.circle.fill", color: CodeyColor.success)
             } else {
-                Section {
+                NoteGroup("What went wrong?", footer: "Say which screen and what you expected. Your app and iOS versions are included.") {
                     TextEditor(text: $text)
+                        .font(.codeyBody)
+                        .scrollContentBackground(.hidden)
                         .frame(minHeight: 160)
                         .focused($focused)
                         .accessibilityLabel("What went wrong")
                         .accessibilityIdentifier("feedback.text")
-                } header: {
-                    Text("What went wrong?")
-                } footer: {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Say which screen and what you expected. Your app and iOS versions are included.")
-                        Spacer(minLength: CodeySpacing.sm)
-                        Text("\(length)/\(limit)")
-                            .monospacedDigit()
-                            .foregroundStyle(length > limit ? CodeyColor.danger : CodeyColor.textSecondary)
-                    }
-                    .font(.codeyCaption)
-                }
-            }
-        }
-        .codeyListBackground()
-        .navigationTitle("Report an Issue")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if backend.currentUser != nil, !sent {
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSending {
-                        ProgressView()
-                    } else {
-                        Button("Send") { send() }
-                            .disabled(!isValid)
-                            .accessibilityIdentifier("feedback.send")
+                    HStack {
+                        Spacer(minLength: 0)
+                        LimitCounter(count: length, limit: limit)
                     }
                 }
             }
@@ -69,16 +48,21 @@ struct FeedbackFormView: View {
         .errorAlert($actionError)
     }
 
+    /// One line in a note, for the signed-out and sent states.
+    private func status(_ text: String, icon: String, color: Color) -> some View {
+        Label(text, systemImage: icon)
+            .font(.codeyBody)
+            .foregroundStyle(color)
+            .codeyCard()
+    }
+
     private func send() {
         isSending = true
         Task {
             defer { isSending = false }
-            do {
+            await $actionError.attempt("Couldn't send the report. Check your connection and try again.") {
                 try await backend.submitFeedback(text)
                 withAnimation(CodeyMotion.smooth) { sent = true }
-            } catch {
-                actionError = (error as? LocalizedError)?.errorDescription
-                    ?? "Couldn't send the report. Check your connection and try again."
             }
         }
     }

@@ -1,0 +1,92 @@
+# CI for every push to main and dev and every pull request to main.
+#   checks:   guard scripts (imports R7, design tokens R12, secrets R10 / TC-S03)
+#   database: the 109 pgTAP tests (RLS, CHECKs, FR-61 merge rules, read-only
+#             content) on a local
+#             Supabase database in Docker (TC-S01 offline half)
+#   app:      unit tests + accessibility audit with a readable per-test report
+#             and coverage in the job summary, then the Release-build check
+#             (TC-S05). No backend secrets: Secrets.xcconfig is absent
+#             (Base.xcconfig includes it optionally) and the Supabase client
+#             tests use a stubbed network.
+name: Tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # check-secrets.sh --history scans every commit
+
+      - name: Supabase / GoogleSignIn imports only in the adapter (R7)
+        run: scripts/check-imports.sh
+
+      - name: Design tokens only (R12)
+        run: scripts/check-design-tokens.sh
+
+      - name: No secrets in source or history (TC-S03)
+        run: scripts/check-secrets.sh --history
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.1.0 # same as local (brew)
+
+      - name: Start a local database with every migration applied
+        run: supabase db start
+
+      - name: pgTAP tests (supabase test db)
+        run: supabase test db
+
+  app:
+    runs-on: macos-26
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tuist (same version as local)
+        run: |
+          brew tap tuist/tuist
+          brew trust tuist/tuist
+          brew install --formula tuist@4.214.1
+
+      - name: Generate the workspace
+        run: |
+          tuist install
+          tuist generate --no-open
+
+      - name: Unit tests and accessibility audit
+        run: COVERAGE=1 scripts/test.sh
+
+      - name: Upload the result bundle and log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/test.xcresult
+            build/test.log
+          retention-days: 7
+
+      - name: Release build has no DEBUG-only code (TC-S05)
+        run: scripts/check-release-build.sh
