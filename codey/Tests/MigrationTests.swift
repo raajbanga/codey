@@ -68,9 +68,9 @@ struct MigrationTests {
             let schema = Schema(versionedSchema: CodeySchemaV2.self)
             let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
             let context = ModelContext(container)
-            let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
-            for _ in 0..<2 { deck.activeCards[0].updateMastery(rating: .easy) }
-            deckId = deck.id
+            let cards = try Self.insertFrozenDeck(context, prompts: ["a", "b"])
+            cards[0].masteryScore = 4
+            deckId = try #require(cards[0].deck?.id)
             try context.save()
         }
 
@@ -94,10 +94,10 @@ struct MigrationTests {
             let schema = Schema(versionedSchema: CodeySchemaV3.self)
             let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
             let context = ModelContext(container)
-            let deck = try TestSupport.insertDeck(context, prompts: ["a", "b"])
-            deckId = deck.id
-            let snapshot = CodeySchemaV3.StudyProgressSnapshot(deckId: deck.id)
-            snapshot.cardIDs = deck.activeCards.map(\.id)
+            let cards = try Self.insertFrozenDeck(context, prompts: ["a", "b"])
+            deckId = try #require(cards[0].deck?.id)
+            let snapshot = CodeySchemaV3.StudyProgressSnapshot(deckId: deckId)
+            snapshot.cardIDs = cards.map(\.id)
             snapshot.position = 1
             context.insert(snapshot)
             try context.save()
@@ -180,14 +180,14 @@ struct MigrationTests {
             let schema = Schema(versionedSchema: CodeySchemaV7.self)
             let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
             let context = ModelContext(container)
-            let deck = try TestSupport.insertDeck(context, prompts: ["a", "b", "c"])
-            deckId = deck.id
-            let snapshot = CodeySchemaV3.StudyProgressSnapshot(deckId: deck.id)
-            snapshot.cardIDs = deck.activeCards.map(\.id) + [deck.activeCards[0].id]
-            snapshot.requeuedIDs = [deck.activeCards[0].id]
+            let cards = try Self.insertFrozenDeck(context, prompts: ["a", "b", "c"])
+            deckId = try #require(cards[0].deck?.id)
+            let snapshot = CodeySchemaV3.StudyProgressSnapshot(deckId: deckId)
+            snapshot.cardIDs = cards.map(\.id) + [cards[0].id]
+            snapshot.requeuedIDs = [cards[0].id]
             snapshot.position = 1
             snapshot.reviewedCount = 1
-            snapshot.newlyMasteredIDs = [deck.activeCards[0].id]
+            snapshot.newlyMasteredIDs = [cards[0].id]
             snapshot.startMasteryRate = 0.5
             context.insert(snapshot)
             try context.save()
@@ -205,6 +205,91 @@ struct MigrationTests {
         let deck = try #require(try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.id == deckId })).first)
         let vm = StudySessionViewModel(deck: deck, start: .resume, context: context)
         #expect(vm.queue.position == 1)
+    }
+
+    /// S41: a V8 profile opens as V9 with its XP kept and no rewards
+    /// marked as paid yet.
+    @Test func v8ProfileMigratesToV9WithNothingPaid() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV8.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let profile = CodeySchemaV7.UserProfile(username: "Learner")
+            profile.totalXP = 420
+            context.insert(profile)
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let profile = try #require(try context.fetch(FetchDescriptor<UserProfile>()).first)
+        #expect(profile.totalXP == 420)
+        #expect(profile.solvedExerciseIds.isEmpty)
+        #expect(profile.goalBonusDay == nil)
+        #expect(profile.challengeBonusWeek == nil)
+    }
+
+    /// S43: a V9 store opens as V10 with its own daily activity kept and no
+    /// other devices' rows yet, so the streak reads the same.
+    @Test func v9StoreMigratesToV10KeepingTheStreak() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let today = DailyActivity.dayKey(for: .now)
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV9.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let day = CodeySchemaV3.DailyActivity(day: today)
+            day.quizAnswers = 20
+            context.insert(day)
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        #expect(try context.fetch(FetchDescriptor<DeviceDayActivity>()).isEmpty)
+        let totals = try StreakCalculator.dayTotals(for: [today], context: context)
+        #expect(totals[today] == 20)
+        #expect(StreakCalculator.currentStreak(endingOn: .now, totals: totals) == 1)
+    }
+
+    /// §3b: a V10 store opens as V11; its cards keep everything and start
+    /// visible (isHidden false), and hiding one takes it out of study.
+    @Test func v10StoreMigratesToCurrentWithVisibleCards() throws {
+        let url = try TestSupport.temporaryStoreURL()
+        let deckId: UUID
+        do {
+            let schema = Schema(versionedSchema: CodeySchemaV10.self)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url))
+            let context = ModelContext(container)
+            let cards = try Self.insertFrozenDeck(context, prompts: ["a", "b"])
+            cards[1].masteryScore = 3
+            deckId = try #require(cards[0].deck?.id)
+            try context.save()
+        }
+
+        let context = try TestSupport.context(storeURL: url)
+        let deck = try #require(try context.fetch(FetchDescriptor<FlashcardDeck>(predicate: #Predicate { $0.id == deckId })).first)
+        #expect(deck.cardCount == 2)
+        #expect(deck.activeCards.allSatisfy { !$0.isHidden })
+        #expect(deck.activeCards[1].masteryScore == 3)
+        deck.activeCards[0].isHidden = true
+        #expect(StudyPool.cards(in: deck, unlockedTiers: Set(Difficulty.allCases), tierFilter: nil).map(\.prompt) == ["b"])
+        #expect(deck.progressRate == 3.0 / 5.0)
+    }
+
+    /// A user deck in the frozen V2 models (what V2–V10 stores hold), one
+    /// card per prompt in order; returns the cards.
+    private static func insertFrozenDeck(_ context: ModelContext, prompts: [String]) throws -> [CodeySchemaV2.Flashcard] {
+        let deck = CodeySchemaV2.FlashcardDeck(
+            id: UUID(), title: "Old", topicId: "topic-x",
+            originRaw: DeckOrigin.user.rawValue, syncStateRaw: DeckSyncStateKind.locallyPersisted.rawValue, createdAt: .now
+        )
+        context.insert(deck)
+        return prompts.enumerated().map { index, prompt in
+            let card = CodeySchemaV2.Flashcard(id: UUID(), prompt: prompt, answer: prompt.uppercased(), sortIndex: index, createdAt: .now)
+            context.insert(card)
+            card.deck = deck
+            return card
+        }
     }
 
     @Test func decksPersistAcrossReopen() throws {

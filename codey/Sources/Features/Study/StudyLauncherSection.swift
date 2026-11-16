@@ -2,18 +2,21 @@ import SwiftData
 import SwiftUI
 
 /// Deck screen's "Study" block: Continue / Start over, and a tier picker
-/// limited to unlocked tiers (FR-29). Starter decks show the lock state of
-/// each tier (D9); user decks are never locked.
+/// limited to unlocked tiers (FR-29). Starter decks say what opens the next
+/// locked tier (D9); user decks are never locked.
 struct StudyLauncherSection: View {
     let deck: FlashcardDeck
+    /// The deck's topic color for the Study button (S41).
+    var hue: CodeyColor.TopicHue = .brand
     let start: (StudySessionViewModel.Start) -> Void
 
     @Query private var snapshots: [StudyProgressSnapshot]
     @Query private var profiles: [UserProfile]
     @State private var tierFilter: Difficulty?
 
-    init(deck: FlashcardDeck, start: @escaping (StudySessionViewModel.Start) -> Void) {
+    init(deck: FlashcardDeck, hue: CodeyColor.TopicHue = .brand, start: @escaping (StudySessionViewModel.Start) -> Void) {
         self.deck = deck
+        self.hue = hue
         self.start = start
         let id = deck.id
         _snapshots = Query(filter: #Predicate<StudyProgressSnapshot> { $0.deckId == id })
@@ -33,26 +36,26 @@ struct StudyLauncherSection: View {
     }
 
     var body: some View {
-        Section {
-            if deck.origin == .starter {
-                TierChipRow(tiers: tiers)
-            }
-
+        NoteGroup("Study", footer: footer) {
             if !taggedTiers.isEmpty {
-                Picker("Cards", selection: $tierFilter) {
-                    Text(deck.origin == .starter ? "Mixed (unlocked)" : "All tiers").tag(Difficulty?.none)
-                    ForEach(taggedTiers.filter(unlocked.contains), id: \.self) { tier in
-                        Label(tier.style.label, systemImage: tier.style.symbol).tag(Difficulty?.some(tier))
-                    }
-                }
-                .pickerStyle(.menu)
-                .tint(CodeyColor.brand)
+                // The same pills as quiz setup (S41): Mixed or one tier.
+                ChoiceChips(
+                    "Cards",
+                    selection: $tierFilter,
+                    options: [(Difficulty?.none, "Mixed")] + taggedTiers.filter(unlocked.contains).map { (Difficulty?.some($0), $0.style.label) },
+                    fills: true
+                )
+                .accessibilityIdentifier("deck.tierFilter")
+            }
+            if deck.origin == .starter {
+                TierLockNote(tiers: tiers)
             }
 
-            if let snapshot {
+            if snapshot != nil {
                 CodeyButton(
-                    "Continue · \(snapshot.queue.displayPosition)/\(snapshot.queue.distinctTotal)",
-                    systemImage: "play.fill",
+                    "Continue",
+                    systemImage: "play",
+                    kind: .hue(hue),
                     fullWidth: true
                 ) { start(.resume) }
                 .accessibilityIdentifier("deck.continue")
@@ -60,15 +63,11 @@ struct StudyLauncherSection: View {
                     start(.fresh(tierFilter: tierFilter))
                 }
             } else {
-                CodeyButton("Study", systemImage: "play.fill", fullWidth: true) {
+                CodeyButton("Study", systemImage: "play", kind: .hue(hue), fullWidth: true) {
                     start(.fresh(tierFilter: tierFilter))
                 }
                 .accessibilityIdentifier("deck.study")
             }
-        } header: {
-            Text("Study")
-        } footer: {
-            Text(footer)
         }
         .onChange(of: unlocked) { _, open in
             if let tierFilter, !open.contains(tierFilter) { self.tierFilter = nil }

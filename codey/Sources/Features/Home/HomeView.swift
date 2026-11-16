@@ -1,28 +1,21 @@
 import SwiftData
 import SwiftUI
 
-/// Home (D8, simplified r3; Sprint 3 S9 facelift): progress at a glance
-/// plus ONE suggestion, as rounded notes on dotted paper.
+/// Play (S41, the game layer; was Home), laid out as the S41 mockup: few
+/// words, big targets, color per topic, on the dotted paper.
 ///
-///     Good evening                          (◎)
-///     Codey Learner
-///     Level 4                   1,840 XP  🔥 3    ← LevelSummary (streak, FR-33)
-///     ━━━━━━━━━━━━━━━━━━━━━━────────
-///     160 XP to Level 5          Today 12/20     ← daily goal (FR-32)
-///     ╭ Up next: ▶ Continue Swift Closures 7/12 ╮   ← one action
-///     This week's plan                            ← FR-38, fixed for the week
-///     ╭ ◆ Networking · Not started            ›  ╮
-///     │ ◆ Databases · 41% accuracy             › │
-///     ╰ ◆ Algorithms · 58% accuracy            › ╯
-///     Your topics (all; pinned first)
-///     ╭ ◆ Data Structures                       ╮   ← one note per topic
-///     │ 42% mastered · 78% accuracy             │
-///     │ ━━━━━━──────────      [Cards] [Quiz]    │  ← mastery; deck (menu if several) / quiz setup
-///     ╰─────────────────────────────────────────╯
-///     ╭ ◆ Algorithms …                          ╮
-///     ╰─────────────────────────────────────────╯
+///     🔥4                            (▲) (◎)  ← streak; groups, profile
+///     ╭ (avatar) Hello, Codey!     [Level 3] ╮   ← HeroCard, app hue
+///     │ ████████████░░░░░░                   │
+///     ╰ 320 / 500 XP                         ╯
+///     Today's quests
+///     ╭ ◎ Answer 20   ╮ ╭ ⚑ 15 right in…  ╮      ← next quest large,
+///     │ ━━━━──        │ ╰─────────────────╯         the others stacked
+///     ╰ [  ▶ Play  ]  ╯ ╭ ▭ Warm up: SQL  ╮         small (1½)
+///     This week
+///     ╭ Algorithms    ╮ ╭ Data Structures ╮      ← whole tile plays
 ///
-/// Everything else lives in its tab (Decks, Quiz); Home doesn't duplicate it.
+/// Every topic, with its exercises and decks, is in the Library tab.
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(BackendFacade.self) private var backend
@@ -39,6 +32,10 @@ struct HomeView: View {
     /// by QuizProgressStore's per-topic history cap.
     @Query(sort: \QuizAnswerRecord.answeredAt, order: .reverse) private var records: [QuizAnswerRecord]
     @Query private var activity: [DailyActivity]
+    /// Other devices' daily counters (S43), so the goal and streak add up.
+    @Query private var otherActivity: [DeviceDayActivity]
+    @Query private var progressRows: [QuestionProgress]
+    @Query private var topicProgress: [TopicProgress]
 
     private var profile: UserProfile? { profiles.first }
     private var xp: Int { profile?.totalXP ?? 0 }
@@ -46,39 +43,19 @@ struct HomeView: View {
 
     var body: some View {
         let stats = HomeStats(records: records, decks: decks, snapshots: snapshots)
-        ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                header
-                LevelSummary(
-                    xp: xp,
-                    streak: StreakCalculator.currentStreak(endingOn: .now, activity: activity),
-                    today: StreakCalculator.progress(of: activity.first { $0.day == DailyActivity.dayKey(for: .now) })
-                )
-                upNextCard(stats)
-                planSection(stats)
-                weekSection
-                topicsSection(stats)
-                if showsSignInNudge {
-                    signInNudge
-                }
-            }
-            .padding(CodeySpacing.md)
-        }
-        .codeyPaperBackground()
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    router.showProfile = true
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                        .font(.codeyTitle)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
-                .accessibilityLabel("Profile")
-                .accessibilityIdentifier("home.profile")
+        CodeyPage("Play", isTabRoot: true) {
+            pageActions
+        } leading: {
+            streakBadge
+        } hero: {
+            levelHero
+        } content: {
+            questsSection(stats)
+            topicsSection(stats)
+            if showsSignInNudge {
+                signInNudge
             }
         }
-        .toolbarTitleDisplayMode(.inline)
         .onAppear {
             refreshPlan(stats)
             LaunchTimer.markHomeReady()
@@ -86,22 +63,7 @@ struct HomeView: View {
         .onChange(of: topics.map(\.id)) { refreshPlan(stats) }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-            Text(HomeLogic.greeting(at: .now))
-                .font(.codeyCallout)
-                .foregroundStyle(CodeyColor.textSecondary)
-            Text(profile?.username ?? UserProfile.defaultUsername)
-                .font(.codeyDisplay)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
-    }
-
-    // MARK: Up next
+    // MARK: Warm-up suggestion
 
     private func upNext(_ stats: HomeStats) -> HomeLogic.UpNext {
         let resumable = snapshots.first { snapshot in
@@ -115,40 +77,49 @@ struct HomeView: View {
         )
     }
 
+    // MARK: Header
+
+    /// Always shown, 0 included (FR-37: the current streak).
+    private var streakBadge: some View {
+        let streak = StreakCalculator.currentStreak(endingOn: .now, totals: dayTotals)
+        return HeaderBadge(value: streak, icon: "flame", ink: CodeyColor.xp, fill: CodeyColor.xpSoft)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(streak) day streak")
+    }
+
     @ViewBuilder
-    private func upNextCard(_ stats: HomeStats) -> some View {
-        switch upNext(stats) {
-        case .resume(let deckID, let position, let total):
-            if let deck = stats.deckByID[deckID] {
-                UpNextCard(
-                    eyebrow: "Continue studying",
-                    title: deck.title,
-                    detail: "Card \(position) of \(total)",
-                    systemImage: "play.fill",
-                    progress: total == 0 ? nil : Double(position - 1) / Double(total)
-                ) { router.study = StudyRequest(deck: deck, start: .resume) }
-            }
-        case .startDeck(let deckID):
-            if let deck = stats.deckByID[deckID] {
-                UpNextCard(
-                    eyebrow: "Start here",
-                    title: deck.title,
-                    detail: "Flip cards and swipe to rate. Takes about 5 minutes.",
-                    systemImage: "sparkles"
-                ) { router.study = StudyRequest(deck: deck, start: .fresh(tierFilter: nil)) }
-            }
-        case .quiz(let topicID):
-            if let topic = topics.first(where: { $0.id == topicID }) {
-                UpNextCard(
-                    eyebrow: "Suggested quiz",
-                    title: topic.title,
-                    detail: stats.accuracyByTopic[topicID].map { "Your weakest topic · \($0.percentText) accuracy" } ?? "You haven't quizzed this topic yet",
-                    systemImage: "questionmark.bubble.fill"
-                ) { router.quizSetupTopic = topic }
-            }
-        case .none:
-            EmptyView()
+    private var pageActions: some View {
+        NavigationLink {
+            GroupsView()
+        } label: {
+            CircleIcon(systemImage: "trophy", kind: .soft)
         }
+        .buttonStyle(TilePressStyle())
+        .accessibilityLabel("Groups and leaderboard")
+        .accessibilityIdentifier("home.groups")
+        CircleIconButton(systemImage: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: profile?.avatarId)), label: "Profile", kind: .soft) {
+            router.showProfile = true
+        }
+        .accessibilityIdentifier("home.profile")
+    }
+
+    /// Who you are and how far to the next level, in one card.
+    private var levelHero: some View {
+        let level = LevelCalculator.level(forXP: xp)
+        let name = profile?.username ?? UserProfile.defaultUsername
+        let firstName = name.split(separator: " ").first.map(String.init) ?? name
+        return HeroCard(
+            title: "Hello, \(firstName)!",
+            icon: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: profile?.avatarId)),
+            progress: LevelCalculator.progressFraction(xp),
+            // The tag says the level; the line says how far into it.
+            caption: "\(LevelCalculator.xpIntoLevel(xp)) / \(LevelCalculator.xpPerLevel) XP"
+        ) {
+            CodeyChip("Level \(level)", systemImage: "star.fill", variant: .xp)
+                .contentTransition(.numericText(value: Double(level)))
+        }
+        .codeyAnimation(CodeyMotion.snappy, value: xp)
+        .accessibilityIdentifier("play.level")
     }
 
     // MARK: Weekly plan (FR-38)
@@ -170,79 +141,122 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func planSection(_ stats: HomeStats) -> some View {
-        let planned = plannedTopics
-        if !planned.isEmpty {
-            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                HomeSectionTitle("This week's plan")
-                VStack(spacing: 0) {
-                    ForEach(planned) { topic in
-                        if topic.id != planned.first?.id {
-                            Divider().overlay(CodeyColor.separator)
-                        }
-                        Button { router.quizSetupTopic = topic } label: {
-                            ChevronRow(
-                                systemImage: topic.iconName,
-                                title: topic.title,
-                                subtitle: planAccuracy(topic, stats).map { "\($0.percentText) accuracy" } ?? "Not started"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Opens quiz setup")
-                        .accessibilityIdentifier("home.plan.\(topic.title)")
-                    }
-                }
-                .padding(.horizontal, CodeySpacing.md)
-                .codeyNote()
-            }
-        }
+    /// Topics in this week's plan get a "This week" tag on their tile.
+    private var planIDs: Set<String> { Set(plannedTopics.map(\.id)) }
+
+    // MARK: Quests (FR-32, FR-42, S41 bonuses)
+
+    private var dayTotals: [String: Int] {
+        StreakCalculator.dayTotals(own: activity, others: otherActivity)
     }
 
-    // MARK: This week (FR-42, FR-43)
+    private var todayCount: Int {
+        dayTotals[DailyActivity.dayKey(for: .now)] ?? 0
+    }
 
     private var challenge: WeeklyChallenge.Status? {
         WeeklyChallenge.status(now: .now, topicIDs: topics.map(\.id), records: records)
     }
 
-    private var weekSection: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HomeSectionTitle("Challenge and groups")
-            VStack(spacing: 0) {
-                if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
-                    Button { router.quizSetupTopic = topic } label: {
-                        ChevronRow(
-                            systemImage: challenge.isComplete ? "trophy.fill" : "flag.checkered",
-                            tint: challenge.isComplete ? CodeyColor.success : CodeyColor.brand,
-                            title: "Challenge: \(WeeklyChallenge.goal) correct in \(topic.title)",
-                            subtitle: challenge.isComplete
-                                ? "Done this week" : "\(min(challenge.correct, WeeklyChallenge.goal))/\(WeeklyChallenge.goal) correct"
-                        ) {
-                            ProgressBar(value: challenge.progress)
-                                .padding(.top, CodeySpacing.xxs)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Opens quiz setup")
-                    .accessibilityIdentifier("home.challenge")
-                    Divider().overlay(CodeyColor.separator)
-                }
-                NavigationLink {
-                    GroupsView()
-                } label: {
-                    ChevronRow(systemImage: "person.3.fill", title: "Groups", subtitle: "Weekly XP leaderboard")
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("home.groups")
-            }
-            .padding(.horizontal, CodeySpacing.md)
-            .codeyNote()
+    /// One quest on Play: what it shows and what tapping it does.
+    private struct Quest: Identifiable {
+        let id: String
+        let icon: String
+        let title: String
+        let detail: String
+        let progress: Double
+        let bonus: Int?
+        let isPaid: Bool
+        let hue: CodeyColor.TopicHue
+        let accessibilityLabel: String
+        let start: () -> Void
+    }
+
+    /// Today's goal and the weekly challenge (both open quiz setup), and a
+    /// deck to warm up with (cards pay +5 XP for each card moved up). The
+    /// first unpaid one is large; the rest sit small, side by side.
+    private func quests(_ stats: HomeStats) -> [Quest] {
+        var quests: [Quest] = []
+        let goal = GatingConfig.standard.dailyGoal
+        let done = min(todayCount, goal)
+        let dailyPaid = profile?.goalBonusDay == DailyActivity.dayKey(for: .now)
+        if !topics.isEmpty {
+            quests.append(Quest(
+                id: "play.quest.daily", icon: "target", title: "Answer \(goal)", detail: "\(done) of \(goal) today",
+                progress: Double(done) / Double(goal), bonus: XPRewards.dailyGoalBonus, isPaid: dailyPaid, hue: .teal,
+                accessibilityLabel: "Daily goal: \(done) of \(goal) answers or cards, \(dailyPaid ? "bonus paid" : "plus \(XPRewards.dailyGoalBonus) XP")"
+            ) { router.quizSetupTopic = plannedTopics.first ?? orderedTopics.first })
+        }
+        if let challenge, let topic = topics.first(where: { $0.id == challenge.topicID }) {
+            let paid = profile?.challengeBonusWeek == UTCWeek.key(for: .now)
+            let right = min(challenge.correct, WeeklyChallenge.goal)
+            quests.append(Quest(
+                id: "home.challenge", icon: "flag.checkered", title: "\(WeeklyChallenge.goal) right in \(topic.title)",
+                detail: "\(right) of \(WeeklyChallenge.goal) this week", progress: challenge.progress,
+                bonus: XPRewards.weeklyChallengeBonus, isPaid: paid, hue: .coral,
+                accessibilityLabel: "Weekly challenge: \(right) of \(WeeklyChallenge.goal) right in \(topic.title), \(paid ? "bonus paid" : "plus \(XPRewards.weeklyChallengeBonus) XP")"
+            ) { router.quizSetupTopic = topic })
+        }
+        if let pick = warmUpDeck(stats) {
+            quests.append(Quest(
+                id: "home.upNext", icon: "rectangle.stack", title: pick.title, detail: pick.detail,
+                progress: pick.deck.progressRate, bonus: XPRewards.cardMovedUp, isPaid: false, hue: .of(topicID: pick.deck.topicId),
+                accessibilityLabel: "\(pick.title). \(pick.detail)"
+            ) { router.study = StudyRequest(deck: pick.deck, start: pick.resume ? .resume : .fresh(tierFilter: nil)) })
+        }
+        return quests
+    }
+
+    /// The deck to warm up with: the session in progress, the starter deck,
+    /// or a deck in the suggested topic.
+    private func warmUpDeck(_ stats: HomeStats) -> (deck: FlashcardDeck, resume: Bool, title: String, detail: String)? {
+        switch upNext(stats) {
+        case .resume(let deckID, let position, let total):
+            stats.deckByID[deckID].map { ($0, true, "Continue \($0.title)", "Card \(position) of \(total)") }
+        case .startDeck(let deckID):
+            stats.deckByID[deckID].map { ($0, false, "Warm up: \($0.title)", $0.cardCount.counted("card")) }
+        case .quiz(let topicID):
+            stats.decksByTopic[topicID]?.first.map { ($0, false, "Warm up: \($0.title)", $0.cardCount.counted("card")) }
+        case .none:
+            nil
         }
     }
 
-    /// Live accuracy, or nil while the topic has too few answers to judge.
-    private func planAccuracy(_ topic: Topic, _ stats: HomeStats) -> Double? {
-        stats.answerCounts[topic.id, default: 0] >= StudyPlanBuilder.minimumAnswers ? stats.accuracyByTopic[topic.id] : nil
+    /// The next quest large on the left, the other two stacked on the
+    /// right (a mixed fraction); one quest alone takes the row.
+    @ViewBuilder
+    private func questsSection(_ stats: HomeStats) -> some View {
+        let all = quests(stats)
+        if let large = all.first(where: { !$0.isPaid }) ?? all.first {
+            let small = all.filter { $0.id != large.id }
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                SectionTitle("Today's quests")
+                HStack(alignment: .top, spacing: CodeySpacing.sm + CodeySpacing.xs) {
+                    questButton(large, isLarge: true)
+                    if !small.isEmpty {
+                        VStack(spacing: CodeySpacing.sm + CodeySpacing.xs) {
+                            ForEach(small) { questButton($0, isLarge: false) }
+                        }
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func questButton(_ quest: Quest, isLarge: Bool) -> some View {
+        Button(action: quest.start) {
+            QuestTile(
+                icon: quest.icon, title: quest.title, detail: quest.detail, progress: quest.progress,
+                bonus: quest.bonus, isPaid: quest.isPaid, hue: quest.hue, isLarge: isLarge
+            )
+        }
+        .buttonStyle(TilePressStyle())
+        .disabled(quest.isPaid)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(quest.accessibilityLabel)
+        .accessibilityAddTraits(quest.isPaid ? [] : .isButton)
+        .accessibilityIdentifier(quest.id)
     }
 
     // MARK: Topics
@@ -261,25 +275,23 @@ struct HomeView: View {
         return pins.isEmpty ? topics.map(\.id) : pins
     }
 
+    /// This week's plan (FR-38); every topic, and its exercises and decks,
+    /// is in the Library tab (Nov 15). Pinned topics if there's no plan yet.
     private func topicsSection(_ stats: HomeStats) -> some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HomeSectionTitle("Your topics")
-            VStack(spacing: CodeySpacing.md) {
-                ForEach(orderedTopics) { topic in
-                    TopicNote(
-                    topic: topic,
-                    isPinned: pinned.contains(topic.id),
-                    decks: stats.decksByTopic[topic.id] ?? [],
-                    snapshotDeckIDs: stats.snapshotDeckIDs,
-                    accuracy: stats.accuracyByTopic[topic.id],
-                    practice: { deck, resume in
-                        router.study = StudyRequest(deck: deck, start: resume ? .resume : .fresh(tierFilter: nil))
-                    },
-                    quiz: { router.quizSetupTopic = topic }
-                    )
+        let plan = planIDs
+        let shown = plan.isEmpty ? orderedTopics.filter { pinned.contains($0.id) } : orderedTopics.filter { plan.contains($0.id) }
+        return BentoSection("This week") {
+            ForEach(shown) { topic in
+                TopicTile(stats: quizStats(for: topic)) {
+                    router.quizSetupTopic = topic
                 }
+                .accessibilityIdentifier("play.topic.\(topic.title).quiz")
             }
         }
+    }
+
+    private func quizStats(for topic: Topic) -> QuizTopicStats {
+        QuizTopicStats(topic: topic, progressRows: progressRows, topicProgress: topicProgress, records: records, xp: xp)
     }
 
     // MARK: Data
@@ -308,10 +320,8 @@ struct HomeView: View {
     private var signInNudge: some View {
         CodeyCard(tint: CodeyColor.brand) {
             HStack(alignment: .top, spacing: CodeySpacing.sm) {
-                Image(systemName: "icloud.and.arrow.up")
-                    .font(.codeyTitle)
+                Icon("icloud.and.arrow.up", size: 26, relativeTo: .title2)
                     .foregroundStyle(CodeyColor.brand)
-                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: CodeySpacing.xs) {
                     Text("Back up your decks")
                         .font(.codeyHeadline)
@@ -320,16 +330,9 @@ struct HomeView: View {
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
                 Spacer(minLength: 0)
-                Button {
+                CloseButton(label: "Dismiss") {
                     withAnimation(CodeyMotion.snappy) { nudgeDismissed = true }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.codeyCallout.weight(.semibold))
-                        .foregroundStyle(CodeyColor.textSecondary)
-                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Dismiss")
             }
         }
         .onTapGesture { router.showProfile = true }

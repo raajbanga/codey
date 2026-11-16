@@ -15,10 +15,14 @@ struct MasteryDots: View {
     private static let dotSize = CodeySpacing.sm
 
     var body: some View {
+        let score = score
         HStack(spacing: CodeySpacing.sm) {
             HStack(spacing: CodeySpacing.xs) {
-                ForEach(0..<maxScore, id: \.self) { index in
-                    dot(filled: index < score)
+                // @Sendable, so the closure isn't main-actor isolated: during
+                // the card flip SwiftUI builds the dots on its AsyncRenderer
+                // thread, where Swift 6's isolation check traps (CI crash).
+                ForEach(0..<maxScore, id: \.self) { @Sendable index in
+                    Self.dot(filled: index < score)
                 }
             }
             if let change {
@@ -34,7 +38,7 @@ struct MasteryDots: View {
         .accessibilityValue(change?.text ?? "")
     }
 
-    private func dot(filled: Bool) -> some View {
+    nonisolated private static func dot(filled: Bool) -> some View {
         Circle()
             .strokeBorder(filled ? CodeyColor.brand : CodeyColor.textSecondary, lineWidth: 1)
             .background(Circle().fill(filled ? CodeyColor.brand : .clear))

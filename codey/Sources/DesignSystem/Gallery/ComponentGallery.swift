@@ -92,7 +92,7 @@ struct ComponentGallery: View {
                 CodeyChip("🔥 3", variant: .warning)
                 CodeyChip("New", variant: .brand)
             }
-            TierChipRow(tiers: [
+            TierLockNote(tiers: [
                 TierAvailability(difficulty: .easy, isUnlocked: true),
                 TierAvailability(difficulty: .medium, isUnlocked: true),
                 TierAvailability(difficulty: .hard, isUnlocked: false, lockReason: "Reach Level 3 · 420 XP to go"),

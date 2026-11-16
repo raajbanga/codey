@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # SSC #12 / S3-G.1: a Release build must not contain the DEBUG-only test
-# sign-in (SupabaseTestAccounts, SUPABASE_TEST_* env names) or other DEBUG
-# tools. Builds Release for the Simulator, then searches the app binary's
+# client (SupabaseTestClient) or other DEBUG tools. Builds Release for the Simulator, then searches the app binary's
 # symbols and strings. Exits 1 on a hit.
 #
 #   scripts/check-release-build.sh            # build, then check
@@ -23,7 +22,7 @@ binary="$derived/Build/Products/Release-iphonesimulator/codey.app/codey"
 [[ -f "$binary" ]] || { echo "No Release binary at $binary (build first)"; exit 2; }
 
 # Names that exist only inside #if DEBUG.
-needles=(SupabaseTestAccounts SUPABASE_TEST_ "Replay Onboarding" ComponentGallery)
+needles=(SupabaseTestClient "Replay Onboarding" ComponentGallery StubAskAIClient UITestAskAIStub)
 fail=0
 for needle in "${needles[@]}"; do
     if nm "$binary" 2>/dev/null | grep -qF -- "$needle" || strings -a "$binary" | grep -qF -- "$needle"; then

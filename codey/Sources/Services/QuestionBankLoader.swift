@@ -60,7 +60,13 @@ enum QuestionBankLoader {
         guard let url = bundle.url(forResource: fileName, withExtension: "json") else {
             throw QuestionBankLoaderError.fileNotFound
         }
-        let file = try JSONDecoder().decode(File.self, from: Data(contentsOf: url))
+        return try decodeBank(Data(contentsOf: url))
+    }
+
+    /// A questions-seed.json from anywhere (the bundle or the Supabase
+    /// download), validated the same way.
+    static func decodeBank(_ data: Data) throws -> QuestionBank {
+        let file = try JSONDecoder().decode(File.self, from: data)
 
         guard file.schemaVersion == expectedSchemaVersion else {
             throw QuestionBankLoaderError.unsupportedSchemaVersion(file.schemaVersion)

@@ -3,7 +3,9 @@
 # "home-ready ms=<process start -> Home onAppear>" (LaunchTimer.swift) and
 # this script relaunches it N times on a booted Simulator and reads the log.
 #
-#   scripts/perf-launch.sh [runs]     # default 10; the first run is discarded
+#   PERF_TAG=sprint4 scripts/perf-launch.sh [runs]
+#   default 10 runs (the first is discarded); writes docs/source/perf/<tag>-launch.csv
+#   (default tag sprint4; Sprint 3's results are launch.csv)
 #
 # First it runs the opt-in LaunchFixtureSeed test (Release, hosted in the
 # app) on the booted Simulator: that installs the Release app, adds the
@@ -17,7 +19,7 @@ cd "$(dirname "$0")/.."
 
 runs=${1:-10}
 bundle=edu.wku.cs360.codey
-out=docs/source/perf/launch.csv
+out=docs/source/perf/${PERF_TAG:-sprint4}-launch.csv
 mkdir -p "$(dirname "$out")"
 
 xcrun simctl list devices booted | grep -q Booted || { echo "Boot a Simulator first"; exit 2; }

@@ -49,7 +49,9 @@ struct SupabaseSchemaTests {
         #expect(all.contains("between \(limits.displayName.lowerBound) and \(limits.displayName.upperBound)"))
         #expect(all.contains("btrim(description, E' \\t\\r\\n')) between \(limits.feedback.lowerBound) and \(limits.feedback.upperBound)"))
         let avatars = ProfileAvatar.symbols.map { "'\($0)'" }.joined(separator: ", ")
-        #expect(all.contains("avatar_id in (\(avatars))"))
+        #expect(all.contains("split_part(avatar_id, '@', 1) in (\(avatars))"))
+        let colors = ProfileAvatar.Color.allCases.map { "'\($0.rawValue)'" }.joined(separator: ", ")
+        #expect(all.contains("split_part(avatar_id, '@', 2) in (\(colors))"))
     }
 
     /// FR-42 / FR-50–51 (S3-D): group and weekly XP limits match the app.
@@ -70,5 +72,42 @@ struct SupabaseSchemaTests {
             let enabled = try Regex("alter table public\\.\(table)\\s+enable row level security")
             #expect(all.contains(enabled), "\(table) has no RLS")
         }
+    }
+
+    /// FR-61: progress limits match the app, and every bundled question and
+    /// topic id fits the 100-character id columns.
+    @Test func progressLimitsMatchApp() throws {
+        let sql = try #require(try migrations().first { $0.name.hasSuffix("_study_progress.sql") }?.sql)
+        #expect(sql.contains("mastery_score     integer not null check (mastery_score between 0 and \(Flashcard.maxMastery))"))
+        let tiers = Difficulty.allCases.map { "'\($0.rawValue)'" }.joined(separator: ", ")
+        #expect(sql.contains("difficulty in (\(tiers))"))
+        #expect(sql.contains("char_length(question_id) between 1 and 100"))
+        #expect(sql.contains("char_length(topic_id) between 1 and 100"))
+
+        let url = try #require(Bundle.main.url(forResource: "questions-seed", withExtension: "json"))
+        let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+        var ids: [String] = []
+        func collect(_ value: Any) {
+            if let object = value as? [String: Any] {
+                if let id = object["id"] as? String { ids.append(id) }
+                object.values.forEach(collect)
+            } else if let array = value as? [Any] {
+                array.forEach(collect)
+            }
+        }
+        collect(json)
+        #expect(!ids.isEmpty)
+        #expect(ids.allSatisfy { (1...100).contains($0.count) })
+    }
+
+    /// FR-61 (S43): the history tables accept exactly the app's badges and
+    /// day keys, and their ids fit like the progress tables'.
+    @Test func historyLimitsMatchApp() throws {
+        let sql = try #require(try migrations().first { $0.name.hasSuffix("_progress_history.sql") }?.sql)
+        let badges = Badge.allCases.map { "'\($0.rawValue)'" }.joined(separator: ", ")
+        #expect(sql.contains("badge in (\(badges))"))
+        #expect(sql.contains("char_length(question_id) between 1 and 100"))
+        #expect(sql.contains("day ~ '^\\d{4}-\\d{2}-\\d{2}$'"))
+        #expect(DailyActivity.dayKey(for: Date(timeIntervalSince1970: 0)).wholeMatch(of: /\d{4}-\d{2}-\d{2}/) != nil)
     }
 }

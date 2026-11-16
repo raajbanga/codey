@@ -1,47 +1,67 @@
 import SwiftUI
 
-/// One deck in the library grid.
+/// One deck in the library's grid, laid out exactly like a Play topic
+/// tile (S41; Nov 15): what studying pays top right, the title, then one
+/// row of tags (card count, and an icon tag for sync state or hidden)
+/// above the progress bar and the Study button the library lays over it.
 struct DeckTile: View {
     let deck: FlashcardDeck
     let topic: Topic?
-
-    @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 40
+    /// Room for the library's Study button along the bottom.
+    var reservesStudyButton = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            HStack(alignment: .top) {
-                IconTile(systemName: topic?.iconName ?? "rectangle.stack", size: iconSize, font: .codeyHeadline, radius: CodeyRadius.sm)
-                Spacer(minLength: CodeySpacing.xs)
-                DeckStatusChip(deck: deck)
+        GameTile(
+            icon: topic?.iconName ?? "rectangle.stack",
+            title: deck.title,
+            hue: .of(topicID: deck.topicId),
+            progress: deck.progressRate,
+            reservesAction: reservesStudyButton
+        ) {
+            // What a card moved up pays (S41).
+            if deck.cardCount > 0 { CodeyChip(xp: XPRewards.cardMovedUp) }
+        } tags: {
+            CodeyChip(deck.cardCount.counted("card"), systemImage: "rectangle.stack")
+            if deck.isHidden {
+                CodeyChip("", systemImage: "eye.slash").accessibilityLabel("Hidden")
+            } else if deck.origin == .user {
+                DeckStatusChip(deck: deck, compact: true)
             }
-
-            Text(deck.title)
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text(subtitle)
-                .font(.codeySubheadline)
-                .foregroundStyle(CodeyColor.textSecondary)
-                .lineLimit(1)
-
-            Spacer(minLength: 0)
-
-            ProgressBar(value: deck.progressRate, label: "Progress \(deck.progressRate.percentText)")
         }
-        .padding(CodeySpacing.md)
-        .frame(maxWidth: .infinity, minHeight: 168, alignment: .topLeading)
-        .codeyNote()
         .opacity(deck.isHidden ? 0.6 : 1)
-        .contentShape(.rect(cornerRadius: CodeyRadius.lg))
         .accessibilityElement(children: .combine)
+        .accessibilityValue("Progress \(deck.progressRate.percentText)")
         .accessibilityIdentifier("deckTile.\(deck.title)")
     }
+}
 
-    private var subtitle: String {
-        let cards = deck.cardCount.counted("card")
-        return topic.map { "\(cards) · \($0.title)" } ?? cards
+/// A deck tile that opens the deck, with a Study button laid over its
+/// bottom (S40: study straight from the grid, continuing where you left
+/// off). Decks and the Library's topic pages use it.
+struct DeckTileLink: View {
+    let deck: FlashcardDeck
+    let topic: Topic?
+
+    @Environment(Router.self) private var router
+
+    var body: some View {
+        let canStudy = deck.cardCount > 0 && !deck.isHidden
+        NavigationLink(value: DeckRoute(id: deck.id)) {
+            DeckTile(deck: deck, topic: topic, reservesStudyButton: canStudy)
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) {
+            if canStudy {
+                Button {
+                    router.study = StudyRequest(deck: deck, start: .resume)
+                } label: {
+                    TileActionLabel(action: TileAction("Study"), hue: .of(topicID: deck.topicId))
+                }
+                .buttonStyle(TilePressStyle())
+                .padding(CodeySpacing.md)
+                .accessibilityLabel("Study \(deck.title)")
+                .accessibilityIdentifier("deckTile.study.\(deck.title)")
+            }
+        }
     }
 }

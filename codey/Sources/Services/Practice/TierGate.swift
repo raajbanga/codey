@@ -95,7 +95,7 @@ enum TierGate {
     /// Untagged cards count as Easy (starter cards are always tagged).
     static func tallies(for deck: FlashcardDeck) -> [Difficulty: TierTally] {
         var result: [Difficulty: TierTally] = [:]
-        for card in deck.unorderedActiveCards {
+        for card in deck.studyCards {
             let tier = card.difficulty ?? .easy
             result[tier, default: TierTally()].total += 1
             if card.retiredAt != nil {

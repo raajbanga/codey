@@ -15,4 +15,11 @@ if [[ -n "$violations" ]]; then
     echo "$violations"
     exit 1
 fi
+# S39: Ask AI's only host. Nothing else in the app talks to openrouter.ai.
+hosts=$(grep -rn "openrouter\.ai" codey/Sources --include='*.swift' | grep -v '^codey/Sources/Services/AskAI/OpenRouterClient.swift:' || true)
+if [[ -n "$hosts" ]]; then
+    echo "openrouter.ai referenced outside Services/AskAI/OpenRouterClient.swift:"
+    echo "$hosts"
+    exit 1
+fi
 echo "check-imports: OK"
