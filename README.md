@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/screenshots/icon.png" width="96" alt="Codey app icon">
+<img src="docs/source/figures/app-icon.png" width="96" alt="Codey app icon">
 
 # Codey
 
-**Gamified computer-science study app for iOS.**<br>
+**Gamified computer-science study app for iPhone, iPad and Mac.**<br>
 Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderboards
 
 ![iOS 26+](https://img.shields.io/badge/iOS-26%2B-black?logo=apple)
@@ -13,13 +13,19 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 ![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase&logoColor=white)
 ![Tuist](https://img.shields.io/badge/Build-Tuist-6236FF)
 
-<img src="docs/screenshots/play-light.png" width="180" alt="Play">&nbsp;
-<img src="docs/screenshots/decks.png" width="180" alt="Decks">&nbsp;
-<img src="docs/screenshots/quiz.png" width="180" alt="Quiz question">
+<img src="docs/source/figures/final-home.png" width="180" alt="Play">&nbsp;
+<img src="docs/source/figures/final-decks.png" width="180" alt="Decks">&nbsp;
+<img src="docs/source/figures/final-quiz-question.png" width="180" alt="Quiz question">
 <br><br>
-<img src="docs/screenshots/ask-ai-dark.png" width="180" alt="Ask AI tutor in dark mode">&nbsp;
-<img src="docs/screenshots/exercise-dark.png" width="180" alt="Coding exercise in dark mode">&nbsp;
-<img src="docs/screenshots/study.png" width="180" alt="Study card in dark mode">
+<img src="docs/source/figures/final-ask-ai.png" width="180" alt="Ask AI tutor in dark mode">&nbsp;
+<img src="docs/source/figures/final-exercise.png" width="180" alt="Coding exercise in dark mode">&nbsp;
+<img src="docs/source/figures/final-study.png" width="180" alt="Study card in dark mode">
+<br><br>
+<img src="docs/source/figures/final-ipad-play.png" width="400" alt="Play on iPad in landscape, two columns">&nbsp;
+<img src="docs/source/figures/final-ipad-deck.png" width="400" alt="Deck page on iPad in landscape, two columns">
+<br><br>
+<img src="docs/source/figures/final-mac-play.png" width="400" alt="Play on the Mac (Mac Catalyst)">&nbsp;
+<img src="docs/source/figures/final-mac-decks.png" width="400" alt="Decks on the Mac (Mac Catalyst)">
 
 </div>
 
@@ -53,7 +59,7 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
    ```bash
    tuist generate
    ```
-4. In Xcode: scheme **codey** → **iPhone 17** Simulator → **⌘R**
+4. In Xcode: scheme **codey** → **iPhone 17** or **iPad (A16)** Simulator, or **My Mac (Mac Catalyst)** → **⌘R**
 
 - No keys needed — runs in **local-only mode** (everything except sign-in, sync, groups)
 
@@ -103,7 +109,7 @@ Flashcards with code · adaptive quizzes · XP, streaks, badges · group leaderb
 | `supabase/` | Database migrations, RLS policies, tests |
 | `scripts/` | Repo checks, perf + backup tools |
 | `.github/workflows/` | CI (tests) + Supabase keep-alive |
-| `docs/` | Final report (PDF); LaTeX source in `docs/source/`; README screenshots in `docs/screenshots/`; course material in `docs/course/` |
+| `docs/` | Final report (PDF); LaTeX source in `docs/source/`, figures and screenshots in `docs/source/figures/` |
 
 ## Docs
 

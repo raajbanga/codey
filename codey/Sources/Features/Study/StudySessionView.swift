@@ -51,7 +51,10 @@ struct StudySessionView: View {
                     controls
                 }
                 .padding([.horizontal, .bottom], CodeySpacing.md)
-                .codeyBar(.top) { topBar.padding(.horizontal, CodeySpacing.md) }
+                .codeyReadableWidth()
+                // The bar and its fade span the screen; its controls line up with
+                // the card's readable column on iPad.
+                .codeyBar(.top) { topBar.padding(.horizontal, CodeySpacing.md).codeyReadableWidth() }
             }
         }
         .codeyPaperBackground()

@@ -19,7 +19,9 @@ let project = Project(
     targets: [
         .target(
             name: "codey",
-            destinations: [.iPhone],
+            // Mac: the iPad app through Mac Catalyst (regular width, so the
+            // iPad layout; a wide window splits into two columns).
+            destinations: [.iPhone, .iPad, .macCatalyst],
             product: .app,
             bundleId: appBundleId,
             deploymentTargets: .iOS("26.0"),
@@ -54,6 +56,8 @@ let project = Project(
                 "codey/Sources",
                 "codey/Resources",
             ],
+            // Keychain Sharing (own group): needed for sign-in on Mac Catalyst.
+            entitlements: .file(path: "codey/codey.entitlements"),
             dependencies: [
                 .external(name: "Textual"),
                 .external(name: "Runestone"),
@@ -69,11 +73,17 @@ let project = Project(
             // GoogleSignIn presents its sign-in page through an AppAuth category
             // (OIDAuthorizationService+IOS); without it the Google button
             // crashed with "unrecognized selector".
-            settings: .settings(base: ["OTHER_LDFLAGS": "$(inherited) -ObjC"])
+            //
+            // Tuist signs Mac Catalyst "to Run Locally", which can't carry the
+            // keychain entitlement sign-in needs; sign it like the iPhone build.
+            settings: .settings(base: [
+                "OTHER_LDFLAGS": "$(inherited) -ObjC",
+                "CODE_SIGN_IDENTITY[sdk=macosx*]": "Apple Development",
+            ])
         ),
         .target(
             name: "codeyTests",
-            destinations: [.iPhone],
+            destinations: [.iPhone, .iPad],
             product: .unitTests,
             bundleId: "\(appBundleId).tests",
             deploymentTargets: .iOS("26.0"),
@@ -85,7 +95,7 @@ let project = Project(
         ),
         .target(
             name: "codeyUITests",
-            destinations: [.iPhone],
+            destinations: [.iPhone, .iPad],
             product: .uiTests,
             bundleId: "\(appBundleId).uitests",
             deploymentTargets: .iOS("26.0"),

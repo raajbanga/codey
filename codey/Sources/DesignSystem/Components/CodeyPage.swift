@@ -12,69 +12,79 @@ import SwiftUI
 ///     │ ━━━━━━━━━━━━──────          │
 ///     ╰ caption                     ╯
 ///     …content…
-struct CodeyPage<Actions: View, Leading: View, Hero: View, Content: View>: View {
+struct CodeyPage<Actions: View, Leading: View, Hero: View, Content: View, Trailing: View>: View {
     let title: String
     var closes = false
     var closeID = "page.close"
     /// Play and Decks: the only pages that show the tab bar.
     var isTabRoot = false
+    /// Sessions in a page (an exercise): capped at the readable width on
+    /// iPad instead of the full page (CodeyLayout).
+    var isReadable = false
     @ViewBuilder var actions: Actions
     @ViewBuilder var leading: Leading
     @ViewBuilder var hero: Hero
     @ViewBuilder var content: Content
+    @ViewBuilder var trailing: Trailing
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.codeyLayout) private var layout
+    /// The page's own width, so a Stage Manager window splits by its size,
+    /// not the screen's orientation.
+    @State private var width: CGFloat = 0
 
     init(
         _ title: String,
         closes: Bool = false,
         closeID: String = "page.close",
         isTabRoot: Bool = false,
+        isReadable: Bool = false,
         @ViewBuilder actions: () -> Actions = { EmptyView() },
         @ViewBuilder leading: () -> Leading = { EmptyView() },
         @ViewBuilder hero: () -> Hero,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder trailing: () -> Trailing = { EmptyView() }
     ) {
         self.title = title
         self.closes = closes
         self.closeID = closeID
         self.isTabRoot = isTabRoot
+        self.isReadable = isReadable
         self.actions = actions()
         self.leading = leading()
         self.hero = hero()
         self.content = content()
+        self.trailing = trailing()
     }
 
     private var hasButtons: Bool {
         closes || Actions.self != EmptyView.self || Leading.self != EmptyView.self
     }
 
+    private var hasTrailing: Bool { Trailing.self != EmptyView.self }
+
+    /// A tab root on regular width, where iPadOS floats the tab bar at the
+    /// top: the buttons go on its line, either side of it.
+    private var liftsButtons: Bool { layout.isRegular && isTabRoot && hasButtons }
+
+    /// Wide enough for two phone-width columns (iPad landscape).
+    private var isWide: Bool { layout.isRegular && !isReadable && width >= CodeyLayout.splitWidth }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CodeySpacing.lg) {
-                VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                    if hasButtons {
-                        HStack(spacing: CodeySpacing.sm) {
-                            if closes {
-                                CircleIconButton(systemImage: "xmark", label: "Close") { dismiss() }
-                                    .accessibilityIdentifier(closeID)
-                            }
-                            leading
-                            Spacer(minLength: 0)
-                            actions
-                        }
-                        .frame(minHeight: 44)
-                    }
-                    hero
-                }
-                content
-            }
-            .padding([.horizontal, .bottom], CodeySpacing.md)
-            // A sheet has no status bar above it: clear its rounded top.
-            .padding(.top, closes ? CodeySpacing.md : 0)
+            page
+                .padding([.horizontal, .bottom], layout.pageMargin)
+                // A sheet has no status bar above it: clear its rounded top.
+                .padding(.top, closes ? CodeySpacing.md : 0)
+                .codeyReadableWidth(isReadable)
+                .environment(\.codeyPageIsWide, isWide)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .scrollDismissesKeyboard(.interactively)
         .scrollIndicators(.hidden)
         .codeyTabPage()
+        // iPad: the floating tab bar shares the button row's line instead
+        // of pushing the page down a row.
+        .codeyBesideTabBar(liftsButtons)
         // A page under a tab root is a focused task: the tab bar steps
         // aside (it's back as soon as you swipe back).
         .toolbarVisibility(isTabRoot ? .automatic : .hidden, for: .tabBar)
@@ -83,6 +93,61 @@ struct CodeyPage<Actions: View, Leading: View, Hero: View, Content: View>: View 
         .toolbarVisibility(.hidden, for: .navigationBar)
         .background { SwipeBackEnabler().frame(width: 0, height: 0).accessibilityHidden(true) }
         .accessibilityAction(.escape) { dismiss() }
+    }
+
+    /// The buttons over everything; then the hero and content, with the
+    /// trailing section beside them on a wide page, or under them.
+    ///
+    ///     narrow                 wide (≥ splitWidth)
+    ///     (✕)       (▲) (◎)      (✕)                         (▲) (◎)
+    ///     ╭ hero ╮               ╭ hero        ╮  ╭ trailing    ╮
+    ///     content                content          …
+    ///     trailing
+    @ViewBuilder private var page: some View {
+        VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+            VStack(alignment: .leading, spacing: CodeySpacing.sm) {
+                if hasButtons { buttonRow }
+                if !(isWide && hasTrailing) { hero }
+            }
+            if isWide && hasTrailing {
+                HStack(alignment: .codeyColumnTop, spacing: layout.gridGap) {
+                    VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+                        hero.alignmentGuide(.codeyColumnTop) { $0[.top] }
+                        content
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // Each column its own height: the HStack would otherwise
+                    // stretch a short column's tiles to match the other.
+                    .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: CodeySpacing.lg) {
+                        Group(subviews: trailing) { sections in
+                            if let first = sections.first {
+                                first.environment(\.codeyLeadsColumn, true)
+                            }
+                            ForEach(sections.dropFirst()) { $0 }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                content
+                trailing
+            }
+        }
+    }
+
+    private var buttonRow: some View {
+        HStack(spacing: CodeySpacing.sm) {
+            if closes {
+                CircleIconButton(systemImage: "xmark", label: "Close") { dismiss() }
+                    .accessibilityIdentifier(closeID)
+            }
+            leading
+            Spacer(minLength: 0)
+            actions
+        }
+        .frame(minHeight: 44)
     }
 }
 
@@ -97,12 +162,15 @@ extension CodeyPage where Hero == HeroCard<EmptyView> {
         closeID: String = "page.close",
         @ViewBuilder actions: () -> Actions = { EmptyView() },
         @ViewBuilder leading: () -> Leading = { EmptyView() },
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder trailing: () -> Trailing = { EmptyView() }
     ) {
         self.init(title, closes: closes, closeID: closeID, actions: actions, leading: leading) {
             HeroCard(title: title, subtitle: subtitle, icon: icon, hue: hue)
         } content: {
             content()
+        } trailing: {
+            trailing()
         }
     }
 }
@@ -129,6 +197,7 @@ struct HeroCard<Badge: View>: View {
     @ViewBuilder var badge: Badge
     @Environment(\.appHue) private var appHue
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.codeyLayout) private var layout
 
     /// `attributedSubtitle` is styled text (an exercise's task) in place
     /// of `subtitle`.
@@ -188,7 +257,7 @@ struct HeroCard<Badge: View>: View {
             }
         }
         .foregroundStyle(hue.ink)
-        .padding(CodeySpacing.md)
+        .padding(layout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .codeyNote(fill: hue.soft, edge: hue.soft)
         // A pastel is light in both modes (two-tone), like GameTile.
