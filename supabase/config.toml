@@ -70,7 +70,8 @@ schema_paths = []
 
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
-# Codey has no seed data; the pgTAP tests create their own users.
+# Off: the pgTAP tests create their own rows. seed.sql (the app content for
+# the content_* tables) is applied by hand to the hosted project (Appendix A.6).
 enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
