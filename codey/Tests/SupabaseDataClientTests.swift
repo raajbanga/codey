@@ -199,6 +199,44 @@ struct SupabaseDataClientTests {
     }
 }
 
+extension SupabaseDataClientTests {
+    /// The content tables come back as the bundled files' format, so the
+    /// same loaders check a download and the bundle.
+    @Test func fetchContentRebuildsTheBundledFormat() async throws {
+        StubURLProtocol.reset { url in
+            switch url.lastPathComponent {
+            case "content_topics":
+                #"[{"id":"t1","title":"Swift","summary":"S","icon_name":"swift","sort_index":0}]"#
+            case "content_questions":
+                #"[{"id":"q1","topic_id":"t1","prompt":"P","options":["a","b"],"correct_option_index":1,"explanation":"E","difficulty":"easy","sort_index":0}]"#
+            case "content_exercises":
+                #"[{"id":"e1","topic_id":"t1","title":"T","language":"swift","prompt":"P","code":"let x = ___","blanks":[{"accepted":["1"]}],"explanation":"E","sort_index":0}]"#
+            case "content_decks":
+                #"[{"starter_key":"d1","topic_id":"t1","title":"Deck","sort_index":0}]"#
+            case "content_cards":
+                #"[{"id":"c1","deck_key":"d1","prompt":"P","answer":"A","difficulty":"hard","code_language":"python","code_source":"print(1)","sort_index":0},{"id":"c2","deck_key":"d1","prompt":"P2","answer":"A2","difficulty":"easy","code_language":null,"code_source":null,"sort_index":1}]"#
+            default:
+                "[]"
+            }
+        }
+        let files = try await makeClient().fetchContent()
+        let content = try files.validated()
+
+        #expect(content.bank.topics == [TopicSeed(id: "t1", title: "Swift", summary: "S", iconName: "swift")])
+        #expect(content.bank.questions.first?.correctOptionIndex == 1)
+        #expect(content.exercises.first?.blanks == [ExerciseBlank(accepted: ["1"])])
+        let cards = try #require(content.decks.decks.only?.cards)
+        #expect(cards.map(\.id) == ["c1", "c2"])
+        #expect(cards[0].code == StarterCardSeed.Code(language: "python", source: "print(1)"))
+        #expect(cards[1].code == nil)
+
+        let cardRequest = try #require(StubURLProtocol.requests.first { $0.url.lastPathComponent == "content_cards" })
+        #expect(cardRequest.method == "GET")
+        #expect(cardRequest.query["order"]?.hasPrefix("deck_key.asc") == true)
+        #expect(cardRequest.query["order"]?.contains("sort_index.asc") == true)
+    }
+}
+
 /// Records every request and answers with canned JSON.
 final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     struct Recorded {

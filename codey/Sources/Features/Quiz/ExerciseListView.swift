@@ -9,14 +9,14 @@ struct ExerciseTiles: View {
     /// Only this topic's exercises (a Library topic page); nil shows all.
     var topicID: String?
 
-    /// Loaded once from the bundle. Not in `.task`: before the load the
+    /// Read from the catalog in body (not in `.task`): before a load the
     /// view has no content (an empty ForEach), so it never appears and the
     /// task never ran, which left the section empty.
-    private static var loaded: Result<[Exercise], Error> { ExerciseLoader.bundled }
+    private var loaded: Result<[Exercise], Error> { ExerciseCatalog.shared.result }
 
-    private var exercises: [Exercise] { (try? Self.loaded.get()) ?? [] }
+    private var exercises: [Exercise] { (try? loaded.get()) ?? [] }
     private var loadError: String? {
-        if case .failure(let error) = Self.loaded { return String(describing: error) }
+        if case .failure(let error) = loaded { return String(describing: error) }
         return nil
     }
 

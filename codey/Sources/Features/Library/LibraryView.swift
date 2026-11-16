@@ -25,7 +25,7 @@ struct LibraryView: View {
 
     @Environment(BackendFacade.self) private var backend
 
-    private var exercises: [Exercise] { (try? ExerciseLoader.bundled.get()) ?? [] }
+    private var exercises: [Exercise] { ExerciseCatalog.shared.all }
 
     /// Topics whose title or summary match the search.
     private var shownTopics: [Topic] {
@@ -136,7 +136,7 @@ struct TopicPageView: View {
                 router.quizSetupTopic = topic
             }
             .accessibilityIdentifier("topic.play")
-            if ((try? ExerciseLoader.bundled.get()) ?? []).contains(where: { $0.topicId == topic.id }) {
+            if ExerciseCatalog.shared.all.contains(where: { $0.topicId == topic.id }) {
                 BentoSection("Exercises") {
                     ExerciseTiles(topics: [topic], solved: Set(profile?.solvedExerciseIds ?? []), topicID: topic.id)
                 }
