@@ -90,11 +90,13 @@ struct SessionXP: View {
 struct SessionSummaryIcon: View {
     let systemImage: String
     let hue: CodeyColor.TopicHue
+    @Environment(\.codeyLayout) private var layout
 
     var body: some View {
-        Icon(systemImage, size: 40, relativeTo: .largeTitle)
+        let side: CGFloat = layout.isRegular ? 112 : 72
+        Icon(systemImage, size: side * 0.55, relativeTo: .largeTitle)
             .foregroundStyle(hue.ink)
-            .frame(width: 72, height: 72)
+            .frame(width: side, height: side)
             .background(hue.soft, in: .codey(CodeyRadius.lg))
             .accessibilityHidden(true)
     }
@@ -121,6 +123,7 @@ struct SessionSummary<Hero: View, Details: View>: View {
     @ViewBuilder var details: Details
 
     @State private var celebrating = false
+    @Environment(\.codeyLayout) private var layout
 
     var body: some View {
         ZStack {
@@ -130,7 +133,7 @@ struct SessionSummary<Hero: View, Details: View>: View {
                         hero
                         if let title {
                             Text(title)
-                                .font(.codeyTitle.weight(.semibold))
+                                .font(layout.isRegular ? .codeyDisplay : .codeyTitle.weight(.semibold))
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
                         }
@@ -149,6 +152,7 @@ struct SessionSummary<Hero: View, Details: View>: View {
                     details
                 }
                 .padding(.vertical, CodeySpacing.md)
+                .codeyReadableWidth()
             }
             .scrollBounceBehavior(.basedOnSize)
             .codeyBar(.bottom) {
@@ -161,6 +165,7 @@ struct SessionSummary<Hero: View, Details: View>: View {
                         .accessibilityIdentifier(doneID)
                 }
                 .padding(.bottom, CodeySpacing.sm)
+                .codeyReadableWidth()
             }
 
             if let celebration {

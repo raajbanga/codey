@@ -64,7 +64,7 @@ final class AskAIUITests: XCTestCase {
     func testNoAskAIButtonOutsideQuizAndExercises() throws {
         XCTAssertTrue(app.buttons["home.profile"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.buttons["askAI.open"].exists)
-        app.tabBars.buttons["Decks"].tap()
+        app.tab("Decks").tap()
         XCTAssertTrue(app.buttons["decks.add"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["askAI.open"].exists)
     }

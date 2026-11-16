@@ -62,7 +62,8 @@ struct DeckDetailView: View {
             StudyLauncherSection(deck: deck, hue: hue) { start in
                 router.study = StudyRequest(deck: deck, start: start)
             }
-
+        } trailing: {
+            // iPad landscape: the cards are the second column.
             VStack(alignment: .leading, spacing: CodeySpacing.sm) {
                 SectionTitle("Cards")
                 ForEach(deck.activeCards) { card in

@@ -67,7 +67,7 @@ struct LibraryView: View {
             if shownTopics.isEmpty {
                 ContentUnavailableView.search(text: searchText)
             } else {
-                BentoSection("Topics") {
+                BentoSection("Topics", columns: .spread) {
                     ForEach(shownTopics) { topic in
                         TopicTile(
                             stats: QuizTopicStats(topic: topic, progressRows: progressRows, topicProgress: topicProgress, records: records, xp: profiles.first?.totalXP ?? 0),
@@ -124,7 +124,7 @@ struct TopicPageView: View {
         let hue = CodeyColor.TopicHue.of(topicID: topic.id)
         // The topic's quiz is the page's hero: the same bar and tags as
         // its tile on Play, then Play.
-        CodeyPage(topic.title) {
+        CodeyPage(topic.title, hero: {
             HeroCard(
                 title: topic.title,
                 subtitle: topic.summary,
@@ -135,7 +135,7 @@ struct TopicPageView: View {
             ) {
                 CodeyChip(xp: XPPolicy.base(tier))
             }
-        } content: {
+        }) {
             CodeyButton("Play Quiz", systemImage: "play", kind: .hue(hue), fullWidth: true) {
                 router.quizSetupTopic = topic
             }
@@ -145,6 +145,8 @@ struct TopicPageView: View {
                     ExerciseTiles(topics: [topic], solved: Set(profile?.solvedExerciseIds ?? []), topicID: topic.id)
                 }
             }
+        } trailing: {
+            // iPad landscape: the decks are the second column.
             if !decks.isEmpty {
                 BentoSection("Decks") {
                     ForEach(decks) { DeckTileLink(deck: $0, topic: topic) }

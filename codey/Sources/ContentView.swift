@@ -7,6 +7,8 @@ public struct ContentView: View {
     @AppStorage(OnboardingView.completedKey) private var hasCompletedOnboarding = false
     @Environment(BackendFacade.self) private var backend
     @Environment(\.scenePhase) private var scenePhase
+    /// The app's only size-class read (iPad): see CodeyLayout.
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     public init() {}
 
@@ -18,6 +20,9 @@ public struct ContentView: View {
             )) {
                 OnboardingView { hasCompletedOnboarding = true }
                     .scrollIndicators(.hidden)
+                    // Passed in by hand: on Mac Catalyst presented content doesn't
+                    // inherit Observable objects (opening Profile crashed, Nov 16).
+                    .environment(backend)
             }
             .onOpenURL { backend.handle($0) }
             .onChange(of: scenePhase) { _, phase in
@@ -27,6 +32,9 @@ public struct ContentView: View {
                 default: break
                 }
             }
+            // Outermost, so onboarding and every sheet, cover, floating
+            // panel and overlay host get the same layout.
+            .codeyLayoutRoot(sizeClass)
     }
 }
 

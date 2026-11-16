@@ -89,6 +89,7 @@ struct GameTile<Status: View, Tags: View>: View {
     var reservesAction = false
     @ViewBuilder var status: Status
     @ViewBuilder var tags: Tags
+    @Environment(\.codeyLayout) private var layout
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.xs) {
@@ -130,8 +131,8 @@ struct GameTile<Status: View, Tags: View>: View {
             }
         }
         .multilineTextAlignment(.leading)
-        .padding(CodeySpacing.md)
-        .frame(maxWidth: .infinity, minHeight: 150, maxHeight: .infinity, alignment: .topLeading)
+        .padding(layout.cardPadding)
+        .frame(maxWidth: .infinity, minHeight: layout.tileMinHeight, maxHeight: .infinity, alignment: .topLeading)
         .codeyNote(fill: filled ? hue.soft : CodeyColor.surfaceRaised, edge: filled ? hue.soft : nil)
         // A pastel tile is the same light color in both modes (two-tone),
         // so its contents use light-mode colors: shared tags (tier, XP)

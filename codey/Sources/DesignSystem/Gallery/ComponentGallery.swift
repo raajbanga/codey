@@ -32,6 +32,7 @@ struct ComponentGallery: View {
                         .frame(height: 160)
                         .clipShape(.codey(CodeyRadius.md))
                 }
+                section("Bento, iPad") { bento }
                 section("Empty state") {
                     EmptyStateView(
                         systemImage: "rectangle.stack.badge.plus",
@@ -134,6 +135,24 @@ struct ComponentGallery: View {
         }
     }
 
+    /// The grid as each layout draws it (CodeyLayout): the iPhone pair, the
+    /// iPad pair (wider gap and padding), and a `.spread` grid on a page wide
+    /// enough to split (iPad landscape), which doubles to four columns.
+    private var bento: some View {
+        let hues: [(String, CodeyColor.TopicHue)] = [("Teal", .teal), ("Sand", .sand), ("Coral", .coral), ("Sky", .sky), ("Rose", .rose)]
+        let tiles = ForEach(hues, id: \.0) { name, hue in
+            GameTile(icon: "cube", title: name, detail: "12 cards", hue: hue, progress: 0.4)
+        }
+        return VStack(alignment: .leading, spacing: CodeySpacing.md) {
+            BentoSection("Compact") { tiles }
+            BentoSection("Regular") { tiles }
+                .environment(\.codeyLayout, .regular)
+            BentoSection("Regular, wide page, spread", columns: .spread) { tiles }
+                .environment(\.codeyLayout, .regular)
+                .environment(\.codeyPageIsWide, true)
+        }
+    }
+
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
             Text(title).font(.codeyTitle)
@@ -148,6 +167,10 @@ struct ComponentGallery: View {
 
 #Preview("Dark") {
     ComponentGallery().preferredColorScheme(.dark)
+}
+
+#Preview("iPad landscape", traits: .landscapeLeft) {
+    ComponentGallery().environment(\.codeyLayout, .regular).environment(\.codeyPageIsWide, true)
 }
 
 #Preview("AX3 text") {

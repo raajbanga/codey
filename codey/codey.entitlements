@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Keychain Sharing, the app's own group. Mac Catalyst uses the data
+	     protection keychain, which refuses an app without it: Google
+	     Sign-In's tokens and the Supabase session (KeychainSessionStorage)
+	     failed to save on the Mac. Harmless on iPhone and iPad. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)edu.wku.cs360.codey</string>
+	</array>
+</dict>
+</plist>

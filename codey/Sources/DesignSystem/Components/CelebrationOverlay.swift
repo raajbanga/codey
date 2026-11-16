@@ -10,6 +10,7 @@ struct CelebrationOverlay: View {
     var systemImage: String = "star.fill"
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.codeyLayout) private var layout
     @State private var shown = false
 
     private static let duration: TimeInterval = 2.0
@@ -17,13 +18,14 @@ struct CelebrationOverlay: View {
     var body: some View {
         ZStack {
             if shown {
-                VStack(spacing: CodeySpacing.sm) {
-                    Icon(systemImage, size: 32, relativeTo: .largeTitle)
+                let symbol = layout.celebrationSymbol
+                VStack(spacing: layout.isRegular ? CodeySpacing.md : CodeySpacing.sm) {
+                    Icon(systemImage, size: symbol.size, relativeTo: .largeTitle)
                         .foregroundStyle(CodeyColor.brand)
-                        .frame(width: 64, height: 64)
+                        .frame(width: symbol.circle, height: symbol.circle)
                         .background(CodeyColor.brandSoft, in: Circle())
                     Text(title)
-                        .font(.codeyTitle)
+                        .font(layout.isRegular ? .codeyDisplay : .codeyTitle)
                         .foregroundStyle(CodeyColor.textPrimary)
                         .multilineTextAlignment(.center)
                 }
