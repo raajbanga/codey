@@ -114,11 +114,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.buttons["study.done"].tap()
 
         // Quiz: topics, setup, a question before and after answering.
-        app.tabBars.buttons["Play"].tap()
-        let quizTopic = app.buttons["play.topic.Algorithms.quiz"]
-        XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
-
-        // Coding exercises (FR-39 to FR-41), at the bottom of Play (S41).
+        // Coding exercises (FR-39 to FR-41), on a Library topic's page.
+        app.openTopic("Swift")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
         for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }
@@ -133,8 +130,10 @@ final class AccessibilityAuditUITests: XCTestCase {
         try audit("exercise.result")
         app.swipeBack()
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
+        app.swipeBack()
+        app.openTopic("Algorithms")
+        let quizTopic = app.buttons["topic.play"]
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
-        for _ in 0..<8 where !quizTopic.isHittable { app.swipeDown() }
         quizTopic.tap()
         XCTAssertTrue(app.buttons["quizSetup.start"].waitForExistence(timeout: 5))
         try audit("quiz.setup")
@@ -148,7 +147,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         let tutor = app.descendants(matching: .any)["askAI.message.tutor"].firstMatch
         XCTAssertTrue(tutor.waitForExistence(timeout: 10))
         try audit("askAI.chat")
-        app.buttons["askAI.close"].tap()
+        app.closePanel()
         XCTAssertTrue(option.waitForExistence(timeout: 5))
         option.tap()
         sleep(1)

@@ -3,8 +3,9 @@ import SwiftUI
 /// One chat message (Ask AI, S39). The other side's messages are notes on
 /// the left rendered as Markdown; yours are brand-soft notes on the right.
 ///
-/// §3d: body size, not the study card's: at title3 a short reply filled
-/// the panel and read like a page, not a chat.
+/// §3d: small text, not the study card's: at title3 a short reply filled
+/// the panel and read like a page, not a chat (Nov 15: one size down
+/// again, so a reply and its question fit the panel at once).
 struct ChatBubble: View {
     let text: String
     let isMine: Bool
@@ -14,7 +15,7 @@ struct ChatBubble: View {
     var body: some View {
         if isMine {
             Text(text)
-                .font(.codeyCallout)
+                .font(.codeyCaption)
                 .foregroundStyle(CodeyColor.textPrimary)
                 .padding(.horizontal, CodeySpacing.md)
                 .padding(.vertical, CodeySpacing.sm + CodeySpacing.xxs)
@@ -23,7 +24,7 @@ struct ChatBubble: View {
                 .padding(.leading, CodeySpacing.xl)
                 .accessibilityLabel("You: \(text)")
         } else {
-            CardMarkdownView(markdown: text, font: .codeyCallout)
+            CardMarkdownView(markdown: text, font: .codeyCaption)
                 .padding(CodeySpacing.sm + CodeySpacing.xs)
                 .codeyNote()
                 .containerShape(.rect(cornerRadius: CodeyRadius.lg, style: .continuous))

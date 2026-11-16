@@ -6,6 +6,8 @@ import SwiftUI
 struct ExerciseTiles: View {
     let topics: [Topic]
     let solved: Set<String>
+    /// Only this topic's exercises (a Library topic page); nil shows all.
+    var topicID: String?
 
     /// Loaded once from the bundle. Not in `.task`: before the load the
     /// view has no content (an empty ForEach), so it never appears and the
@@ -65,7 +67,7 @@ struct ExerciseTiles: View {
 
     /// Unsolved first, then by topic and title.
     private var ordered: [Exercise] {
-        exercises.sorted {
+        exercises.filter { topicID == nil || $0.topicId == topicID }.sorted {
             let a = solved.contains($0.id), b = solved.contains($1.id)
             if a != b { return !a }
             return (topicTitle($0), $0.title) < (topicTitle($1), $1.title)

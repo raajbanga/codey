@@ -29,13 +29,20 @@ extension View {
     }
 
     /// A rounded note lying on the paper: a raised (or tinted) fill, a
-    /// hairline edge, and a barely-there lift. Used by CodeyCard, Home's
+    /// hairline edge, and a barely-there lift (no blur). Used by CodeyCard, Home's
     /// topic notes, and the Up-next note.
     func codeyNote(fill: Color = CodeyColor.surfaceRaised, edge: Color? = nil) -> some View {
         background {
+            // The lift is a crisp 1 pt ledge, not a blurred shadow: a
+            // blur on every note is an offscreen pass per note per frame
+            // while a page scrolls or a card is dragged (Nov 15).
             RoundedRectangle.codey(CodeyRadius.lg)
                 .fill(fill)
-                .shadow(color: .black.opacity(0.05), radius: 3, y: 1)
+                .background {
+                    RoundedRectangle.codey(CodeyRadius.lg)
+                        .fill(.black.opacity(0.06))
+                        .offset(y: 1)
+                }
         }
         .overlay {
             RoundedRectangle.codey(CodeyRadius.lg)
@@ -51,11 +58,10 @@ extension View {
     }
 
     /// The inside of every floating card (quiz setup, Ask Codey, dialogs,
-    /// celebrations; Nov 15): page-margin sides, roomier top and bottom,
-    /// so their content lines up with each other and with the page.
+    /// celebrations): the same inset on all four sides (Nov 15), so the
+    /// gap to the edge reads the same top, bottom, left and right.
     func codeyPanelPadding() -> some View {
-        padding(.horizontal, CodeySpacing.md)
-            .padding(.vertical, CodeySpacing.lg)
+        padding(CodeySpacing.lg)
     }
 
     /// The lifted-note surface (S40) for centered floating cards:
@@ -186,9 +192,15 @@ struct EdgeFade: View {
 
     var edge: VerticalEdge = .top
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         Rectangle()
             .fill(.ultraThinMaterial)
+            // Dark mode: the material's frost lightens what passes under,
+            // so the edge read as a highlight. A black wash makes it fade
+            // into shadow instead (Nov 15).
+            .overlay { if colorScheme == .dark { Color.black.opacity(Self.darkShade) } }
             .mask {
                 LinearGradient(
                     stops: Self.stops,
@@ -211,6 +223,8 @@ struct EdgeFade: View {
     /// Peak strength, at the very edge: enough to soften what passes
     /// under, not so much that the material's frost reads as a haze.
     private static let strength = 0.7
+    /// Dark mode's black wash under the same mask.
+    private static let darkShade = 0.55
 }
 
 /// EdgeFade over the screen's top or bottom inset (status bar, home

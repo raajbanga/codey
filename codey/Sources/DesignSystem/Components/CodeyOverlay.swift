@@ -138,12 +138,6 @@ extension View {
             CodeyDialog(title: "Something Went Wrong", message: message.wrappedValue, cancelTitle: "OK")
         })
     }
-
-    /// Keeps `anchor` set to this view's frame, for a menu to open
-    /// from.
-    func codeyAnchor(_ anchor: Binding<CGRect>) -> some View {
-        onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { anchor.wrappedValue = $0 }
-    }
 }
 
 private struct DialogPresenter: ViewModifier {

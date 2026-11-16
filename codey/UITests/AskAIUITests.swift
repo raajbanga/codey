@@ -16,10 +16,9 @@ final class AskAIUITests: XCTestCase {
     }
 
     func testAskAIOnQuizQuestionResetsOnNextQuestion() throws {
-        // Play (S41): each topic tile has its own Play button.
-        let topic = app.buttons["play.topic.Algorithms.quiz"]
-        XCTAssertTrue(topic.waitForExistence(timeout: 15))
-        for _ in 0..<4 where !topic.isHittable { app.swipeUp() }
+        app.openTopic("Algorithms")
+        let topic = app.buttons["topic.play"]
+        XCTAssertTrue(topic.waitForExistence(timeout: 5))
         topic.tap()
         XCTAssertTrue(app.buttons["quizSetup.start"].waitForExistence(timeout: 5))
         app.buttons["quizSetup.start"].tap()
@@ -37,10 +36,10 @@ final class AskAIUITests: XCTestCase {
         snapshot("askai-answer")
 
         // Same question: the chat is kept.
-        app.buttons["askAI.close"].tap()
+        app.closePanel()
         openChat()
         XCTAssertEqual(tutorMessages.count, 2)
-        app.buttons["askAI.close"].tap()
+        app.closePanel()
 
         // Next question: a fresh chat.
         let option = app.buttons["quiz.option.0"]
@@ -53,7 +52,7 @@ final class AskAIUITests: XCTestCase {
     }
 
     func testAskAIOnCodingExercise() throws {
-        // Exercises are at the bottom of Play (S41).
+        app.openTopic("Swift")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 15))
         for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }

@@ -14,11 +14,10 @@ import SwiftUI
 ///     ╭ ◎ Answer 20   ╮ ╭ ⚑ 15 right in…  ╮      ← next quest large,
 ///     │ ━━━━──        │ ╰─────────────────╯         the others stacked
 ///     ╰ [  ▶ Play  ]  ╯ ╭ ▭ Warm up: SQL  ╮         small (1½)
-///     Play a topic
+///     This week
 ///     ╭ Algorithms    ╮ ╭ Data Structures ╮      ← whole tile plays
-///     Exercises                                  ← +10 XP a blank, once
 ///
-/// Decks is the only other tab.
+/// Every topic, with its exercises and decks, is in the Library tab.
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(BackendFacade.self) private var backend
@@ -55,9 +54,6 @@ struct HomeView: View {
         } content: {
             questsSection(stats)
             topicsSection(stats)
-            BentoSection("Exercises") {
-                ExerciseTiles(topics: topics, solved: Set(profile?.solvedExerciseIds ?? []))
-            }
             if showsSignInNudge {
                 signInNudge
             }
@@ -88,12 +84,7 @@ struct HomeView: View {
     /// Always shown, 0 included (FR-37: the current streak).
     private var streakBadge: some View {
         let streak = StreakCalculator.currentStreak(endingOn: .now, totals: dayTotals)
-        return Label("\(streak)", icon: "flame")
-            .font(.codeyHeadline.monospacedDigit())
-            .foregroundStyle(CodeyColor.xp)
-            .padding(.horizontal, CodeySpacing.md)
-            .frame(height: 44)
-            .background(CodeyColor.xpSoft, in: .pill)
+        return HeaderBadge(value: streak, icon: "flame", ink: CodeyColor.xp, fill: CodeyColor.xpSoft)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(streak) day streak")
     }
@@ -284,33 +275,23 @@ struct HomeView: View {
         return pins.isEmpty ? topics.map(\.id) : pins
     }
 
-    /// This week's plan first (FR-38), then the rest, pinned first.
+    /// This week's plan (FR-38); every topic, and its exercises and decks,
+    /// is in the Library tab (Nov 15). Pinned topics if there's no plan yet.
     private func topicsSection(_ stats: HomeStats) -> some View {
         let plan = planIDs
-        let ordered = orderedTopics.filter { plan.contains($0.id) } + orderedTopics.filter { !plan.contains($0.id) }
-        return BentoSection("Play a topic") {
-            ForEach(ordered) { topic in
-                PlayTopicTile(stats: quizStats(for: topic), inPlan: plan.contains(topic.id)) {
+        let shown = plan.isEmpty ? orderedTopics.filter { pinned.contains($0.id) } : orderedTopics.filter { plan.contains($0.id) }
+        return BentoSection("This week") {
+            ForEach(shown) { topic in
+                TopicTile(stats: quizStats(for: topic)) {
                     router.quizSetupTopic = topic
                 }
+                .accessibilityIdentifier("play.topic.\(topic.title).quiz")
             }
         }
     }
 
-    /// Tier locks, accuracy over the last answers (FR-36), and retired count.
     private func quizStats(for topic: Topic) -> QuizTopicStats {
-        let progress = progressRows.filter { $0.topicId == topic.id }.keyed(by: \.questionId)
-        let sticky = topicProgress.first { $0.topicId == topic.id }?.unlockedTiers ?? []
-        return QuizTopicStats(
-            topic: topic,
-            tiers: QuizProgressStore.availability(questions: topic.questions, progress: progress, sticky: sticky, xp: xp),
-            accuracy: QuizProgressStore.accuracy(
-                of: records.filter { $0.topicId == topic.id },
-                window: GatingConfig.standard.accuracyWindow
-            ),
-            retired: topic.questions.filter { progress[$0.id]?.isRetired == true }.count,
-            total: topic.questions.count
-        )
+        QuizTopicStats(topic: topic, progressRows: progressRows, topicProgress: topicProgress, records: records, xp: xp)
     }
 
     // MARK: Data

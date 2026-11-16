@@ -23,11 +23,6 @@ private struct FloatingPanelModifier<Item: Identifiable, Panel: View>: ViewModif
     let panel: (Item) -> Panel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var dragOffset = CGSize.zero
-
-    /// Past this (or a fast flick) a drag closes the panel.
-    private let dismissDistance: CGFloat = 120
-
     func body(content: Content) -> some View {
         // No accessibilityHidden on `content`: `.accessibilityHidden(false)`
         // re-exposed the hidden paper background as an undescribed
@@ -71,33 +66,73 @@ private struct FloatingPanelModifier<Item: Identifiable, Panel: View>: ViewModif
         .codeyFloatingCard()
         .padding(.horizontal, CodeySpacing.md)
         .padding(.vertical, fillsHeight ? CodeySpacing.xl : CodeySpacing.xxl)
-        // Follows a drag in any direction, eased so it reads as "let go
-        // to close" (Nov 15: no ✕; swipe it away).
-        .offset(x: dragOffset.width * 0.6, y: dragOffset.height * 0.6)
-        .scaleEffect(1 - min(Self.distance(dragOffset) / 2000, 0.05))
-        .gesture(drag)
+        .modifier(SwipeToClose(close: close))
         .environment(\.dismissPanel, DismissPanelAction(close))
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
         .accessibilityAction(.escape, close)
     }
 
-    private var drag: some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { dragOffset = $0.translation }
-            .onEnded { value in
-                if Self.distance(value.translation) > dismissDistance
-                    || Self.distance(value.predictedEndTranslation) > dismissDistance * 2.5 {
-                    close()
-                }
-                withAnimation(CodeyMotion.resolve(CodeyMotion.pop, reduceMotion: reduceMotion)) { dragOffset = .zero }
-            }
-    }
-
-    private static func distance(_ size: CGSize) -> CGFloat { hypot(size.width, size.height) }
-
     private func close() {
         item = nil
+    }
+}
+
+/// Swipe away like a flashcard (Nov 15): follows the finger with the same
+/// tilt, flies off the way it was thrown, then closes. The offset lives
+/// here, so a drag frame only moves the panel, not its content.
+private struct SwipeToClose: ViewModifier {
+    let close: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var offset = CGSize.zero
+
+    func body(content: Content) -> some View {
+        content
+            .swipeFollow(offset, tilts: !reduceMotion)
+            .gesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { offset = $0.translation }
+                    .onEnded { value in
+                        guard SwipeMotion.isThrown(value.translation) else {
+                            withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) { offset = .zero }
+                            return
+                        }
+                        guard !reduceMotion else { return close() }
+                        Task { @MainActor in
+                            await SwipeMotion.flyOff(along: value.translation) { offset = $0 }
+                            close()
+                        }
+                    }
+            )
+    }
+}
+
+/// How a swiped card moves, shared by flashcards and floating panels: it
+/// follows the finger with a slight tilt; past `threshold` it flies off
+/// the way it was thrown, otherwise it springs back.
+enum SwipeMotion {
+    static let threshold: CGFloat = 110
+    static let flyOffDuration = Duration.milliseconds(220)
+
+    static func isThrown(_ translation: CGSize) -> Bool {
+        hypot(translation.width, translation.height) > threshold
+    }
+
+    /// Animates `set` from where the finger let go to off screen, along the
+    /// swipe, and returns once it's gone.
+    @MainActor
+    static func flyOff(along translation: CGSize, _ set: (CGSize) -> Void) async {
+        let scale = 1000 / max(hypot(translation.width, translation.height), 1)
+        withAnimation(.easeOut(duration: 0.22)) { set(CGSize(width: translation.width * scale, height: translation.height * scale)) }
+        try? await Task.sleep(for: flyOffDuration)
+    }
+}
+
+extension View {
+    /// Moves and tilts a card with the drag (see `SwipeMotion`).
+    func swipeFollow(_ drag: CGSize, tilts: Bool) -> some View {
+        offset(drag).rotationEffect(.degrees(tilts ? Double(drag.width / 20) : 0))
     }
 }
 

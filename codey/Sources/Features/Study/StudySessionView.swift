@@ -23,24 +23,20 @@ struct StudySessionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: StudySessionViewModel
 
-    @State private var drag: CGSize = .zero
     @State private var isCommitting = false
-    /// The swiped card is off-screen: remove it at once instead of fading it.
-    @State private var flewOff = false
     @State private var masteredBadge: StudyCardView.MasteredBadge?
     @State private var scoreChange: StudyCardView.ScoreChange?
     @State private var feedbackEvent: FeedbackEvent?
     @State private var toast: XPToast?
-
-    private static let swipeThreshold: CGFloat = 110
 
     init(viewModel: StudySessionViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
-        VStack(spacing: CodeySpacing.md) {
+        Group {
             if let summary = viewModel.summary {
+                // No top bar: Done closes (Nov 15).
                 StudySummaryView(
                     deck: viewModel.deck,
                     summary: summary,
@@ -48,14 +44,16 @@ struct StudySessionView: View {
                     studyAgain: { withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.restart() } },
                     done: { dismiss() }
                 )
+                .padding(.horizontal, CodeySpacing.md)
             } else if let card = viewModel.currentCard {
-                cardArea(card)
-                controls
+                VStack(spacing: CodeySpacing.md) {
+                    cardArea(card)
+                    controls
+                }
+                .padding([.horizontal, .bottom], CodeySpacing.md)
+                .codeyBar(.top) { topBar.padding(.horizontal, CodeySpacing.md) }
             }
         }
-        .padding(.horizontal, CodeySpacing.md)
-        .padding(.bottom, CodeySpacing.sm)
-        .codeyBar(.top) { topBar.padding(.horizontal, CodeySpacing.md) }
         .codeyPaperBackground()
         .background { keyboardShortcuts }
         .xpToast($toast)
@@ -70,7 +68,6 @@ struct StudySessionView: View {
             closeLabel: "Close",
             closeHint: "Your progress is saved",
             closeID: "study.close",
-            isActive: viewModel.summary == nil,
             close: { dismiss() }
         ) {
             // Ticks only (§3b, Nov 15): "6 / 6 · +2 repeats" beside them
@@ -111,49 +108,30 @@ struct StudySessionView: View {
     // MARK: Card
 
     private func cardArea(_ card: Flashcard) -> some View {
-        let candidate = CardRating.forSwipe(drag, threshold: 24)
-        let pastThreshold = CardRating.forSwipe(drag, threshold: Self.swipeThreshold)
-        let dragProgress = min(max(abs(drag.width), abs(drag.height)) / Self.swipeThreshold, 1)
-
-        return StudyCardView(
-            card: card,
-            isRevealed: viewModel.isRevealed,
-            masteredBadge: masteredBadge,
-            scoreChange: scoreChange,
-            isRepeat: viewModel.queue.isRepeat
-        )
-            .overlay {
-                if let candidate {
-                    RoundedRectangle.codey(CodeyRadius.lg)
-                        .strokeBorder(candidate.tint, lineWidth: 3)
-                        .opacity(dragProgress)
-                        .allowsHitTesting(false)
-                }
-            }
-            .overlay(alignment: .top) {
-                if let pastThreshold {
-                    CodeyChip(pastThreshold.title, variant: pastThreshold.chipVariant)
-                        .padding(.top, CodeySpacing.sm)
-                        .transition(.opacity)
-                        .accessibilityHidden(true)
-                }
-            }
-            .id(card.id)
-            .transition(
-                .asymmetric(
-                    insertion: CodeyMotion.popTransition(reduceMotion: reduceMotion),
-                    removal: flewOff ? .identity : .opacity
-                )
+        // Each card owns its drag (SwipeCard), so a drag frame only moves
+        // the card (Nov 15: swiping lagged). Cards never overlap: the old
+        // one goes at once (a swiped one is already off screen) and the new
+        // one pops in on its own (Nov 15: the old card flashed its answer).
+        SwipeCard(isEnabled: viewModel.hasRevealedCurrent && !isCommitting, flies: !reduceMotion) { rating in
+            commit(rating, swiped: true)
+        } card: {
+            StudyCardView(
+                card: card,
+                isRevealed: viewModel.isRevealed,
+                masteredBadge: masteredBadge,
+                scoreChange: scoreChange,
+                isRepeat: viewModel.queue.isRepeat
             )
-            .offset(drag)
-            .rotationEffect(.degrees(reduceMotion ? 0 : Double(drag.width / 20)))
+        }
+            // A fresh view per review, so a repeat of the card just rated
+            // comes in on its prompt instead of flipping back in place.
+            .id(CardTurn(card: card.id, review: viewModel.reviewedCount))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(.rect)
             // Simultaneous: Textual's link overlay puts a tap gesture on every
             // line of card text, which would otherwise win and leave only the
             // empty card space flipping it.
             .simultaneousGesture(TapGesture().onEnded { flip() })
-            .gesture(swipeGesture, isEnabled: viewModel.hasRevealedCurrent && !isCommitting)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
             .accessibilityHint(viewModel.isRevealed ? "Double tap to show the prompt" : "Double tap to show the answer")
@@ -166,18 +144,6 @@ struct StudySessionView: View {
                 }
             }
             .accessibilityIdentifier("study.card")
-    }
-
-    private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 16)
-            .onChanged { drag = $0.translation }
-            .onEnded { value in
-                guard let rating = CardRating.forSwipe(value.translation, threshold: Self.swipeThreshold) else {
-                    withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) { drag = .zero }
-                    return
-                }
-                commit(rating, fromSwipe: value.translation)
-            }
     }
 
     // MARK: Controls
@@ -224,28 +190,24 @@ struct StudySessionView: View {
 
     /// Rates the card. The haptic plays at once.
     ///
-    /// A swipe keeps the card moving the way it went, from where the finger
-    /// let go, with its outline (§3b; it used to snap back to the center
-    /// first, then fly off); the next card pops in and the toast says what
-    /// changed. A button, key, or VoiceOver rating has no motion to keep, so
-    /// the card stays and its dots show the new score and the change ("+2",
-    /// "Reset") for a moment (S19), with the "Mastered" chip if it masters.
-    private func commit(_ rating: CardRating, fromSwipe translation: CGSize? = nil) {
+    /// A swipe flies the card off the way it went (SwipeCard); the next card
+    /// pops in and the toast says what changed. A key or VoiceOver rating
+    /// has no motion to keep, so the card stays and its dots show the new
+    /// score and the change for a moment (S19), with "Mastered" if it masters.
+    private func commit(_ rating: CardRating, swiped: Bool = false) {
         guard !isCommitting, viewModel.hasRevealedCurrent, let card = viewModel.currentCard else { return }
         isCommitting = true
         feedbackEvent = FeedbackEvent(rating: rating)
 
         let newScore = rating.applied(to: card.masteryScore)
         let willMaster = !card.isMastered && newScore >= Flashcard.maxMastery
-        let flyOff = translation.flatMap { reduceMotion ? nil : Self.offScreen(along: $0) }
+        let flewOff = swiped && !reduceMotion
         Task { @MainActor in
-            if let flyOff {
-                flewOff = true
-                withAnimation(.easeOut(duration: 0.22)) { drag = flyOff }
-                try? await Task.sleep(for: .milliseconds(220))
+            if flewOff {
+                // SwipeCard is flying the card off; wait for it to leave.
+                try? await Task.sleep(for: SwipeMotion.flyOffDuration)
             } else {
                 withCodeyAnimation(CodeyMotion.smooth, reduceMotion: reduceMotion) {
-                    drag = .zero
                     scoreChange = .init(previous: card.masteryScore, new: newScore)
                     if willMaster {
                         masteredBadge = viewModel.deck.origin == .starter ? .masteredAndRetired : .mastered
@@ -254,42 +216,93 @@ struct StudySessionView: View {
                 try? await Task.sleep(for: .milliseconds(willMaster ? 900 : 650))
             }
 
-            masteredBadge = nil
-            scoreChange = nil
-            // Off-screen card: re-center the offset for the next card without
-            // animating it (the old one is removed, not faded, so it can't
-            // be seen jumping back).
-            var still = Transaction()
-            still.disablesAnimations = true
-            withTransaction(still) { drag = .zero }
-            var outcome: StudySessionViewModel.RatingOutcome?
-            withCodeyAnimation(CodeyMotion.snappy, reduceMotion: reduceMotion) {
-                outcome = viewModel.rate(rating)
+            // No animation: the old card goes at once (see cardArea).
+            let outcome = withTransaction(\.disablesAnimations, true) {
+                masteredBadge = nil
+                scoreChange = nil
+                return viewModel.rate(rating)
             }
-            flewOff = false
-            // A bonus outranks mastering, which outranks the card's own +5.
-            let xp = outcome?.xp ?? 0
-            if let bonus = outcome?.bonuses.last {
-                withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .bonus(bonus) }
-            } else if willMaster, flyOff != nil {
-                withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .mastered(xp: xp) }
-            } else if xp > 0 {
-                withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = .xp(xp) }
+            if let next = Self.toast(for: outcome, mastered: willMaster && flewOff) {
+                withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { toast = next }
             }
             isCommitting = false
         }
     }
 
-    /// Far enough along the swipe's direction to leave any screen.
-    private static func offScreen(along translation: CGSize) -> CGSize {
-        let length = max(hypot(translation.width, translation.height), 1)
-        let scale = 1000 / length
-        return CGSize(width: translation.width * scale, height: translation.height * scale)
+    /// A bonus outranks mastering, which outranks the card's own +5. A
+    /// card rated in place already showed its "Mastered" chip.
+    private static func toast(for outcome: StudySessionViewModel.RatingOutcome?, mastered: Bool) -> XPToast? {
+        guard let outcome else { return nil }
+        if let bonus = outcome.bonuses.last { return .bonus(bonus) }
+        if mastered { return .mastered(xp: outcome.xp) }
+        return outcome.xp > 0 ? .xp(outcome.xp) : nil
+    }
+
+    private struct CardTurn: Hashable {
+        let card: UUID
+        let review: Int
     }
 
     private struct FeedbackEvent: Equatable {
         let id = UUID()
         let rating: CardRating
+    }
+}
+
+/// The card under the finger: the rating outline and tag as it nears a
+/// rating, moved and tilted with the drag (`SwipeMotion`). Past the
+/// threshold it flies off the way it was thrown and reports the rating.
+private struct SwipeCard<Card: View>: View {
+    let isEnabled: Bool
+    /// Off under Reduce Motion: the card stays and springs back.
+    let flies: Bool
+    let rate: (CardRating) -> Void
+    @ViewBuilder var card: Card
+
+    @State private var drag = CGSize.zero
+    @State private var appeared = false
+
+    var body: some View {
+        let candidate = CardRating.forSwipe(drag, threshold: 24)
+        let pastThreshold = CardRating.forSwipe(drag, threshold: SwipeMotion.threshold)
+        let progress = min(max(abs(drag.width), abs(drag.height)) / SwipeMotion.threshold, 1)
+        card
+            .overlay {
+                if let candidate {
+                    RoundedRectangle.codey(CodeyRadius.lg)
+                        .strokeBorder(candidate.tint, lineWidth: 3)
+                        .opacity(progress)
+                        .allowsHitTesting(false)
+                }
+            }
+            .overlay(alignment: .top) {
+                if let pastThreshold {
+                    CodeyChip(pastThreshold.title, variant: pastThreshold.chipVariant)
+                        .padding(.top, CodeySpacing.sm)
+                        .transition(.opacity)
+                        .accessibilityHidden(true)
+                }
+            }
+            .swipeFollow(drag, tilts: flies)
+            // Pops in itself (CodeyMotion.pop), so no transition has the old
+            // and new card on screen together.
+            .scaleEffect(appeared || !flies ? 1 : 0.94)
+            .opacity(appeared ? 1 : 0)
+            .onAppear { withAnimation(flies ? CodeyMotion.pop : nil) { appeared = true } }
+            .gesture(
+                DragGesture(minimumDistance: 16)
+                    .onChanged { drag = $0.translation }
+                    .onEnded { value in
+                        let rating = CardRating.forSwipe(value.translation, threshold: SwipeMotion.threshold)
+                        if let rating { rate(rating) }
+                        if rating != nil, flies {
+                            Task { await SwipeMotion.flyOff(along: value.translation) { drag = $0 } }
+                        } else {
+                            withAnimation(CodeyMotion.smooth) { drag = .zero }
+                        }
+                    },
+                isEnabled: isEnabled
+            )
     }
 }
 

@@ -34,3 +34,34 @@ struct DeckTile: View {
         .accessibilityIdentifier("deckTile.\(deck.title)")
     }
 }
+
+/// A deck tile that opens the deck, with a Study button laid over its
+/// bottom (S40: study straight from the grid, continuing where you left
+/// off). Decks and the Library's topic pages use it.
+struct DeckTileLink: View {
+    let deck: FlashcardDeck
+    let topic: Topic?
+
+    @Environment(Router.self) private var router
+
+    var body: some View {
+        let canStudy = deck.cardCount > 0 && !deck.isHidden
+        NavigationLink(value: DeckRoute(id: deck.id)) {
+            DeckTile(deck: deck, topic: topic, reservesStudyButton: canStudy)
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) {
+            if canStudy {
+                Button {
+                    router.study = StudyRequest(deck: deck, start: .resume)
+                } label: {
+                    TileActionLabel(action: TileAction("Study"), hue: .of(topicID: deck.topicId))
+                }
+                .buttonStyle(TilePressStyle())
+                .padding(CodeySpacing.md)
+                .accessibilityLabel("Study \(deck.title)")
+                .accessibilityIdentifier("deckTile.study.\(deck.title)")
+            }
+        }
+    }
+}
