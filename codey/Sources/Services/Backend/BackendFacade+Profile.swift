@@ -12,7 +12,7 @@ extension BackendFacade {
         if let error = ModelValidator.validateDisplayName(displayName).first { throw error }
         let profile = DataSeeder.ensureProfile(context: context)
         profile.username = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        profile.avatarId = avatarId.flatMap { ProfileAvatar.symbols.contains($0) ? $0 : nil }
+        profile.avatarId = avatarId.flatMap { ProfileAvatar.parse($0) == nil ? nil : $0 }
         if let userID {
             try queue.enqueue(.profile, id: profile.id, op: .upsert, ownerId: userID)
         }

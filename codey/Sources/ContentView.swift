@@ -17,10 +17,15 @@ public struct ContentView: View {
                 set: { if !$0 { hasCompletedOnboarding = true } }
             )) {
                 OnboardingView { hasCompletedOnboarding = true }
+                    .scrollIndicators(.hidden)
             }
             .onOpenURL { backend.handle($0) }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { backend.appDidBecomeActive() }
+                switch phase {
+                case .active: backend.appDidBecomeActive()
+                case .background: backend.appDidEnterBackground()
+                default: break
+                }
             }
     }
 }

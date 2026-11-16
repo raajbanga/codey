@@ -1,25 +1,17 @@
-import CryptoKit
 import Foundation
 import SwiftData
 
-/// Lets boot skip reseeding when the bundled content hasn't changed. The
-/// stamp is a hash of the two bundled JSON files, recorded after a full
-/// seed. Boot skips only when the stamp matches AND the rows are there, so a
+/// Lets boot skip reseeding when the content hasn't changed. The stamp is a
+/// hash of the content files seeded last (the Supabase download or the
+/// bundle; ContentFiles.stamp), recorded after a full seed. Boot skips only when the stamp matches AND the rows are there, so a
 /// new, reset, or in-memory store always seeds.
 enum BundledContentStamp {
     static let defaultsKey = "codey.bundledContentStamp"
-    private static let files = ["questions-seed", "starter-decks"]
 
     /// SHA-256 of the bundled content, or nil if a file is missing (then
     /// boot seeds, and the loaders report the missing file).
     static func current(bundle: Bundle = .main) -> String? {
-        var hasher = SHA256()
-        for name in files {
-            guard let url = bundle.url(forResource: name, withExtension: "json"),
-                  let data = try? Data(contentsOf: url) else { return nil }
-            hasher.update(data: data)
-        }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        ContentFiles.bundled(bundle)?.stamp
     }
 
     /// Whether `context` already holds the content `stamp` describes.

@@ -30,6 +30,12 @@ struct LimitCounter: View {
 }
 
 extension View {
+    /// A one-line text field on its note (group name, invite code, display
+    /// name): the same inset and surface everywhere.
+    func codeyField() -> some View {
+        padding(CodeySpacing.md).codeyNote()
+    }
+
     /// Danger outline on an invalid field.
     func errorBorder(_ isShown: Bool, radius: CGFloat) -> some View {
         // The hairline otherwise, so fields sit on the paper like notes (S9).
@@ -38,15 +44,6 @@ extension View {
                 isShown ? CodeyColor.danger : CodeyColor.separator,
                 lineWidth: isShown ? 1.5 : 1
             )
-        }
-    }
-
-    /// "Something Went Wrong" alert while `message` is non-nil.
-    func errorAlert(_ message: Binding<String?>) -> some View {
-        alert("Something Went Wrong", isPresented: message.isPresent()) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(message.wrappedValue ?? "")
         }
     }
 }

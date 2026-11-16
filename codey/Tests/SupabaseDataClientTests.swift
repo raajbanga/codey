@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import codey
 
-// SupabaseTestAccounts is DEBUG-only (NFR-26); the Release perf run
+// SupabaseTestClient is DEBUG-only (NFR-26); the Release perf run
 // (scripts/perf-report.sh) builds the test target without it.
 #if DEBUG
 
@@ -13,7 +13,7 @@ struct SupabaseDataClientTests {
     private func makeClient(pageSize: Int = 1000) -> any RemoteDeckStore {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
-        return SupabaseTestAccounts.dataClient(
+        return SupabaseTestClient.dataClient(
             url: URL(string: "https://stub.supabase.co")!, key: "stub-key", configuration: configuration, pageSize: pageSize
         )
     }
@@ -166,11 +166,74 @@ struct SupabaseDataClientTests {
         #expect(throws: DecodingError.self) { try options.decoder.decode(Acronym.self, from: json) }
     }
 
+    /// S37 interface fault (Activity 12.2): a nil `retiredAt` must go on the
+    /// wire as an explicit `retired_at: null`. If the key were dropped, the
+    /// upsert would keep the server's old value and a card or question
+    /// un-retired by "Again" would stay retired on the other device.
+    @Test func progressRowsSendRetiredAtAsExplicitNull() throws {
+        let encoder = SupabaseDataClient.databaseOptions.encoder
+        let owner = UUID()
+        let card = CardProgressRow(
+            CardProgressPayload(cardId: UUID(), masteryScore: 1, lastReviewedAt: .now, retiredAt: nil), ownerId: owner
+        )
+        let question = QuestionProgressRow(
+            QuestionProgressPayload(
+                questionId: "q1", topicId: "topic-swift", difficulty: .easy, consecutiveCorrect: 0,
+                totalAttempts: 1, totalCorrect: 0, retiredAt: nil, isReview: false, lastAnsweredAt: .now
+            ),
+            ownerId: owner
+        )
+        for data in [try encoder.encode(card), try encoder.encode(question)] {
+            let row = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            #expect(row.keys.contains("retired_at") && row["retired_at"] is NSNull, "retired_at must be an explicit null")
+            #expect(row["owner_id"] as? String == owner.uuidString)
+            #expect(row["server_updated_at"] == nil, "the server sets the cursor")
+        }
+    }
+
     @Test func serverErrorsThrow() async throws {
         StubURLProtocol.reset(status: 401, responseJSON: #"{"code":"42501","message":"permission denied"}"#)
         await #expect(throws: (any Error).self) {
             _ = try await makeClient().fetchChanges(since: nil)
         }
+    }
+}
+
+extension SupabaseDataClientTests {
+    /// The content tables come back as the bundled files' format, so the
+    /// same loaders check a download and the bundle.
+    @Test func fetchContentRebuildsTheBundledFormat() async throws {
+        StubURLProtocol.reset { url in
+            switch url.lastPathComponent {
+            case "content_topics":
+                #"[{"id":"t1","title":"Swift","summary":"S","icon_name":"swift","sort_index":0}]"#
+            case "content_questions":
+                #"[{"id":"q1","topic_id":"t1","prompt":"P","options":["a","b"],"correct_option_index":1,"explanation":"E","difficulty":"easy","sort_index":0}]"#
+            case "content_exercises":
+                #"[{"id":"e1","topic_id":"t1","title":"T","language":"swift","prompt":"P","code":"let x = ___","blanks":[{"accepted":["1"]}],"explanation":"E","sort_index":0}]"#
+            case "content_decks":
+                #"[{"starter_key":"d1","topic_id":"t1","title":"Deck","sort_index":0}]"#
+            case "content_cards":
+                #"[{"id":"c1","deck_key":"d1","prompt":"P","answer":"A","difficulty":"hard","code_language":"python","code_source":"print(1)","sort_index":0},{"id":"c2","deck_key":"d1","prompt":"P2","answer":"A2","difficulty":"easy","code_language":null,"code_source":null,"sort_index":1}]"#
+            default:
+                "[]"
+            }
+        }
+        let files = try await makeClient().fetchContent()
+        let content = try files.validated()
+
+        #expect(content.bank.topics == [TopicSeed(id: "t1", title: "Swift", summary: "S", iconName: "swift")])
+        #expect(content.bank.questions.first?.correctOptionIndex == 1)
+        #expect(content.exercises.first?.blanks == [ExerciseBlank(accepted: ["1"])])
+        let cards = try #require(content.decks.decks.only?.cards)
+        #expect(cards.map(\.id) == ["c1", "c2"])
+        #expect(cards[0].code == StarterCardSeed.Code(language: "python", source: "print(1)"))
+        #expect(cards[1].code == nil)
+
+        let cardRequest = try #require(StubURLProtocol.requests.first { $0.url.lastPathComponent == "content_cards" })
+        #expect(cardRequest.method == "GET")
+        #expect(cardRequest.query["order"]?.hasPrefix("deck_key.asc") == true)
+        #expect(cardRequest.query["order"]?.contains("sort_index.asc") == true)
     }
 }
 

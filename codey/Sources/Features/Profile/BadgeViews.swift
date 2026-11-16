@@ -26,14 +26,15 @@ private struct BadgeCell: View {
     let isEarned: Bool
 
     @ScaledMetric(relativeTo: .title2) private var size: CGFloat = 52
+    @Environment(\.appHue) private var appHue
 
     var body: some View {
         VStack(spacing: CodeySpacing.xs) {
             Image(systemName: isEarned ? badge.symbol : "lock.fill")
                 .font(isEarned ? .codeyTitle : .codeyHeadline)
-                .foregroundStyle(isEarned ? CodeyColor.brand : CodeyColor.textSecondary)
+                .foregroundStyle(isEarned ? (appHue ?? .slate).ink : CodeyColor.textSecondary)
                 .frame(width: size, height: size)
-                .background(isEarned ? CodeyColor.brandSoft : CodeyColor.fillNeutral, in: Circle())
+                .background(isEarned ? (appHue ?? .slate).soft : CodeyColor.fillNeutral, in: Circle())
             Text(badge.title)
                 .font(.codeyCaption.weight(.medium))
                 .foregroundStyle(isEarned ? CodeyColor.textPrimary : CodeyColor.textSecondary)
@@ -82,7 +83,11 @@ private struct BadgeBannerModifier: ViewModifier {
             .onChange(of: awards.map(\.badgeRaw)) { _, raws in
                 let new = raws.filter { !(seen ?? []).contains($0) }
                 seen = Set(raws)
-                guard isActive, let raw = new.last, let earned = Badge(rawValue: raw) else { return }
+                // Only one earned just now: a badge pulled from another
+                // device (S43) arrives with its old date and isn't news.
+                guard isActive, let raw = new.last, let earned = Badge(rawValue: raw),
+                      let award = awards.first(where: { $0.badgeRaw == raw }),
+                      award.earnedAt > .now.addingTimeInterval(-60) else { return }
                 badge = earned
                 isPresented = true
             }
@@ -90,6 +95,7 @@ private struct BadgeBannerModifier: ViewModifier {
 }
 
 #Preview {
-    List { Section("Badges") { BadgesRow() } }
+    BadgesRow()
+        .padding()
         .modelContainer(ModelContainerFactory.makePreview())
 }

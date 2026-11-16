@@ -93,3 +93,6 @@ supabase/.temp
 
 ### Python ###
 __pycache__/
+
+# LaTeX build output next to the source (the deliverables are docs/*.pdf)
+docs/source/*.pdf

@@ -45,7 +45,7 @@ struct FlashcardFactory {
     func createCard(from payload: FlashcardPayload) throws -> Flashcard {
         let input = applyDefaults(payload)
         let id = input.id ?? UUID()
-        return Flashcard(
+        let card = Flashcard(
             Token(),
             id: id,
             prompt: input.prompt,
@@ -58,6 +58,8 @@ struct FlashcardFactory {
             updatedAt: input.updatedAt ?? now(),
             deletedAt: input.deletedAt
         )
+        card.isHidden = input.isHidden ?? false
+        return card
     }
 
     /// Edits an existing card through the same normalize + validate path as
@@ -110,6 +112,7 @@ struct FlashcardFactory {
         card.sortIndex = input.sortIndex
         card.updatedAt = input.updatedAt ?? card.updatedAt
         card.deletedAt = input.deletedAt
+        if let hidden = input.isHidden { card.isHidden = hidden }
     }
 
     /// Throws FactoryError.invalid for bad content; returns the snippet the

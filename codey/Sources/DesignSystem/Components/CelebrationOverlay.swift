@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A quiet banner for level-ups, tier unlocks, and badges. Sprint 3 (S9)
 /// replaced the particle burst: a symbol and a line of text fade in on a
-/// flat card, a success haptic plays, VoiceOver announces it, and it fades
+/// lifted card (popping in like every floating card, S40), a success haptic plays, VoiceOver announces it, and it fades
 /// out on its own.
 struct CelebrationOverlay: View {
     @Binding var isPresented: Bool
@@ -16,10 +16,9 @@ struct CelebrationOverlay: View {
 
     var body: some View {
         ZStack {
-            if isPresented {
+            if shown {
                 VStack(spacing: CodeySpacing.sm) {
-                    Image(systemName: systemImage)
-                        .font(.largeTitle)
+                    Icon(systemImage, size: 32, relativeTo: .largeTitle)
                         .foregroundStyle(CodeyColor.brand)
                         .frame(width: 64, height: 64)
                         .background(CodeyColor.brandSoft, in: Circle())
@@ -28,15 +27,11 @@ struct CelebrationOverlay: View {
                         .foregroundStyle(CodeyColor.textPrimary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.vertical, CodeySpacing.lg)
-                .padding(.horizontal, CodeySpacing.xl)
-                .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.xl))
-                .overlay {
-                    RoundedRectangle.codey(CodeyRadius.xl)
-                        .strokeBorder(CodeyColor.separator, lineWidth: 1)
-                }
-                .offset(y: shown || reduceMotion ? 0 : 8)
-                .opacity(shown ? 1 : 0)
+                .codeyPanelPadding()
+                // S40: the same lifted note and pop as FloatingPanel.
+                .codeyFloatingCard()
+                .padding(.horizontal, CodeySpacing.md)
+                .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isStaticText)
             }
@@ -49,15 +44,12 @@ struct CelebrationOverlay: View {
     }
 
     private func begin() {
-        shown = false
-        withAnimation(CodeyMotion.resolve(CodeyMotion.smooth, reduceMotion: reduceMotion)) {
-            shown = true
-        }
+        withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { shown = true }
         UIAccessibility.post(notification: .announcement, argument: title)
         Task {
             try? await Task.sleep(for: .seconds(Self.duration))
-            withAnimation(CodeyMotion.reduced) { shown = false }
-            try? await Task.sleep(for: .seconds(0.25))
+            withCodeyAnimation(CodeyMotion.pop, reduceMotion: reduceMotion) { shown = false }
+            try? await Task.sleep(for: .seconds(0.35))
             isPresented = false
         }
     }

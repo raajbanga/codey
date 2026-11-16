@@ -144,6 +144,110 @@ final class MockRemoteStore: RemoteDeckStore {
         weeklyXP[me] = max(weeklyXP[me] ?? 0, xp)
     }
 
+    // MARK: Study progress (FR-61), merged like the SQL triggers
+
+    private(set) var cardProgress: [UUID: CardProgressPayload] = [:]
+    private(set) var questionProgress: [String: QuestionProgressPayload] = [:]
+    private(set) var topicProgress: [String: TopicProgressPayload] = [:]
+    private var progressTimes: [String: Date] = [:]
+
+    func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges {
+        try record("fetchProgressChanges")
+        let since = cursor ?? .distantPast
+        func changed(_ key: String) -> Bool { (progressTimes[key] ?? .distantPast) > since }
+        let batch = ProgressBatch(
+            cards: cardProgress.values.filter { changed("c:\($0.cardId)") },
+            questions: questionProgress.values.filter { changed("q:\($0.questionId)") },
+            topics: topicProgress.values.filter { changed("t:\($0.topicId)") },
+            answers: quizAnswers.values.filter { changed(Self.key($0)) },
+            days: dailyActivity.values.filter { changed(Self.key($0)) },
+            badges: badgeAwards.values.filter { changed("b:\($0.badge)") }
+        )
+        let keys = batch.cards.map { "c:\($0.cardId)" } + batch.questions.map { "q:\($0.questionId)" }
+            + batch.topics.map { "t:\($0.topicId)" } + batch.answers.map(Self.key) + batch.days.map(Self.key)
+            + batch.badges.map { "b:\($0.badge)" }
+        return RemoteProgressChanges(progress: batch, cursor: keys.compactMap { progressTimes[$0] }.max())
+    }
+
+    private(set) var pushedProgress: [ProgressBatch] = []
+
+    func upsertProgress(_ batch: ProgressBatch) async throws {
+        try record("upsertProgress")
+        pushedProgress.append(batch)
+        storeAll(batch)
+    }
+
+    private func storeAll(_ batch: ProgressBatch) {
+        for row in batch.cards { storeCardProgress(row) }
+        for row in batch.questions { storeQuestionProgress(row) }
+        for row in batch.topics { storeTopicProgress(row) }
+        for row in batch.answers { storeAnswer(row) }
+        for row in batch.days { storeDay(row) }
+        for row in batch.badges { storeBadge(row) }
+    }
+
+    // S43 history, merged like the SQL: answers append-only (duplicates
+    // ignored), days keep the larger counter per device, badges the earliest.
+    private(set) var quizAnswers: [String: QuizAnswerPayload] = [:]
+    private(set) var dailyActivity: [String: DailyActivityPayload] = [:]
+    private(set) var badgeAwards: [String: BadgeAwardPayload] = [:]
+
+    private static func key(_ row: QuizAnswerPayload) -> String { "a:\(row.questionId)@\(row.answeredAt.timeIntervalSince1970)" }
+    private static func key(_ row: DailyActivityPayload) -> String { "d:\(row.deviceId)|\(row.day)" }
+
+    private func storeAnswer(_ row: QuizAnswerPayload) {
+        let key = Self.key(row)
+        guard quizAnswers[key] == nil else { return }
+        quizAnswers[key] = row
+        progressTimes[key] = tick()
+    }
+
+    private func storeDay(_ row: DailyActivityPayload) {
+        let key = Self.key(row)
+        var merged = row
+        if let old = dailyActivity[key] {
+            merged.cardsRated = max(old.cardsRated, row.cardsRated)
+            merged.quizAnswers = max(old.quizAnswers, row.quizAnswers)
+            if merged == old { return }
+        }
+        dailyActivity[key] = merged
+        progressTimes[key] = tick()
+    }
+
+    private func storeBadge(_ row: BadgeAwardPayload) {
+        if let old = badgeAwards[row.badge], row.earnedAt >= old.earnedAt { return }
+        badgeAwards[row.badge] = row
+        progressTimes["b:\(row.badge)"] = tick()
+    }
+
+    private func storeCardProgress(_ row: CardProgressPayload) {
+        if let old = cardProgress[row.cardId], row.lastReviewedAt <= old.lastReviewedAt { return }
+        cardProgress[row.cardId] = row
+        progressTimes["c:\(row.cardId)"] = tick()
+    }
+
+    private func storeQuestionProgress(_ row: QuestionProgressPayload) {
+        if let old = questionProgress[row.questionId], row.lastAnsweredAt <= old.lastAnsweredAt { return }
+        questionProgress[row.questionId] = row
+        progressTimes["q:\(row.questionId)"] = tick()
+    }
+
+    private func storeTopicProgress(_ row: TopicProgressPayload) {
+        var merged = row
+        if let old = topicProgress[row.topicId] {
+            merged.mediumUnlockedAt = ProgressSync.earliest(old.mediumUnlockedAt, row.mediumUnlockedAt)
+            merged.hardUnlockedAt = ProgressSync.earliest(old.hardUnlockedAt, row.hardUnlockedAt)
+            if merged == old { return }
+        }
+        topicProgress[row.topicId] = merged
+        progressTimes["t:\(row.topicId)"] = tick()
+    }
+
+    /// Progress written by another device.
+    func otherDeviceUpsert(progress batch: ProgressBatch) {
+        storeAll(batch)
+    }
+
     /// Another user's membership and XP, as if they'd joined elsewhere.
     func addMember(_ user: UUID, name: String, xp: Int, to groupID: UUID) {
         members[groupID, default: []].insert(user)

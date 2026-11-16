@@ -1,6 +1,8 @@
 import SwiftUI
+import UIKit
 
-/// User appearance preference (NFR-11). Applied once at the app root.
+/// User appearance preference (NFR-11). Applied at the app root through the
+/// window scene's trait override (see `apply(to:)`).
 enum AppAppearance: String, CaseIterable, Identifiable {
     case system
     case light
@@ -19,12 +21,29 @@ enum AppAppearance: String, CaseIterable, Identifiable {
         }
     }
 
-    /// nil follows the system setting.
-    var colorScheme: ColorScheme? {
+    /// The window trait for this preference; `.unspecified` follows the system.
+    var interfaceStyle: UIUserInterfaceStyle {
         switch self {
-        case .system: nil
+        case .system: .unspecified
         case .light: .light
         case .dark: .dark
+        }
+    }
+
+    /// Sets the style on every window, so sheets, covers and
+    /// alerts follow at once. Not `.preferredColorScheme`: going back to
+    /// `nil` (System) after Light or Dark leaves the window on the last
+    /// explicit scheme, and a change made from inside a sheet reached the
+    /// views under it late, so switching looked stuck.
+    @MainActor
+    func apply(to application: UIApplication = .shared) {
+        // The window's override, not the scene's `traitOverrides`: changing
+        // the scene trait dismissed an open sheet. On a window `.unspecified`
+        // means no override, so System follows the device again.
+        for case let scene as UIWindowScene in application.connectedScenes {
+            for window in scene.windows {
+                window.overrideUserInterfaceStyle = interfaceStyle
+            }
         }
     }
 

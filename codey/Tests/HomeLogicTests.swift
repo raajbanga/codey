@@ -2,25 +2,8 @@ import Foundation
 import Testing
 @testable import codey
 
-/// Home's pure helpers: greeting, Up-next choice, topic ordering, deep-link routes.
+/// Home's pure helpers: Up-next choice, topic ordering, deep-link routes.
 struct HomeLogicTests {
-    private func date(hour: Int) -> Date {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar.date(from: DateComponents(year: 2026, month: 10, day: 7, hour: hour))!
-    }
-
-    private var utc: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar
-    }
-
-    @Test(arguments: [(5, "Good morning"), (11, "Good morning"), (12, "Good afternoon"), (16, "Good afternoon"), (17, "Good evening"), (2, "Good evening")])
-    func greeting(hour: Int, expected: String) {
-        #expect(HomeLogic.greeting(at: date(hour: hour), calendar: utc) == expected)
-    }
-
     @Test func upNextPriority() {
         let deck = UUID(), starter = UUID()
         let resume = (deckID: deck, position: 3, total: 10)
@@ -52,17 +35,14 @@ struct HomeLogicTests {
 
 @MainActor
 struct RouterTests {
-    @Test func startFromTheSetupSheetPresentsAfterDismiss() throws {
+    @Test func startFromTheSetupPanelClosesItAndPresents() throws {
         let context = try TestSupport.inMemoryContext()
         let topic = try TestSupport.insertTopic(context, easy: 2, medium: 0, hard: 0)
         let router = Router()
 
         router.quizSetupTopic = topic
-
         router.startQuiz(QuizRequest(topic: topic, mode: .mixed))
         #expect(router.quizSetupTopic == nil)
-        #expect(router.quiz == nil, "waits for the sheet to go away")
-        router.presentPendingQuiz()
         #expect(router.quiz?.topic.id == topic.id)
     }
 

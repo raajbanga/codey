@@ -14,6 +14,14 @@ struct AppAppearanceTests {
         return defaults
     }
 
+    /// System must clear the override (`.unspecified`), not keep the last
+    /// explicit style: the stuck-switch bug fixed in the §3b UI pass.
+    @Test func eachPreferenceMapsToAWindowStyle() {
+        #expect(AppAppearance.system.interfaceStyle == .unspecified)
+        #expect(AppAppearance.light.interfaceStyle == .light)
+        #expect(AppAppearance.dark.interfaceStyle == .dark)
+    }
+
     @Test func legacyDarkOnBecomesDark() {
         let defaults = makeDefaults()
         defaults.set(true, forKey: AppAppearance.legacyDarkModeKey)

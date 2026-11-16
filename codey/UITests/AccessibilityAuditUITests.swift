@@ -48,7 +48,10 @@ final class AccessibilityAuditUITests: XCTestCase {
         try audit("onboarding.signIn")
         app.terminate()
 
-        app.launchArguments = ["-UITestInMemoryStore", "-appearance", appearance]
+        // The stubbed Ask AI client (no network) so the chat can be audited.
+        // A fresh XCUIApplication, so the audit targets the new process.
+        app = XCUIApplication()
+        app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-appearance", appearance]
         app.launch()
 
         // Home and the profile sheet.
@@ -66,7 +69,7 @@ final class AccessibilityAuditUITests: XCTestCase {
             groups.tap()
             sleep(1)
             try audit("groups")
-            app.navigationBars.buttons.firstMatch.tap()
+            app.swipeBack()
         }
 
         // Decks, deck detail, builder.
@@ -76,7 +79,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.buttons["decks.add"].tap()
         XCTAssertTrue(app.textFields["builder.title"].waitForExistence(timeout: 5))
         try audit("builder")
-        app.navigationBars.buttons["Cancel"].firstMatch.tap()
+        app.buttons["builder.cancel"].tap()
         let discard = app.buttons["Discard Changes"]
         if discard.waitForExistence(timeout: 1) { discard.tap() }
 
@@ -111,18 +114,41 @@ final class AccessibilityAuditUITests: XCTestCase {
         app.buttons["study.done"].tap()
 
         // Quiz: topics, setup, a question before and after answering.
-        app.tabBars.buttons["Quiz"].tap()
-        let quizTopic = app.buttons["quizTopic.Algorithms"]
+        // Coding exercises (FR-39 to FR-41), on a Library topic's page.
+        app.openTopic("Swift Basics")
+        let exercise = app.buttons["exercise.ex-swift-guard"]
+        XCTAssertTrue(exercise.waitForExistence(timeout: 5))
+        for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }
+        exercise.tap()
+        let blank = app.textFields["exercise.blank.1"]
+        XCTAssertTrue(blank.waitForExistence(timeout: 5))
+        try audit("exercise")
+        blank.tap()
+        blank.typeText("guard")
+        app.buttons["exercise.submit"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["exercise.summary"].waitForExistence(timeout: 5))
+        try audit("exercise.result")
+        app.swipeBack()
+        XCTAssertTrue(exercise.waitForExistence(timeout: 5))
+        app.swipeBack()
+        app.openTopic("Algorithms")
+        let quizTopic = app.buttons["topic.play"]
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
-        try audit("quiz.topics")
-        // The row's center is on its tier chips, which are buttons of their own.
-        quizTopic.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
+        quizTopic.tap()
         XCTAssertTrue(app.buttons["quizSetup.start"].waitForExistence(timeout: 5))
         try audit("quiz.setup")
         app.buttons["quizSetup.start"].tap()
         let option = app.buttons["quiz.option.0"]
         XCTAssertTrue(option.waitForExistence(timeout: 5))
         try audit("quiz.question")
+
+        // Ask AI (S39): the chat with the greeting and one answer.
+        app.buttons["askAI.open"].tap()
+        let tutor = app.descendants(matching: .any)["askAI.message.tutor"].firstMatch
+        XCTAssertTrue(tutor.waitForExistence(timeout: 10))
+        try audit("askAI.chat")
+        app.closePanel()
+        XCTAssertTrue(option.waitForExistence(timeout: 5))
         option.tap()
         sleep(1)
         try audit("quiz.answered")
@@ -134,8 +160,23 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// Records every issue on the current screen instead of stopping at the
     /// first, so one run gives the full count.
     private func audit(_ screen: String) throws {
+        do {
+            try performAudit(screen)
+        } catch let error as NSError where error.domain == "com.apple.accessibilityAudit" && error.code == -902
+                    && app.state != .notRunning {
+            // "Invalid target app" while the app is still running: on CI the
+            // audit sometimes loses track of the process. Bring it forward and
+            // audit once more. If the app is gone (a crash), fail here instead
+            // of relaunching it, so the crash isn't hidden.
+            app.activate()
+            sleep(1)
+            try performAudit(screen)
+        }
+    }
+
+    private func performAudit(_ screen: String) throws {
         try app.performAccessibilityAudit { issue in
-            let element = issue.element.map { "\($0.elementType.rawValue) '\($0.label)' id=\($0.identifier)" } ?? "-"
+            let element = issue.element.map { "\($0.elementType.rawValue) '\($0.label)' id=\($0.identifier) frame=\($0.frame)" } ?? "-"
             let known = Self.isKnownFalsePositive(issue)
             print("A11Y \(screen): \(issue.compactDescription) [\(element)]\(known ? " (known)" : "")")
             self.rawCount += 1

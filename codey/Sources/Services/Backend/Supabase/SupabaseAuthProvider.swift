@@ -6,7 +6,7 @@ import os
 
 /// Google sign-in → Supabase session (FR-01–03). Native flow: GoogleSignIn
 /// returns an ID token, and Supabase verifies it against the Web client ID
-/// (nonce checks are skipped in the dashboard for native iOS sign-in).
+/// and checks the nonce (see `SignInNonce`).
 @MainActor
 final class SupabaseAuthProvider: AuthProviding {
     private let client: SupabaseClient
@@ -22,9 +22,18 @@ final class SupabaseAuthProvider: AuthProviding {
     }
 
     func signIn(presenting viewController: UIViewController) async throws -> AppUser? {
+        // BUG-02: GoogleSignIn 10 always puts a nonce in the ID token, and
+        // Supabase rejects a token with a nonce unless we pass one too. Google
+        // gets the SHA-256 hash; Supabase gets the raw value and hashes it.
+        let nonce = SignInNonce()
         let result: GIDSignInResult
         do {
-            result = try await GIDSignIn.sharedInstance.signIn(withPresenting: viewController)
+            result = try await GIDSignIn.sharedInstance.signIn(
+                withPresenting: viewController,
+                hint: nil,
+                additionalScopes: nil,
+                nonce: nonce.hashed
+            )
         } catch let error as NSError where error.domain == kGIDSignInErrorDomain
             && error.code == GIDSignInError.canceled.rawValue {
             return nil
@@ -35,7 +44,8 @@ final class SupabaseAuthProvider: AuthProviding {
         let session = try await client.auth.signInWithIdToken(credentials: OpenIDConnectCredentials(
             provider: .google,
             idToken: idToken,
-            accessToken: result.user.accessToken.tokenString
+            accessToken: result.user.accessToken.tokenString,
+            nonce: nonce.raw
         ))
         Logger.auth.notice("Signed in with Google")
         return AppUser(session.user)

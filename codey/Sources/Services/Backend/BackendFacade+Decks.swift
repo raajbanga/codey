@@ -71,4 +71,22 @@ extension BackendFacade {
         deck.isHidden = hidden
         try context.save()
     }
+
+    /// Takes a card out of study (or back in) without deleting it (§3b).
+    /// Your own decks sync it like an edit; starter decks keep it on this
+    /// device (their cards are never uploaded).
+    func setHidden(_ hidden: Bool, card: Flashcard) throws {
+        guard card.isHidden != hidden else { return }
+        card.isHidden = hidden
+        guard let deck = card.deck, deck.origin == .user, deck.canEdit else {
+            try persist()
+            return
+        }
+        deck.edit()
+        card.updatedAt = now()
+        deck.save(at: now())
+        try queue.enqueue(.card, id: card.id, op: .upsert, ownerId: deck.ownerId)
+        try queue.enqueue(.deck, id: deck.id, op: .upsert, ownerId: deck.ownerId)
+        try persist()
+    }
 }

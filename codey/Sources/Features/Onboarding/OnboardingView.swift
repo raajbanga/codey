@@ -44,26 +44,18 @@ struct OnboardingView: View {
     private var topBar: some View {
         HStack {
             if step != .welcome {
-                Button {
+                CircleIconButton(systemImage: "chevron.left", label: "Back") {
                     move(to: Step(rawValue: step.rawValue - 1) ?? .welcome)
-                } label: {
-                    Label("Back", systemImage: "chevron.left")
-                        .font(.codeyCallout.weight(.semibold))
-                        // 44pt minimum target (HIG); the label alone is ~20pt tall.
-                        .frame(minHeight: 44)
-                        .contentShape(.rect)
                 }
-                .tint(CodeyColor.brand)
                 .accessibilityIdentifier("onboarding.back")
+            } else {
+                Color.clear.frame(width: 44, height: 44)
             }
             Spacer()
             PageDots(count: Step.allCases.count, index: step.rawValue)
             Spacer()
             // Balances the Back button so the dots stay centered.
-            Label("Back", systemImage: "chevron.left")
-                .font(.codeyCallout.weight(.semibold))
-                .hidden()
-                .accessibilityHidden(true)
+            Color.clear.frame(width: 44, height: 44)
         }
         .padding(.horizontal, CodeySpacing.md)
         .frame(minHeight: 44)
@@ -148,38 +140,18 @@ private struct WelcomeStep: View {
                         .foregroundStyle(CodeyColor.textSecondary)
                         .multilineTextAlignment(.center)
                 }
-                VStack(alignment: .leading, spacing: CodeySpacing.md) {
-                    Feature(symbol: "rectangle.on.rectangle.angled", title: "Study decks", detail: "Flip cards and swipe to rate how well you knew them.")
-                    Feature(symbol: "questionmark.bubble.fill", title: "Take quizzes", detail: "Earn XP and keep a streak going.")
-                    Feature(symbol: "lock.open.fill", title: "Unlock harder tiers", detail: "Master Easy to open Medium, then Hard.")
+                BentoGrid {
+                    GameTile(icon: "rectangle.on.rectangle.angled", title: "Study decks",
+                             detail: "Flip cards, rate what you knew.", hue: .teal)
+                    GameTile(icon: "questionmark.bubble", title: "Take quizzes",
+                             detail: "Earn XP and keep a streak.", hue: .sky)
+                    GameTile(icon: "lock.open", title: "Unlock harder tiers",
+                             detail: "Master Easy to open Medium, then Hard.", hue: .coral)
                 }
             }
             .padding(CodeySpacing.lg)
         }
         .scrollBounceBehavior(.basedOnSize)
-    }
-
-    private struct Feature: View {
-        let symbol: String
-        let title: String
-        let detail: String
-
-        var body: some View {
-            HStack(alignment: .top, spacing: CodeySpacing.md) {
-                Image(systemName: symbol)
-                    .font(.codeyTitle)
-                    .foregroundStyle(CodeyColor.brand)
-                    .frame(width: 36)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                    Text(title).font(.codeyHeadline)
-                    Text(detail)
-                        .font(.codeySubheadline)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                }
-            }
-            .accessibilityElement(children: .combine)
-        }
     }
 }
 
@@ -197,7 +169,7 @@ private struct TopicPickStep: View {
                         .font(.codeyCallout)
                         .foregroundStyle(CodeyColor.textSecondary)
                 }
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: CodeySpacing.sm)], spacing: CodeySpacing.sm) {
+                BentoGrid {
                     ForEach(topics) { topic in
                         TopicTile(topic: topic, isSelected: picked.contains(topic.id)) {
                             if let index = picked.firstIndex(of: topic.id) {
@@ -214,6 +186,20 @@ private struct TopicPickStep: View {
         .scrollBounceBehavior(.basedOnSize)
     }
 
+    /// "How data moves: IP, TCP/UDP, HTTP, DNS, and TLS." → "IP, TCP/UDP,
+    /// HTTP": the first three subjects, so it fits a half-width tile.
+    static func short(_ summary: String) -> String {
+        var text = summary
+        if let colon = text.firstIndex(of: ":") { text = String(text[text.index(after: colon)...]) }
+        text = text.replacingOccurrences(of: ", and ", with: ", ").replacingOccurrences(of: " and ", with: ", ")
+        let items = text.trimmingCharacters(in: CharacterSet(charactersIn: " .")).components(separatedBy: ", ")
+        return items.prefix(3).joined(separator: ", ")
+    }
+}
+
+extension TopicPickStep {
+    /// A topic as a GameTile in its color: on its pastel once picked, on
+    /// the plain note before.
     private struct TopicTile: View {
         let topic: Topic
         let isSelected: Bool
@@ -221,38 +207,23 @@ private struct TopicPickStep: View {
 
         var body: some View {
             Button(action: toggle) {
-                VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                    HStack {
-                        Image(systemName: topic.iconName)
-                            .font(.codeyTitle)
-                            .foregroundStyle(CodeyColor.brand)
-                        Spacer()
-                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .font(.codeyTitle)
-                            .foregroundStyle(isSelected ? CodeyColor.brand : CodeyColor.textSecondary)
-                            .contentTransition(.symbolEffect(.replace))
+                GameTile(
+                    icon: topic.iconName,
+                    title: topic.title,
+                    detail: TopicPickStep.short(topic.summary),
+                    hue: .of(topicID: topic.id),
+                    filled: isSelected,
+                    status: {
+                        if isSelected {
+                            CodeyChip("Picked", systemImage: "checkmark", variant: .outline(CodeyColor.TopicHue.of(topicID: topic.id).ink))
+                        }
                     }
-                    Text(topic.title)
-                        .font(.codeyHeadline)
-                        .foregroundStyle(CodeyColor.textPrimary)
-                        .multilineTextAlignment(.leading)
-                    Text(topic.summary)
-                        .font(.codeySubheadline)
-                        .foregroundStyle(CodeyColor.textSecondary)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(3)
-                }
-                .padding(CodeySpacing.md)
-                .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-                .codeyNote(
-                    fill: isSelected ? CodeyColor.brandSoft : CodeyColor.surfaceRaised,
-                    edge: isSelected ? CodeyColor.brand : nil
                 )
-                .contentShape(.rect(cornerRadius: CodeyRadius.lg))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(TilePressStyle())
             .sensoryFeedback(.selection, trigger: isSelected)
-            .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityIdentifier("onboarding.topic.\(topic.title)")
         }
     }
@@ -262,29 +233,34 @@ private struct SyncStep: View {
     let isSignInAvailable: Bool
     let authState: AuthState
 
+    private let hue = CodeyColor.TopicHue.slate
+
     var body: some View {
         ScrollView {
-            VStack(spacing: CodeySpacing.lg) {
-                Image(systemName: "icloud.and.arrow.up")
-                    .font(.codeyDisplay)
-                    .imageScale(.large)
-                    .foregroundStyle(CodeyColor.brand)
-                    .padding(.top, CodeySpacing.xl)
-                    .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: CodeySpacing.lg) {
                 Text("Back up & sync")
                     .font(.codeyDisplay)
-                    .multilineTextAlignment(.center)
-                Text(isSignInAvailable
-                     ? "Sign in with Google to back up your decks and XP and sync them across devices. You can also skip and sign in later from your profile."
-                     : "Codey works fully offline. Everything is saved on this device.")
-                    .font(.codeyCallout)
-                    .foregroundStyle(CodeyColor.textSecondary)
-                    .multilineTextAlignment(.center)
+                VStack(alignment: .leading, spacing: CodeySpacing.md) {
+                    IconTile(systemName: "icloud.and.arrow.up", size: 64, radius: CodeyRadius.md, ink: .white, tile: hue.fill)
+                    Text(isSignInAvailable
+                         ? "Sign in with Google to back up your decks and XP and sync them across devices. You can also skip and sign in later from your profile."
+                         : "Codey works fully offline. Everything is saved on this device.")
+                        .font(.codeyCallout)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(hue.ink)
+                .padding(CodeySpacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(hue.soft, in: .codey(CodeyRadius.lg))
+                .environment(\.colorScheme, .light)
+                BentoGrid {
+                    GameTile(icon: "rectangle.stack", title: "Decks", detail: "Every card you write", hue: .teal, filled: false)
+                    GameTile(icon: "star", title: "XP & level", detail: "Shared with your groups", hue: .sand, filled: false)
+                }
                 if case .error(let message) = authState {
                     Text(message)
                         .font(.codeyCallout)
                         .foregroundStyle(CodeyColor.danger)
-                        .multilineTextAlignment(.center)
                 }
             }
             .padding(CodeySpacing.lg)
@@ -293,19 +269,22 @@ private struct SyncStep: View {
     }
 }
 
-/// Dots for the current onboarding step.
+/// Step progress: the current step a wider capsule.
 private struct PageDots: View {
     let count: Int
     let index: Int
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: CodeySpacing.xs) {
             ForEach(0..<count, id: \.self) { dot in
-                Circle()
-                    .fill(dot == index ? CodeyColor.brand : CodeyColor.fillNeutral)
-                    .frame(width: 8, height: 8)
+                Capsule()
+                    .fill(dot == index ? CodeyColor.TopicHue.slate.fill : CodeyColor.paperDot)
+                    .frame(width: dot == index ? 28 : 8, height: 8)
             }
         }
+        .codeyAnimation(CodeyMotion.snappy, value: index)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Step \(index + 1) of \(count)")
     }
