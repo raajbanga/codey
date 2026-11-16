@@ -108,12 +108,12 @@ struct HomeView: View {
     /// Who you are and how far to the next level, in one card.
     private var levelHero: some View {
         let level = LevelCalculator.level(forXP: xp)
+        let name = profile?.username ?? UserProfile.defaultUsername
+        let firstName = name.split(separator: " ").first.map(String.init) ?? name
         return HeroCard(
-            title: profile?.username ?? UserProfile.defaultUsername,
-            subtitle: HomeLogic.greeting(at: .now),
+            title: "Hello, \(firstName)!",
             icon: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: profile?.avatarId)),
-            progress: LevelCalculator.progressFraction(xp),
-            caption: "\(LevelCalculator.xpIntoLevel(xp)) / \(LevelCalculator.xpPerLevel) XP, \(LevelCalculator.xpToNextLevel(xp)) to Level \(level + 1)"
+            progress: LevelCalculator.progressFraction(xp)
         ) {
             CodeyChip("Level \(level)", systemImage: "star.fill", variant: .xp)
                 .contentTransition(.numericText(value: Double(level)))

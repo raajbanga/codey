@@ -2,25 +2,8 @@ import Foundation
 import Testing
 @testable import codey
 
-/// Home's pure helpers: greeting, Up-next choice, topic ordering, deep-link routes.
+/// Home's pure helpers: Up-next choice, topic ordering, deep-link routes.
 struct HomeLogicTests {
-    private func date(hour: Int) -> Date {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar.date(from: DateComponents(year: 2026, month: 10, day: 7, hour: hour))!
-    }
-
-    private var utc: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar
-    }
-
-    @Test(arguments: [(5, "Good morning"), (11, "Good morning"), (12, "Good afternoon"), (16, "Good afternoon"), (17, "Good evening"), (2, "Good evening")])
-    func greeting(hour: Int, expected: String) {
-        #expect(HomeLogic.greeting(at: date(hour: hour), calendar: utc) == expected)
-    }
-
     @Test func upNextPriority() {
         let deck = UUID(), starter = UUID()
         let resume = (deckID: deck, position: 3, total: 10)

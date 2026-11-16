@@ -2,15 +2,6 @@ import Foundation
 
 /// Pure helpers behind HomeView (unit-tested).
 enum HomeLogic {
-    /// "Good morning" before noon, "Good afternoon" until 5 pm, else evening.
-    static func greeting(at date: Date, calendar: Calendar = .current) -> String {
-        switch calendar.component(.hour, from: date) {
-        case 5..<12: "Good morning"
-        case 12..<17: "Good afternoon"
-        default: "Good evening"
-        }
-    }
-
     /// Every topic, pinned first (in pin order), then the rest by title.
     static func orderedTopicIDs(all: [(id: String, title: String)], pinned: [String]) -> [String] {
         let known = Set(all.map(\.id))

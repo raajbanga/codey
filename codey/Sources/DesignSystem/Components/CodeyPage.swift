@@ -107,14 +107,18 @@ extension CodeyPage where Hero == HeroCard<EmptyView> {
     }
 }
 
-/// What a page is about, in its pastel (S41 deck card, shared Nov 15): an
-/// icon with a short line beside it and a badge, the title, and an
-/// optional progress bar with its caption. Deck detail, Play (name and level), Profile,
-/// Groups and every other page open with one.
+/// What a page is about, in its pastel: one layout everywhere (Nov 15;
+/// there were four). The icon and title share the first row with the tag
+/// on the right, then an optional line under the title (it wraps, so a
+/// topic's description isn't cut off), then an optional bar and caption.
+///
+///     ╭ (icon) Title             [tag] ╮
+///     │ subtitle, as long as it needs  │
+///     │ ━━━━━━━━━━━━──────             │
+///     ╰ caption                        ╯
 struct HeroCard<Badge: View>: View {
     let title: String
-    var subtitle: String?
-    var detail: AttributedString?
+    var subtitle: AttributedString?
     var icon: String?
     var hue: CodeyColor.TopicHue?
     var progress: Double?
@@ -122,6 +126,8 @@ struct HeroCard<Badge: View>: View {
     @ViewBuilder var badge: Badge
     @Environment(\.appHue) private var appHue
 
+    /// `attributedSubtitle` is styled text (an exercise's task) in place
+    /// of `subtitle`.
     init(
         title: String,
         subtitle: String? = nil,
@@ -129,14 +135,11 @@ struct HeroCard<Badge: View>: View {
         hue: CodeyColor.TopicHue? = nil,
         progress: Double? = nil,
         caption: String? = nil,
-        /// Longer styled text (an exercise's prompt) under the title;
-        /// `subtitle` is a short line beside the icon.
         attributedSubtitle: AttributedString? = nil,
         @ViewBuilder badge: () -> Badge = { EmptyView() }
     ) {
         self.title = title
-        self.subtitle = subtitle
-        self.detail = attributedSubtitle
+        self.subtitle = attributedSubtitle ?? subtitle.map { AttributedString($0) }
         self.icon = icon
         self.hue = hue
         self.progress = progress
@@ -147,35 +150,18 @@ struct HeroCard<Badge: View>: View {
     var body: some View {
         let hue = hue ?? appHue ?? .slate
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            if titleBesideIcon {
-                // Just a title: it sits beside the icon, at the icon's
-                // size (Nov 15).
-                HStack(alignment: .center, spacing: CodeySpacing.sm) {
-                    if let icon { Icon(icon, size: 26, relativeTo: .title2) }
-                    titleText
-                    Spacer(minLength: 0)
-                    badge
-                }
-            } else {
-                // Icon, the short line, and the badge share one row, so
-                // the title sits one line higher.
-                if icon != nil || subtitle != nil || Badge.self != EmptyView.self {
-                    HStack(alignment: .center, spacing: CodeySpacing.sm) {
-                        if let icon { Icon(icon, size: 26, relativeTo: .title2) }
-                        if let subtitle {
-                            Text(subtitle)
-                                .font(.codeySubheadline)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 0)
-                        badge
-                    }
-                }
-                titleText
+            HStack(alignment: .center, spacing: CodeySpacing.sm) {
+                if let icon { Icon(icon, size: 26, relativeTo: .title2) }
+                Text(title)
+                    .font(.codeyTitle.weight(.semibold))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                badge
             }
-            if let detail {
-                Text(detail)
+            if let subtitle {
+                Text(subtitle)
                     .font(.codeySubheadline)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -194,16 +180,6 @@ struct HeroCard<Badge: View>: View {
         .environment(\.colorScheme, .light)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
-    }
-
-    private var titleBesideIcon: Bool { icon != nil && subtitle == nil && detail == nil }
-
-    private var titleText: some View {
-        Text(title)
-            .font(.codeyTitle.weight(.semibold))
-            .lineLimit(2)
-            .minimumScaleFactor(0.8)
-            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
