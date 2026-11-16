@@ -18,7 +18,10 @@ extension XCUIApplication {
 
     /// Library tab, then a topic's page (Nov 15): its Play Quiz button
     /// (`topic.play`), exercises and decks.
+    /// Pushed pages (deck detail, a topic's page) hide the tab bar, so swipe
+    /// back until it shows before tapping the tab.
     func openTopic(_ title: String) {
+        for _ in 0..<4 where !tabBars.firstMatch.waitForExistence(timeout: 2) { swipeBack() }
         tabBars.buttons["Library"].tap()
         let tile = buttons["library.topic.\(title)"]
         _ = tile.waitForExistence(timeout: 15)

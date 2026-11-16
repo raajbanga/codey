@@ -27,11 +27,15 @@ struct LibraryView: View {
 
     private var exercises: [Exercise] { ExerciseCatalog.shared.all }
 
-    /// Topics whose title or summary match the search.
+    /// Pinned topics first (in pin order, set in Settings), then the rest
+    /// by title; filtered by the search.
     private var shownTopics: [Topic] {
+        let byID = topics.keyed(by: \.id)
+        let ordered = HomeLogic.orderedTopicIDs(all: topics.map { ($0.id, $0.title) }, pinned: profiles.first?.pinnedTopicIds ?? [])
+            .compactMap { byID[$0] }
         let query = searchText.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return topics }
-        return topics.filter { $0.title.localizedStandardContains(query) || $0.summary.localizedStandardContains(query) }
+        guard !query.isEmpty else { return ordered }
+        return ordered.filter { $0.title.localizedStandardContains(query) || $0.summary.localizedStandardContains(query) }
     }
 
     var body: some View {

@@ -17,7 +17,7 @@ final class ExerciseUITests: XCTestCase {
     }
 
     func testSolveGuardExercise() throws {
-        app.openTopic("Swift")
+        app.openTopic("Swift Basics")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 15))
         snapshot("exercise-list")
@@ -44,9 +44,9 @@ final class ExerciseUITests: XCTestCase {
         // A full pass ends on the win screen, like a quiz (§3c).
         XCTAssertTrue(app.staticTexts["Solved!"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["All 2 tests passed"].exists)
-        XCTAssertTrue(app.buttons["exercise.next"].exists)
+        XCTAssertTrue(hittable(app.buttons["exercise.next"]).exists)
         snapshot("exercise-result-pass")
-        app.buttons["exercise.done"].tap()
+        hittable(app.buttons["exercise.done"]).tap()
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
     }
 

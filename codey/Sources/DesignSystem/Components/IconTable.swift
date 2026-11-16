@@ -60,7 +60,7 @@ extension CodeyIcon {
         "person.3.fill": "icon-group",
         "person.crop.circle": "icon-profile",
         "pin": "icon-pin",
-        "pin.fill": "icon-pin",
+        "pin.fill": "icon-pin-fill",
         "play": "icon-play",
         "play.fill": "icon-play",
         "plus": "icon-plus",

@@ -43,7 +43,7 @@ final class ScreenTourUITests: XCTestCase {
             }
         }
 
-        app.openTopic("Swift")
+        app.openTopic("Swift Basics")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         if exercise.waitForExistence(timeout: 5) {
             for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }

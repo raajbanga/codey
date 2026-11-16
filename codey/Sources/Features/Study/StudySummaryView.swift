@@ -26,11 +26,7 @@ struct StudySummaryView: View {
             celebration: summary.unlockedTiers.last.map { ("\($0.style.label) unlocked!", $0.style.symbol) }
         ) {
             if !wasEmpty {
-                Icon("rectangle.stack", size: 40, relativeTo: .largeTitle)
-                    .foregroundStyle(CodeyColor.TopicHue.of(topicID: deck.topicId).ink)
-                    .frame(width: 72, height: 72)
-                    .background(CodeyColor.TopicHue.of(topicID: deck.topicId).soft, in: .codey(CodeyRadius.lg))
-                    .accessibilityHidden(true)
+                SessionSummaryIcon(systemImage: "rectangle.stack", hue: .of(topicID: deck.topicId))
             }
         } details: {
             if wasEmpty {

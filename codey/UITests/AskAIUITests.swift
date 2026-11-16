@@ -52,7 +52,7 @@ final class AskAIUITests: XCTestCase {
     }
 
     func testAskAIOnCodingExercise() throws {
-        app.openTopic("Swift")
+        app.openTopic("Swift Basics")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 15))
         for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }
