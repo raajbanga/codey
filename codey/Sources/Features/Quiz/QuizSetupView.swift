@@ -12,6 +12,7 @@ struct QuizSetupView: View {
     @Query private var progressRows: [QuestionProgress]
     @Query private var topicProgress: [TopicProgress]
     @Query private var profiles: [UserProfile]
+    @Query private var records: [QuizAnswerRecord]
     /// .mixed or .tier(_); review has its own button.
     @State private var choice: QuizMode = .mixed
 
@@ -21,6 +22,7 @@ struct QuizSetupView: View {
         let id = topic.id
         _progressRows = Query(filter: #Predicate<QuestionProgress> { $0.topicId == id })
         _topicProgress = Query(filter: #Predicate<TopicProgress> { $0.topicId == id })
+        _records = Query(filter: #Predicate<QuizAnswerRecord> { $0.topicId == id })
     }
 
     private var config: GatingConfig { .standard }
@@ -51,6 +53,9 @@ struct QuizSetupView: View {
     private var retiredCount: Int {
         candidates.filter { !$0.isActive && unlocked.contains($0.difficulty) }.count
     }
+    private var accuracy: Double? {
+        QuizProgressStore.accuracy(of: records, window: config.accuracyWindow)
+    }
     private var isMastered: Bool {
         QuestionPool.activeIDs(candidates, unlocked: unlocked).isEmpty
     }
@@ -74,16 +79,18 @@ struct QuizSetupView: View {
     }
 
     /// The topic in its pastel, like every page's hero (Nov 15): what a
-    /// question pays as a tag, and how full this quiz is as a bar.
+    /// question pays as a tag, and the same bar as the topic's tile on
+    /// Play (accuracy over the last answers, FR-36).
     /// No ✕: the panel is swiped away (or tapped outside, or VoiceOver's
     /// escape gesture).
     private var header: some View {
         HeroCard(
             title: topic.title,
+            subtitle: isMastered ? nil : readyText,
             icon: topic.iconName,
             hue: hue,
-            progress: isMastered ? 1 : Double(min(activeCount, config.quizSize)) / Double(config.quizSize),
-            caption: isMastered ? "Every unlocked question retired" : readyText
+            progress: accuracy ?? 0,
+            caption: isMastered ? "Every unlocked question retired" : accuracy.map { "\($0.percentText) correct lately" } ?? "No answers yet"
         ) {
             CodeyChip(xp: XPPolicy.base(bestTier))
         }

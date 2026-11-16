@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// App shell (D8, S41): Play | Decks with a Liquid Glass tab bar that
+/// App shell (D8, S41): Play | Decks | Library with a Liquid Glass tab bar that
 /// shrinks on scroll (the only system-drawn control), plus the app-level sheets/covers. Study and Quiz are
 /// full-screen covers (focus mode), so the bar never covers their controls.
 /// Every study session and quiz is presented from here, via the Router.
@@ -23,6 +23,9 @@ struct RootView: View {
             }
             Tab("Decks", image: "icon-cards", value: AppTab.decks) {
                 NavigationStack(path: $router.decksPath) { DeckLibraryView() }
+            }
+            Tab("Library", image: "icon-layers", value: AppTab.library) {
+                NavigationStack { LibraryView() }
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)

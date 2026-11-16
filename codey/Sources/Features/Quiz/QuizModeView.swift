@@ -33,14 +33,15 @@ struct QuizModeView: View {
                 )
                 .frame(maxHeight: .infinity)
             } else if viewModel.isFinished {
+                // No top bar: Done closes (Nov 15).
                 QuizSummaryView(viewModel: viewModel) { dismiss() }
                     .padding(.horizontal, CodeySpacing.md)
             } else if let question = viewModel.currentQuestion {
                 questionView(question)
+                    .codeyBar(.top) { topBar }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .codeyBar(.top) { topBar }
         .codeyPaperBackground()
         .xpToast($toast)
         .badgeBanner()
@@ -76,7 +77,6 @@ struct QuizModeView: View {
         SessionTopBar(
             closeLabel: "Close quiz",
             closeID: "quiz.close",
-            isActive: !viewModel.isFinished && !viewModel.questions.isEmpty,
             close: { dismiss() }
         ) {
             SessionProgress(
@@ -154,7 +154,9 @@ struct QuizModeView: View {
                     kind: .primary,
                     fullWidth: true
                 ) {
-                    withCodeyAnimation(reduceMotion: reduceMotion) { viewModel.next() }
+                    // Instant: an animated swap cross-faded the two
+                    // questions over each other (Nov 15).
+                    viewModel.next()
                 }
                 .keyboardShortcut(.return, modifiers: [])
                 .accessibilityIdentifier("quiz.next")

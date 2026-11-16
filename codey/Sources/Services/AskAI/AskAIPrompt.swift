@@ -18,6 +18,10 @@ struct AskAIContext: Equatable, Sendable {
     let secrets: [String]
     /// The correct option's letter (quiz only).
     let correctLetter: String?
+    /// Shown as the chat header's tag: the question's tier, or the
+    /// exercise's language. Never sent.
+    var difficulty: Difficulty?
+    var language: CodeLanguage?
 
     static func quiz(id: String, topic: String, difficulty: Difficulty, prompt: String, options: [String], correctIndex: Int)
         -> AskAIContext
@@ -39,7 +43,8 @@ struct AskAIContext: Equatable, Sendable {
         return AskAIContext(
             id: id, kind: .quiz, problem: problem,
             secrets: AnswerLeakGuard.secrets([correct], visibleText: prompt),
-            correctLetter: options.indices.contains(correctIndex) ? letter(correctIndex) : nil
+            correctLetter: options.indices.contains(correctIndex) ? letter(correctIndex) : nil,
+            difficulty: difficulty
         )
     }
 
@@ -63,7 +68,8 @@ struct AskAIContext: Equatable, Sendable {
         return AskAIContext(
             id: exercise.id, kind: .exercise, problem: problem,
             secrets: AnswerLeakGuard.secrets(exercise.blanks.flatMap(\.accepted), visibleText: visible),
-            correctLetter: nil
+            correctLetter: nil,
+            language: exercise.language
         )
     }
 

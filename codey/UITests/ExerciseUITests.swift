@@ -17,7 +17,7 @@ final class ExerciseUITests: XCTestCase {
     }
 
     func testSolveGuardExercise() throws {
-        // Exercises sit at the bottom of Play (S41).
+        app.openTopic("Swift")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         XCTAssertTrue(exercise.waitForExistence(timeout: 15))
         snapshot("exercise-list")

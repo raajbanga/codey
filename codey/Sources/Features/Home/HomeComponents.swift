@@ -2,48 +2,64 @@ import SwiftUI
 
 // Home's building blocks (HomeView lays them out).
 
-/// One topic on Play (S41 mockup): a GameTile in the topic's color with
-/// what a question pays, its top tier, its accuracy bar, and Play. The whole tile is the button.
-struct PlayTopicTile: View {
+/// One topic (S41 mockup): a GameTile in the topic's color with what a
+/// question pays, its accuracy bar, and an action. On Play the tag is its
+/// top tier and the action plays; in the Library the tags count its
+/// exercises and decks (like a deck's card count) and the action opens it.
+struct TopicTile: View {
     let stats: QuizTopicStats
-    let inPlan: Bool
-    let play: () -> Void
+    /// Exercises and decks, shown instead of the tier (Library).
+    var counts: (exercises: Int, decks: Int)?
+    var action = TileAction("Play")
+    let open: () -> Void
 
     private var topic: Topic { stats.topic }
-    private var hue: CodeyColor.TopicHue { .of(topicID: topic.id) }
 
     /// The hardest unlocked tier sets the quoted reward.
     private var bestTier: Difficulty {
         stats.tiers.last(where: \.isUnlocked)?.difficulty ?? .easy
     }
 
-    /// FR-37: the topic's accuracy over its last 50 answers (FR-36), as
-    /// the tile's bar (empty before the first answer).
-    private var accuracy: Double { stats.accuracy ?? 0 }
-
     var body: some View {
-        Button(action: play) {
+        Button(action: open) {
             GameTile(
                 icon: topic.iconName,
                 title: topic.title,
-                hue: hue,
-                progress: accuracy,
-                action: TileAction("Play")
+                hue: .of(topicID: topic.id),
+                // FR-37: accuracy over the last answers (empty before the first).
+                progress: stats.accuracy ?? 0,
+                action: action
             ) {
-                // What a question pays, top right like a quest's bonus.
                 CodeyChip(xp: XPPolicy.base(bestTier))
             } tags: {
-                CodeyChip(tier: bestTier)
-                // In this week's plan: an icon tag, so it fits beside the
-                // tier on a half-width tile.
-                if inPlan { CodeyChip("", systemImage: "calendar", variant: .outline(hue.ink)) }
+                if let counts {
+                    // Worded like a deck's "6 cards"; the decks drop out
+                    // when both don't fit.
+                    let exercises = CodeyChip(counts.exercises.counted("exercise"), systemImage: "chevron.left.forwardslash.chevron.right")
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: CodeySpacing.xs) {
+                            exercises
+                            CodeyChip(counts.decks.counted("deck"), systemImage: "rectangle.stack")
+                        }
+                        exercises
+                    }
+                } else {
+                    CodeyChip(tier: bestTier)
+                }
             }
         }
         .buttonStyle(TilePressStyle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Play \(topic.title). \(stats.accuracy.map { "\($0.percentText) correct. " } ?? "")\(bestTier.style.label) tier, \(XPPolicy.base(bestTier)) XP a question\(inPlan ? ", in this week's plan" : "")")
+        .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("play.topic.\(topic.title).quiz")
+    }
+
+    private var accessibilityLabel: String {
+        let accuracy = stats.accuracy.map { "\($0.percentText) correct. " } ?? ""
+        guard let counts else {
+            return "Play \(topic.title). \(accuracy)\(bestTier.style.label) tier, \(XPPolicy.base(bestTier)) XP a question"
+        }
+        return "\(topic.title). \(accuracy)\(counts.exercises.counted("exercise")), \(counts.decks.counted("deck"))"
     }
 }
 

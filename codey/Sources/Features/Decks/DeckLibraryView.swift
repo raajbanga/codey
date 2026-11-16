@@ -39,11 +39,14 @@ struct DeckLibraryView: View {
         let sections = deckSections(topicsByID: topicsByID)
         CodeyPage("Decks", isTabRoot: true) {
             headerActions
+        } leading: {
+            countBadge
         } hero: {
             hero
         } content: {
             if isSearching {
-                searchField
+                PageSearchField(prompt: "Title or topic", text: $searchText, focus: $searchFocused)
+                    .accessibilityIdentifier("decks.searchField")
             }
             ChoiceChips("Show", selection: $filter, fills: true)
 
@@ -110,16 +113,18 @@ struct DeckLibraryView: View {
 
     @ViewBuilder
     private var headerActions: some View {
-            CircleIconButton(systemImage: isSearching ? "xmark" : "magnifyingglass", label: isSearching ? "Close search" : "Search", kind: .soft) {
-                withAnimation(CodeyMotion.snappy) {
-                    isSearching.toggle()
-                    if !isSearching { searchText = "" }
-                }
-                searchFocused = isSearching
-            }
+        PageSearchButton(isSearching: $isSearching, text: $searchText, focus: $searchFocused)
             .accessibilityIdentifier("decks.search")
-            CircleIconButton(systemImage: "plus", label: "New Deck", kind: .soft) { isBuilding = true }
-                .accessibilityIdentifier("decks.add")
+        CircleIconButton(systemImage: "plus", label: "New Deck", kind: .soft) { isBuilding = true }
+            .accessibilityIdentifier("decks.add")
+    }
+
+    /// How many decks you study.
+    private var countBadge: some View {
+        let count = decks.filter { !$0.isHidden }.count
+        return HeaderBadge(value: count, icon: "rectangle.stack", ink: CodeyColor.brand, fill: CodeyColor.brandSoft)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(count.counted("deck"))
     }
 
     /// Every deck you study, and how far along you are across them.
@@ -129,28 +134,11 @@ struct DeckLibraryView: View {
         let progress = cards == 0 ? 0 : shown.reduce(0.0) { $0 + $1.progressRate * Double($1.cardCount) } / Double(cards)
         return HeroCard(
             title: "Decks",
-            subtitle: "\(shown.count.counted("deck")), \(cards.counted("card"))",
+            subtitle: cards.counted("card"),
             icon: "rectangle.stack",
             progress: progress,
             caption: "\(progress.percentText) progress"
         )
-    }
-
-    private var searchField: some View {
-        HStack(spacing: CodeySpacing.sm) {
-            Icon("magnifyingglass", size: 18, relativeTo: .body)
-                .foregroundStyle(CodeyColor.textSecondary)
-            TextField("Title or topic", text: $searchText)
-                .font(.codeyBody)
-                .focused($searchFocused)
-                .submitLabel(.search)
-                .accessibilityIdentifier("decks.searchField")
-        }
-        .padding(.horizontal, CodeySpacing.md)
-        .frame(minHeight: 44)
-        .background(CodeyColor.surfaceRaised, in: .pill)
-        .overlay { RoundedRectangle.pill.strokeBorder(CodeyColor.separator, lineWidth: 1) }
-        .transition(.opacity)
     }
 
     // MARK: Sections
@@ -158,26 +146,7 @@ struct DeckLibraryView: View {
     private func section(_ title: String?, decks: [FlashcardDeck], topicsByID: [String: Topic]) -> some View {
         BentoSection(title) {
             ForEach(decks) { deck in
-                let canStudy = deck.cardCount > 0 && !deck.isHidden
-                NavigationLink(value: DeckRoute(id: deck.id)) {
-                    DeckTile(deck: deck, topic: topicsByID[deck.topicId], reservesStudyButton: canStudy)
-                }
-                .buttonStyle(.plain)
-                // S40: study straight from the grid (continues where you
-                // left off); the deck screen keeps tier and start-over options.
-                .overlay(alignment: .bottom) {
-                    if canStudy {
-                        Button {
-                            router.study = StudyRequest(deck: deck, start: .resume)
-                        } label: {
-                            TileActionLabel(action: TileAction("Study"), hue: .of(topicID: deck.topicId))
-                        }
-                        .buttonStyle(TilePressStyle())
-                        .padding(CodeySpacing.md)
-                        .accessibilityLabel("Study \(deck.title)")
-                        .accessibilityIdentifier("deckTile.study.\(deck.title)")
-                    }
-                }
+                DeckTileLink(deck: deck, topic: topicsByID[deck.topicId])
             }
         }
     }

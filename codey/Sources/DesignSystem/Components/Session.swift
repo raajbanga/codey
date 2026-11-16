@@ -10,8 +10,6 @@ struct SessionTopBar<Progress: View, Trailing: View>: View {
     let closeLabel: String
     var closeHint: String?
     let closeID: String
-    /// Off on the summary: just ✕.
-    var isActive = true
     let close: () -> Void
     @ViewBuilder var progress: Progress
     @ViewBuilder var trailing: Trailing
@@ -20,12 +18,8 @@ struct SessionTopBar<Progress: View, Trailing: View>: View {
         HStack(spacing: CodeySpacing.sm) {
             CloseButton(label: closeLabel, hint: closeHint, action: close)
                 .accessibilityIdentifier(closeID)
-            if isActive {
-                progress
-                trailing
-            } else {
-                Spacer()
-            }
+            progress
+            trailing
         }
         .padding(.vertical, CodeySpacing.xs)
     }

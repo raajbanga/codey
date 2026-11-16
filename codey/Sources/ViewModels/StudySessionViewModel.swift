@@ -74,7 +74,7 @@ final class StudySessionViewModel {
     /// (empty for cards rated before a resume).
     private(set) var ratings: [CardRating] = []
     private var cardsByID: [UUID: Flashcard] = [:]
-    private var reviewedCount = 0
+    private(set) var reviewedCount = 0
     /// Each rated card's score before its first rating this session.
     private var startScores: [UUID: Int] = [:]
     private var startProgressRate = 0.0

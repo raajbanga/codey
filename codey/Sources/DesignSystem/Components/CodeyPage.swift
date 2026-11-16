@@ -224,6 +224,12 @@ struct PageAction: View {
     }
 }
 
+/// A trigger's last frame on screen. Not observed: nothing redraws when
+/// it changes; it is read only when the menu opens.
+final class MenuAnchor {
+    var frame = CGRect.zero
+}
+
 /// Every dropdown (§3b, Nov 15): one builder, two triggers, and the list
 /// drawn by the overlay host (our note, not the system's glass menu). A
 /// value picker (tier, topic, language) shows its choice as that value's
@@ -244,7 +250,9 @@ struct CodeyMenu: View {
     let trigger: Trigger
     let items: () -> [CodeyMenuItem]
     @Environment(CodeyOverlay.self) private var overlay: CodeyOverlay?
-    @State private var anchor = CGRect.zero
+    /// Where the trigger is, for the list to open from. A plain box, so
+    /// the frame updating as the page scrolls never redraws the trigger.
+    @State private var anchor = MenuAnchor()
 
     init(_ trigger: Trigger, @CodeyMenuBuilder items: @escaping () -> [CodeyMenuItem]) {
         self.trigger = trigger
@@ -253,7 +261,7 @@ struct CodeyMenu: View {
 
     var body: some View {
         Button {
-            overlay?.present(menu: items(), from: anchor)
+            overlay?.present(menu: items(), from: anchor.frame)
         } label: {
             switch trigger {
             case let .value(title, systemImage, variant):
@@ -271,6 +279,65 @@ struct CodeyMenu: View {
             }
         }
         .buttonStyle(.plain)
-        .codeyAnchor($anchor)
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { anchor.frame = $0 }
+    }
+}
+
+/// The pill at the top left of a tab page (S41): Play's streak, how many
+/// decks or topics. A number with its icon, in a soft tint.
+struct HeaderBadge: View {
+    let value: Int
+    let icon: String
+    let ink: Color
+    let fill: Color
+
+    var body: some View {
+        Label("\(value)", icon: icon)
+            .font(.codeyHeadline.monospacedDigit())
+            .foregroundStyle(ink)
+            .contentTransition(.numericText(value: Double(value)))
+            .padding(.horizontal, CodeySpacing.md)
+            .frame(height: 44)
+            .background(fill, in: .pill)
+    }
+}
+
+/// A tab page's search (Decks, Library): the round button that opens and
+/// closes it, and the field under the buttons. Closing clears the text.
+struct PageSearchButton: View {
+    @Binding var isSearching: Bool
+    @Binding var text: String
+    var focus: FocusState<Bool>.Binding
+
+    var body: some View {
+        CircleIconButton(systemImage: isSearching ? "xmark" : "magnifyingglass", label: isSearching ? "Close search" : "Search", kind: .soft) {
+            withAnimation(CodeyMotion.snappy) {
+                isSearching.toggle()
+                if !isSearching { text = "" }
+            }
+            focus.wrappedValue = isSearching
+        }
+    }
+}
+
+struct PageSearchField: View {
+    let prompt: String
+    @Binding var text: String
+    var focus: FocusState<Bool>.Binding
+
+    var body: some View {
+        HStack(spacing: CodeySpacing.sm) {
+            Icon("magnifyingglass", size: 18, relativeTo: .body)
+                .foregroundStyle(CodeyColor.textSecondary)
+            TextField(prompt, text: $text)
+                .font(.codeyBody)
+                .focused(focus)
+                .submitLabel(.search)
+        }
+        .padding(.horizontal, CodeySpacing.md)
+        .frame(minHeight: 44)
+        .background(CodeyColor.surfaceRaised, in: .pill)
+        .overlay { RoundedRectangle.pill.strokeBorder(CodeyColor.separator, lineWidth: 1) }
+        .transition(.opacity)
     }
 }

@@ -43,9 +43,7 @@ final class ScreenTourUITests: XCTestCase {
             }
         }
 
-        app.tabBars.buttons["Play"].tap()
-        let topic = app.buttons["play.topic.Algorithms.quiz"]
-        XCTAssertTrue(topic.waitForExistence(timeout: 5))
+        app.openTopic("Swift")
         let exercise = app.buttons["exercise.ex-swift-guard"]
         if exercise.waitForExistence(timeout: 5) {
             for _ in 0..<8 where !exercise.isHittable { app.swipeUp() }
@@ -56,8 +54,10 @@ final class ScreenTourUITests: XCTestCase {
             }
             app.swipeBack()
         }
+        app.swipeBack()
+        app.openTopic("Algorithms")
+        let topic = app.buttons["topic.play"]
         XCTAssertTrue(topic.waitForExistence(timeout: 5))
-        for _ in 0..<8 where !topic.isHittable { app.swipeDown() }
         topic.tap()
         if app.buttons["quizSetup.start"].waitForExistence(timeout: 5) {
             shot("quiz-setup", appearance)

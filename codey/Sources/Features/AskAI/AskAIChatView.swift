@@ -1,47 +1,49 @@
 import SwiftUI
 
-/// The Ask AI chat (S39), titled "Ask Codey" on screen (§3d), shown in a FloatingPanel: a header, the conversation as notes on the
-/// dotted paper (tutor replies rendered as Markdown), a typing indicator,
-/// an error row with Retry, and the input bar.
+/// The Ask AI chat (S39), titled "Ask Codey" on screen (§3d), shown in a
+/// FloatingPanel and laid out like quiz setup (Nov 15): the pastel
+/// HeroCard on top, the conversation as notes on the dotted paper (tutor
+/// replies rendered as Markdown), then the input, all at the panel's even
+/// inset. No ✕: the panel is swiped away or tapped outside, like every
+/// floating card.
 ///
-///     (✦) Ask Codey                       ✕
+///     ╭ (✦) Ask Codey       [Easy] ╮
+///     ╰ Explains the idea, never…  ╯
 ///     ╭ Hi! What part … ╮
 ///                      ╭ why is it O(n)? ╮
-///     ╭ • bullets … ╮
 ///     [ Ask about this question…     (↑) ]
-///        Explains the idea, never the answer
 struct AskAIChatView: View {
     @Bindable var session: AskAISession
-    @Environment(\.dismissPanel) private var dismissPanel
     @FocusState private var inputFocused: Bool
+    @Environment(\.appHue) private var appHue
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        // Gaps match the inset, as in quiz setup.
+        VStack(spacing: CodeySpacing.lg) {
+            header.padding([.horizontal, .top], CodeySpacing.lg)
             conversation
-            inputBar
+            inputRow.padding([.horizontal, .bottom], CodeySpacing.lg)
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: session.messages.count)
+        .accessibilityIdentifier("askAI.chat")
         .task { await session.start() }
     }
 
-    /// Round soft icon like the header buttons and the ✕ beside it (§3d),
-    /// and the name only: the one-line promise sits by the input.
+    /// The same hero as quiz setup: the name beside the icon, in the
+    /// question's pastel (the quiz's hue), and the promise as its caption.
     private var header: some View {
-        HStack(spacing: CodeySpacing.sm) {
-            CircleIcon(systemImage: "ask.ai", kind: .soft)
-                .accessibilityHidden(true)
-            Text("Ask Codey")
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: 0)
-            CloseButton(label: "Close Ask Codey") { dismissPanel() }
-                .accessibilityIdentifier("askAI.close")
+        HeroCard(
+            title: "Ask Codey",
+            icon: "ask.ai",
+            caption: "Explains the idea, never the answer"
+        ) {
+            if let tier = session.context.difficulty {
+                CodeyChip(tier: tier)
+            } else if let language = session.context.language {
+                // Outlined, as on the exercise's own hero.
+                CodeyChip(language.displayName, variant: .outline((appHue ?? .slate).ink))
+            }
         }
-        // Same insets as every floating card (codeyPanelPadding).
-        .padding(.horizontal, CodeySpacing.md)
-        .padding(.top, CodeySpacing.lg)
-        .padding(.bottom, CodeySpacing.xs)
     }
 
     private var conversation: some View {
@@ -62,8 +64,9 @@ struct AskAIChatView: View {
                         errorRow(error).id("error")
                     }
                 }
-                .padding(CodeySpacing.md)
+                .padding(.horizontal, CodeySpacing.lg)
             }
+            .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
             .codeyAnimation(value: session.messages.count)
             .codeyAnimation(value: session.isWaiting)
@@ -101,25 +104,10 @@ struct AskAIChatView: View {
         .accessibilityIdentifier("askAI.error")
     }
 
-    private var inputBar: some View {
-        VStack(spacing: CodeySpacing.xs) {
-            inputRow
-            Text("Explains the idea, never the answer")
-                .font(.codeyCaption)
-                .foregroundStyle(CodeyColor.textSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .padding(.horizontal, CodeySpacing.md)
-        .padding(.top, CodeySpacing.sm)
-        .padding(.bottom, CodeySpacing.lg)
-        .sensoryFeedback(.impact(weight: .light), trigger: session.messages.count)
-    }
-
     private var inputRow: some View {
-        HStack(alignment: .bottom, spacing: CodeySpacing.sm) {
+        HStack(alignment: .center, spacing: CodeySpacing.sm) {
             TextField("Ask about this \(session.context.kind == .quiz ? "question" : "exercise")…", text: $session.draft, axis: .vertical)
-                .font(.codeyCallout)
+                .font(.codeyCaption)
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .submitLabel(.send)
@@ -127,17 +115,13 @@ struct AskAIChatView: View {
                 .onChange(of: session.draft) { _, new in
                     if new.count > AskAISession.maxDraftLength { session.draft = String(new.prefix(AskAISession.maxDraftLength)) }
                 }
-                .padding(.horizontal, CodeySpacing.md)
-                .padding(.vertical, CodeySpacing.sm)
-                .frame(minHeight: 44)
-                .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.lg))
-                .overlay { RoundedRectangle.codey(CodeyRadius.lg).strokeBorder(CodeyColor.separator, lineWidth: 1) }
+                .codeyField()
                 .accessibilityLabel("Message")
                 .accessibilityIdentifier("askAI.input")
 
             CircleIconButton(systemImage: "arrow.up", label: "Send", kind: .filled, action: send)
                 .disabled(!session.canSend)
-            .accessibilityIdentifier("askAI.send")
+                .accessibilityIdentifier("askAI.send")
         }
     }
 
