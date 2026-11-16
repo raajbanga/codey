@@ -100,3 +100,5 @@ docs/source/*.pdf
 ### Coursework (instructor handouts and rubrics; kept locally, never published) ###
 docs/course/
 *rubric*
+docs/Activity*
+docs/ProjectDetails*
