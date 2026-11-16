@@ -96,8 +96,7 @@ struct ProfileSheet: View {
             subtitle: accountStatus,
             icon: ProfileAvatar.glyph(for: ProfileAvatar.symbol(for: profile?.avatarId)),
             hue: hue,
-            progress: LevelCalculator.progressFraction(xp),
-            caption: "\(xp.formatted()) XP, \(LevelCalculator.xpToNextLevel(xp)) to Level \(level + 1)"
+            progress: LevelCalculator.progressFraction(xp)
         ) {
             CodeyChip("Level \(level)", systemImage: "star.fill", variant: .xp)
         }
