@@ -110,8 +110,11 @@ ICONS = {
              '<path d="m12 3.8 2.5 5.2 5.7.7-4.2 3.9 1.1 5.6-5.1-2.7-5.1 2.7 1.1-5.6-4.2-3.9 5.7-.7z"/>'),
     'trophy': (['trophy.fill', 'trophy'],
                '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.5a2.5 2.5 0 0 0 2.6 3.5M16 6h2.5a2.5 2.5 0 0 1-2.6 3.5M12 13v7M8.5 20h7"/>'),
+    'medal': (['medal'], '<path d="M6 2.5l4 8.2M18 2.5l-4 8.2M9.5 2.5h5"/><circle cx="12" cy="15.5" r="5.5"/>'),
     'flag': (['flag.checkered', 'flag.fill', 'flag'], '<path d="M5.5 21V4M5.5 4.5h12l-2.5 4 2.5 4h-12"/>'),
-    'pin': (['pin.fill', 'pin'], '<path d="M12 16v5M8 4h8l-1 5.5 3 3V16H6v-3.5l3-3z"/>'),
+    'pin': (['pin'], '<path d="M12 16v5M8 4h8l-1 5.5 3 3V16H6v-3.5l3-3z"/>'),
+    # Filled pin for a pinned topic: the outline pin with its head filled.
+    'pin-fill': (['pin.fill'], '<path d="M12 16v5"/><path d="M8 4h8l-1 5.5 3 3V16H6v-3.5l3-3z" fill="#000"/>'),
     'hash': (['number'], '<path d="M5 9h15M4 15h15M10 4 8 20M16 4l-2 16"/>'),
     'bulb': (['lightbulb'],
              '<path d="M9 18h6M10 21h4M8.5 14.5a6 6 0 1 1 7 0c-.6.6-1 1.4-1 2.3V18h-5v-1.2c0-.9-.4-1.7-1-2.3z"/>'),

@@ -23,10 +23,14 @@ a teammate should be able to reproduce the whole backend from this page.
 | `migrations/20261110034534_study_progress.sql` | FR-61 `card_progress`, `question_progress`, `topic_progress`: owner-only RLS, CHECKs that mirror the app, merge triggers (latest review wins; tier unlocks are sticky) |
 | `migrations/20261115045606_avatar_colors.sql` | FR-04/FR-60 avatar CHECK accepts `symbol@color` (32 symbols, 7 colors) |
 | `migrations/20261115172929_progress_history.sql` | FR-61 (S43) `quiz_answers` (append-only), `daily_activity` (per device and day; larger counter wins), `badge_awards` (earliest kept), `profiles.solved_exercise_ids` |
+| `migrations/20261115194345_card_hidden.sql` | `flashcards.is_hidden`: a hidden card syncs to the user's other devices |
+| `migrations/20261116000000_content.sql` | App content: `content_topics`, `content_questions`, `content_exercises`, `content_decks`, `content_cards`. Public read (anon and authenticated), no insert/update/delete policy |
+| `seed.sql` | The content rows (8 topics, 192 questions, 25 exercises, 15 starter decks with 174 cards). Upserts by id, safe to re-run |
 | `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
 | `tests/progress.sql` | pgTAP tests for the FR-61 progress tables: RLS, CHECKs, and both merge rules |
 | `tests/history.sql` | pgTAP tests for the S43 history tables: RLS, CHECKs, duplicates ignored, larger counter, earliest badge |
-| `checks/rls_live_check.sql` | 63 of the same checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
+| `tests/content.sql` | pgTAP tests for the content tables: anon and signed-in users can read, neither can insert, update, or delete |
+| `checks/rls_live_check.sql` | 67 of the same checks for the **live** project (Supabase MCP `execute_sql` or SQL editor). Always ends in an error holding the results, so everything rolls back |
 
 Rules: never edit a migration that has been pushed, add a new file instead.
 File versions must equal the remote migration versions (`list_migrations` in
@@ -89,14 +93,18 @@ all five are set.
 ```sh
 brew install supabase/tap/supabase
 cd <repo root>
-supabase init          # creates supabase/config.toml; keep the existing migrations/ and tests/
 supabase login
 supabase link --project-ref <ref>      # <ref> is the id in your project URL
 supabase db push                       # applies migrations/*.sql in order
 ```
 
-`supabase/config.toml` isn't committed, so run `supabase init` once per clone
-before using the CLI. (`.branches`/`.temp` are gitignored.)
+`supabase/config.toml` is committed, so there is no `supabase init` step.
+(`.branches`/`.temp` are gitignored.)
+
+Then load the content: open the SQL editor, paste `supabase/seed.sql`, and run
+it (or `psql "<session pooler URI>" -f supabase/seed.sql`). Without it the
+content tables are empty, the app rejects the empty download, and it keeps
+using the bundled JSON.
 
 ## 6. Run the RLS tests
 
@@ -104,9 +112,8 @@ before using the CLI. (`.branches`/`.temp` are gitignored.)
 which needs Docker (OrbStack or Docker Desktop) running:
 
 ```sh
-supabase start        # first run downloads the images
-supabase db reset     # applies migrations to the local database
-supabase test db      # expect: All tests successful, 75 tests
+supabase db start     # first run downloads the image; applies every migration
+supabase test db      # expect: All tests successful, 109 tests
 supabase stop
 ```
 
@@ -114,24 +121,27 @@ The tests create two users and check: sign-up creates profiles; RLS is on for
 100% of tables; user B sees 0 of A's decks/cards/log rows and can't insert,
 update, or delete them; `anon` sees nothing; sync_log is append-only;
 `server_updated_at` is set by the server; and the length/line/language CHECKs
-match the app's validator.
+match the app's validator. `anon` can read only the public `content_*` tables.
+The progress and history tests check the FR-61 merge rules; the content tests
+check that no client can change the content.
 
-## Current state (2026-11-10)
+## Current state (2026-11-15)
 
-Project `gwnxkcjijuhkyklsvuta`. All ten migrations in `migrations/` are
+Project `gwnxkcjijuhkyklsvuta`. All 14 migrations in `migrations/` are
 applied via the Supabase MCP (the file names equal the remote versions),
 including the three from 2026-10-30 (avatar set + insert-only
 `feedback_reports`, groups + `group_members` + `weekly_xp` + the
 `group_leaderboard` view + `join_group()`, and the Security Advisor fixes) and
 the weekly-XP rate limit from 2026-11-02, the FR-61 study-progress tables
-from 2026-11-10, avatar colors and the S43 progress-history tables from
-2026-11-15.
-RLS is on for 14 of 14 tables. Security Advisor: `rls_auto_enable()` revoked;
+from 2026-11-10, avatar colors, the S43 progress-history tables, hidden cards, and the
+content tables from 2026-11-15 (content loaded: the rows in `seed.sql`).
+RLS is on for 19 of 19 tables (14 user-data tables, 5 public-read content tables). Security Advisor: `rls_auto_enable()` revoked;
 the one remaining warning is `join_group` (SECURITY DEFINER, justified: it must
 find a group the caller cannot see yet). `checks/rls_live_check.sql`, last run
-2026-11-10, after the study-progress migration: **0 failed of 57**, everything
-rolled back. Checks 58–63 (history tables, 2026-11-15) pass on the local stack
-(0 failed of 63); the live run of those six was not made. (2026-10-30: 0 of 48, before the rate limit.)
+2026-11-09, after the study-progress migration: **0 failed of 57**, everything
+rolled back. Checks 58–67 (history tables and content, 2026-11-15) pass on the local
+stack (**0 failed of 67**); the live run of the 67-check version is still to be made
+in the SQL editor. (2026-10-30: 0 of 48, before the rate limit.)
 (2026-10-08: 0 of 30, before the groups and feedback tables.) Google provider:
 enabled with the Web + iOS client IDs; the app sends a nonce (BUG-02, Nov 9).
 
@@ -151,8 +161,12 @@ reports, and re-run `checks/rls_live_check.sql`.
   Settings → Secrets and variables → Actions). It does nothing without them.
   Both are set (2026-10-08), and the scheduled ping runs from `main`. GitHub
   only runs scheduled workflows from the default branch.
-- **Usage**: check the Supabase *Usage* page monthly (database size, egress,
-  MAU) against the free-tier limits, and note it in the Sprint metrics table.
+- **Usage**: check the Supabase *Usage* page (database size, egress, MAU)
+  against the free-tier limits at the end of each sprint.
+- **Content**: edit questions, exercises and starter decks in the dashboard
+  (Table Editor, `content_*`); the app picks them up at the next launch or
+  return to the foreground (at most every 10 minutes). Keep ids stable. Export
+  the tables back into `seed.sql` when the content changes.
 
 ## Design notes
 
@@ -167,5 +181,8 @@ reports, and re-run `checks/rls_live_check.sql`.
   The weekly leaderboard reads `weekly_xp`, which is capped by a CHECK
   (22,500 per week), clamped to 600 XP per minute of server time, and can only
   grow. A server-computed ledger is left as future work (risk R13, accepted).
-- Starter decks, quiz progress, mastery, and tier unlocks never leave the
-  device.
+- Since S43 everything a learner does syncs (decks, card mastery, question and
+  topic progress, quiz answers, daily activity, badges, solved exercises),
+  except a half-finished study session.
+- Content (topics, questions, exercises, starter decks) comes from the
+  `content_*` tables; the bundled JSON is only the fallback.

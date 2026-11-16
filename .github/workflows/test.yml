@@ -1,6 +1,7 @@
 # CI for every push to main and dev and every pull request to main.
 #   checks:   guard scripts (imports R7, design tokens R12, secrets R10 / TC-S03)
-#   database: the 75 pgTAP tests (RLS, CHECKs, FR-61 merge rules) on a local
+#   database: the 109 pgTAP tests (RLS, CHECKs, FR-61 merge rules, read-only
+#             content) on a local
 #             Supabase database in Docker (TC-S01 offline half)
 #   app:      unit tests + accessibility audit with a readable per-test report
 #             and coverage in the job summary, then the Release-build check

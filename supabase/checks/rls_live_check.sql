@@ -2,10 +2,10 @@
 -- through the Supabase MCP (execute_sql) or the SQL editor, without pgTAP.
 --
 -- It ALWAYS ends with an error whose message holds the results, e.g.
---   "RLS TESTS: 0 failed of 63. ok 1 … | ok 63 …"
+--   "RLS TESTS: 0 failed of 67. ok 1 … | ok 67 …"
 -- Raising it rolls back every test user and row, so nothing persists.
--- Last live run: 2026-11-10 (checks 1-57), see supabase/README.md. Checks 58-63
--- (S43 history tables) were added 2026-11-15 and run on the local stack: 0 failed of 63.
+-- Checks 58-63 cover the S43 history tables, 64-67 the read-only content
+-- tables (both added 2026-11-15). Last runs: see supabase/README.md.
 
 do $test$
 declare
@@ -322,6 +322,27 @@ begin
              + (select count(*) from public.badge_awards) into n;
         if n = 0 then results := results || 'ok 63 anon sees no history'::text; else failed := failed + 1; results := results || ('FAIL 63 rows=' || n); end if;
     exception when insufficient_privilege then results := results || 'ok 63 anon sees no history (no grant)'::text; end;
+
+    -- Content tables (2026-11-15): anon may read them and change nothing.
+    begin
+        select count(*) into n from public.content_questions;
+        results := results || ('ok 64 anon reads content (' || n || ' questions)');
+    exception when others then failed := failed + 1; results := results || ('FAIL 64 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        insert into public.content_topics (id, title, summary, icon_name) values ('topic-evil', 'x', 'x', 'x');
+        failed := failed + 1; results := results || 'FAIL 65 anon inserted content'::text;
+    exception when insufficient_privilege then results := results || 'ok 65 anon can''t insert content'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 65 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        update public.content_questions set correct_option_index = 0;
+        get diagnostics n = row_count;
+        if n = 0 then results := results || 'ok 66 anon updates 0 content rows'::text; else failed := failed + 1; results := results || ('FAIL 66 updated=' || n); end if;
+    exception when insufficient_privilege then results := results || 'ok 66 anon can''t update content (no grant)'::text; end;
+    begin
+        delete from public.content_cards;
+        get diagnostics n = row_count;
+        if n = 0 then results := results || 'ok 67 anon deletes 0 content rows'::text; else failed := failed + 1; results := results || ('FAIL 67 deleted=' || n); end if;
+    exception when insufficient_privilege then results := results || 'ok 67 anon can''t delete content (no grant)'::text; end;
 
     raise exception 'RLS TESTS: % failed of %. %', failed, coalesce(array_length(results, 1), 0), array_to_string(results, ' | ');
 end
