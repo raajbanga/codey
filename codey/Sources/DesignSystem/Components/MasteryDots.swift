@@ -12,7 +12,7 @@ struct MasteryDots: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let dotSize = CodeySpacing.sm
+    nonisolated private static let dotSize: CGFloat = CodeySpacing.sm
 
     var body: some View {
         let score = score
