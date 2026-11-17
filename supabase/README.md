@@ -25,7 +25,7 @@ a teammate should be able to reproduce the whole backend from this page.
 | `migrations/20261115172929_progress_history.sql` | FR-61 (S43) `quiz_answers` (append-only), `daily_activity` (per device and day; larger counter wins), `badge_awards` (earliest kept), `profiles.solved_exercise_ids` |
 | `migrations/20261115194345_card_hidden.sql` | `flashcards.is_hidden`: a hidden card syncs to the user's other devices |
 | `migrations/20261116000000_content.sql` | App content: `content_topics`, `content_questions`, `content_exercises`, `content_decks`, `content_cards`. Public read (anon and authenticated), no insert/update/delete policy |
-| `seed.sql` | The content rows (8 topics, 192 questions, 25 exercises, 15 starter decks with 174 cards). Upserts by id, safe to re-run |
+| `seed.sql` | The content rows (12 topics, 336 questions, 55 exercises, 24 starter decks with 288 cards). Upserts by id, safe to re-run |
 | `tests/rls.sql` | pgTAP tests (`supabase test db`): user B sees/changes **0** of user A's rows; constraints match the app |
 | `tests/progress.sql` | pgTAP tests for the FR-61 progress tables: RLS, CHECKs, and both merge rules |
 | `tests/history.sql` | pgTAP tests for the S43 history tables: RLS, CHECKs, duplicates ignored, larger counter, earliest badge |
