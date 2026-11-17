@@ -111,6 +111,35 @@ struct SyncEngineTests {
         #expect(h.remote.liveCards(deckId: deck.id).count == 100)
     }
 
+    /// Activity 13.1 stress test: the connection drops halfway through
+    /// pushing a 100-card deck (the deck row reached the server, its cards
+    /// did not). Nothing is lost or duplicated: the deck falls back to
+    /// LocallyPersisted and stays queued, and the retry after reconnecting
+    /// sends all 100 cards once.
+    @Test func connectionDropMidPushLosesAndDuplicatesNothing() async throws {
+        let h = try SyncHarness()
+        let deck = try h.saveNewDeck(prompts: (1...100).map { "Q\($0)" })
+        h.remote.goesOfflineAfter = "upsertDecks"
+
+        #expect(await !h.engine.syncNow())
+        #expect(h.remote.decks[deck.id] != nil)
+        #expect(h.remote.liveCards(deckId: deck.id).isEmpty)
+        #expect(deck.syncState == .locallyPersisted)
+        #expect(h.queue.hasPending(.deck, id: deck.id))
+        #expect(deck.activeCards.count == 100)
+
+        h.remote.goesOfflineAfter = nil
+        h.remote.isOffline = false
+        #expect(await h.engine.syncNow())
+        #expect(deck.syncState == .synced)
+        #expect(!h.queue.hasPending(.deck, id: deck.id))
+        let remoteCards = h.remote.liveCards(deckId: deck.id)
+        #expect(remoteCards.count == 100)
+        #expect(Set(remoteCards.map(\.card.prompt)).count == 100)
+        #expect(h.remote.decks.count == 1)
+        #expect(deck.activeCards.count == 100)
+    }
+
     @Test func editsAfterSyncPushOnlyTheChangedCards() async throws {
         let h = try SyncHarness()
         let deck = try h.saveNewDeck(prompts: ["Q1", "Q2", "Q3"])

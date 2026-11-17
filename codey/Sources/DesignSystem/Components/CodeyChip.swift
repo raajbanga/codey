@@ -97,12 +97,7 @@ struct CodeyChip: View {
         // lines up without extra space (Nov 15).
         .frame(minHeight: Self.height)
         .monospacedDigit()
-        .background(variant.softColor, in: .tag)
-        .overlay {
-            if variant.isOutline {
-                RoundedRectangle.tag.strokeBorder(variant.color.opacity(0.6), lineWidth: 1)
-            }
-        }
+        .codeySurface(variant.softColor, in: RoundedRectangle.tag, edge: variant.isOutline ? variant.color.opacity(0.6) : nil)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
     }
