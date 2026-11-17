@@ -39,7 +39,7 @@ struct SessionProgress: View {
     let accessibilityLabel: String
     var accessibilityValue: String = ""
 
-    static let height: CGFloat = 6
+    nonisolated static let height: CGFloat = 6
     static let maxSegments = 30
 
     var body: some View {
