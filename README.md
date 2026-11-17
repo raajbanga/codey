@@ -5,16 +5,17 @@
 # Codey
 
 **Learn computer science one card at a time.**<br>
-Flashcards with real code, adaptive quizzes, and an AI tutor, built as a game for iPhone, iPad and Mac.
+Flashcards with real code, adaptive quizzes and an AI tutor, all wrapped in a game.<br>
+Available for iPhone, iPad and Mac.
 
-[![Platforms](https://img.shields.io/badge/iOS%20·%20iPadOS%20·%20macOS-26%2B-000?logo=apple&logoColor=white)](#getting-started)
+[![Platforms](https://img.shields.io/badge/iOS%20·%20iPadOS%20·%20macOS-26%2B-000?logo=apple&logoColor=white)](#build-from-source)
 [![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)](https://www.swift.org)
 [![SwiftUI + SwiftData](https://img.shields.io/badge/SwiftUI-SwiftData-0A84FF)](#tech-stack)
 [![Tests](https://github.com/raajbanga/codey/actions/workflows/test.yml/badge.svg)](https://github.com/raajbanga/codey/actions/workflows/test.yml)
 [![Supabase](https://img.shields.io/badge/Supabase-backend-3ECF8E?logo=supabase&logoColor=white)](supabase/README.md)
 [![Tuist](https://img.shields.io/badge/Tuist-4-6236FF)](https://tuist.dev)
 
-[Features](#features) · [Screenshots](#screenshots) · [Getting started](#getting-started) · [Architecture](#architecture) · [Testing](#testing) · [Docs](#documentation)
+[Features](#features) · [Screenshots](#screenshots) · [Build from source](#build-from-source) · [Architecture](#architecture) · [Testing](#testing) · [Docs](#documentation)
 
 <br>
 
@@ -32,8 +33,8 @@ more), and you can write your own cards with syntax-highlighted code. Every stud
 session, quiz and coding exercise earns XP toward levels, streaks, badges and a
 weekly group leaderboard.
 
-It is **offline-first**: everything works without an account, on device, with
-SwiftData. Signing in with Google adds sync across devices and groups.
+Codey works fully offline, with no account needed. Sign in with Google to sync
+your progress across all your devices and to study with friends in groups.
 
 ## Features
 
@@ -46,8 +47,8 @@ SwiftData. Signing in with Google adds sync across devices and groups.
 | ✨ **Ask AI tutor** | Ask about a quiz question or exercise and get help understanding it; it never gives the answer away |
 | 🏆 **Progress** | XP, levels, daily streaks, badges, daily quests and weekly challenges |
 | 👥 **Groups** | Create or join with a 6-character code and race on a weekly XP board |
-| ☁️ **Sync** | Offline-first; sign in with Google to back up and sync across devices |
-| ♿ **Accessible** | Light and dark mode, Dynamic Type, VoiceOver, and an automated accessibility audit in CI |
+| ☁️ **Sync** | Works offline; sign in with Google to back up and pick up where you left off on any device |
+| ♿ **Accessible** | Light and dark mode, Dynamic Type and full VoiceOver support |
 
 ## Screenshots
 
@@ -60,21 +61,21 @@ SwiftData. Signing in with Google adds sync across devices and groups.
 </table>
 
 <details open>
-<summary><b>iPad and Mac</b>: wide windows split into two columns</summary>
+<summary><b>On iPad and Mac</b>: a two-column layout that makes the most of the bigger screen</summary>
 <br>
 
-| iPad (landscape) | Mac (Mac Catalyst) |
+| iPad | Mac |
 | --- | --- |
 | <img src="docs/source/figures/final-ipad-play.png" alt="Play on iPad in landscape"> | <img src="docs/source/figures/final-mac-play.png" alt="Play on the Mac"> |
 | <img src="docs/source/figures/final-ipad-deck.png" alt="A deck's page on iPad in landscape"> | <img src="docs/source/figures/final-mac-decks.png" alt="Decks on the Mac"> |
 
 </details>
 
-## Getting started
+## Build from source
 
 ### Requirements
 
-- Apple Silicon Mac with **macOS 27+** and **Xcode 27.2** (with the iOS Simulator runtime)
+- Apple Silicon Mac with **macOS 27+** and **Xcode 27.2**
 - [**Tuist**](https://tuist.dev) 4: `brew install tuist` (tested with 4.214.1)
 
 ### Run it
@@ -86,17 +87,12 @@ tuist install    # fetch Swift packages
 tuist generate   # generate and open the workspace
 ```
 
-In Xcode, pick the **codey** scheme and a run destination, then press **⌘R**:
-
-| Destination | Notes |
-| --- | --- |
-| iPhone 17 Simulator | The phone layout |
-| iPad (A16) Simulator | Two columns in landscape |
-| My Mac (Mac Catalyst) | Needs your `DEVELOPMENT_TEAM` (see below) |
+In Xcode, choose the **codey** scheme, pick your iPhone, iPad or Mac, and press **⌘R**.
+To run on your own device or Mac, set your `DEVELOPMENT_TEAM` (see [Configuration](#configuration-optional)).
 
 > [!NOTE]
-> No keys are needed. Without a backend the app runs in **local-only mode**: decks,
-> study, quizzes, exercises and progress all work; sign-in, sync, groups and Ask AI need the keys below.
+> Codey runs without any keys. Decks, study, quizzes, exercises and progress all work
+> on device; add the keys below to turn on sign-in, sync, groups and the AI tutor.
 
 ### Configuration (optional)
 
@@ -111,7 +107,7 @@ cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | Sync and groups ([setup guide](supabase/README.md)) |
 | `GOOGLE_IOS_CLIENT_ID`, `GOOGLE_REVERSED_CLIENT_ID`, `GOOGLE_SERVER_CLIENT_ID` | Google sign-in |
 | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | The Ask AI tutor (a free [OpenRouter](https://openrouter.ai) model) |
-| `DEVELOPMENT_TEAM` | Running on a device or on the Mac |
+| `DEVELOPMENT_TEAM` | Running on your iPhone, iPad or Mac |
 
 > [!WARNING]
 > `Config/Secrets.xcconfig` is gitignored: never commit it, and never put the
