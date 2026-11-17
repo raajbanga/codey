@@ -356,9 +356,9 @@ The final sprint closed the two open client mandates, added the Ask AI tutor, a
 refresh of the interface with a game layer, and content served from Supabase, and
 planned, ran, and documented the tests. The principal changes are:
 \begin{itemize}
-  \item \textbf{Coding exercises (FR-39 to FR-41).} Twenty-five code-completion
-        exercises in Swift, Python, and Java across all eight topics (twelve of them
-        also bundled with the app). The student fills in each
+  \item \textbf{Coding exercises (FR-39 to FR-41).} Fifty-five code-completion
+        exercises in Swift, Python, Java, and C++ across all twelve topics (twelve of
+        them also bundled with the app). The student fills in each
         blank, and every blank is checked as one test case against its accepted
         answers after whitespace normalization. No code is compiled or executed on
         the device (decision S31). A first full solve pays 10 XP a blank (S41).
@@ -386,9 +386,10 @@ planned, ran, and documented the tests. The principal changes are:
         foreground (at most every 10 minutes), checks them with the same loaders as
         the bundle, keeps the last good copy, and falls back to the bundled JSON on
         a first launch offline, in demo mode, without backend keys, and in UI tests.
-        Supabase holds 192 questions, 25 exercises, and 15 starter decks (174
-        cards); the bundle keeps 176, 12, and 12 (144 cards). New content needs no
-        app update.
+        Supabase holds 12 topics, 336 questions, 55 exercises, and 24 starter
+        decks (288 cards); the bundle keeps 8, 176, 12, and 12 (144 cards). New
+        content needs no app update: the Java, C++, Git, and Security topics were
+        added on Nov 17 this way.
   \item \textbf{Defects fixed.} Five app defects: Google Sign-In crashed on tap
         (BUG-01), a successful Google sign-in did not sign the student in to Codey
         (BUG-02), the exercise code view had no VoiceOver label (BUG-03),
@@ -3865,7 +3866,7 @@ implemented, including every client mandate: adaptive tier rotation, XP, streaks
 badges, progress analytics and a study plan, offline use with cloud sync of decks and,
 since Sprint~4, of study results, leaderboards and weekly challenges, and
 code-completion exercises. Since the last week of Sprint~4 the content itself
-(8 topics, 192 questions, 25 exercises, and 15 starter decks) is served from Supabase,
+(12 topics, 336 questions, 55 exercises, and 24 starter decks) is served from Supabase,
 so it can grow without an app update, and the bundled copy remains the offline
 fallback. The app is covered by 458 unit tests, 9 UI tests over 18 screens, 109
 database tests, and a 67-check security test of the live policies. The unit tests,
@@ -3995,7 +3996,7 @@ Run \texttt{scripts/check-secrets.sh} to confirm nothing secret is tracked.
         the CLI (\texttt{supabase link -{}-project-ref \textit{ref}} then
         \texttt{supabase db push}) or by pasting each file into the SQL editor.
   \item Load the app content: paste \texttt{supabase/seed.sql} into the SQL editor and
-        run it (8 topics, 192 questions, 25 exercises, 15 starter decks, 174 cards). It
+        run it (12 topics, 336 questions, 55 exercises, 24 starter decks, 288 cards). It
         upserts by ID, so running it again after a content change is safe. Without it
         the app shows its bundled copy.
   \item Authentication $\to$ Sign In / Providers $\to$ Google: enable it and enter the
