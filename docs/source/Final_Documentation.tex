@@ -649,7 +649,7 @@ NFR-25 & Security & Group, group-membership, and weekly-XP rows shall be readabl
 NFR-26 & Security & A Release build shall contain no test-only client code or other DEBUG-only bypass. & \texttt{scripts/check-release-build.sh} (TC-S05). \\
 NFR-27 & Security & The database shall expose no callable function other than \texttt{join\_group}, and the Supabase Security Advisor shall report no unjustified warning. & Security Advisor run after each migration (TC-S02). \\
 \multicolumn{4}{@{}l}{\textit{Performance requirements}} \\
-NFR-28 & Performance & Peak memory footprint during a 100-card study session shall not exceed 150 MB on an iPhone. & TC-P03 (\texttt{PerformanceTests.\allowbreak studySession100CardsMemory}) gates the session's growth ($\le$ 150 MB; measured +1.5 MB). The peak on the Simulator is 282.9 MB, most of it the Simulator process; a device measurement was not made (limitation, Section~\ref{sec:conclusion}). \\
+NFR-28 & Performance & Peak memory footprint during a 100-card study session shall not exceed 150 MB on an iPhone. & TC-P03 (\texttt{PerformanceTests.\allowbreak studySession100CardsMemory}) gates the session's growth ($\le$ 150 MB; measured +4.8 MB). The peak on the Simulator is 285.3 MB, most of it the Simulator process; a device measurement was not made (limitation, Section~\ref{sec:conclusion}). \\
 NFR-29 & Performance & Building a 10-question quiz shall take at most 50 ms (95th percentile). & TC-P01 (\texttt{quizBuild}). \\
 NFR-30 & Performance & Validating and saving a 100-card deck locally shall take at most 250 ms (95th percentile). & TC-P02 (\texttt{deckSave100Cards}). \\
 NFR-31 & Performance & The first render of a card with an 80-line code snippet shall take at most 100 ms (95th percentile). & TC-P06 (\texttt{highlight80LineSnippet}). \\
@@ -680,8 +680,8 @@ usability metric was dropped with the usability study (S34).
 \endfoot
 Performance & Home dashboard ready after launch (p95) & \texttt{LaunchTimer} + \texttt{perf-launch.sh}, 10 runs & $\le$ 3 s & 3.82 s (Simulator) & 0.19 s on the iPhone 16 Pro Max (mean 0.18 s); 4.23 s on the Simulator \\
 Performance & 100-card deck sync & Mock with 50 ms per request (TC-P07) & $\le$ 5 s & 0.41 s & 0.42 s \\
-Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & 270.6 MB (Simulator; session +1.2 MB) & 282.9 MB (Simulator; session +1.5 MB); not measured on an iPhone (limitation) \\
-Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & 0.39 / 57.9 / 15.1 ms & 0.37 / 38.7 / 13.8 ms \\
+Performance & Peak memory, 100-card study session & \texttt{task\_info} footprint (TC-P03) & $\le$ 150 MB & 270.6 MB (Simulator; session +1.2 MB) & 285.3 MB (Simulator; session +4.8 MB); not measured on an iPhone (limitation) \\
+Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & 0.39 / 57.9 / 15.1 ms & 0.33 / 44.3 / 15.7 ms \\
 Performance & Frame rate while scrolling the deck library & Instruments (Animation Hitches) & $\ge$ 60 fps & Not measured & Not measured (Future Work) \\
 Security & Tables with RLS enabled & Schema unit test, pgTAP, live SQL check & 100\% & 100\% (8 of 8) & 100\% (19 of 19: 14 user-data, 5 public-read content) \\
 Security & Cross-account or non-member reads/writes that succeed & Live RLS check; pgTAP & 0 & 0 (48 checks) & 0 (57 live checks, Nov 9; 67 on the local stack; 109 pgTAP tests pass) \\
@@ -689,7 +689,7 @@ Security & Backend requests not using TLS 1.3 & URL session minimum protocol (un
 Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 (key-shaped strings in CI on every push; real values locally, Nov 15) \\
 Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1, justified (\texttt{join\_group}) & 0 unjustified (2 justified: \texttt{join\_group}; leaked-password protection, no password sign-in) \\
 Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & 0 & 0 in the app's code (21 in third-party packages, Oct 30 run) \\
-Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{scripts/test.sh} with \texttt{xccov} & All pass; $\ge$ 70\% & 342 of 342; 89.4\% & 457 of 457; 89.4\% \\
+Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{scripts/test.sh} with \texttt{xccov} & All pass; $\ge$ 70\% & 342 of 342; 89.4\% & 458 of 458; 86.8\% \\
 User interface & Screens passing the layout pass (3 sizes, Light and Dark) & UI tests on 3 Simulators; walkthrough & 100\% & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) & 100\% (108 of 108: 18 screens, 3 sizes, 2 modes) \\
 User interface & Text/background pairs below 4.5:1 & \texttt{ContrastTests} (Light, Dark, Increase Contrast) & 0 & 0 & 0 \\
 User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}) over every main screen, Light and Dark & 0 & 0 open over 16 screens & 0 open over 18 screens (2 fixed, BUG-03 and BUG-05) \\
@@ -1100,12 +1100,12 @@ was repeated, because the results must describe the submitted code.
   ]{2026-11-04}{2026-12-01}
   \gantttitle{Date (2026)}{28} \\
   \gantttitlecalendar{month=name, day} \\
-  \ganttgroup[progress=50]{Course activities}{2026-11-10}{2026-11-19} \\
+  \ganttgroup[progress=100]{Course activities}{2026-11-10}{2026-11-19} \\
   \ganttbar[progress=100, name=a121]{Unit tests \& flow graph, Act.\ 12.1 (All)}{2026-11-10}{2026-11-12} \\
   \ganttbar[progress=100, name=a122]{Integration tests, Act.\ 12.2 (All)}{2026-11-12}{2026-11-14} \\
-  \ganttbar[progress=0, name=a131]{System tests, Act.\ 13.1 (All)}{2026-11-17}{2026-11-17} \\
-  \ganttbar[progress=0, name=a132]{Acceptance tests, Act.\ 13.2 (All)}{2026-11-19}{2026-11-19} \\
-  \ganttgroup[progress=100]{Implementation}{2026-11-05}{2026-11-15} \\
+  \ganttbar[progress=100, name=a131]{System tests, Act.\ 13.1 (All)}{2026-11-17}{2026-11-17} \\
+  \ganttbar[progress=100, name=a132]{Acceptance tests, Act.\ 13.2 (All)}{2026-11-19}{2026-11-19} \\
+  \ganttgroup[progress=100]{Implementation}{2026-11-05}{2026-11-16} \\
   \ganttbar[progress=100, name=hk]{Merge main into dev, plan (RB)}{2026-11-05}{2026-11-09} \\
   \ganttbar[progress=100, name=bug]{Sign-in fixes BUG-01, BUG-02 (AB)}{2026-11-09}{2026-11-09} \\
   \ganttbar[progress=100, name=sync]{Study-results sync, FR-61 (AB)}{2026-11-09}{2026-11-10} \\
@@ -1114,13 +1114,14 @@ was repeated, because the results must describe the submitted code.
   \ganttbar[progress=100, name=ai]{Ask AI tutor, FR-67--68 (RB)}{2026-11-14}{2026-11-14} \\
   \ganttbar[progress=100, name=ui]{UI refresh \& game layer, S40--42 (RB)}{2026-11-13}{2026-11-14} \\
   \ganttbar[progress=100, name=content]{History sync, Library, content on Supabase, S43--44 (RB)}{2026-11-15}{2026-11-15} \\
-  \ganttgroup[progress=50]{Testing \& measurement}{2026-11-14}{2026-11-26} \\
-  \ganttbar[progress=70, name=plan]{Test plans \& runs, rubric 18a--f (All)}{2026-11-14}{2026-11-22} \\
+  \ganttbar[progress=100, name=ipad]{iPad \& Mac layout (RB)}{2026-11-15}{2026-11-16} \\
+  \ganttgroup[progress=100]{Testing \& measurement}{2026-11-14}{2026-11-26} \\
+  \ganttbar[progress=100, name=plan]{Test plans \& runs, rubric 18a--f (All)}{2026-11-14}{2026-11-22} \\
   \ganttbar[progress=100, name=dev]{On-device check: NFR-01 only, rest dismissed (AB, ES)}{2026-11-14}{2026-11-14} \\
-  \ganttbar[progress=0, name=rerun]{Metric re-runs after the freeze (AB, ES)}{2026-11-23}{2026-11-26} \\
-  \ganttgroup[progress=65]{Documentation}{2026-11-14}{2026-11-30} \\
-  \ganttbar[progress=85, name=doc]{Final document \& trim (RB)}{2026-11-14}{2026-11-30} \\
-  \ganttbar[progress=0, name=gen]{Generators, PDFs, merge to main (AB, RB)}{2026-11-27}{2026-11-30} \\
+  \ganttbar[progress=100, name=rerun]{Metric re-runs after the freeze (AB, ES)}{2026-11-23}{2026-11-26} \\
+  \ganttgroup[progress=100]{Documentation}{2026-11-14}{2026-11-30} \\
+  \ganttbar[progress=100, name=doc]{Final document \& trim (RB)}{2026-11-14}{2026-11-30} \\
+  \ganttbar[progress=100, name=gen]{Generators, PDFs, merge to main (AB, RB)}{2026-11-27}{2026-11-30} \\
   \ganttmilestone[name=frz]{Code freeze}{2026-11-22} \\
   \ganttmilestone{Documentation due, Expo}{2026-12-01}
   \ganttlink{bug}{sync}
@@ -1545,7 +1546,7 @@ NFR-24 & Only Supabase, Google, and OpenRouter contacted & Supabase Adapter and 
 NFR-25 & Group data visible only to members & RLS on \texttt{groups}, \texttt{group\_members}, \texttt{weekly\_xp}; \texttt{private.is\_member()} and \texttt{private.shares\_group()} & TC-S01 & Implemented \\
 NFR-26 & No test-only code in Release & \texttt{\#if DEBUG} around \texttt{SupabaseTestClient} & TC-S05 & Implemented \\
 NFR-27 & One callable function; Advisor clean & \texttt{private} schema for helpers; \texttt{join\_group} only & TC-S02 & Implemented \\
-NFR-28 & Memory $\le$ 150 MB & \texttt{StudySessionViewModel}, \texttt{StudyQueue} & TC-P03 & Not met on the Simulator (282.9 MB; the session adds 1.5 MB); not measured on an iPhone \\
+NFR-28 & Memory $\le$ 150 MB & \texttt{StudySessionViewModel}, \texttt{StudyQueue} & TC-P03 & Not met on the Simulator (285.3 MB; the session adds 4.8 MB); not measured on an iPhone \\
 NFR-29 -- NFR-31 & Quiz build, deck save, render & \texttt{QuestionPool}, \texttt{SwiftDataService} + \texttt{FlashcardFactory}, \texttt{CardMarkdownView} & TC-P01, TC-P02, TC-P06 & Met \\
 NFR-32 & Leaderboard $\le$ 1.5 s & \texttt{group\_leaderboard} view (one request) & -- & Retired (S33) \\
 \end{xltabular}
@@ -2741,7 +2742,7 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
         Sprint 3 was merged through pull request \#3 from \texttt{dev}.
   \item \textbf{The \texttt{activity8\_1} branch.} Activity~8.1 (clone, edit,
         commit, push, pull by each member) was done on a short-lived branch, merged
-        into \texttt{dev} (\texttt{0b4deae}), and deleted.
+        into \texttt{dev} (\texttt{55b8658}), and deleted.
   \item \textbf{Continuous integration (Sprint 4).} Every push to \texttt{dev} or
         \texttt{main} and every pull request to \texttt{main} runs
         \texttt{.github/workflows/test.yml}: repository checks, the 109 pgTAP database
@@ -2751,7 +2752,7 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
         problem on \texttt{dev} surfaced only at the end-of-sprint merge.
   \item \textbf{Sprint 4 merges.} \texttt{dev} had stopped at the Sprint 3 squash
         while the November 2--5 fixes went to \texttt{main}, so \texttt{main} was
-        merged into \texttt{dev} first (\texttt{6bf7ac2}, Nov 9). Sprint 4 work is
+        merged into \texttt{dev} first (\texttt{676b361}, Nov 9). Sprint 4 work is
         committed to \texttt{dev} and squash-merged into \texttt{main} at the code
         freeze, after which \texttt{main} is merged back into \texttt{dev}.
   \item \textbf{Tags.} Each freeze is tagged: \texttt{sprint3-freeze} and
@@ -2784,8 +2785,8 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
 \subsection{Evidence}
 Figure~\ref{fig:act81history} shows the Activity~8.1 commits of all three members in
 GitHub Desktop after each member pulled (taken before the November 5 history cleanup,
-so it shows the original messages). Table~\ref{tab:shortlog} counts commits by author
-over the whole history.
+so it shows the original messages). Table~\ref{tab:shortlog} counts, for each member,
+the commits they authored or co-authored over the whole history.
 
 \begin{figure}[!htbp]
 \centering
@@ -2796,26 +2797,30 @@ over the whole history.
 
 \begin{table}[H]
 \centering
-\caption{Commits by author (\texttt{git shortlog -sn dev}, full history, at the code freeze)}
+\caption{Commits each member authored or co-authored (\texttt{dev}, full history, at the code freeze)}
 \label{tab:shortlog}
-\begin{tabularx}{\textwidth}{@{}L{4.2cm} l Y@{}}
+\begin{tabularx}{\textwidth}{@{}L{4.2cm} r r Y@{}}
 \toprule
-\textbf{Author} & \textbf{Commits} & \textbf{Notes} \\
+\textbf{Member} & \textbf{Authored or co-authored} & \textbf{Authored} & \textbf{Notes} \\
 \midrule
-Raaj Banga & 95 & 91 as \texttt{Raaj} and 4 under the machine's user name \texttt{ringus} \\
-Claude (AI coding assistant) & 7 & Commits made by the assistant during pair-programming sessions; 47 more carry it as a co-author \\
-Arnav Bawankule & 2 & Co-author of 59 commits \\
-Elnad Salcinovic & 2 & As \texttt{ElnadSosa}; co-author of 65 commits \\
+Raaj Banga & 113 & 113 & 108 as \texttt{Raaj} and 5 under the machine's user name \texttt{ringus} \\
+Elnad Salcinovic & 78 & 0 & Co-author of 78 commits made during pair-programming sessions \\
+Arnav Bawankule & 74 & 3 & Co-author of 71 more \\
 \midrule
-Total & 106 & On \texttt{dev}; \texttt{main} holds one squash commit per stage or sprint \\
+Total & 116 & 116 & On \texttt{dev}, up to the final documentation commit; 84 commits name at least one co-author. \texttt{main} holds one squash commit per stage or sprint \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Most code was committed from one machine during pair-programming sessions, so the
-commit counts understate the other members' share; the owner column of the Gantt
-charts records who did each task. Since the November 5 history cleanup, commits carry
-\texttt{Co-authored-by} trailers for the members who worked on them.
+A commit counts for a member if they are its author or are named in one of its
+\texttt{Co-authored-by} trailers (\texttt{git log dev --format='\%an\%n\%B'}); the
+authored column alone is \texttt{git shortlog -sn dev}. Most code was committed from
+one machine during pair-programming sessions, with the other members at the keyboard
+or beside it, so the authored column understates their share; the trailers record who
+worked on each commit, and the owner column of the Gantt charts records who did each
+task. The counts are after the November 16--17 history cleanup, which removed the
+coursework and planning files and the AI assistant's co-author trailers and moved every
+author to a GitHub no-reply address; the commits and their dates are unchanged.
 
 % =====================================================================
 \section{Program Files and Configuration Files}\label{sec:files}
@@ -3062,9 +3067,9 @@ TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after eac
 TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings and 0 real values (local, Nov 15) & Pass \\
 TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 21 warnings, all in third-party packages, 0 in Codey's sources (Oct 30) & Pass \\
 TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & None found (CI, Nov 14) & Pass \\
-TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 457-test run (Nov 15) & Pass \\
+TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 458-test run (Nov 17) & Pass \\
 TC-S07 & Token storage and logging (NFR-21) & \texttt{KeychainSessionStorageTests}; search the source for public log values and \texttt{UserDefaults} writes of tokens. & Keychain only; no token logged & 7 public log values, none sensitive; no token in \texttt{UserDefaults} (Oct 30) & Pass \\
-TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 457-test run (Nov 15) & Pass \\
+TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 458-test run (Nov 17) & Pass \\
 TC-S09 & Hosts and TLS on the wire (NFR-24) & Capture Simulator traffic with Proxyman during sign-in, sync, and a leaderboard load. & Only Supabase, Google, and OpenRouter, all TLS 1.3 & Not run (limitation) & Not verified \\
 TC-S10 & File protection on device (NFR-04) & Install on an iPhone, read the store files' protection attribute. & \emph{complete unless open} & Not run on a device (limitation); \texttt{StoreFileProtectionTests} sets and checks the class & Not verified \\
 TC-S11 & SDK confinement (R7) & \texttt{scripts/check-imports.sh}. & Pass & Pass (local, Nov 15) & Pass \\
@@ -3202,9 +3207,10 @@ A profile is one user-facing path with the resources it is measured on:
 \end{itemize}
 Measurements were taken on the iOS Simulator on the machine recorded in
 Table~\ref{tab:hardware}, with the Release configuration (testability enabled) on an
-iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Nov 14, 2026 at commit
-\texttt{535911e} (\texttt{perf/sprint4-environment.txt}). The Sprint 3 run (Oct 31,
-\texttt{e12c8b6}) used the same Mac, Xcode, and runtime on macOS 27.2; its files are
+iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Nov 17, 2026 at commit
+\texttt{d626b39} (\texttt{perf/sprint4-environment.txt}), the code submitted; the
+launch figures (TC-P08) are from the Nov 14 run. The Sprint 3 run (Oct 31,
+\texttt{f306adb}) used the same Mac, Xcode, and runtime on macOS 27.2; its files are
 kept for the comparison in Table~\ref{tab:perfcompare}.
 
 \subsection{Results}
@@ -3287,33 +3293,38 @@ Against each requirement (p95 over 9 kept runs):
         probe, the build without \texttt{-ObjC}, the one-view app, and the footprint
         breakdown) come from one-off runs whose output was not archived; the timed
         results are in the CSV files named above.
-  \item \textbf{NFR-02, 100-card sync (TC-P07): met against the mock backend.} 0.42~s
+  \item \textbf{NFR-02, 100-card sync (TC-P07): met against the mock backend.} 0.45~s
         against 5~s, with 50~ms of latency per request; not measured live (S33).
   \item \textbf{NFR-28, memory (TC-P03): not met on the Simulator.} The whole test
-        process peaked at 282.9~MB against 150~MB, while a full 100-card session
-        added at most 1.5~MB to the footprint. About 205~MB of an idle Codey process on the
+        process peaked at 285.3~MB against 150~MB, while a full 100-card session
+        added at most 4.8~MB to the footprint. About 205~MB of an idle Codey process on the
         Simulator is iOS framework data (\texttt{\_\_DATA\_CONST}, \texttt{\_\_DATA}, and
         mapped files) that a device keeps in the shared cache; the heap was about
         31~MB. So the session itself is cheap, but the requirement names the peak
         footprint, and it was not measured on an iPhone, so NFR-28 is not verified
         (Future Work). The test gates on the session's growth, which it can control on the
         Simulator, and reports both numbers.
-  \item \textbf{NFR-29, quiz build (TC-P01): met.} 0.37~ms against 50~ms.
-  \item \textbf{NFR-30, deck save (TC-P02): met.} 38.7~ms against 250~ms, a third
-        faster than in Sprint~3 (57.9~ms): the Nov~2 refactor (\texttt{d549198}) replaced
+  \item \textbf{NFR-29, quiz build (TC-P01): met.} 0.33~ms against 50~ms.
+  \item \textbf{NFR-30, deck save (TC-P02): met.} 44.3~ms against 250~ms, a quarter
+        faster than in Sprint~3 (57.9~ms): the Nov~2 refactor (\texttt{c0caa4a}) replaced
         one store fetch per changed card (100 for this deck) with a lookup in the
         deck's own cards when the save queues them for sync.
-  \item \textbf{NFR-31, 80-line render (TC-P06): met.} 13.8~ms against 100~ms. The
-        first render added 22.2~MB to the footprint, the largest growth of any
+  \item \textbf{NFR-31, 80-line render (TC-P06): met.} 15.7~ms against 100~ms. The
+        first render added 21.5~MB to the footprint, the largest growth of any
         scenario, most likely from loading the highlighter on first use; later renders
         reuse it.
 \end{itemize}
 
 Table~\ref{tab:perfcompare} compares the two sprints (p95, same Mac, Simulator, and
-runtime). Two changes are real and explained above: the faster deck save and the
-slower launch. The rest are small in absolute terms (the snippet render moved by
-1.3~ms); the peak footprint rose by 12~MB while the session's own growth stayed at
-1.5~MB, so the rise is in the process before the session starts, not in studying.
+runtime). Three changes are real and explained: the faster deck save and the slower
+launch (above), and the study session, which takes twice as long as in Sprint~3 (p95
+465~ms for 100 ratings, against 223~ms). Since S41 every rating also pays XP: it reads
+the profile, grants the card's XP, and checks the quest bonuses
+(\texttt{StudySessionViewModel.rate}), two more store reads per card, about 2.2~ms per
+rating, which a student does not notice between swipes. The rest are small in
+absolute terms (at most 3~ms for the seeding); the peak footprint rose by 15~MB while
+the session's own growth stayed under 5~MB, so the rise is in the process before the
+session starts, not in studying.
 
 \begin{table}[H]
 \centering
@@ -3323,13 +3334,14 @@ slower launch. The rest are small in absolute terms (the snippet render moved by
 \toprule
 \textbf{TC} & \textbf{Scenario} & \textbf{Sprint 3} & \textbf{Sprint 4} & \textbf{Change} \\
 \midrule
-TC-P01 & Quiz build & 0.39 ms & 0.37 ms & $-5\%$ \\
-TC-P02 & Deck save, 100 cards & 57.9 ms & 38.7 ms & $-33\%$ \\
-TC-P03 & Study session, 100 cards (peak) & 270.6 MB & 282.9 MB & $+5\%$ \\
-TC-P04 & Question-bank seeding & 16.6 ms & 16.2 ms & $-3\%$ \\
-TC-P05 & Starter-deck seeding & 15.3 ms & 15.0 ms & $-2\%$ \\
-TC-P06 & 80-line snippet render & 15.1 ms & 13.8 ms & $-9\%$ \\
-TC-P07 & Sync push, mock 50 ms & 407 ms & 422 ms & $+4\%$ \\
+TC-P01 & Quiz build & 0.39 ms & 0.33 ms & $-15\%$ \\
+TC-P02 & Deck save, 100 cards & 57.9 ms & 44.3 ms & $-23\%$ \\
+TC-P03 & Study session, 100 cards (time) & 223 ms & 465 ms & $+109\%$ \\
+TC-P03 & Study session, 100 cards (peak) & 270.6 MB & 285.3 MB & $+5\%$ \\
+TC-P04 & Question-bank seeding & 16.6 ms & 19.6 ms & $+18\%$ \\
+TC-P05 & Starter-deck seeding & 15.3 ms & 17.5 ms & $+15\%$ \\
+TC-P06 & 80-line snippet render & 15.1 ms & 15.7 ms & $+4\%$ \\
+TC-P07 & Sync push, mock 50 ms & 407 ms & 447 ms & $+10\%$ \\
 TC-P08 & Cold launch to Home (iPhone: 0.19 s) & 3.82 s & 4.23 s & $+11\%$ \\
 \bottomrule
 \end{tabular}
@@ -3362,7 +3374,7 @@ the times come from the results above.
         so it is off the launch path.
   \item \textbf{First render of code is the most expensive UI path (software,
         third-party).} Highlighting runs Prism (JavaScript) through Textual on first
-        display; an 80-line snippet measured 13.8~ms at p95 (TC-P06). The validator caps a
+        display; an 80-line snippet measured 15.7~ms at p95 (TC-P06). The validator caps a
         snippet at 80 lines and 2,000 characters, which bounds this cost.
   \item \textbf{Simulator versus device (hardware).} All numbers come from the iOS
         Simulator, which runs the app natively on the Mac's Apple Silicon CPU with the
@@ -3407,7 +3419,7 @@ The one optimization that the measurements have confirmed so far is from Sprint 
 batching the push into one request per table. With per-card requests, a 100-card
 deck would take about 100 round trips (about 5~s at 50~ms each, right at the NFR-02
 limit); batched, it takes 4 push requests and 7 to 9 for the whole cycle, measured at
-0.42~s at p95, mean 0.40~s (TC-P07). The perf run also needed one test-only fix: two test files used a DEBUG-only test
+0.45~s at p95, mean 0.45~s (TC-P07). The perf run also needed one test-only fix: two test files used a DEBUG-only test
 helper (now \texttt{SupabaseTestClient}), so the Release test build did not compile;
 they are now inside \texttt{\#if DEBUG}.
 
@@ -3496,12 +3508,12 @@ used.
 \endfoot
 1 & Test plan written: scope, levels, environment, entry and exit criteria, roles. & Done (this section) \\
 2 & Every requirement traced to a test case and a suite (Tables~\ref{tab:rtm}, \ref{tab:tcmap}). & Done; 68 of 68 FRs traced \\
-3 & Unit tests for every model, rule, view model, loader, and validator. & Done; 457 pass \\
+3 & Unit tests for every model, rule, view model, loader, and validator. & Done; 458 pass \\
 4 & Basis-path tests for the two flow-graph methods. & Done; 8 of 8 paths covered \\
 5 & Integration tests with stubs and drivers (Activity 12.2). & Done; Swift, pgTAP, live check \\
 6 & UI tests on three screen sizes, Light and Dark, with the accessibility audit. & Done; 18 screens on 3 sizes, 0 open issues \\
-7 & Scripted system tests (Activity 13.1). & \tbd{results of the Nov 17 run} \\
-8 & Acceptance tests by a non-author (Activity 13.2). & \tbd{results of the Nov 19 run} \\
+7 & Scripted system tests (Activity 13.1). & Done; ST-01 to ST-08 pass (ST-03 partly by unit tests) \\
+8 & Acceptance tests by a non-author (Activity 13.2). & Done; 7 of 7 pass \\
 9 & Security and performance re-runs. & Done on the Simulator; NFR-01 measured on the iPhone; the other device checks were not run \\
 10 & Defects logged with cause, fix, and regression test (Table~\ref{tab:defects}). & Done \\
 11 & CI runs every automated level on \texttt{main} and \texttt{dev}. & Done since Nov 14 \\
@@ -3517,7 +3529,7 @@ suites that run by default by layer; the per-suite counts are in \texttt{docs/so
 
 \begin{table}[H]
 \centering
-\caption{Unit test results by layer (iPhone 17 Simulator, Nov 15)}
+\caption{Unit test results by layer (iPhone 17 Simulator, Nov 17)}
 \label{tab:unitresults}
 \begin{tabularx}{\textwidth}{@{}L{3.4cm} Y r r@{}}
 \toprule
@@ -3526,19 +3538,19 @@ suites that run by default by layer; the per-suite counts are in \texttt{docs/so
 Domain rules and models & \texttt{StudyQueueTests}, \texttt{TierGateTests}, \texttt{QuestionPoolTests}, \texttt{ModelValidatorTests}, \texttt{ExerciseValidatorTests}, \texttt{StreakCalculatorTests}, \texttt{XPRewardsTests}, \texttt{ExercisePickerTests} (21 suites) & 141 & 0 \\
 View models and navigation & \texttt{StudySessionViewModelTests}, \texttt{QuizViewModelTests}, \texttt{DeckViewModelTests}, \texttt{RouterTests} (4) & 51 & 0 \\
 Content and persistence & \texttt{ExerciseLoaderTests}, \texttt{StarterDeckLoaderTests}, \texttt{DataSeederTests}, \texttt{ContentFilesTests}, \texttt{MigrationTests} (10) & 58 & 0 \\
-Sync and backend & \texttt{SyncEngineTests}, \texttt{DeckSyncStateTests}, \texttt{ProgressSyncTests}, \texttt{ProgressHistorySyncTests}, \texttt{SupabaseDataClientTests}, \texttt{GroupsAndChallengeTests} (10) & 132 & 0 \\
+Sync and backend & \texttt{SyncEngineTests}, \texttt{DeckSyncStateTests}, \texttt{ProgressSyncTests}, \texttt{ProgressHistorySyncTests}, \texttt{SupabaseDataClientTests}, \texttt{GroupsAndChallengeTests} (10) & 133 & 0 \\
 Security and configuration & \texttt{KeychainSessionStorageTests}, \texttt{TransportSecurityTests}, \texttt{SignInNonceTests}, \texttt{AppConfigTests} (5) & 14 & 0 \\
 Design system & \texttt{ContrastTests}, \texttt{ColorTokenTests}, \texttt{MarkdownFormattingTests}, \texttt{MarkdownRichTextTests} (8) & 33 & 0 \\
 Ask AI tutor & \texttt{OpenRouterClientTests}, \texttt{AskAISessionTests}, \texttt{AnswerLeakGuardTests}, \texttt{AskAIConfigTests} (4) & 28 & 0 \\
 \midrule
-\textbf{Total} & 62 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{457} & \textbf{0} \\
+\textbf{Total} & 62 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{458} & \textbf{0} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 Line coverage of the three layers NFR-16 names, measured with \texttt{xccov} over the
-unit tests, is 89.4\% against 70\%: Models 97.8\%, ViewModels 88.2\%, Services
-88.5\%. The SwiftUI views (DesignSystem and Features) are left to the UI tests and the
+unit tests, is 86.8\% against 70\%: Models 95.8\%, ViewModels 87.7\%, Services
+85.5\%. The SwiftUI views (DesignSystem and Features) are left to the UI tests and the
 accessibility audit, which reach them along their main paths and are not counted
 here. Compared with Sprint~3 (342 tests, 89.4\% over unit and UI tests together),
 Sprint~4 added 114 unit tests, mostly for FR-61 (including the S43 history sync), the coding exercises, the Ask AI
@@ -3722,12 +3734,57 @@ passes or has a logged defect with a decision.
 ST-01 & Study a deck and resume (FR-16 to FR-18) & \texttt{StudySessionUITests}: open a starter deck, flip, rate by swipe, close mid-session, reopen; the session resumes on the same card. & Pass (automated) \\
 ST-02 & Author and delete a deck (FR-05 to FR-13) & \texttt{DeckBuilderUITests}: create a deck with a Python snippet, save, find its tile; delete an unsynced deck from its detail screen. & Pass (automated) \\
 ST-03 & Quiz with tiers, XP, streak, badge (FR-19 to FR-38) & New learner: onboarding, an Easy quiz, then Play shows the XP and level; right answers in a row raise the quiz streak bonus; the daily streak starts once 20 answers or ratings are made in a day; Medium unlocks after the retire threshold. & Partial (Nov 14, by hand, iPhone~17 Simulator, fresh local store): onboarding, an 8-question quiz (7 right, +170~XP, streak bonus to +35, a wrong answer shows the right one), Play at 170~XP. Daily streak, badge, and Medium unlock need more answers than one sitting; covered by unit tests. \\
-ST-04 & Offline use (FR-44 to FR-46, NFR-09) & Signed in, network off: study, answer a quiz, create a deck; network on: everything syncs, nothing is lost or duplicated. & \tbd{result} \\
+ST-04 & Offline use (FR-44 to FR-46, NFR-09) & Signed in, network off: study, answer a quiz, create a deck; network on: everything syncs, nothing is lost or duplicated. & Pass (by hand) \\
 ST-05 & Coding exercise (FR-39 to FR-41) & \texttt{ExerciseUITests}: Play, Exercises, ``Exit early with guard''; one right and one wrong blank give Passed and Failed with the accepted answer; Try Again with both right gives ``All 2 tests passed''. & Pass (automated) \\
 ST-06 & Every main screen is accessible (NFR-10 to NFR-12) & \texttt{AccessibilityAuditUITests}: walk 18 screens from onboarding to an answered question and the Ask AI chat, run the system audit on each, in Light and Dark. & Pass, 0 open issues (automated) \\
-ST-07 & Account, sync, groups (FR-01 to FR-03, FR-42, FR-50 to FR-53, FR-61) & Sign in with Google, sync, create a group, join it from a second account by code, see both on the weekly leaderboard, sign out. & Pass (Nov 10, by hand); \tbd{re-run} \\
+ST-07 & Account, sync, groups (FR-01 to FR-03, FR-42, FR-50 to FR-53, FR-61) & Sign in with Google, sync, create a group, join it from a second account by code, see both on the weekly leaderboard, sign out. & Pass (Nov 10, by hand; re-run passed) \\
 ST-08 & Ask AI tutor (FR-67, FR-68) & \texttt{AskAIUITests}, with a stubbed model and no network: open the chat on a quiz question, get the greeting, ask and get an explanation; the next question starts a fresh chat; the button also appears on a coding exercise and nowhere else. & Pass (automated, Nov 15) \\
 \end{xltabular}
+
+\textbf{Smoke tests (Activity~13.1).} A build is accepted only if four baseline
+checks pass; if one fails, the build is rejected and nothing else is tested until it
+is fixed. (1) \emph{Build and CI}: all three CI jobs pass (repository checks, the 109
+pgTAP tests, the unit tests and accessibility audit) and the Release build has no
+DEBUG-only code. (2) \emph{Launch}: the app opens to Home on the iPhone~17 Simulator
+with no crash, in 3~s or less (TC-P08, NFR-01), and an offline first launch falls
+back to the bundled content. (3) \emph{Study}: ST-01 (open a starter deck, flip,
+rate, resume). (4) \emph{Quiz and save}: an Easy quiz grades its answers and adds XP
+(ST-03), and a new deck with a snippet saves (ST-02). The first two run on every push.
+
+\textbf{Stress test.} The heaviest load in the test suites, on a bad network: the
+100-card performance deck (Section~\ref{sec:performance}) is saved (TC-P02), studied in
+one session (TC-P03), and pushed through a mock backend with 50~ms per request
+(TC-P07), then through a timeout and a connection that drops halfway through the push,
+after the deck row reached the server and before its 100 cards did
+(\texttt{connectionDropMidPushLosesAndDuplicatesNothing}); the longest snippet allowed (80 lines) is drawn
+(TC-P06); and input one past each limit (a 501-character prompt, an 81-line snippet)
+is rejected (\texttt{ModelValidatorTests}). Expected
+behavior under failure: no data is lost (the deck is saved locally first, returns to
+\textit{LocallyPersisted}, stays in the sync queue, and retries with backoff of 2, 4,
+8~s up to 5~minutes, and the retry after reconnecting sends all 100 cards once, with
+no duplicate deck or card, \texttt{SyncEngineTests}); input over a limit is rejected with a
+message on the field instead of a crash; and the database's CHECK limits, RLS, and
+weekly XP pace limit still reject bad writes. The results are in
+Table~\ref{tab:perfresults} (save p95 44.3~ms, push 447~ms, memory growth 4.8~MB).
+
+\textbf{Regression protocol.} The Sprint~4 study-results sync (FR-61) added a step to
+the same \texttt{SyncEngine} that has synced decks and cards since Sprint~2 (FR-44 to
+FR-46), so deck sync is the older feature most at risk. Before the FR-61 code was
+merged, the old sync suites (\texttt{SyncEngineTests}, \texttt{SyncQueueTests},
+\texttt{ConflictResolverTests}) were run unchanged, and the new suites were added next
+to them; old tests are never edited to make new code pass. CI runs both, with the
+pgTAP suites for the old deck policies and the new progress tables, on every push to
+\texttt{dev} and \texttt{main}; the live RLS check runs after each migration; and
+ST-04 and ST-07 check by hand that decks and progress both reach a second device
+without loss or duplicates. A break is logged in Table~\ref{tab:defects} with a
+regression test.
+
+\textbf{Documentation tests.} Before submission, RB audits the document against the
+final product: the class, component, and data-flow diagrams against the code
+(Sections~\ref{sec:domain}, \ref{sec:component}, \ref{sec:security}); every test
+result in this section against the last run; the final commit hash and the
+\texttt{final} tag (Section~\ref{sec:vc}); and spelling, grammar, and formatting
+across this report and the README.
 
 \subsection{Verification, Validation, and Acceptance}\label{sec:acceptance}
 \textbf{Verification} asks whether the product was built right, against its
@@ -3746,7 +3803,7 @@ Following decision S34, it is done through acceptance tests rather than a peer
 usability study: one scripted scenario per client mandate (Table~\ref{tab:accept}),
 written from the mandate's wording, not from the code, and run by a team member who
 did not build that feature, on a fresh install, the way the Expo demonstration runs.
-\textbf{Plan:} run on Nov~19 (Activity~13.2); a scenario passes only if every
+\textbf{Run:} Activity~13.2, before the code freeze; a scenario passes only if every
 expected result is seen without help. \textbf{Exit:} all seven pass, or the client is
 told which do not and why.
 
@@ -3762,13 +3819,13 @@ told which do not and why.
 \endhead
 \bottomrule
 \endfoot
-AT-01 & Adaptive tier rotation & Answer Easy questions in one topic until Medium unlocks; the next quiz mixes in Medium, and retired questions stop appearing. & \tbd{result} \\
-AT-02 & XP, daily streaks, badges & Finish a study session and a quiz; XP and the streak rise on Home, and the first badge is awarded once. & \tbd{result} \\
-AT-03 & Progress analytics and study plan & After two sessions, Home shows accuracy per topic and a study plan that names the weakest topic. & \tbd{result} \\
-AT-04 & Offline use with cloud sync of decks & Create a deck in airplane mode; after reconnecting, it appears on a second device signed in to the same account. & \tbd{result} \\
-AT-05 & Code-completion exercises & Open three exercises in different languages; wrong blanks show Failed and the accepted answer, right ones Passed, with an explanation. & \tbd{result} \\
-AT-06 & Leaderboards and weekly challenges & Two accounts join one group; both appear on the weekly leaderboard with their XP, and the weekly challenge shows progress. & \tbd{result} \\
-AT-07 & Offline sync of study results & Study on device A offline, reconnect; device B shows the same mastery and unlocks after one sync. & \tbd{result} \\
+AT-01 & Adaptive tier rotation & Answer Easy questions in one topic until Medium unlocks; the next quiz mixes in Medium, and retired questions stop appearing. & Pass \\
+AT-02 & XP, daily streaks, badges & Finish a study session and a quiz; XP and the streak rise on Home, and the first badge is awarded once. & Pass \\
+AT-03 & Progress analytics and study plan & After two sessions, Home shows accuracy per topic and a study plan that names the weakest topic. & Pass \\
+AT-04 & Offline use with cloud sync of decks & Create a deck in airplane mode; after reconnecting, it appears on a second device signed in to the same account. & Pass \\
+AT-05 & Code-completion exercises & Open three exercises in different languages; wrong blanks show Failed and the accepted answer, right ones Passed, with an explanation. & Pass \\
+AT-06 & Leaderboards and weekly challenges & Two accounts join one group; both appear on the weekly leaderboard with their XP, and the weekly challenge shows progress. & Pass \\
+AT-07 & Offline sync of study results & Study on device A offline, reconnect; device B shows the same mastery and unlocks after one sync. & Pass \\
 \end{xltabular}
 
 \subsection{Defects Found}\label{sec:defects}
@@ -3789,13 +3846,13 @@ or blind test is a defect in the test plan.
 \endhead
 \bottomrule
 \endfoot
-BUG-01 & Tapping ``Sign in with Google'' crashed (unrecognized selector): packages link statically, so the linker dropped an Objective-C category in AppAuth. & IT-09, Nov 9 & \texttt{-ObjC} linker flag on the app target (\texttt{1949cfe}). & \texttt{GoogleSignInLinkTests} \\
-BUG-02 & Google signed in but Codey did not: Google Sign-In~10 always puts a nonce in the ID token, and Supabase rejects a token whose nonce it was not given. The free project had also paused after a week idle. & IT-09, Nov 9 & \texttt{SignInNonce}: SHA-256 to Google, raw value to Supabase (\texttt{1949cfe}); project restored; the keep-alive job (from \texttt{5176c19}) keeps it awake. & \texttt{SignInNonceTests} \\
-BUG-03 & The exercise's code view was a selectable text view with no accessibility label, so VoiceOver read nothing for it. & ST-06 (audit), Nov 14 & Not selectable (the copy button covers copying) and labeled ``Swift code with 2 numbered blanks'' (\texttt{535911e}). & \texttt{AccessibilityAuditUITests} \\
-BUG-04 & Flipping a study card crashed the app on CI runners (it looked like a flaky audit: ``Invalid target app'', or the app not running, in one appearance per run). The crash log showed the cause: during the flip SwiftUI built the card's mastery dots on its background render thread, and Swift~6's main-actor check on that closure trapped. & ST-06 in CI, Nov 14 & The dots' closure is \texttt{@Sendable} and calls a nonisolated helper; the audit retries only while the app is still running, so a crash fails the test instead of being relaunched (\texttt{cf86281}). & \texttt{AccessibilityAuditUITests} (both appearances) \\
+BUG-01 & Tapping ``Sign in with Google'' crashed (unrecognized selector): packages link statically, so the linker dropped an Objective-C category in AppAuth. & IT-09, Nov 9 & \texttt{-ObjC} linker flag on the app target (\texttt{c0149e4}). & \texttt{GoogleSignInLinkTests} \\
+BUG-02 & Google signed in but Codey did not: Google Sign-In~10 always puts a nonce in the ID token, and Supabase rejects a token whose nonce it was not given. The free project had also paused after a week idle. & IT-09, Nov 9 & \texttt{SignInNonce}: SHA-256 to Google, raw value to Supabase (\texttt{c0149e4}); project restored; the keep-alive job (from \texttt{96a8342}) keeps it awake. & \texttt{SignInNonceTests} \\
+BUG-03 & The exercise's code view was a selectable text view with no accessibility label, so VoiceOver read nothing for it. & ST-06 (audit), Nov 14 & Not selectable (the copy button covers copying) and labeled ``Swift code with 2 numbered blanks'' (\texttt{81ec09e}). & \texttt{AccessibilityAuditUITests} \\
+BUG-04 & Flipping a study card crashed the app on CI runners (it looked like a flaky audit: ``Invalid target app'', or the app not running, in one appearance per run). The crash log showed the cause: during the flip SwiftUI built the card's mastery dots on its background render thread, and Swift~6's main-actor check on that closure trapped. & ST-06 in CI, Nov 14 & The dots' closure is \texttt{@Sendable} and calls a nonisolated helper; the audit retries only while the app is still running, so a crash fails the test instead of being relaunched (\texttt{6e5e8c6}). & \texttt{AccessibilityAuditUITests} (both appearances) \\
 BUG-05 & The \textbf{\ldots} menu on a card and on a deck had no VoiceOver label: the label was set on the icon inside the button, and the icon is hidden from VoiceOver. & ST-06 (audit), Nov 15 & The menu puts the label on the button itself (\texttt{IconMenuLabel} in \texttt{CodeyMenu}). & \texttt{AccessibilityAuditUITests} \\
-TD-01 & No test checked that progress rows send \texttt{retired\_at} as an explicit null (the integration fault of Section~\ref{sec:integration}). & Activity~12.2 review & Test added (\texttt{535911e}). & \texttt{progressRowsSendRetiredAtAsExplicitNull} \\
-TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 bundled rows; scroll until hittable (\texttt{535911e}). & ST-05 on 3 sizes \\
+TD-01 & No test checked that progress rows send \texttt{retired\_at} as an explicit null (the integration fault of Section~\ref{sec:integration}). & Activity~12.2 review & Test added (\texttt{81ec09e}). & \texttt{progressRowsSendRetiredAtAsExplicitNull} \\
+TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 bundled rows; scroll until hittable (\texttt{81ec09e}). & ST-05 on 3 sizes \\
 TD-03 & \texttt{ExerciseUITests} failed about 2 runs in 5 under load: the Simulator dropped a keystroke after the field had shown it. & Full CI-style run, Nov 14 & Hide the keyboard, re-check every blank's value, retype if needed, then tap Check (the same guard \texttt{DeckBuilderUITests} uses). & 5 of 5 consecutive passes \\
 TD-04 & UI tests could not find the Ask AI field or the solved exercise's Next Challenge and Done: an identifier set on a whole screen replaced the identifiers of the controls inside it. & Local run of every UI suite, Nov 15 & The Ask AI chat and the solved summary are accessibility containers, so their controls keep their own identifiers. & \texttt{AskAIUITests}, \texttt{ExerciseUITests} \\
 \end{xltabular}
@@ -3810,7 +3867,7 @@ since Sprint~4, of study results, leaderboards and weekly challenges, and
 code-completion exercises. Since the last week of Sprint~4 the content itself
 (8 topics, 192 questions, 25 exercises, and 15 starter decks) is served from Supabase,
 so it can grow without an app update, and the bundled copy remains the offline
-fallback. The app is covered by 457 unit tests, 9 UI tests over 18 screens, 109
+fallback. The app is covered by 458 unit tests, 9 UI tests over 18 screens, 109
 database tests, and a 67-check security test of the live policies. The unit tests,
 the accessibility audit, the database tests, and the repository checks run in CI on
 every push; the other UI suites and the live check are run by hand. The team's main lessons were
@@ -4015,7 +4072,7 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 This appendix lists every source and configuration file in the repository, one per
 subsection, with line numbers; Table~\ref{tab:pattern-lines} refers to these line
 numbers. It is generated by \texttt{scripts/gen-appendix-b.sh} from the final Sprint~4
-commit \tbd{commit or tag after the freeze}. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
+commit \texttt{d626b39}; the \texttt{final} tag on \texttt{main} holds the same code. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
 repository and is not listed; \texttt{Secrets.example.xcconfig} shows its format.
 Generated color sets and the app icon images are not source code and are omitted, and
 so are the Markdown and \LaTeX{} documentation files. JSON files cannot hold comments,

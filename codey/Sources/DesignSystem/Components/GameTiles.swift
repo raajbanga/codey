@@ -40,8 +40,7 @@ private struct XPToastModifier: ViewModifier {
                         .foregroundStyle(CodeyColor.xp)
                         .padding(.horizontal, CodeySpacing.lg)
                         .padding(.vertical, CodeySpacing.sm)
-                        .background(CodeyColor.xpSoft, in: .tag)
-                        .overlay { RoundedRectangle.tag.strokeBorder(CodeyColor.xp.opacity(0.25), lineWidth: 1) }
+                        .codeySurface(CodeyColor.xpSoft, in: RoundedRectangle.tag, edge: CodeyColor.xp.opacity(0.25))
                         .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
                         .padding(.top, CodeySpacing.xxl)
                         .transition(CodeyMotion.popTransition(reduceMotion: reduceMotion))
