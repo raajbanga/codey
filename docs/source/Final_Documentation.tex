@@ -314,7 +314,7 @@ into two columns (Play's quests beside This week, a deck's Study beside its card
 study, quizzes and exercises keep a readable width; and the tab bar floats on the
 same line as the page's buttons. Split view and narrow Stage Manager windows get
 the iPhone layout. The iPad layout was checked by hand on the iPad (A16) Simulator in
-both orientations. The same build runs on the Mac through Mac Catalyst
+both orientations; iPhone runs in portrait only (FR-75). The same build runs on the Mac through Mac Catalyst
 (Figure~\ref{fig:mac}), which gets the iPad's landscape layout in a resizable window;
 its sheets are sized to the window, and Google sign-in keeps its session in the
 keychain through a keychain access group entitlement.
@@ -419,16 +419,18 @@ planned, ran, and documented the tests. The principal changes are:
 Table~\ref{tab:scope} defines the project scope. Every feature on the client's
 mandatory list is built: XP, streaks, badges, analytics, the personalized study
 plan, leaderboards and weekly challenges, offline use with cloud sync of decks and
-study results (FR-61), and the coding challenges (FR-39 to FR-41). Table~\ref{tab:moscow}
-prioritizes features using the MoSCoW method. Could Have features were built last,
-and open-ended coding problems were dropped as planned under risk R1.
+study results (FR-61), and the coding challenges (FR-39 to FR-41 and FR-69 to
+FR-74). Table~\ref{tab:moscow} prioritizes features using the MoSCoW method. Could
+Have features were built last.
 
-The client-mandated coding challenges are scoped as code-completion
-(fill-in-the-blank) exercises. Each answer is validated by comparison with accepted
-solutions, so no code is compiled or executed on the device. Open-ended,
-LeetCode-style problems that require running arbitrary code are a stretch goal. No
-code-execution prototype was built, so, as planned under risk R1, open-ended
-problems were dropped and are listed as future work (Section~\ref{sec:conclusion}).
+The client-mandated coding challenges come in two kinds. \emph{Drills} are
+code-completion (fill-in-the-blank) exercises, checked on the device against
+accepted answers with no code run (FR-39 to FR-41). \emph{Challenges} are
+LeetCode-style problems: the student writes a whole function in Swift, Python,
+Java, or C++, and Run and Submit execute it against test cases on the team's own
+sandboxed runner (Piston on one EC2 instance) behind a Supabase Edge Function, so
+no code runs on the device and hidden tests never reach it (FR-69 to FR-73,
+decision S45). A full IDE (projects, debugging, a terminal) stays out of scope.
 
 \begin{table}[H]
 \centering
@@ -442,7 +444,7 @@ User-built flashcard decks with optional code snippets, plus starter decks serve
 Adaptive practice with Easy/Medium/Hard question tiers that rotate as questions are mastered & Real-time multiplayer (leaderboards and weekly challenges are asynchronous) \\
 XP, levels, streaks, and badges & Advertisements and in-app purchases \\
 Per-topic progress analytics and personalized study plans & Direct messaging between users \\
-Code-completion (fill-in-the-blank) exercises with automated validation & Full IDE functionality \\
+Code-completion drills and LeetCode-style coding challenges with automated test cases & Full IDE functionality \\
 Leaderboards and weekly challenges (class, club, or friends list) & Importing decks from files (user decks are built in the app; starter decks come from Supabase) \\
 Offline data caching and cloud sync & App Store distribution (demonstrated from Xcode only) \\
 Secure data handling (encryption and row-level access control) & Paid third-party services \\
@@ -496,8 +498,11 @@ results mandate. Every requirement whose source is the client's mandatory list h
 Must priority. In the final sprint, FR-39 to FR-41 and FR-61 were built, NFR-32 was
 retired (decision S33), FR-67 and FR-68 were added for
 the Ask AI tutor (decision S39), and FR-30 was extended to the XP that studying,
-exercises, and quests pay (decision S41). The functional requirements number 68, all
-implemented, and the non-functional requirements 32, of which 31 are in force.
+exercises, and quests pay (decision S41). After the first final build, FR-69 to FR-75
+and NFR-33 and NFR-34 were added for coding challenges, hints, and the iPhone
+portrait lock (decision S45), and FR-30, FR-61, and FR-67 were extended to
+challenges. The functional requirements number 75, all implemented, and the
+non-functional requirements 34, of which 33 are in force.
 
 \subsection{Functional Requirements}
 
@@ -557,7 +562,7 @@ FR-28 & The app shall return a retired question to the user's active pool as a r
 FR-58 & The app shall retire a review question again after one correct answer, and reset its consecutive correct count to zero after an incorrect answer. & Should & Team & Implemented \\
 FR-29 & The app shall let the user restrict a practice session to any single tier they have unlocked for the selected topic. & Must & Team & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Gamification}} \\
-FR-30 & The app shall award XP for each correctly answered quiz question equal to a tier base (Easy 10, Medium 15, Hard 20) plus a streak bonus of $\min(5\times(n-1), 25)$, where $n$ is the number of consecutive correct answers in the current quiz, for at most 45 XP per answer; 5 XP for each flashcard rating that raises the card's mastery score; 10 XP per blank the first time an exercise is fully solved; and a bonus of 50 XP once per day the daily goal is met and 100 XP once per week the weekly challenge is completed. & Must & Client & Implemented \\
+FR-30 & The app shall award XP for each correctly answered quiz question equal to a tier base (Easy 10, Medium 15, Hard 20) plus a streak bonus of $\min(5\times(n-1), 25)$, where $n$ is the number of consecutive correct answers in the current quiz, for at most 45 XP per answer; 5 XP for each flashcard rating that raises the card's mastery score; 10 XP per blank the first time an exercise is fully solved; 20, 35, or 50 XP (Easy, Medium, Hard) the first time a coding challenge is accepted; and a bonus of 50 XP once per day the daily goal is met and 100 XP once per week the weekly challenge is completed. & Must & Client & Implemented \\
 FR-31 & The app shall compute the user's level as $\lfloor \text{XP}/500 \rfloor + 1$. & Should & Team & Implemented \\
 FR-32 & The app shall mark the daily goal as met when the user answers 20 questions (quiz questions answered plus flashcards rated) within one calendar day in the device's time zone. & Must & Client & Implemented \\
 FR-33 & The app shall set the daily streak to 1 on a day the daily goal is met following a day it was not met, and increase it by one for each subsequent consecutive day the goal is met. & Must & Client & Implemented \\
@@ -587,12 +592,20 @@ FR-66 & The app shall retry a failed synchronization with exponential backoff, f
 FR-47 & The app shall resolve a sync conflict with an additive merge that keeps every card present in either the local or the remote version. & Should & Team & Implemented \\
 FR-59 & When the same card has been edited in both versions of a conflicting deck, the app shall keep the version with the later modification timestamp. & Should & Team & Implemented \\
 FR-48 & The app shall show each deck's sync status (Draft, Saved locally, Syncing, Synced, or Conflict) in the deck library. & Should & Team & Implemented \\
-FR-61 & The app shall sync a signed-in user's study results (card mastery scores, quiz question progress, tier unlocks, quiz answer history, daily activity, badges, and solved exercises) to Supabase when connectivity is restored, keeping the most recent review when two devices differ and adding up daily activity across devices. & Must & Client & Implemented \\
+FR-61 & The app shall sync a signed-in user's study results (card mastery scores, quiz question progress, tier unlocks, quiz answer history, daily activity, badges, and solved exercises and coding challenges) to Supabase when connectivity is restored, keeping the most recent review when two devices differ and adding up daily activity across devices. & Must & Client & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Ask AI tutor}} \\
-FR-67 & The app shall offer an Ask AI tutor on a quiz question and on a coding exercise that explains the underlying concept in a chat, without naming the correct option, the missing code, or the solution, as checked on every reply by \texttt{AnswerLeakGuard} (one rewrite, then a fixed refusal). & Should & Team & Implemented \\
+FR-67 & The app shall offer an Ask AI tutor on a quiz question, a coding exercise, and a coding challenge that explains the underlying concept in a chat, without naming the correct option, the missing code, or the solution, as checked on every reply by \texttt{AnswerLeakGuard} (one rewrite, then a fixed refusal). & Should & Team & Implemented \\
 FR-68 & The app shall keep an Ask AI conversation in memory only, for the question or exercise on screen; the next question or exercise starts a new conversation, and no conversation is stored or synced. & Should & Team & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Feedback}} \\
 FR-49 & The app shall allow a signed-in user to submit a UI/UX defect report with a text description of 1--1,000 characters, which is stored in Supabase for review by the development team. & Could & Team & Implemented \\
+\multicolumn{5}{@{}l}{\textit{Coding challenges (S45)}} \\
+FR-69 & The app shall provide coding challenges with a problem statement, examples, constraints, two hints, and starter code in Swift, Python, Java, and C++, edited in the in-app code editor. & Must & Client & Implemented \\
+FR-70 & The app shall run the user's code against a challenge's example test cases and show, for each, its pass or fail result, input, expected output, and actual output, plus the program's standard output or compile error. & Must & Client & Implemented \\
+FR-71 & The app shall submit the user's code against every test case of a challenge, hidden ones included, show a verdict (Accepted, Wrong Answer, Compile Error, Runtime Error, or Time Limit Exceeded), and never reveal a hidden test's input or expected output. & Must & Client & Implemented \\
+FR-72 & The app shall download challenges, their starter code, and their example test cases from Supabase with the rest of the content (S44); hidden test cases shall not be readable by the app. & Must & Team & Implemented \\
+FR-73 & The app shall keep the user's code for each challenge and language on the device across launches and offer a reset to the starter code after a confirmation. & Should & Team & Implemented \\
+FR-74 & The app shall offer two hints for each drill (code-completion exercise) and each challenge, revealed one at a time. & Should & Team & Implemented \\
+FR-75 & The app shall run in portrait orientation only on iPhone; on iPad and Mac it shall support every orientation and window size. & Should & Team & Implemented \\
 \end{xltabular}
 
 \subsection{Adaptive Practice Rationale}
@@ -640,7 +653,7 @@ NFR-16 & Maintainability & Unit tests shall achieve at least 70\% line coverage 
 NFR-17 & Measurement & Performance metrics shall be collected every sprint and compared with the previous sprint. & Metrics section of each sprint document (Table~\ref{tab:metrics}). \\
 NFR-18 & Measurement & Security metrics shall be collected every sprint and compared with the previous sprint. & Metrics section of each sprint document (Table~\ref{tab:metrics}). \\
 NFR-19 & Measurement & User interface metrics shall be collected every sprint and compared with the previous sprint. & Metrics section of each sprint document (Table~\ref{tab:metrics}). \\
-NFR-20 & Constraint & All third-party services shall be used within their free plans, so that the project incurs no service costs. & Review of the Supabase usage and billing pages at each sprint end against the limits in Table~\ref{tab:services}; no paid plan is enabled. \\
+NFR-20 & Constraint & All third-party services shall be used within their free plans, so that the project incurs no service costs; the code runner (S45) is the one exception, run on AWS free-plan credits with a \$10 monthly budget alert. & Review of the Supabase usage and billing pages at each sprint end against the limits in Table~\ref{tab:services}; no paid plan is enabled. \\
 \multicolumn{4}{@{}l}{\textit{Security requirements}} \\
 NFR-21 & Security & Session tokens shall never be written to logs, \texttt{UserDefaults}, or any file other than the Keychain item. & \texttt{KeychainSessionStorageTests}; logging audit (every log value is private by default); PR checklist item. \\
 NFR-22 & Security & The Supabase \texttt{service\_role} key shall be absent from the app bundle, the repository, and its history, and no real secret shall be in the repository or its history; the only keys in the app bundle are the public Supabase anon key and the OpenRouter key limited to free models (R21). & \texttt{scripts/check-secrets.sh -{}-history} reports 0 findings (TC-S03). \\
@@ -655,6 +668,8 @@ NFR-29 & Performance & Building a 10-question quiz shall take at most 50 ms (95t
 NFR-30 & Performance & Validating and saving a 100-card deck locally shall take at most 250 ms (95th percentile). & TC-P02 (\texttt{deckSave100Cards}). \\
 NFR-31 & Performance & The first render of a card with an 80-line code snippet shall take at most 100 ms (95th percentile). & TC-P06 (\texttt{highlight80LineSnippet}). \\
 NFR-32 & Performance & \emph{Retired (S33).} A group leaderboard shall load within 1.5 seconds on Wi-Fi (95th percentile). & Could not be verified without live test accounts. \\
+NFR-33 & Security & User code shall run only on the isolated runner (Piston in Isolate sandboxes) with networking disabled, at most 5 s of run time and 20 s of compile time, 64 processes, and 64 KB of output; the runner's address and key shall be known only to the \texttt{run-challenge} Edge Function, never to the app. & Runner configuration (\texttt{runner/bootstrap.sh}); the app's source and Release build contain no runner URL or key (\texttt{check-secrets.sh}); hidden tests unreadable by clients (\texttt{supabase/tests/challenges.sql}). \\
+NFR-34 & Security & The run endpoint shall reject code over 64 KB and rate-limit each signed-in user, or each guest's IP address, to 20 runs and 6 submissions a minute and 300 a day. & Code review of \texttt{run-challenge}; \texttt{challenge\_runs} readable and writable only by the service role (\texttt{supabase/tests/challenges.sql}). \\
 \end{xltabular}
 
 \subsection{Metrics Plan}
@@ -704,7 +719,9 @@ Development and testing are performed primarily on the iOS Simulator. The team
 develops on one Apple Silicon MacBook Pro in pair-programming sessions, so every
 build, test run, and measurement uses the same compiler toolchain and simulator
 runtime. One physical iPhone is used for the on-device checks. The
-project incurs no hardware or service costs.
+project incurs no hardware costs; the only service cost is the code runner's EC2
+instance for the coding challenges (S45), covered by AWS credits
+(Table~\ref{tab:services}).
 
 \begin{table}[H]
 \centering
@@ -719,7 +736,8 @@ Measurement machine & The same Mac. Every performance result in Section~\ref{sec
 Primary test target & Xcode iOS Simulator (iOS 27.0 runtime, build 24A5370g; the app's deployment target is iOS 26.0) with three device profiles for layout coverage: iPhone 17e (smallest current size), iPhone 17 (also used for the performance suite), and iPhone 18 Pro Max (largest). \\
 Network simulation & None is needed: Home does not wait on the network (sync and the content refresh run in the background), the sync tests use a mock backend that waits 50 ms per request, and unit tests simulate connectivity with a mock reachability monitor. The live network tests planned in Activity~9.2 were dropped with the live test accounts (S33). \\
 Physical device & Raaj Banga's iPhone 16 Pro Max (128 GB), used for the on-device launch measurement (NFR-01). The app is installed from Xcode with a free Apple ID (personal team). No paid Apple Developer Program membership is required, but builds signed this way expire after seven days and must be reinstalled. \\
-Cloud backend & Supabase project on the Free plan (AWS region) providing GoTrue Auth, the PostgREST API, and a managed PostgreSQL database. Clients connect over HTTPS on port 443. The backend connects to PostgreSQL over SSL on port 5432. \\
+Cloud backend & Supabase project on the Free plan (AWS region) providing GoTrue Auth, the PostgREST API, and a managed PostgreSQL database. Clients connect over HTTPS on port 443. The backend connects to PostgreSQL over SSL on port 5432. The \texttt{run-challenge} Edge Function (Deno) runs in the same project (S45). \\
+Code runner & One AWS EC2 \texttt{t3.small} instance (2 vCPU, 2 GB, Ubuntu 24.04, 30 GB encrypted disk, IMDSv2 only) with an Elastic IP, running Piston in Docker behind Caddy (TLS through sslip.io). Its security group opens only ports 80 and 443; administration is through AWS Systems Manager, with no SSH. Setup: \texttt{runner/SETUP.md}. \\
 Source control and tracking & GitHub repository with GitHub Actions workflows for tests (repository checks, database tests, app tests) and the Supabase keep-alive (Section~\ref{sec:vc}); tasks are tracked in the project plan (\texttt{todo.md}) in the repository. CI runs on GitHub's hosted macOS and Ubuntu runners. \\
 \bottomrule
 \end{tabularx}
@@ -734,7 +752,10 @@ and starter decks in the public, read-only \texttt{content\_*} tables) live in t
 Supabase project; a bundled JSON copy of the content is the offline fallback. The one service added last is
 OpenRouter for the Ask AI tutor (FR-67): its API key was created with a \$0 credit
 limit, so it can only call free models and cannot incur a charge (NFR-20).
-Sign in with Apple, which requires a paid Apple Developer Program membership, is not
+The code runner for the coding challenges (S45) is the one service that is not
+free by nature: an EC2 instance and an Elastic IP are billed by the hour, so the
+account has a \$10 monthly AWS Budget alert, and the instance can be stopped
+between demonstrations. Sign in with Apple, which requires a paid Apple Developer Program membership, is not
 used. App Store distribution, which also requires that membership, is out of scope.
 
 \begin{table}[H]
@@ -753,6 +774,8 @@ Textual & Open source (MIT) & Markdown and Prism.js code rendering for card text
 Runestone and TreeSitterLanguages & Open source (MIT) & Code editor and Tree-sitter grammars for Swift, Python, Java, and C++ (pinned). & \$0 \\
 OpenRouter (chat completions API) & Free models only & Key with a \$0 credit limit, so only \texttt{:free} models answer; a free-tier account gets 50 free-model requests per day (opening a chat is one, each message one more), and the free catalog changes often, so the model ID is configuration (\texttt{OPENROUTER\_MODEL}), not code (decision S39). & \$0 \\
 Supabase Swift and GoogleSignIn-iOS SDKs & Open source (MIT, Apache 2.0) & Client libraries for the two services above (pinned). The app's Acknowledgements screen credits them and their dependencies. & \$0 \\
+AWS EC2 (code runner) & AWS account (free-plan credits) & One \texttt{t3.small} instance, a 30 GB volume, and an Elastic IP, billed by the hour against the account's credits; a \$10 monthly AWS Budget alert. & Credits \\
+Piston and Caddy & Open source (MIT, Apache 2.0) & Piston runs each job in an Isolate sandbox (no network; 5 s run, 20 s compile, 64 processes, 64 KB output); Caddy terminates TLS and checks the secret header. & \$0 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -800,7 +823,7 @@ Sprint 4 & Nov 4 -- Dec 1 & Testing: unit (Activity 12.1), integration (12.2), s
   \item \textbf{Meetings.} The team meets Tuesday, Thursday, and Sunday from 6:00 to
         9:00 PM, in person or over Discord voice and screen share. Decisions and
         action items are recorded in the project plan (\texttt{todo.md}) in the
-        repository, under the sprint's decision log (decisions S1 to S44 by the end
+        repository, under the sprint's decision log (decisions S1 to S45 by the end
         of Sprint 4; Table~\ref{tab:decisions4}).
   \item \textbf{Communication.} Discord is used for design discussion and asynchronous
         communication, and SMS/iMessage for urgent notifications. Members provide at
@@ -883,6 +906,7 @@ S41 & Game layer: Play replaces Home and Quiz; quests with bonus XP; XP for stud
 S42 & Leaderboard as a podium of bars; avatars gain a color (stored as \texttt{symbol@color}, so stored values stay valid; the server CHECK splits on \texttt{@}) and 20 more symbols; the avatar color is the app's accent; profile, exercise, onboarding, and group screens use the shared tiles; the profile no longer shows the e-mail address; the type ramp is one step smaller to stop wrapping at large text. \\
 S43 & Sync covers quiz answer history (append-only), daily activity (one row per device and day, the larger counter wins, the day's total is the sum over devices, so streak and goal match everywhere), badges (the earliest date wins), and solved exercises (a union); an older install backfills its history once. Schema V10 adds \texttt{DeviceDayActivity} for other devices' days; V11 adds hidden cards (\texttt{Flashcard.isHidden}), synced like hidden decks. \\
 S44 & Content moves to Supabase: topics, questions, exercises, and starter decks are rows in public, read-only \texttt{content\_*} tables that the app downloads at launch and on return to the foreground (at most every 10 minutes), checks with the bundle's loaders, caches, and re-seeds by ID; the bundled JSON stays as the fallback, so new content needs no app update. A Library tab holds every topic with its quiz, exercises, and decks; Play keeps the game. \\
+S45 & Coding challenges join the drills (the code-completion exercises, renamed in the UI only, so the \texttt{Exercise} type, tables, and test ids keep their names). A challenge is rows in public \texttt{content\_challenges}, \texttt{content\_challenge\_starters}, and \texttt{content\_challenge\_tests}, where RLS lets clients read only example tests. Run and Submit go to the \texttt{run-challenge} Edge Function, which loads the tests with the service role, wraps the code in a per-language driver, runs it on Piston (EC2, behind Caddy with a secret header), and judges the output; the app never learns the runner's address. Drafts are files per challenge and language on the device, never synced. A solve is paid once and recorded with the solved exercises (challenge ids start with \texttt{ch-}), so it syncs with FR-61 and needs no schema change. Every drill and challenge has two hints in a shared \texttt{HintBento}. iPhone is locked to portrait. \\
 \end{xltabular}
 
 \subsection{Input Validation and Failure Handling}
@@ -1116,6 +1140,7 @@ was repeated, because the results must describe the submitted code.
   \ganttbar[progress=100, name=ui]{UI refresh \& game layer, S40--42 (RB)}{2026-11-13}{2026-11-14} \\
   \ganttbar[progress=100, name=content]{History sync, Library, content on Supabase, S43--44 (RB)}{2026-11-15}{2026-11-15} \\
   \ganttbar[progress=100, name=ipad]{iPad \& Mac layout (RB)}{2026-11-15}{2026-11-16} \\
+  \ganttbar[progress=100, name=chal]{Coding challenges, drill hints, FR-69--75 (All)}{2026-11-17}{2026-11-17} \\
   \ganttgroup[progress=100]{Testing \& measurement}{2026-11-14}{2026-11-26} \\
   \ganttbar[progress=100, name=plan]{Test plans \& runs, rubric 18a--f (All)}{2026-11-14}{2026-11-22} \\
   \ganttbar[progress=100, name=dev]{On-device check: NFR-01 only, rest dismissed (AB, ES)}{2026-11-14}{2026-11-14} \\
@@ -1357,8 +1382,9 @@ UC-10 Resolve Write Conflicts, UC-11 Take Quiz, UC-12 Practice by Tier, UC-13 Hi
 Restore Starter Deck, UC-14 Onboard, UC-15 Manage Profile, UC-16 Sign Out, UC-17 View
 Weekly Plan, UC-18 Track Weekly Challenge, UC-19 Earn / View Badges, UC-20 Create Group,
 UC-21 Join Group, UC-22 View Weekly Leaderboard, UC-23 Complete Coding Exercise, and
-UC-24 Check Exercise Answers, and UC-25 Ask AI Tutor. Tables~\ref{tab:uc23}
-and~\ref{tab:uc25} specify the coding-exercise and Ask AI use cases;
+UC-24 Check Exercise Answers, UC-25 Ask AI Tutor, and UC-26 Solve a Coding
+Challenge. Tables~\ref{tab:uc23}, \ref{tab:uc25}, and~\ref{tab:uc26} specify the
+coding-exercise, Ask AI, and coding-challenge use cases;
 Table~\ref{tab:ucnew} summarizes the remaining use cases in one line each. UC-14
 Onboard has no functional requirement: it is a UX flow, exercised by
 \texttt{ScreenTourUITests}.
@@ -1416,6 +1442,25 @@ Main flow & 1. The student selects \emph{Ask AI}; the chat opens as a floating p
 Alternate flows & 3a/5a. The request fails (offline, timeout, rate limit, model unavailable): the system shows the reason and a \emph{Retry} button. 5b. The reply names the correct option or a missing token: the system asks the model once to rewrite it, and if the rewrite still gives the answer away, shows a fixed refusal that offers to explain the idea. 6a. The student reopens the chat on the same question: the conversation is still there. 6b. The student moves to the next question or leaves the quiz or exercise: the conversation is discarded. \\
 Postconditions & Nothing is stored or synced (FR-68); the quiz or exercise is unchanged. \\
 Requirements & FR-67, FR-68 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Use case specification: UC-26 Solve a Coding Challenge}
+\label{tab:uc26}
+\begin{tabularx}{\textwidth}{@{}L{3.0cm} Y@{}}
+\toprule
+\textbf{Field} & \textbf{Description} \\
+\midrule
+Primary actor & Student \\
+Secondary actors & Code Runner (the \texttt{run-challenge} Edge Function and Piston) \\
+Preconditions & Challenges have been downloaded or are bundled. Run and Submit need a network connection; sign-in is not required. \\
+Main flow & 1. The student opens a topic in the Library and selects a challenge. 2. The system shows the statement, examples, constraints, and hints, and the editor with the starter code (or the saved draft) in the preferred language. 3. The student writes the function; the system saves the draft as they type. 4. The student selects \emph{Run}; the system runs the example tests and shows each result with its input, expected and actual output, and standard output. 5. The student selects \emph{Submit}; the system runs every test and shows the verdict. 6. On Accepted, the system pays the challenge's XP the first time and shows the session summary with the editorial. \\
+Alternate flows & 2a. The student switches language: the system shows that language's draft or starter. 3a. The student selects \emph{Reset} and confirms: the starter code returns. 4a/5a. Compile error, runtime error, or time limit: the system shows the error and the tests not run. 5b. Wrong answer: the system shows how many tests passed; hidden tests show only pass or fail. 4b/5c. Offline, rate-limited, or runner down: the system shows the reason and the student can try again. 2b. The student opens a hint; the next hint unlocks. \\
+Postconditions & The draft is on the device; on a first Accepted, the challenge is recorded as solved and syncs (FR-61). \\
+Requirements & FR-69 to FR-74 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1492,6 +1537,8 @@ FR-36 & UC-17 & \texttt{QuizAnswerRecord}, \texttt{QuizProgressStore.accuracy()}
 FR-37 & UC-17 & \texttt{HomeView} (Play: \texttt{HeroCard} with level and streak badge, \texttt{TopicTile} with per-topic accuracy, \texttt{QuestTile}) & TC-37 & Implemented \\
 FR-38 & UC-17 & \texttt{StudyPlanBuilder.build()}, \texttt{StudyPlan.current()} (cached per week), ``This week'' tag on Play's topic tiles & TC-38 & Implemented \\
 FR-39 -- FR-41 & UC-23, UC-24 & \texttt{ExerciseLoader}, \texttt{content\_exercises} via \texttt{ContentSeeder} (bundled \texttt{exercises.json} as fallback), \texttt{ExercisePicker}, \texttt{ExerciseValidator.check()}, \texttt{normalize()}, \texttt{ExerciseResult}, \texttt{ExerciseTiles}, \texttt{ExerciseView}; no code is executed on the device & TC-39 -- TC-41 & Implemented \\
+FR-69 -- FR-73 & UC-26 & \texttt{Challenge}, \texttt{ChallengeLoader}, \texttt{ChallengeCatalog}, \texttt{ChallengeDrafts}, \texttt{ChallengeRunning} (\texttt{SupabaseDataClient.runChallenge()}), \texttt{ChallengeView}, \texttt{ChallengeTiles}, \texttt{CodeEditorView}; \texttt{content\_challenge*} tables, \texttt{run-challenge} Edge Function (\texttt{drivers.ts}, \texttt{judge.ts}) & TC-69 -- TC-73 & Implemented \\
+FR-74, FR-75 & UC-23, UC-26 & \texttt{HintBento}; \texttt{Exercise.hints}, \texttt{content\_exercises.hints}; \texttt{UISupportedInterfaceOrientations} in \texttt{Project.swift} & TC-74, TC-75 & Implemented \\
 FR-67, FR-68 & UC-25 & \texttt{OpenRouterClient}, \texttt{AskAIPrompt.system}, \texttt{AskAIContext}, \texttt{AnswerLeakGuard}, \texttt{AskAISession}, \texttt{AskAIChatView}, \texttt{AskAIButton}, \texttt{FloatingPanel} & TC-67, TC-68 & Implemented \\
 FR-42, FR-52 & UC-22 & \texttt{GroupBoardView}, \texttt{BackendFacade.fetchLeaderboard()}, \texttt{leaveGroup()}, \texttt{LeaderboardRanking}, \texttt{GroupCache}, \texttt{WeeklyXPStore}; \texttt{group\_leaderboard} view, \texttt{weekly\_xp} & TC-42, TC-52 & Implemented \\
 FR-43, FR-53 & UC-18 & \texttt{WeeklyChallenge}, \texttt{UTCWeek}, Play quest tile, \texttt{Badge.weeklyChallenge} & TC-43, TC-53 & Implemented \\
@@ -1546,6 +1593,7 @@ NFR-23 & Server CHECKs mirror client limits & \texttt{ModelValidator.Limits}, \t
 NFR-24 & Only Supabase, Google, and OpenRouter contacted & Supabase Adapter and Ask AI components (Fig.~\ref{fig:component}) & TC-S09 & Not verified on the wire (TC-S09 not run); code review and \texttt{check-imports.sh} pass \\
 NFR-25 & Group data visible only to members & RLS on \texttt{groups}, \texttt{group\_members}, \texttt{weekly\_xp}; \texttt{private.is\_member()} and \texttt{private.shares\_group()} & TC-S01 & Implemented \\
 NFR-26 & No test-only code in Release & \texttt{\#if DEBUG} around \texttt{SupabaseTestClient} & TC-S05 & Implemented \\
+NFR-33, NFR-34 & Sandboxed runner; size and rate limits & Piston configuration (\texttt{runner/}), \texttt{run-challenge} (limits, \texttt{challenge\_runs}), RLS on \texttt{content\_challenge\_tests} & TC-S10 & Implemented \\
 NFR-27 & One callable function; Advisor clean & \texttt{private} schema for helpers; \texttt{join\_group} only & TC-S02 & Implemented \\
 NFR-28 & Memory $\le$ 150 MB & \texttt{StudySessionViewModel}, \texttt{StudyQueue} & TC-P03 & Not met on the Simulator (285.3 MB; the session adds 4.8 MB); not measured on an iPhone \\
 NFR-29 -- NFR-31 & Quiz build, deck save, render & \texttt{QuestionPool}, \texttt{SwiftDataService} + \texttt{FlashcardFactory}, \texttt{CardMarkdownView} & TC-P01, TC-P02, TC-P06 & Met \\
@@ -1589,6 +1637,8 @@ TC-44 & \texttt{DeckViewModelTests}, \texttt{SyncEngineTests} (offline save neve
 TC-45, TC-65 & \texttt{SyncQueueTests}, \texttt{SyncEngineTests} (sign-in claims guest decks) \\
 TC-46, TC-66 & \texttt{SyncEngineTests} (push, pull, backoff, reconnect), \texttt{SupabaseDataClientTests} \\
 TC-39 -- TC-41 & \texttt{ExerciseLoaderTests}, \texttt{ExercisePickerTests}, \texttt{ExerciseValidatorTests} (basis paths, Section~\ref{sec:flowgraph}), \texttt{ExerciseUITests} (UI), \texttt{AccessibilityAuditUITests} (UI) \\
+TC-69 -- TC-73 & \texttt{ChallengeTests} (bundled file valid, bad files rejected whole, next challenge, drafts per language, result printing, XP once), \texttt{ContentFilesTests}, Deno \texttt{judge\_test.ts} (verdicts, hidden tests stripped, comparators, drivers), pgTAP \texttt{challenges.sql} (13 tests: examples readable, hidden tests and run log not), reference solutions in all four languages run through the live runner (\texttt{scripts/challenges.ts validate}) \\
+TC-74, TC-75 & \texttt{ExerciseLoaderTests} (at most 3 hints), \texttt{ChallengeTests}; hand checks on iPhone 17, iPad (A16) in both orientations, and Mac \\
 TC-67, TC-68 & \texttt{OpenRouterClientTests} (request body, error mapping, TLS 1.3), \texttt{AskAISessionTests} (greeting, reset on a new question, rewrite and refusal, retry), \texttt{AnswerLeakGuardTests}, \texttt{AskAIConfigTests} (button hidden without a key), \texttt{AskAIUITests} (UI, stubbed model), \texttt{AccessibilityAuditUITests} (UI) \\
 TC-61 & \texttt{ProgressSyncTests} (two simulated devices), \texttt{ProgressHistorySyncTests} (S43 history), \texttt{SupabaseDataClientTests} (explicit nulls), \texttt{supabase/tests/progress.sql} and \texttt{history.sql} (pgTAP) \\
 TC-47, TC-59 & \texttt{ConflictResolverTests}, \texttt{SyncEngineTests} (concurrent edits, two devices converge) \\
@@ -2188,6 +2238,60 @@ every reply against those secrets, and the session asks for one rewrite and then
 protocol, so unit tests and \texttt{AskAIUITests} use a stub and
 \texttt{OpenRouterClient} is the only type that talks to \texttt{openrouter.ai}.
 \texttt{AskAIError} maps each HTTP or network failure to one message the chat shows.
+
+% ---------------------------------------------------------------------
+\begin{figure}[!htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+  \node[cls={cyan}{5.6cm}] (ch) at (-5.4,0) {\ctitle{\st{struct}\\\textbf{Challenge}}
+    \nodepart{two}\raggedright +id, topicId, title: String\\ +difficulty: Difficulty\\ +statement, editorial: String\\ +constraints, hints: [String]\\ +functionName, returnType: String\\ +params: [Param]\\ +starters: [String: String]\\ +examples: [Example]
+    \nodepart{three}\raggedright +starter(for: CodeLanguage) : String\\ +languages: [CodeLanguage] \{get\}};
+  \node[cls={orange}{5.0cm}] (cl) at (1.0,0) {\ctitle{\st{enum}\\\textbf{ChallengeLoader}}
+    \nodepart{two}\raggedright +expectedSchemaVersion = 1
+    \nodepart{three}\raggedright +decode(data, topicIds) : [Challenge]};
+  \node[cls={violet}{5.0cm}, anchor=north] (cat) at (1.0,-2.6) {\ctitle{\st{class}\\\textbf{ChallengeCatalog}}
+    \nodepart{two}\raggedright +shared\\ +all: [Challenge]
+    \nodepart{three}\raggedright +replace(with: [Challenge])\\ +next(after, solved) : Challenge?};
+  \node[cls={orange}{5.4cm}, anchor=north] (dr) at (1.0,-5.9) {\ctitle{\st{enum}\\\textbf{ChallengeDrafts}}
+    \nodepart{two}\raggedright +directory: URL
+    \nodepart{three}\raggedright +load(id, language) : String?\\ +save(code, id, language)\\ +remove(id, language), removeAll()};
+  \node[cls={gray}{5.2cm}] (run) at (7.2,0) {\ctitle{\st{protocol}\\\textbf{ChallengeRunning}}
+    \nodepart{two}~
+    \nodepart{three}\raggedright +run(ChallengeRunRequest) : ChallengeVerdict};
+  \node[cls={violet}{5.2cm}, anchor=north] (sb) at (7.2,-2.6) {\ctitle{\st{struct}\\\textbf{RemoteChallengeRunner}}
+    \nodepart{two}\raggedright +remote: RemoteDeckStore
+    \nodepart{three}\raggedright +run(request) : ChallengeVerdict\\ \quad (\texttt{SupabaseDataClient.runChallenge},\\ \quad Edge Function \texttt{run-challenge})};
+  \node[cls={cyan}{5.2cm}, anchor=north] (vd) at (7.2,-5.6) {\ctitle{\st{struct}\\\textbf{ChallengeVerdict}}
+    \nodepart{two}\raggedright +status: accepted, wrongAnswer,\\ \quad compileError, runtimeError, timeLimit\\ +passedCount, total: Int\\ +tests: [Test] (hidden: status only)\\ +stdout, stderr, compileOutput: String
+    \nodepart{three}~};
+  \node[cls={magenta}{5.6cm}, anchor=north] (view) at (-5.4,-5.2) {\ctitle{\st{view}\\\textbf{ChallengeView}}
+    \nodepart{two}\raggedright -code, language, verdict\\ -tab: description, code, result
+    \nodepart{three}\raggedright -run(mode: run | submit)\\ -payXP() (\texttt{XPRewards.solveChallenge})};
+  \node[cls={magenta}{4.4cm}, anchor=north] (hb) at (-5.4,-8.6) {\ctitle{\st{view}\\\textbf{HintBento}}
+    \nodepart{two}\raggedright +hints: [String]\\ -opened: Int
+    \nodepart{three}~};
+  \draw[dep] (cl.west) -- node[lbl] {\st{create}} (ch.east);
+  \draw[dep] (cat.west) -| node[lbl, pos=0.25] {holds} ([xshift=8mm]ch.south);
+  \draw[dep] (view.east) -- node[lbl] {\st{use}} (view.east -| dr.west);
+  \draw[dep] ([yshift=7mm]view.east) -| node[lbl, pos=0.75] {\st{use}} (4.15,-0.4) |- (run.west);
+  \draw[realize] (sb.north) -- (run.south);
+  \draw[dep] (sb.south) -- node[lbl] {\st{create}} (vd.north);
+  \draw[dep] (view.south) -- node[lbl] {\st{use}} (hb.north);
+\end{tikzpicture}}
+\caption{UML class diagram: coding challenges (S45; FR-69 to FR-74)}
+\label{fig:challenge-classes}
+\end{figure}
+
+Figure~\ref{fig:challenge-classes} shows the challenge types. \texttt{Challenge} is
+plain data that \texttt{ChallengeLoader} checks all or nothing, like the exercises,
+and \texttt{ChallengeCatalog} holds the downloaded set. It carries only example tests:
+hidden tests never reach the app (FR-72). \texttt{ChallengeView} depends only on the
+\texttt{ChallengeRunning} protocol, implemented by \texttt{RemoteChallengeRunner}
+(through \texttt{SupabaseDataClient.runChallenge}, which calls the
+\texttt{run-challenge} Edge Function) and by a stub for the UI tests.
+\texttt{ChallengeDrafts} keeps the student's code as one file per challenge and
+language (FR-73), and \texttt{HintBento} is shared with the drills (FR-74).
 
 \FloatBarrier
 \subsection{Creational Pattern: Factory}\label{sec:factory}
@@ -2804,11 +2908,11 @@ the commits they authored or co-authored over the whole history.
 \toprule
 \textbf{Member} & \textbf{Authored or co-authored} & \textbf{Authored} & \textbf{Notes} \\
 \midrule
-Raaj Banga & 124 & 124 & 119 as \texttt{Raaj} and 5 under the machine's user name \texttt{ringus} \\
-Elnad Salcinovic & 85 & 0 & Co-author of 85 commits made during pair-programming sessions \\
-Arnav Bawankule & 81 & 3 & Co-author of 78 more \\
+Raaj Banga & 128 & 128 & 123 as \texttt{Raaj} and 5 under the machine's user name \texttt{ringus} \\
+Elnad Salcinovic & 88 & 0 & Co-author of 88 commits made during pair-programming sessions \\
+Arnav Bawankule & 84 & 3 & Co-author of 81 more \\
 \midrule
-Total & 127 & 127 & On \texttt{dev}, up to commit \texttt{6d8684d} (Nov 17); 91 commits name at least one co-author. \texttt{main} holds one squash commit per stage or sprint \\
+Total & 131 & 131 & On \texttt{dev}, up to commit \texttt{9263ac8} (Nov 17, the coding challenges); 94 commits name at least one co-author. \texttt{main} holds one squash commit per stage or sprint \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -2943,6 +3047,7 @@ and elements that cross a boundary.
   \node[ent] (goo) at (3.2,6.4) {Google OAuth};
   \node[ent] (sau) at (15.0,4.6) {Supabase Auth};
   \node[ent] (orm) at (3.2,-8.0) {OpenRouter\\(AI model)};
+  \node[ent] (run) at (22.8,-9.2) {Code runner\\(Piston, EC2)};
   % Processes (device)
   \node[proc] (p1) at (3.2,3.6) {P1\\Sign In};
   \node[proc] (p2) at (3.2,0) {P2\\Validate\\Deck};
@@ -2952,6 +3057,7 @@ and elements that cross a boundary.
   % Processes (cloud)
   \node[proc] (p6) at (15.0,0) {P6\\PostgREST\\API (RLS)};
   \node[proc] (p7) at (3.2,-4.9) {P7\\Ask AI};
+  \node[proc] (p8) at (15.0,-9.2) {P8\\Run\\Challenge};
   % Data stores (open rectangles: top and bottom lines only)
   \node[ds] (d1) at (7.4,-1.95) {D1 SwiftData store};
   \node[ds] (d2) at (7.4,3.6) {D2 iOS Keychain};
@@ -2981,13 +3087,19 @@ and elements that cross a boundary.
   \draw[fl] ([xshift=-0.35cm]p7.south) -- node[fn] {17} ([xshift=-0.35cm]orm.north);
   \draw[fl] ([xshift=0.35cm]orm.north) -- node[fn] {18} ([xshift=0.35cm]p7.south);
   \draw[fl] (p6.235) to[out=205, in=-15] node[fn, pos=0.25] {19} (p3.-20);
+  \draw[fl] (stu) |- node[fn, pos=0.75] {20} (p8);
+  \draw[fl] (p8) -- node[fn] {21} (p6);
+  \draw[fl] ([yshift=0.3cm]p8.east) -- node[fn] {22} ([yshift=0.3cm]run.west);
+  \draw[fl] ([yshift=-0.3cm]run.west) -- node[fn] {23} ([yshift=-0.3cm]p8.east);
   % Trust boundaries
   \draw[tb] (0.8,-6.1) rectangle (12.6,5.0);
   \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (4.3,5.0) {TB1: iPhone/iPad app (device)};
-  \draw[tb] (13.4,-1.6) rectangle (20.2,5.3);
+  \draw[tb] (13.4,-10.6) rectangle (20.2,5.3);
   \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (13.5,5.3) {TB2: Supabase cloud};
+  \draw[tb] (21.0,-10.6) rectangle (24.6,-7.6);
+  \node[anchor=south west, text=red!70!black, font=\sffamily\scriptsize\bfseries] at (21.1,-7.6) {TB3: AWS runner};
 \end{tikzpicture}}
-\caption{Security threat model as a data flow diagram (external entities, processes P1--P7, data stores D1--D4, numbered flows, trust boundaries TB1 and TB2)}
+\caption{Security threat model as a data flow diagram (external entities, processes P1--P8, data stores D1--D4, numbered flows, trust boundaries TB1 to TB3)}
 \label{fig:dfd}
 \end{figure}
 
@@ -3005,7 +3117,15 @@ the problem on screen (never its answer), and the chat go to OpenRouter over HTT
 (18) the model's reply comes back and is checked for a leaked answer before it is
 shown; (19) at launch and on return to the foreground (at most every 10 minutes) the
 public content rows are read from PostgREST and replace the cached copy in the store,
-and if the fetch fails the cached or bundled copy stays.
+and if the fetch fails the cached or bundled copy stays; (20) for a coding challenge
+(S45) the student's code, language, and mode (Run or Submit) go to the
+\texttt{run-challenge} Edge Function with the user's token (or the anon key for a
+guest), and the verdict comes back on the same request; (21) the function, with the
+service role, reads the challenge's tests (hidden ones only for Submit) and records
+the run for the rate limit; (22) it sends the code wrapped in a test driver to the
+runner over HTTPS with a secret header; and (23) the runner's output comes back and is
+judged, and hidden tests are stripped to pass or fail before the reply leaves the
+function.
 
 \begin{xltabular}{\textwidth}{@{}L{2.1cm} L{2.4cm} Y Y@{}}
 \caption{STRIDE analysis of the threat model}\label{tab:stride}\\
@@ -3032,6 +3152,9 @@ Flow 17 & Information disclosure & Text sent to Ask AI reaches a third party (Op
 P7, flow 18 & Tampering (prompt injection), Elevation of privilege & A student or a crafted message talks the model into giving the answer or saying something off topic. & The model never receives the answer; rules ranked above anything the student writes; a local leak check with one rewrite, then a fixed refusal. A reply is only displayed as Markdown text: it cannot call a tool, open a link by itself, run code, or change any data, so injection affects only that one explanation. \\
 P7 & Information disclosure, Denial of service & The OpenRouter key is extracted from the app binary and used by someone else. & The key has a \$0 credit limit (free models only, 50 requests per day); it can be revoked and replaced in \texttt{Secrets.xcconfig} without a code change; R21 accepted, server-side proxy is future work. When the quota or rate limit is hit the chat shows a message and the rest of the app is unaffected. \\
 Flow 19, D1 & Tampering & Content is changed so that questions show wrong answers or unwanted text. & The \texttt{content\_*} tables have a read policy only: no client role can insert, update, or delete (TC-S12 \texttt{content.sql}; live checks 64--67, TC-S01); only the project owner changes them, from \texttt{seed.sql} in the repository; TLS 1.3. \\
+Flows 20, 21, D3 & Information disclosure & A student reads the hidden tests to pass Submit without solving the problem. & RLS lets clients read only example tests (\texttt{is\_example}); only the Edge Function, with the service role, reads hidden ones, and its reply carries only their pass or fail (TC-S12 \texttt{challenges.sql}; Deno \texttt{judge\_test.ts}). \\
+P8, flow 20 & Denial of service & A client floods Run or Submit to run up the runner. & Code over 64 KB rejected; 20 runs and 6 submissions a minute and 300 a day per user or guest IP, logged in the service-role-only \texttt{challenge\_runs} (NFR-34). \\
+Flow 22, external entity Code runner & Elevation of privilege, Spoofing & Submitted code escapes the sandbox, reaches the network, or someone calls the runner directly. & Piston's Isolate sandbox with networking disabled and time, process, and output limits (NFR-33); Caddy exposes only the execute and runtimes paths behind a 32-byte secret header known only to the Edge Function, never to the app; IMDSv2 only, no inbound SSH (Session Manager). \\
 Flow 11 & Repudiation & A user denies having pushed a change. & Append-only \texttt{sync\_log} with no update or delete policies. \\
 P6 & Denial of service & Request flooding exhausts the Free plan. & Every write needs a signed-in session and passes RLS and CHECK constraints; usage is reviewed monthly against the Free-plan limits (NFR-20, R11). Weekly XP writes are pace-limited by a trigger (at most 600 XP per minute of server time, clamped rather than rejected; migration \texttt{weekly\_xp\_rate\_limit}). Other tables have no per-user rate limit, accepted for a class-sized user base (R11). \\
 \end{xltabular}
@@ -3209,8 +3332,10 @@ A profile is one user-facing path with the resources it is measured on:
 Measurements were taken on the iOS Simulator on the machine recorded in
 Table~\ref{tab:hardware}, with the Release configuration (testability enabled) on an
 iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Nov 17, 2026 at commit
-\texttt{d626b39} (\texttt{perf/sprint4-environment.txt}); the submitted code differs
-only by a fix to two compiler warnings (\texttt{813bad7}). The
+\texttt{d626b39} (\texttt{perf/sprint4-environment.txt}). The submitted code
+(\texttt{9263ac8}) adds the coding challenges (S45) and two rendering fixes (fewer
+store reads per tile, progress bars without layout animation) after that run; the
+performance suite was not re-run on it. The
 launch figures (TC-P08) are from the Nov 14 run. The Sprint 3 run (Oct 31,
 \texttt{f306adb}) used the same Mac, Xcode, and runtime on macOS 27.2; its files are
 kept for the comparison in Table~\ref{tab:perfcompare}.
@@ -3544,8 +3669,9 @@ Sync and backend & \texttt{SyncEngineTests}, \texttt{DeckSyncStateTests}, \textt
 Security and configuration & \texttt{KeychainSessionStorageTests}, \texttt{TransportSecurityTests}, \texttt{SignInNonceTests}, \texttt{AppConfigTests} (5) & 14 & 0 \\
 Design system & \texttt{ContrastTests}, \texttt{ColorTokenTests}, \texttt{MarkdownFormattingTests}, \texttt{MarkdownRichTextTests} (8) & 33 & 0 \\
 Ask AI tutor & \texttt{OpenRouterClientTests}, \texttt{AskAISessionTests}, \texttt{AnswerLeakGuardTests}, \texttt{AskAIConfigTests} (4) & 28 & 0 \\
+Coding challenges (S45, Nov 17) & \texttt{ChallengeTests} (1) & 9 & 0 \\
 \midrule
-\textbf{Total} & 62 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{458} & \textbf{0} \\
+\textbf{Total} & 63 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{467} & \textbf{0} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -3556,7 +3682,9 @@ unit tests, is 86.8\% against 70\%: Models 95.8\%, ViewModels 87.7\%, Services
 accessibility audit, which reach them along their main paths and are not counted
 here. Compared with Sprint~3 (342 tests, 89.4\% over unit and UI tests together),
 Sprint~4 added 114 unit tests, mostly for FR-61 (including the S43 history sync), the coding exercises, the Ask AI
-tutor, the XP rewards, and the content served from Supabase.
+tutor, the XP rewards, and the content served from Supabase. The coding challenges
+(S45) added \texttt{ChallengeTests}; the full suite was re-run on Nov 17 after them
+(467 passed, 0 failed); the coverage figures above are from the earlier run.
 
 \subsection{Flow-Graph Coverage}\label{sec:flowgraph}
 Two methods with real branching were drawn as control flow graphs, and each basis
@@ -3869,7 +3997,7 @@ since Sprint~4, of study results, leaderboards and weekly challenges, and
 code-completion exercises. Since the last week of Sprint~4 the content itself
 (12 topics, 336 questions, 55 exercises, and 24 starter decks) is served from Supabase,
 so it can grow without an app update, and the bundled copy remains the offline
-fallback. The app is covered by 458 unit tests, 9 UI tests over 18 screens, 109
+fallback. The app is covered by 467 unit tests, 9 UI tests over 18 screens, 109
 database tests, and a 67-check security test of the live policies. The unit tests,
 the accessibility audit, the database tests, and the repository checks run in CI on
 every push; the other UI suites and the live check are run by hand. The team's main lessons were
@@ -4074,7 +4202,7 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 This appendix lists every source and configuration file in the repository, one per
 subsection, with line numbers; Table~\ref{tab:pattern-lines} refers to these line
 numbers. It is generated by \texttt{scripts/gen-appendix-b.sh} from the final Sprint~4
-commit \texttt{813bad7}; the \texttt{final} tag on \texttt{main} holds the same code. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
+commit \texttt{9263ac8} on \texttt{dev}; the \texttt{final} tag on \texttt{main} holds the same code. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
 repository and is not listed; \texttt{Secrets.example.xcconfig} shows its format.
 Generated color sets and the app icon images are not source code and are omitted, and
 so are the Markdown and \LaTeX{} documentation files. JSON files cannot hold comments,
