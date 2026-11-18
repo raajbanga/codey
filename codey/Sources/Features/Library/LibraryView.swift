@@ -61,7 +61,7 @@ struct LibraryView: View {
                 progress: topics.isEmpty ? 0 : Double(completed) / Double(topics.count),
                 caption: "\(completed) of \(topics.count) topics completed"
             ) {
-                CodeyChip(exercises.count.counted("drill"), systemImage: "chevron.left.forwardslash.chevron.right", variant: .xp)
+                CodeyChip((exercises.count + challenges.count).counted("activity", plural: "activities"), systemImage: "checklist", variant: .xp)
             }
         } content: {
             if isSearching {

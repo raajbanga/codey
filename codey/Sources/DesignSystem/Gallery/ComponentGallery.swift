@@ -144,7 +144,7 @@ struct ComponentGallery: View {
     /// iPad pair (wider gap and padding), and a `.spread` grid on a page wide
     /// enough to split (iPad landscape), which doubles to four columns.
     private var bento: some View {
-        let hues: [(String, CodeyColor.TopicHue)] = [("Teal", .teal), ("Sand", .sand), ("Coral", .coral), ("Sky", .sky), ("Rose", .rose)]
+        let hues: [(String, CodeyColor.TopicHue)] = [("Teal", .teal), ("Sand", .sand), ("Coral", .coral), ("Sky", .sky), ("Rose", .rose), ("Gold", .gold), ("Green", .green), ("Indigo", .indigo), ("Violet", .violet), ("Plum", .plum)]
         let tiles = ForEach(hues, id: \.0) { name, hue in
             GameTile(icon: "cube", title: name, detail: "12 cards", hue: hue, progress: 0.4)
         }

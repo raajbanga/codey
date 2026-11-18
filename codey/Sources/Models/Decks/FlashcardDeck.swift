@@ -105,13 +105,19 @@ extension FlashcardDeck {
         cards.contains { $0.deletedAt == nil }
     }
 
-    /// Doc: calculateMasteryRate() — mastered / total active cards, 0 when empty.
-    var masteryRate: Double {
+    /// Mastered study cards and all study cards, in one pass.
+    var mastery: (mastered: Int, total: Int) {
         var total = 0, mastered = 0
         for card in studyCards {
             total += 1
             if card.isMastered { mastered += 1 }
         }
+        return (mastered, total)
+    }
+
+    /// Doc: calculateMasteryRate() — mastered / total active cards, 0 when empty.
+    var masteryRate: Double {
+        let (mastered, total) = mastery
         return total == 0 ? 0 : Double(mastered) / Double(total)
     }
 

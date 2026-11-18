@@ -102,13 +102,14 @@ struct DeckDetailView: View {
 extension DeckDetailView {
     /// The deck in its topic's pastel, as on Play and the library (S41).
     fileprivate var hero: some View {
-        HeroCard(
+        let (mastered, total) = deck.mastery
+        return HeroCard(
             title: deck.title,
             subtitle: [topic?.title, deck.cardCount.counted("card")].compactMap { $0 }.joined(separator: ", "),
             icon: topic?.iconName ?? "rectangle.stack",
             hue: hue,
-            progress: deck.progressRate,
-            caption: "\(deck.progressRate.percentText) progress"
+            progress: total == 0 ? 0 : Double(mastered) / Double(total),
+            caption: "\(mastered) of \(total) cards mastered"
         ) {
             if deck.origin == .user || deck.isHidden {
                 DeckStatusChip(deck: deck)

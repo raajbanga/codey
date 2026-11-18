@@ -33,6 +33,8 @@ struct SectionTitle: View {
     /// How many items the section holds, as a tag after the title.
     var count: Int?
     @Environment(\.codeyLeadsColumn) private var leadsColumn
+    /// The count badge's diameter: the title's line height, so it scales with it.
+    @ScaledMetric(relativeTo: .headline) private var badge: CGFloat = 22
 
     init(_ title: String, count: Int? = nil) {
         self.title = title
@@ -56,7 +58,14 @@ struct SectionTitle: View {
                 .font(.codeyHeadline)
                 .foregroundStyle(CodeyColor.textSecondary)
             if let count {
-                CodeyChip("\(count)")
+                // A circle as tall as the title (a capsule past 2 digits).
+                Text("\(count)")
+                    .font(.codeyCaption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .padding(.horizontal, CodeySpacing.xs)
+                    .frame(minWidth: badge, minHeight: badge)
+                    .background(CodeyColor.fillNeutral, in: .pill)
             }
         }
         .accessibilityElement(children: .ignore)
