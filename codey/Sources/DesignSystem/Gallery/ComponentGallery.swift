@@ -32,6 +32,11 @@ struct ComponentGallery: View {
                         .frame(height: 160)
                         .clipShape(.codey(CodeyRadius.md))
                 }
+                section("Hints & test results") {
+                    HintBento(hints: ["Think about what you've already seen.", "A dictionary from value to index finds the complement in one pass."])
+                    TestCaseCard(test: .init(ordinal: 2, hidden: false, status: .failed, input: "nums = [3,2,4], target = 6",
+                                             expected: .array([.number(1), .number(2)]), actual: .array([]), error: nil))
+                }
                 section("Bento, iPad") { bento }
                 section("Empty state") {
                     EmptyStateView(

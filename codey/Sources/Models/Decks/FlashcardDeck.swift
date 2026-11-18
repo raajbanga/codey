@@ -88,6 +88,23 @@ extension FlashcardDeck {
         unorderedActiveCards.count
     }
 
+    /// Every study card mastered (and at least one): stops at the first
+    /// card that isn't, so most decks read only a card or two.
+    var isFullyMastered: Bool {
+        var any = false
+        for card in studyCards {
+            guard card.isMastered else { return false }
+            any = true
+        }
+        return any
+    }
+
+    /// Any card that isn't tombstoned: stops at the first, where
+    /// `cardCount > 0` reads every card's attributes.
+    var hasActiveCards: Bool {
+        cards.contains { $0.deletedAt == nil }
+    }
+
     /// Doc: calculateMasteryRate() — mastered / total active cards, 0 when empty.
     var masteryRate: Double {
         var total = 0, mastered = 0

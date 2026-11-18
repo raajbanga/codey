@@ -23,6 +23,8 @@ struct CodeyButton: View {
     var fullWidth = false
     /// Smaller height and type, for buttons inside list rows.
     var compact = false
+    /// The height of a CircleIconButton (44), for a row that ends in one.
+    var slim = false
     let action: () -> Void
 
     @State private var taps = 0
@@ -33,6 +35,7 @@ struct CodeyButton: View {
         kind: CodeyButtonKind = .primary,
         fullWidth: Bool = false,
         compact: Bool = false,
+        slim: Bool = false,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -40,6 +43,7 @@ struct CodeyButton: View {
         self.kind = kind
         self.fullWidth = fullWidth
         self.compact = compact
+        self.slim = slim
         self.action = action
     }
 
@@ -58,7 +62,7 @@ struct CodeyButton: View {
             }
             .frame(maxWidth: fullWidth ? .infinity : nil)
         }
-        .buttonStyle(CodeyFillButtonStyle(kind: kind, compact: compact))
+        .buttonStyle(CodeyFillButtonStyle(kind: kind, compact: compact, slim: slim))
         .sensoryFeedback(kind == .destructive ? .warning : .impact(weight: .light), trigger: taps)
     }
 }
@@ -68,19 +72,22 @@ struct CodeyButton: View {
 struct CodeyFillButtonStyle: ButtonStyle {
     let kind: CodeyButtonKind
     var compact = false
+    /// CircleIconButton's height.
+    var slim = false
     /// Least side padding, for ChoiceChips rows of four.
     var tight = false
 
     @Environment(\.isEnabled) private var isEnabled
     @ScaledMetric(relativeTo: .body) private var regularHeight: CGFloat = 50
     @ScaledMetric(relativeTo: .subheadline) private var compactHeight: CGFloat = 36
+    @ScaledMetric(relativeTo: .body) private var slimHeight: CGFloat = 44
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(compact ? .codeySubheadline.weight(.medium) : .codeyHeadline)
             .foregroundStyle(colors.label)
             .padding(.horizontal, tight ? CodeySpacing.sm : compact ? CodeySpacing.md : CodeySpacing.lg)
-            .frame(minHeight: compact ? compactHeight : regularHeight)
+            .frame(minHeight: compact ? compactHeight : slim ? slimHeight : regularHeight)
             .background(colors.fill, in: .pill)
             .contentShape(.pill)
             .opacity(configuration.isPressed ? 0.7 : (isEnabled ? 1 : 0.45))

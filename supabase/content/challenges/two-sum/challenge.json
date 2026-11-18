@@ -1,0 +1,25 @@
+{
+  "id": "ch-two-sum",
+  "topicId": "topic-algorithms",
+  "title": "Two Sum",
+  "difficulty": "easy",
+  "statement": "Given an array of integers `nums` and an integer `target`, return the indices of the two numbers that add up to `target`.\n\nEach input has exactly one solution, and you may not use the same element twice. Return the two indices in any order.",
+  "constraints": ["2 ≤ nums.length ≤ 10⁴", "-10⁹ ≤ nums[i] ≤ 10⁹", "Exactly one valid answer exists"],
+  "hints": [
+    "Checking every pair works, but it's O(n²). For each number, what other value do you need to find?",
+    "Keep a dictionary from value to index as you scan. Before storing a number, look up target − number."
+  ],
+  "function": { "name": "twoSum", "params": [{ "name": "nums", "type": "int[]" }, { "name": "target", "type": "int" }], "returns": "int[]" },
+  "comparator": "unordered",
+  "editorial": "One pass with a hash map. For each `nums[i]`, check whether `target - nums[i]` has been seen; if so, return both indices, otherwise remember `nums[i] → i`. **O(n)** time, **O(n)** space.",
+  "tests": [
+    { "args": [[2, 7, 11, 15], 9], "expected": [0, 1], "example": true, "explanation": "nums[0] + nums[1] = 2 + 7 = 9" },
+    { "args": [[3, 2, 4], 6], "expected": [1, 2], "example": true },
+    { "args": [[3, 3], 6], "expected": [0, 1] },
+    { "args": [[-1, -2, -3, -4, -5], -8], "expected": [2, 4] },
+    { "args": [[0, 4, 3, 0], 0], "expected": [0, 3] },
+    { "args": [[1000000000, -999999995, 3], 5], "expected": [0, 1] },
+    { "args": [[1, 5, 9, 13, 2], 3], "expected": [0, 4] },
+    { "args": [[5, 75, 25], 100], "expected": [1, 2] }
+  ]
+}

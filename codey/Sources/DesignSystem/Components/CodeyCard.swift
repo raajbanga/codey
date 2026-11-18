@@ -30,31 +30,29 @@ extension View {
 
     /// A rounded note lying on the paper: a raised (or tinted) fill, a
     /// hairline edge, and a barely-there lift (no blur). Used by CodeyCard, Home's
-    /// topic notes, and the Up-next note.
+    /// topic notes, and the Up-next note. It also draws `noteOutline` from the
+    /// environment on its own shape, so an outline set from outside (a
+    /// swiped flashcard) hugs the note at whatever size it lays out.
     func codeyNote(fill: Color = CodeyColor.surfaceRaised, edge: Color? = nil) -> some View {
-        background {
-            // The lift is a crisp 1 pt ledge, not a blurred shadow: a
-            // blur on every note is an offscreen pass per note per frame
-            // while a page scrolls or a card is dragged (Nov 15).
-            RoundedRectangle.codey(CodeyRadius.lg)
-                .fill(fill)
-                .background {
-                    RoundedRectangle.codey(CodeyRadius.lg)
-                        .fill(.black.opacity(0.06))
-                        .offset(y: 1)
-                }
-        }
-        .overlay {
-            RoundedRectangle.codey(CodeyRadius.lg)
-                .strokeBorder(edge ?? CodeyColor.separator, lineWidth: 1)
-        }
+        modifier(NoteSurface(fill: fill, edge: edge))
+    }
+
+    /// A fill with an edge drawn in the same shape: the one way surfaces
+    /// get their outline (notes, tiles, tags, fields, floating cards).
+    func codeySurface(
+        _ fill: some ShapeStyle,
+        in shape: some InsettableShape,
+        edge: Color? = CodeyColor.separator,
+        lineWidth: CGFloat = 1
+    ) -> some View {
+        background(fill, in: shape)
+            .overlay { if let edge { shape.strokeBorder(edge, lineWidth: lineWidth) } }
     }
 
     /// A flat raised surface with a hairline outline, for toasts and other
     /// small things floating over content (toasts, undo bars).
     func codeyFloatingSurface(in shape: some InsettableShape = RoundedRectangle.codey(CodeyRadius.xl)) -> some View {
-        background(CodeyColor.surfaceRaised, in: shape)
-            .overlay { shape.strokeBorder(CodeyColor.separator, lineWidth: 1) }
+        codeySurface(CodeyColor.surfaceRaised, in: shape)
     }
 
     /// The inside of every floating card (quiz setup, Ask Codey, dialogs,
@@ -240,6 +238,45 @@ struct ScreenEdgeFade: View {
                 .offset(y: edge == .top ? -inset : proxy.size.height - EdgeFade.feather(edge))
         }
         .allowsHitTesting(false)
+    }
+}
+
+/// An outline drawn on every note inside the view, on the note's own
+/// shape and bounds. The flashcard swipe sets it, so the rating colour
+/// follows the card at any width or height (iPhone, iPad, Mac) instead of
+/// the frame around it.
+struct NoteOutline: Equatable {
+    var color: Color
+    var lineWidth: CGFloat = 3
+}
+
+extension EnvironmentValues {
+    @Entry var noteOutline: NoteOutline?
+}
+
+private struct NoteSurface: ViewModifier {
+    let fill: Color
+    let edge: Color?
+    @Environment(\.noteOutline) private var outline
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle.codey(CodeyRadius.lg)
+        content
+            // Only the outermost note takes the outline, not notes nested in it.
+            .environment(\.noteOutline, nil)
+            .codeySurface(fill, in: shape, edge: edge ?? CodeyColor.separator)
+            .background {
+                // The lift is a crisp 1 pt ledge, not a blurred shadow: a
+                // blur on every note is an offscreen pass per note per frame
+                // while a page scrolls or a card is dragged (Nov 15).
+                shape.fill(.black.opacity(0.06)).offset(y: 1)
+            }
+            .overlay {
+                if let outline {
+                    shape.strokeBorder(outline.color, lineWidth: outline.lineWidth)
+                        .allowsHitTesting(false)
+                }
+            }
     }
 }
 

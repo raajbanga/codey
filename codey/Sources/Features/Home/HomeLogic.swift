@@ -81,7 +81,7 @@ struct HomeStats {
         accuracyByTopic = counts.reduce(into: [:]) { result, entry in
             result[entry.key] = Double(correct[entry.key] ?? 0) / Double(entry.value)
         }
-        decksByTopic = Dictionary(grouping: decks.filter { !$0.isHidden && $0.cardCount > 0 }, by: \.topicId)
+        decksByTopic = Dictionary(grouping: decks.filter { !$0.isHidden && $0.hasActiveCards }, by: \.topicId)
             .mapValues { decks in
                 decks.sorted { lhs, rhs in
                     if lhs.origin != rhs.origin { return lhs.origin == .starter }

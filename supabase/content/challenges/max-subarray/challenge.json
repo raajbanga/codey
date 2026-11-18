@@ -1,0 +1,23 @@
+{
+  "id": "ch-max-subarray", "topicId": "topic-algorithms", "title": "Maximum Subarray", "difficulty": "medium",
+  "statement": "Given an integer array `nums`, find the contiguous subarray (containing at least one number) with the largest sum, and return that sum.",
+  "constraints": ["1 ≤ nums.length ≤ 10⁵", "-10⁴ ≤ nums[i] ≤ 10⁴"],
+  "hints": [
+    "If the best subarray ending at the previous index has a negative sum, would it ever help to extend it?",
+    "Kadane's algorithm: track the best sum ending here as max(nums[i], current + nums[i]), and keep the largest value seen."
+  ],
+  "function": { "name": "maxSubArray", "params": [{ "name": "nums", "type": "int[]" }], "returns": "int" },
+  "comparator": "exact",
+  "editorial": "Kadane's algorithm: `current = max(x, current + x)` and `best = max(best, current)`, starting both at `nums[0]`. A negative running sum is dropped because it can only make later sums smaller. **O(n)** time, **O(1)** space.",
+  "tests": [
+    { "args": [[-2, 1, -3, 4, -1, 2, 1, -5, 4]], "expected": 6, "example": true, "explanation": "The subarray [4, -1, 2, 1] has the largest sum, 6." },
+    { "args": [[1]], "expected": 1, "example": true },
+    { "args": [[5, 4, -1, 7, 8]], "expected": 23, "example": true },
+    { "args": [[-1]], "expected": -1 },
+    { "args": [[-2, -3, -1, -5]], "expected": -1 },
+    { "args": [[0, 0, 0]], "expected": 0 },
+    { "args": [[8, -19, 5, -4, 20]], "expected": 21 },
+    { "args": [[1, 2, 3, -100, 4, 5]], "expected": 9 },
+    { "args": [[-10000, 10000, -10000, 10000]], "expected": 10000 }
+  ]
+}

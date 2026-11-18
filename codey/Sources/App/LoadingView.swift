@@ -119,6 +119,7 @@ struct LoadingView: View {
                 // Same content as last launch: nothing to upsert.
                 DataSeeder.ensureProfile(context: context)
                 ExerciseCatalog.shared.replace(with: content.exercises)
+                ChallengeCatalog.shared.replace(with: content.challenges)
                 Logger.seeding.info("Content unchanged; seeding skipped")
             } else {
                 try ContentSeeder.seed(content, stamp: stamp, context: context)

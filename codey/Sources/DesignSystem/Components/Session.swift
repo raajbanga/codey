@@ -39,7 +39,7 @@ struct SessionProgress: View {
     let accessibilityLabel: String
     var accessibilityValue: String = ""
 
-    static let height: CGFloat = 6
+    nonisolated static let height: CGFloat = 6
     static let maxSegments = 30
 
     var body: some View {
@@ -85,33 +85,40 @@ struct SessionXP: View {
     }
 }
 
-/// A summary's hero when it isn't a score: the session's symbol on its
-/// topic's pastel (a study deck, a solved exercise), so the end screens match.
-struct SessionSummaryIcon: View {
+/// One small bento under a summary's hero.
+struct SummaryStat: Identifiable {
+    let value: Int
+    let label: String
+    var suffix: String?
     let systemImage: String
-    let hue: CodeyColor.TopicHue
-    @Environment(\.codeyLayout) private var layout
+    var tint: Color = CodeyColor.brand
 
-    var body: some View {
-        let side: CGFloat = layout.isRegular ? 112 : 72
-        Icon(systemImage, size: side * 0.55, relativeTo: .largeTitle)
-            .foregroundStyle(hue.ink)
-            .frame(width: side, height: side)
-            .background(hue.soft, in: .codey(CodeyRadius.lg))
-            .accessibilityHidden(true)
-    }
+    var id: String { label }
 }
 
-/// End of a quiz or study session: a hero (score ring or icon), a title and
-/// line, the XP earned, details (stat tiles, banners), then Again / Done
+/// The end of every session (quiz, study, drill, challenge), one layout
+/// (S45): a big hero bento on the topic's pastel (what happened, how far,
+/// the XP), small stat bentos under it, any extras, then Again / Done
 /// pinned at the bottom, with one quiet celebration.
-struct SessionSummary<Hero: View, Details: View>: View {
+///
+///     ╭ (✓) Solved!          [+20 XP] ╮
+///     │ Two Sum                        │
+///     ╰ ━━━━━━━━━━━━━━━━━━━  8/8 tests ╯
+///     ╭ 8         ╮ ╭ 42 ms      ╮
+///     ╰ Tests     ╯ ╰ Runtime    ╯
+struct SessionSummary<Details: View>: View {
+    /// nil skips the hero (nothing happened: an empty study session).
     var title: String?
     var subtitle: String?
-    /// nil hides the XP pill (practice, nothing to study).
+    var icon = "checkmark.seal"
+    var hue: CodeyColor.TopicHue = .brand
+    var progress: Double?
+    var caption: String?
+    /// nil hides the XP tag (practice, nothing to study).
     var xpEarned: Int?
+    var stats: [SummaryStat] = []
     let againTitle: String
-    /// "Quiz Again" restarts; an exercise's "Next Challenge" moves on.
+    /// "Quiz Again" restarts; "Next Challenge" moves on.
     var againSystemImage = "arrow.clockwise"
     let againID: String
     let doneID: String
@@ -119,36 +126,30 @@ struct SessionSummary<Hero: View, Details: View>: View {
     var again: (() -> Void)?
     let done: () -> Void
     var celebration: (title: String, symbol: String)?
-    @ViewBuilder var hero: Hero
     @ViewBuilder var details: Details
 
     @State private var celebrating = false
-    @Environment(\.codeyLayout) private var layout
 
     var body: some View {
         ZStack {
             ScrollView {
-                VStack(spacing: CodeySpacing.lg) {
-                    VStack(spacing: CodeySpacing.sm) {
-                        hero
-                        if let title {
-                            Text(title)
-                                .font(layout.isRegular ? .codeyDisplay : .codeyTitle.weight(.semibold))
-                                .multilineTextAlignment(.center)
-                                .accessibilityAddTraits(.isHeader)
-                        }
-                        if let subtitle {
-                            Text(subtitle)
-                                .font(.codeyCallout)
-                                .foregroundStyle(CodeyColor.textSecondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        if let xpEarned {
-                            CodeyChip(xp: xpEarned)
-                                .accessibilityIdentifier("summary.xp")
+                VStack(spacing: CodeySpacing.md) {
+                    if let title {
+                        HeroCard(title: title, subtitle: subtitle, icon: icon, hue: hue, progress: progress, caption: caption) {
+                            if let xpEarned {
+                                // 0 on a repeat: said, not hidden, or it looks broken.
+                                CodeyChip(xpEarned > 0 ? "+\(xpEarned) XP" : "No XP: solved before", variant: .xp)
+                                    .accessibilityIdentifier("summary.xp")
+                            }
                         }
                     }
-                    .padding(.top, CodeySpacing.md)
+                    if !stats.isEmpty {
+                        StatTileRow {
+                            ForEach(stats) { stat in
+                                StatTile(value: stat.value, label: stat.label, suffix: stat.suffix, systemImage: stat.systemImage, tint: stat.tint)
+                            }
+                        }
+                    }
                     details
                 }
                 .padding(.vertical, CodeySpacing.md)
@@ -175,5 +176,22 @@ struct SessionSummary<Hero: View, Details: View>: View {
         .onAppear {
             if celebration != nil { celebrating = true }
         }
+    }
+}
+
+/// A titled note of Markdown under a summary (a drill's explanation, a
+/// challenge's editorial).
+struct SummaryNote: View {
+    let title: String
+    let markdown: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: CodeySpacing.xs) {
+            Text(title)
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textPrimary)
+            CardMarkdownView(markdown: markdown)
+        }
+        .codeyCard()
     }
 }

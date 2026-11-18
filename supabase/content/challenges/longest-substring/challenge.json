@@ -1,0 +1,23 @@
+{
+  "id": "ch-longest-substring", "topicId": "topic-algorithms", "title": "Longest Substring Without Repeating Characters", "difficulty": "medium",
+  "statement": "Given a string `s`, return the length of the longest substring that contains no repeated characters.\n\nA substring is a contiguous run of characters, so in `\"pwwkew\"` the answer is `\"wke\"` (length 3); `\"pwke\"` is a subsequence, not a substring.",
+  "constraints": ["0 ≤ s.length ≤ 5 × 10⁴", "s consists of English letters, digits, symbols and spaces"],
+  "hints": [
+    "Think of a window [left, right] that never contains a repeat. When the next character is already in the window, what must move?",
+    "Remember the last index of each character. When s[right] was last seen at or after left, jump left to that index + 1. The answer is the widest window you see."
+  ],
+  "function": { "name": "lengthOfLongestSubstring", "params": [{ "name": "s", "type": "string" }], "returns": "int" },
+  "comparator": "exact",
+  "editorial": "Sliding window with a map from character to its last index. When the incoming character's last index is inside the window, move `left` past it. Track `right - left + 1`. **O(n)** time, **O(alphabet)** space.",
+  "tests": [
+    { "args": ["abcabcbb"], "expected": 3, "example": true, "explanation": "\"abc\" has length 3." },
+    { "args": ["bbbbb"], "expected": 1, "example": true, "explanation": "\"b\" has length 1." },
+    { "args": ["pwwkew"], "expected": 3, "example": true, "explanation": "\"wke\" has length 3." },
+    { "args": [""], "expected": 0 },
+    { "args": [" "], "expected": 1 },
+    { "args": ["dvdf"], "expected": 3 },
+    { "args": ["abba"], "expected": 2 },
+    { "args": ["tmmzuxt"], "expected": 5 },
+    { "args": ["abcdefg"], "expected": 7 }
+  ]
+}

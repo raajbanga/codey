@@ -73,6 +73,36 @@ struct AskAIContext: Equatable, Sendable {
         )
     }
 
+    /// FR-69: a coding challenge with the student's current code. The
+    /// editorial and hidden tests are never sent.
+    static func challenge(_ challenge: Challenge, language: CodeLanguage, code: String) -> AskAIContext {
+        let examples = challenge.examples.enumerated().map { index, example in
+            "Example \(index + 1): \(example.input) -> \(example.output)"
+        }.joined(separator: "\n")
+        let problem = """
+            [Sent by the app. The student does not see this message.]
+            Type: coding challenge (the student writes the whole function; never write it for them)
+            Title: \(challenge.title)
+            Difficulty: \(challenge.difficulty.rawValue)
+            Language: \(language.displayName)
+
+            Problem:
+            \(challenge.statement)
+
+            \(examples)
+
+            The student's code so far:
+            ```\(language.rawValue)
+            \(code)
+            ```
+            """
+        return AskAIContext(
+            id: challenge.id, kind: .exercise, problem: problem,
+            secrets: [], correctLetter: nil,
+            difficulty: challenge.difficulty, language: language
+        )
+    }
+
     static func letter(_ index: Int) -> String {
         String(UnicodeScalar(UInt8(65 + min(max(index, 0), 25))))
     }

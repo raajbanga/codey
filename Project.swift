@@ -27,6 +27,14 @@ let project = Project(
             deploymentTargets: .iOS("26.0"),
             infoPlist: .extendingDefault(
                 with: [
+                    // iPhone is portrait-only (S45); iPad and Mac rotate freely.
+                    "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
+                    "UISupportedInterfaceOrientations~ipad": [
+                        "UIInterfaceOrientationPortrait",
+                        "UIInterfaceOrientationPortraitUpsideDown",
+                        "UIInterfaceOrientationLandscapeLeft",
+                        "UIInterfaceOrientationLandscapeRight",
+                    ],
                     "UILaunchScreen": [
                         "UIColorName": "",
                         "UIImageName": "",

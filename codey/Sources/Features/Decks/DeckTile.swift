@@ -11,17 +11,20 @@ struct DeckTile: View {
     var reservesStudyButton = false
 
     var body: some View {
-        GameTile(
+        // Each reads every card of the deck: once per render, not per use.
+        let count = deck.cardCount
+        let progress = deck.progressRate
+        return GameTile(
             icon: topic?.iconName ?? "rectangle.stack",
             title: deck.title,
             hue: .of(topicID: deck.topicId),
-            progress: deck.progressRate,
+            progress: progress,
             reservesAction: reservesStudyButton
         ) {
             // What a card moved up pays (S41).
-            if deck.cardCount > 0 { CodeyChip(xp: XPRewards.cardMovedUp) }
+            if count > 0 { CodeyChip(xp: XPRewards.cardMovedUp) }
         } tags: {
-            CodeyChip(deck.cardCount.counted("card"), systemImage: "rectangle.stack")
+            CodeyChip(count.counted("card"), systemImage: "rectangle.stack")
             if deck.isHidden {
                 CodeyChip("", systemImage: "eye.slash").accessibilityLabel("Hidden")
             } else if deck.origin == .user {
@@ -30,7 +33,7 @@ struct DeckTile: View {
         }
         .opacity(deck.isHidden ? 0.6 : 1)
         .accessibilityElement(children: .combine)
-        .accessibilityValue("Progress \(deck.progressRate.percentText)")
+        .accessibilityValue("Progress \(progress.percentText)")
         .accessibilityIdentifier("deckTile.\(deck.title)")
     }
 }
@@ -45,7 +48,7 @@ struct DeckTileLink: View {
     @Environment(Router.self) private var router
 
     var body: some View {
-        let canStudy = deck.cardCount > 0 && !deck.isHidden
+        let canStudy = !deck.isHidden && deck.hasActiveCards
         NavigationLink(value: DeckRoute(id: deck.id)) {
             DeckTile(deck: deck, topic: topic, reservesStudyButton: canStudy)
         }
