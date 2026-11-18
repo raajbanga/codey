@@ -1,4 +1,4 @@
--- Content for the content_* tables (migration 20261116000000_content.sql),
+-- Content for the content_* tables (migration 20261116002116_content.sql),
 -- exported from the live project on 2026-11-15 (8 topics, 192 questions,
 -- 25 coding exercises, 15 starter decks with 174 cards), plus the Nov 17
 -- additions at the end. In total: 12 topics, 336 questions, 55 coding

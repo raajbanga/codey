@@ -22,6 +22,9 @@ struct AskAIContext: Equatable, Sendable {
     /// exercise's language. Never sent.
     var difficulty: Difficulty?
     var language: CodeLanguage?
+    /// Challenges only (FR-67): a reply whose fenced code block runs longer
+    /// than this many lines is a written solution, not a hint.
+    var maxCodeLines: Int?
 
     static func quiz(id: String, topic: String, difficulty: Difficulty, prompt: String, options: [String], correctIndex: Int)
         -> AskAIContext
@@ -99,7 +102,8 @@ struct AskAIContext: Equatable, Sendable {
         return AskAIContext(
             id: challenge.id, kind: .exercise, problem: problem,
             secrets: [], correctLetter: nil,
-            difficulty: challenge.difficulty, language: language
+            difficulty: challenge.difficulty, language: language,
+            maxCodeLines: 3
         )
     }
 
@@ -180,6 +184,7 @@ enum AnswerLeakGuard {
     static func leaks(_ reply: String, context: AskAIContext) -> Bool {
         let text = normalize(reply)
         if context.secrets.contains(where: { contains(text, $0) }) { return true }
+        if let maxLines = context.maxCodeLines, longestCodeBlock(in: reply) > maxLines { return true }
         guard let letter = context.correctLetter else { return false }
         // "option B", "Answer is B", "choice (B)", "(B)", "B)" at a line start.
         // The letter must be uppercase so prose like "(a)" or "a)" doesn't match.
@@ -189,6 +194,21 @@ enum AnswerLeakGuard {
             #"(?m)^\s*[\*\-]?\s*\**"# + letter + #"\)"#,
         ]
         return patterns.contains { reply.range(of: $0, options: .regularExpression) != nil }
+    }
+
+    /// Non-blank lines in the longest fenced (```) block. An unclosed fence
+    /// runs to the end of the reply.
+    static func longestCodeBlock(in reply: String) -> Int {
+        var longest = 0
+        var current: Int?
+        for line in reply.split(separator: "\n", omittingEmptySubsequences: false) {
+            if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+                if let count = current { longest = max(longest, count); current = nil } else { current = 0 }
+            } else if let count = current, !line.trimmingCharacters(in: .whitespaces).isEmpty {
+                current = count + 1
+            }
+        }
+        return max(longest, current ?? 0)
     }
 
     /// Lowercased, Markdown backticks removed, whitespace collapsed.

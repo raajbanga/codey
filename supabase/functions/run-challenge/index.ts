@@ -7,7 +7,7 @@
 //
 // The runner URL and key are function secrets (RUNNER_URL, RUNNER_KEY): the
 // app never sees them (NFR-33). Rate limits per user, or per IP for guests
-// (NFR-35). Hidden tests are read with the service role; RLS hides them
+// (NFR-34). Hidden tests are read with the service role; RLS hides them
 // from the app.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // ── Rate limit (NFR-35) ──
+  // ── Rate limit (NFR-34) ──
   const subject = await subjectFor(req, admin);
   const now = Date.now();
   const since = (ms: number) => new Date(now - ms).toISOString();

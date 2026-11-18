@@ -1,7 +1,7 @@
 import Foundation
 import Supabase
 
-/// The content_* tables (supabase/migrations/20261116000000_content.sql),
+/// The content_* tables (supabase/migrations/20261116002116_content.sql),
 /// readable by anyone with the anon key, rebuilt into the bundled JSON
 /// format so one set of loaders checks both.
 extension SupabaseDataClient {

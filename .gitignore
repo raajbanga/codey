@@ -83,6 +83,8 @@ buildServer.json
 
 ### Secrets ###
 Config/Secrets.xcconfig
+# Local MCP config names the live project; .mcp.example.json shows the format
+.mcp.json
 
 ### Database backups (scripts/backup.sh) ###
 backups/

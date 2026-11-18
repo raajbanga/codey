@@ -35,7 +35,7 @@ groups=(
     "UI tests|codey/UITests/"
     "Resources|codey/Resources/Schemas/ codey/Resources/questions-seed.json codey/Resources/starter-decks.json codey/Resources/exercises.json codey/Resources/challenges.json"
     "Build configuration|Config/Base.xcconfig Config/Secrets.example.xcconfig"
-    "Project manifests|Project.swift Tuist.swift Tuist/Package.swift Tuist/Package.resolved .gitignore .mcp.json"
+    "Project manifests|Project.swift Tuist.swift Tuist/Package.swift Tuist/Package.resolved .gitignore .mcp.example.json"
     "Supabase backend|supabase/config.toml supabase/.gitignore supabase/migrations/ supabase/seed.sql supabase/challenges-seed.sql supabase/drill-hints.sql supabase/functions/ supabase/tests/ supabase/checks/"
     "Code runner|runner/"
     "Scripts|scripts/"
@@ -48,7 +48,7 @@ language_of() {
         *.sql) echo CodeySQL ;;
         *.sh) echo CodeyBash ;;
         *.py) echo CodeyPython ;;
-        *.json|*.resolved|.mcp.json) echo CodeyJSON ;;
+        *.json|*.resolved) echo CodeyJSON ;;
         *.yml|*.yaml) echo CodeyYAML ;;
         *) echo CodeyPlain ;;
     esac

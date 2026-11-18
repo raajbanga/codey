@@ -3,7 +3,7 @@
 # the runner through SSM (never printed). Example:
 #   runner/with-secrets.sh deno run -A scripts/challenges.ts validate
 set -euo pipefail
-export AWS_PROFILE=${AWS_PROFILE:-codey} AWS_REGION=${AWS_REGION:-us-east-1}
+export AWS_PROFILE=${AWS_PROFILE:-codey}  # region: AWS_REGION or the profile's own
 INSTANCE=$(aws ec2 describe-instances --filters Name=tag:Name,Values=codey-runner Name=instance-state-name,Values=running \
   --query 'Reservations[0].Instances[0].InstanceId' --output text)
 CMD=$(aws ssm send-command --instance-ids "$INSTANCE" --document-name AWS-RunShellScript \

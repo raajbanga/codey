@@ -62,7 +62,7 @@ GROUPS = [
     ("Tuist.swift", "Config", "Tuist workspace configuration."),
     ("Tuist/*", "Config", "Swift package dependencies (pinned exact) and their resolved versions."),
     (".gitignore", "Config", "Files kept out of Git (secrets, build output, backups)."),
-    (".mcp.json", "Config", "Supabase MCP server for the project (used to run the live checks)."),
+    (".mcp.example.json", "Config", "Supabase MCP server format; copy to .mcp.json with the project ref (used to run the live checks)."),
     ("supabase/migrations/*", "SQL", "Database schema as ordered migrations: tables, CHECKs, RLS policies, groups, RPC, progress and history tables, public-read content_* tables."),
     ("supabase/seed.sql", "SQL", "Content rows for the content_* tables (8 topics, 192 questions, 25 exercises, 15 starter decks with 174 cards)."),
     ("supabase/challenges-seed.sql", "SQL", "The 11 coding challenges with starters in four languages and every test, generated from supabase/content (S45)."),

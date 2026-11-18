@@ -12,19 +12,21 @@ App ──HTTPS──▶ Supabase Edge Function `run-challenge` ──HTTPS + X-
 
 Total time: about 30–40 minutes, most of it the Swift and Java package downloads.
 
-## Live instance (Nov 17)
+## What gets created
+
+Values in angle brackets are placeholders: fill in your own and keep the real ones in the team password manager, not in the repo.
 
 | | |
 |---|---|
-| Account / region | `<aws-account-id>` / `us-east-1` |
-| Instance | `<instance-id>`, `t3.small`, Ubuntu 24.04, 30 GB gp3 (encrypted), IMDSv2 only |
-| Elastic IP / URL | `<elastic-ip>` → `https://<a-b-c-d>.sslip.io` |
-| Security group | `<security-group-id>` (`codey-runner-sg`): 80 and 443 only. **No SSH**: use SSM |
-| Instance role | `<runner-role>` (`AmazonSSMManagedInstanceCore`) |
-| CLI identity | IAM user `<iam-user>` (profile `codey`), inline policy `<admin-policy>`. Never root |
+| Region | `<region>`, the one closest to the Supabase project; keep everything in it |
+| Instance | `t3.small` (2 vCPU, 2 GB), Ubuntu 24.04, 30 GB gp3 (encrypted), IMDSv2 only, tagged `Name=codey-runner` |
+| Address | An Elastic IP, so the URL `https://<a-b-c-d>.sslip.io` never changes |
+| Security group | Ports 80 and 443 only. **No SSH**: use SSM |
+| Instance role | An EC2 role with only `AmazonSSMManagedInstanceCore` |
+| CLI identity | An IAM user with only the EC2, SSM and IAM actions this setup needs, in a named AWS CLI profile. Never root |
 | Secrets | On the runner in `/etc/codey-runner/secrets.env` (root-only). Copied to Supabase and GitHub by `runner/push-secrets.sh`. Never in the repo or the app |
 
-## Automated path (how the live instance was built)
+## Automated path (recommended)
 
 Same result as the manual steps below, with the AWS CLI and no SSH. Files are in this folder:
 
@@ -32,18 +34,18 @@ Same result as the manual steps below, with the AWS CLI and no SSH. Files are in
 - `configure-caddy.sh`: step 9, run through SSM after the Elastic IP is attached. It creates the key once and prints only the URL.
 - `push-secrets.sh`: step 11, run on your Mac. It reads the secrets through SSM and sets them in Supabase (`supabase secrets set`) and GitHub (`gh secret set`) without printing them.
 
-1. Profile: `export AWS_PROFILE=codey AWS_REGION=us-east-1`
+1. Profile: `export AWS_PROFILE=<profile> AWS_REGION=<region>` (the scripts default to a profile named `codey` and the profile's own region).
 2. Role: `aws iam create-role --role-name <runner-role>` (EC2 trust), `attach-role-policy … AmazonSSMManagedInstanceCore`, `create-instance-profile` + `add-role-to-instance-profile`.
 3. Security group with ingress 80 and 443 only (IPv4 and IPv6).
-4. `aws ec2 run-instances --image-id <ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id> --instance-type t3.small --iam-instance-profile Name=<runner-role> --metadata-options HttpTokens=required --user-data file://runner/bootstrap.sh …`
+4. `aws ec2 run-instances --image-id <ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id> --instance-type t3.small --iam-instance-profile Name=<runner-role> --metadata-options HttpTokens=required --user-data file://runner/bootstrap.sh --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=codey-runner}]' …`
 5. `allocate-address` + `associate-address`.
 6. When `/var/lib/codey-bootstrap.done` exists: `aws ssm send-command --document-name AWS-RunShellScript` with the contents of `configure-caddy.sh`.
-7. On your Mac: `runner/push-secrets.sh`.
+7. On your Mac, with the Supabase CLI linked to the project (`supabase link`): `runner/push-secrets.sh`.
 
 Run a shell command on the runner (instead of SSH):
 
 ```bash
-aws ssm start-session --target <instance-id> --profile codey
+aws ssm start-session --target <instance-id>
 ```
 
 (Needs the Session Manager plugin: `brew install --cask session-manager-plugin`.)
@@ -56,7 +58,7 @@ aws ssm start-session --target <instance-id> --profile codey
 
 ## 1. Launch the instance (AWS console)
 
-1. Sign in to the AWS console. In the top-right region picker, choose **US East (N. Virginia) `us-east-1`** (or whichever region is closest; keep it consistent).
+1. Sign in to the AWS console. In the top-right region picker, choose the region closest to your Supabase project, and keep it consistent.
 2. Go to **EC2 → Instances → Launch instances**.
 3. **Name:** `codey-runner`
 4. **AMI:** **Ubuntu Server 24.04 LTS**, architecture **64-bit (x86)**. (Piston's image is x86, and 24.04 uses cgroup v2 by default, which Piston needs.)
@@ -75,7 +77,7 @@ aws ssm start-session --target <instance-id> --profile codey
 
 1. **EC2 → Network & Security → Elastic IPs → Allocate Elastic IP address → Allocate.**
 2. Select the new IP → **Actions → Associate Elastic IP address** → Instance: `codey-runner` → **Associate**.
-3. Write the IP down. Below it's called `RUNNER_IP` (for example `3.91.20.15`).
+3. Write the IP down. Below it's called `RUNNER_IP` (for example `203.0.113.10`, a documentation address).
 
 ## 3. Set a cost alarm (do this now, not later)
 
@@ -259,7 +261,7 @@ Copy the two lines it prints into the team password manager. They're secrets: **
 Paste your values:
 
 ```bash
-RUNNER_URL=https://3-91-20-15.sslip.io
+RUNNER_URL=https://203-0-113-10.sslip.io
 RUNNER_KEY=paste-the-key
 ```
 
@@ -318,6 +320,6 @@ supabase secrets list
 | Disk use | `df -h /` |
 
 - Ubuntu installs security updates automatically (`unattended-upgrades`). Reboot monthly: `sudo reboot`, and both services come back on their own.
-- **Stopping the instance** (EC2 → Instance state → Stop) pauses compute billing. The Elastic IP is billed while the instance is stopped, but it keeps the URL the same. Start it again before the Expo demo and run the step 10 checks.
+- **Stopping the instance** (EC2 → Instance state → Stop) pauses compute billing. The Elastic IP is billed while the instance is stopped, but it keeps the URL the same. Start it again before a demo and run the step 10 checks.
 - **If the runner is down**, the Edge Function returns `runner_down` and the app shows "The code runner is offline, try again later". Drills and everything else keep working.
 - **Your IP changed and SSH hangs:** EC2 → Security Groups → `codey-runner-sg` → edit the SSH rule → **My IP**.

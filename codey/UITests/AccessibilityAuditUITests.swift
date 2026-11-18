@@ -51,7 +51,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         // The stubbed Ask AI client (no network) so the chat can be audited.
         // A fresh XCUIApplication, so the audit targets the new process.
         app = XCUIApplication()
-        app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-appearance", appearance]
+        app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-UITestRunnerStub", "-appearance", appearance]
         app.launch()
 
         // Home and the profile sheet.
@@ -85,6 +85,10 @@ final class AccessibilityAuditUITests: XCTestCase {
 
         let tile = app.buttons["deckTile.Data Structures Essentials"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        // On a slow CI runner the builder sheet can still be sliding away
+        // over the tile: wait until it can be tapped.
+        let hittable = expectation(for: NSPredicate(format: "isHittable == true"), evaluatedWith: tile)
+        wait(for: [hittable], timeout: 5)
         tile.tap()
         XCTAssertTrue(app.buttons["deck.study"].waitForExistence(timeout: 5))
         try audit("deckDetail")
@@ -124,13 +128,42 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(blank.waitForExistence(timeout: 5))
         try audit("exercise")
         blank.tap()
-        blank.typeText("guard")
-        app.buttons["exercise.submit"].tap()
+        blank.typeText("guard\n")
+        // The hints push Check to the bottom edge, under the keyboard:
+        // hide the keyboard and scroll it into reach (as ExerciseUITests).
+        if app.keyboards.firstMatch.exists { app.typeText("\n") }
+        let check = app.buttons["exercise.submit"]
+        for _ in 0..<4 where !check.isHittable { app.swipeUp() }
+        check.tap()
         XCTAssertTrue(app.descendants(matching: .any)["exercise.summary"].waitForExistence(timeout: 5))
         try audit("exercise.result")
         app.swipeBack()
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
         app.swipeBack()
+
+        // Coding challenges (FR-69 to FR-74) with the stubbed runner: Run
+        // fails one example, Submit is accepted.
+        app.openTopic("Algorithms")
+        let challenge = app.buttons["challenge.ch-two-sum"]
+        XCTAssertTrue(challenge.waitForExistence(timeout: 5))
+        for _ in 0..<8 where !challenge.isHittable { app.swipeUp() }
+        challenge.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["challenge.statement"].waitForExistence(timeout: 5))
+        try audit("challenge.description")
+        app.buttons["Code"].firstMatch.tap()
+        let run = app.buttons["challenge.run"]
+        XCTAssertTrue(run.waitForExistence(timeout: 5))
+        try audit("challenge.code")
+        run.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["challenge.case.2"].waitForExistence(timeout: 5))
+        try audit("challenge.result")
+        app.buttons["Code"].firstMatch.tap()
+        app.buttons["challenge.submit"].tap()
+        let solvedDone = app.buttons["challenge.done"]
+        XCTAssertTrue(solvedDone.waitForExistence(timeout: 5))
+        try audit("challenge.solved")
+        solvedDone.tap()
+
         app.openTopic("Algorithms")
         let quizTopic = app.buttons["topic.play"]
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
