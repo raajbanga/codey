@@ -13,6 +13,8 @@ import UIKit
 struct CodeEditorView: UIViewRepresentable {
     @Binding var text: String
     var language: CodeLanguage
+    /// The code's size (Dynamic Type style).
+    var textStyle: UIFont.TextStyle = .callout
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -40,11 +42,15 @@ struct CodeEditorView: UIViewRepresentable {
         textView.smartInsertDeleteType = .no
         textView.spellCheckingType = .no
         textView.keyboardType = .asciiCapable
-        textView.inputAccessoryView = CodeKeyboardAccessory(textView: textView)
+        // The accessory row is attached in textViewShouldBeginEditing, not
+        // here: building a UIInputView spins up the keyboard window, and
+        // doing that while SwiftUI is mid-layout (makeUIView runs inside
+        // sizeThatFits) loops the attribute graph forever. That froze the
+        // challenge's two-pane page on iPad and Mac (Nov 17).
 
         textView.setState(TextViewState(
             text: text,
-            theme: CodeyRunestoneTheme(traits: textView.traitCollection),
+            theme: CodeyRunestoneTheme(traits: textView.traitCollection, textStyle: textStyle),
             language: language.treeSitterLanguage
         ))
         context.coordinator.language = language
@@ -64,7 +70,7 @@ struct CodeEditorView: UIViewRepresentable {
         if coordinator.colorScheme != colorScheme {
             coordinator.colorScheme = colorScheme
             // Runestone caches resolved colors; a new theme re-highlights.
-            textView.theme = CodeyRunestoneTheme(traits: textView.traitCollection)
+            textView.theme = CodeyRunestoneTheme(traits: textView.traitCollection, textStyle: textStyle)
             textView.backgroundColor = UIColor(resource: .codeBackground)
         }
     }
@@ -85,6 +91,13 @@ struct CodeEditorView: UIViewRepresentable {
 
         init(text: Binding<String>) {
             self.text = text
+        }
+
+        func textViewShouldBeginEditing(_ textView: TextView) -> Bool {
+            if textView.inputAccessoryView == nil {
+                textView.inputAccessoryView = CodeKeyboardAccessory(textView: textView)
+            }
+            return true
         }
 
         func textViewDidChange(_ textView: TextView) {

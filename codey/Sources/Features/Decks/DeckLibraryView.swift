@@ -33,6 +33,7 @@ struct DeckLibraryView: View {
 
     @Environment(BackendFacade.self) private var backend
     @Environment(Router.self) private var router
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         let topicsByID = topics.keyed(by: \.id)
@@ -130,14 +131,18 @@ struct DeckLibraryView: View {
     /// Every deck you study, and how far along you are across them.
     private var hero: some View {
         let shown = decks.filter { !$0.isHidden }
-        let cards = shown.reduce(0) { $0 + $1.cardCount }
-        let progress = cards == 0 ? 0 : shown.reduce(0.0) { $0 + $1.progressRate * Double($1.cardCount) } / Double(cards)
+        // Counted by the store, not by loading every card (it showed up
+        // when switching tabs, Nov 17). Mastered: every card in the deck is.
+        let cards = (try? context.fetchCount(FetchDescriptor<Flashcard>(predicate: #Predicate {
+            $0.deletedAt == nil && $0.deck?.deletedAt == nil && $0.deck?.isHidden == false
+        }))) ?? 0
+        let mastered = shown.filter(\.isFullyMastered).count
         // The card count as a tag, like Play's level (Nov 15).
         return HeroCard(
             title: "Decks",
             icon: "rectangle.stack",
-            progress: progress,
-            caption: "\(progress.percentText) progress"
+            progress: shown.isEmpty ? 0 : Double(mastered) / Double(shown.count),
+            caption: "\(mastered) of \(shown.count) decks mastered"
         ) {
             CodeyChip(cards.counted("card"), systemImage: "rectangle.stack", variant: .xp)
         }

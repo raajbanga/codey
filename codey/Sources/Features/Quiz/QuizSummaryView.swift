@@ -1,20 +1,26 @@
 import SwiftUI
 
-/// End of a quiz: percentage ring + "8/10 correct" (FR-20), XP earned,
-/// streak / retired tiles, and level-up / tier-unlock banners. Laid out by
+/// End of a quiz: "8/10 correct" and the score bar (FR-20), XP earned,
+/// streak / retired bentos, and level-up / tier-unlock banners. Laid out by
 /// SessionSummary, as the study summary is.
 struct QuizSummaryView: View {
     let viewModel: QuizViewModel
     let done: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .largeTitle) private var ringSize: CGFloat = 148
 
     var body: some View {
+        let percent = viewModel.percentCorrect
         SessionSummary(
             title: "\(viewModel.correctCount)/\(viewModel.questions.count) correct",
             subtitle: viewModel.isPractice ? "\(viewModel.topic.title), review practice" : viewModel.topic.title,
+            icon: "target",
+            hue: .of(topicID: viewModel.topic.id),
+            progress: percent,
+            caption: percent.formatted(.percent.precision(.fractionLength(0))) + " score",
             xpEarned: viewModel.isPractice ? nil : viewModel.xpEarned,
+            stats: [SummaryStat(value: viewModel.bestStreak, label: "Best streak", systemImage: "flame.fill", tint: CodeyColor.warning)]
+                + (viewModel.isPractice ? [] : [SummaryStat(value: viewModel.newlyRetired, label: "Newly retired", systemImage: "checkmark.seal.fill", tint: CodeyColor.success)]),
             againTitle: "Quiz Again",
             againID: "quiz.again",
             doneID: "quiz.done",
@@ -22,20 +28,6 @@ struct QuizSummaryView: View {
             done: done,
             celebration: celebration
         ) {
-            ProgressRing(value: viewModel.percentCorrect, lineWidth: 14, tint: ringTint) {
-                Text(viewModel.percentCorrect, format: .percent.precision(.fractionLength(0)))
-                    .font(.codeyNumeric)
-                    .foregroundStyle(CodeyColor.textPrimary)
-            }
-            .frame(width: ringSize, height: ringSize)
-            .accessibilityLabel("Score")
-        } details: {
-            StatTileRow {
-                StatTile(value: viewModel.bestStreak, label: "Best streak", systemImage: "flame.fill", tint: CodeyColor.warning)
-                if !viewModel.isPractice {
-                    StatTile(value: viewModel.newlyRetired, label: "Newly retired", systemImage: "checkmark.seal.fill", tint: CodeyColor.success)
-                }
-            }
             if let level = viewModel.reachedLevel {
                 CodeyCard(tint: CodeyColor.brand) {
                     Label("Level \(level)!", systemImage: "arrow.up.circle.fill")
@@ -44,14 +36,6 @@ struct QuizSummaryView: View {
                 }
             }
             ForEach(viewModel.unlockedTiers, id: \.self) { TierUnlockedBanner(tier: $0) }
-        }
-    }
-
-    private var ringTint: Color {
-        switch viewModel.percentCorrect {
-        case 0.8...: CodeyColor.success
-        case 0.5..<0.8: CodeyColor.brand
-        default: CodeyColor.warning
         }
     }
 

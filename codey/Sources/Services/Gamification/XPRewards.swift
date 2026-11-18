@@ -58,6 +58,26 @@ enum XPRewards {
         return amount
     }
 
+    /// FR-69: an accepted coding challenge, by difficulty.
+    static func challengeReward(_ difficulty: Difficulty) -> Int {
+        switch difficulty {
+        case .easy: 20
+        case .medium: 35
+        case .hard: 50
+        }
+    }
+
+    /// Pays an accepted challenge the first time only (ids start with ch-,
+    /// so they share solvedExerciseIds without clashing). Returns the XP paid.
+    @discardableResult
+    static func solveChallenge(id: String, difficulty: Difficulty, profile: UserProfile, weeklyXP: WeeklyXPStore, now: Date) -> Int {
+        guard !profile.solvedExerciseIds.contains(id) else { return 0 }
+        profile.solvedExerciseIds.append(id)
+        let amount = challengeReward(difficulty)
+        grant(amount, to: profile, weeklyXP: weeklyXP, now: now)
+        return amount
+    }
+
     /// Pays the daily-goal and weekly-challenge bonuses that are met and not
     /// yet paid for this day / week. Call after anything that counts toward
     /// them (a quiz answer, a card rating). Returns the bonuses paid now.

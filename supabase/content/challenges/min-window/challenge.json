@@ -1,0 +1,22 @@
+{
+  "id": "ch-min-window", "topicId": "topic-algorithms", "title": "Minimum Window Substring", "difficulty": "hard",
+  "statement": "Given strings `s` and `t`, return the shortest substring of `s` that contains every character of `t`, duplicates included. If there is no such substring, return the empty string `\"\"`.\n\nThe answer is unique for every test.",
+  "constraints": ["1 ≤ s.length, t.length ≤ 10⁵", "s and t consist of English letters"],
+  "hints": [
+    "Grow a window to the right until it contains everything in t, then shrink it from the left while it still does. How do you know cheaply that it still does?",
+    "Count what t needs in a dictionary and keep a `missing` counter. Adding a needed char decrements it; when it hits 0, record the window and move left, re-incrementing when you drop a needed char."
+  ],
+  "function": { "name": "minWindow", "params": [{ "name": "s", "type": "string" }, { "name": "t", "type": "string" }], "returns": "string" },
+  "comparator": "exact",
+  "editorial": "Sliding window with a `need` count and a `missing` total. Expand `right`; once `missing == 0`, shrink `left` past characters the window has in surplus, record the window, then give up one needed character and keep expanding. **O(|s| + |t|)** time.",
+  "tests": [
+    { "args": ["ADOBECODEBANC", "ABC"], "expected": "BANC", "example": true, "explanation": "\"BANC\" contains A, B and C, and nothing shorter does." },
+    { "args": ["a", "a"], "expected": "a", "example": true },
+    { "args": ["a", "aa"], "expected": "", "example": true, "explanation": "t needs two a's but s has one." },
+    { "args": ["ab", "b"], "expected": "b" },
+    { "args": ["aa", "aa"], "expected": "aa" },
+    { "args": ["abc", "d"], "expected": "" },
+    { "args": ["cabwefgewcwaefgcf", "cae"], "expected": "cwae" },
+    { "args": ["bba", "ab"], "expected": "ba" }
+  ]
+}

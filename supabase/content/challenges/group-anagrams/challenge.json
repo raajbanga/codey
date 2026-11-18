@@ -1,0 +1,22 @@
+{
+  "id": "ch-group-anagrams", "topicId": "topic-data-structures", "title": "Group Anagrams", "difficulty": "medium",
+  "statement": "Given an array of strings `strs`, group the anagrams together. Two words are anagrams if one's letters can be rearranged to make the other.\n\nReturn the groups in any order, and the words inside each group in any order.",
+  "constraints": ["1 ≤ strs.length ≤ 10⁴", "0 ≤ strs[i].length ≤ 100", "strs[i] consists of lowercase English letters"],
+  "hints": [
+    "Anagrams look identical once their letters are put in a fixed order. What could you use as a key?",
+    "Use a dictionary from sorted(word), or a 26-letter count, to the list of words with that key. The dictionary's values are the answer."
+  ],
+  "function": { "name": "groupAnagrams", "params": [{ "name": "strs", "type": "string[]" }], "returns": "string[][]" },
+  "comparator": "unordered",
+  "editorial": "Hash each word by its sorted letters (or a letter-count signature) and collect words with the same key. **O(n · k log k)** time for n words of length k with sorting, or **O(n · k)** with counts.",
+  "tests": [
+    { "args": [["eat", "tea", "tan", "ate", "nat", "bat"]], "expected": [["bat"], ["nat", "tan"], ["ate", "eat", "tea"]], "example": true },
+    { "args": [[""]], "expected": [[""]], "example": true },
+    { "args": [["a"]], "expected": [["a"]], "example": true },
+    { "args": [["abc", "bca", "cab", "xyz"]], "expected": [["abc", "bca", "cab"], ["xyz"]] },
+    { "args": [["ab", "ba", "ab"]], "expected": [["ab", "ba", "ab"]] },
+    { "args": [["x", "y", "z"]], "expected": [["x"], ["y"], ["z"]] },
+    { "args": [["listen", "silent", "enlist", "google", "gogole"]], "expected": [["listen", "silent", "enlist"], ["google", "gogole"]] },
+    { "args": [["", ""]], "expected": [["", ""]] }
+  ]
+}

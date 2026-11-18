@@ -14,6 +14,8 @@ struct Exercise: Decodable, Equatable, Identifiable, Hashable {
     let code: String
     let blanks: [ExerciseBlank]
     let explanation: String
+    /// Two hints (S45), shown one at a time; nil in older content.
+    var hints: [String]?
 
     static let blankMarker = "___"
 
@@ -48,6 +50,7 @@ enum ExerciseLoaderError: Error, CustomStringConvertible, Equatable {
     case unknownTopicId(exerciseId: String, topicId: String)
     case blankCountMismatch(exerciseId: String, markers: Int, blanks: Int)
     case noAcceptedAnswer(exerciseId: String, blank: Int)
+    case tooManyHints(exerciseId: String)
 
     var description: String {
         switch self {
@@ -65,6 +68,8 @@ enum ExerciseLoaderError: Error, CustomStringConvertible, Equatable {
             return "Exercise '\(exerciseId)' has \(markers) ___ markers but \(blanks) blanks"
         case .noAcceptedAnswer(let exerciseId, let blank):
             return "Exercise '\(exerciseId)' blank \(blank) has no accepted answer"
+        case .tooManyHints(let exerciseId):
+            return "Exercise '\(exerciseId)' has more than 3 hints"
         }
     }
 }
@@ -104,6 +109,9 @@ enum ExerciseLoader {
                 throw ExerciseLoaderError.blankCountMismatch(
                     exerciseId: exercise.id, markers: exercise.markerCount, blanks: exercise.blanks.count
                 )
+            }
+            guard (exercise.hints ?? []).count <= 3 else {
+                throw ExerciseLoaderError.tooManyHints(exerciseId: exercise.id)
             }
             for (index, blank) in exercise.blanks.enumerated()
             where !blank.accepted.contains(where: { !ExerciseValidator.normalize($0).isEmpty }) {

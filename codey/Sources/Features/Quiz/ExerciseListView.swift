@@ -23,7 +23,7 @@ struct ExerciseTiles: View {
     var body: some View {
         Group {
             if let loadError {
-                GameTile(icon: "exclamationmark.triangle", title: "Exercises didn't load", detail: loadError, hue: .rose, filled: false)
+                GameTile(icon: "exclamationmark.triangle", title: "Drills didn't load", detail: loadError, hue: .rose, filled: false)
             } else {
                 ForEach(ordered) { exercise in
                     let done = solved.contains(exercise.id)
@@ -52,7 +52,7 @@ struct ExerciseTiles: View {
                             }
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityHint("Opens the exercise")
+                        .accessibilityHint("Opens the drill")
                     }
                     .buttonStyle(TilePressStyle())
                     .accessibilityIdentifier("exercise.\(exercise.id)")

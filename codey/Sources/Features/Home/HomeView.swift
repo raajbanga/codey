@@ -19,6 +19,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(BackendFacade.self) private var backend
+    @Environment(\.modelContext) private var context
     /// The bento gap, so the quests match the grids around them.
     @Environment(\.codeyLayout) private var layout
     @AppStorage("home.signInNudgeDismissed") private var nudgeDismissed = false
@@ -302,7 +303,11 @@ struct HomeView: View {
 
     /// No quiz answers and no studied cards yet.
     private var isNewLearner: Bool {
-        records.isEmpty && !decks.contains { deck in deck.unorderedActiveCards.contains { $0.lastReviewedAt != nil } }
+        guard records.isEmpty else { return false }
+        // One indexed query instead of reading every card's review date.
+        var reviewed = FetchDescriptor<Flashcard>(predicate: #Predicate { $0.deletedAt == nil && $0.lastReviewedAt != nil })
+        reviewed.fetchLimit = 1
+        return ((try? context.fetchCount(reviewed)) ?? 0) == 0
     }
 
     /// The starter deck for the first pinned topic (or any starter deck).
