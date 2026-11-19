@@ -700,7 +700,7 @@ Performance & Peak memory, 100-card study session & \texttt{task\_info} footprin
 Performance & Quiz build / deck save / 80-line render (p95) & \texttt{PerformanceTests} (TC-P01, P02, P06) & 50 / 250 / 100 ms & 0.39 / 57.9 / 15.1 ms & 0.33 / 44.3 / 15.7 ms \\
 Performance & Frame rate while scrolling the deck library & Instruments (Animation Hitches) & $\ge$ 60 fps & Not measured & Not measured (Future Work) \\
 Security & Tables with RLS enabled & Schema unit test, pgTAP, live SQL check & 100\% & 100\% (8 of 8) & 100\% (23 of 23: 14 user-data, 5 public-read content, 4 challenge) \\
-Security & Cross-account or non-member reads/writes that succeed & Live RLS check; pgTAP & 0 & 0 (48 checks) & 0 (57 live checks, Nov 9; 73 on the local stack; 122 pgTAP tests pass) \\
+Security & Cross-account or non-member reads/writes that succeed & Live RLS check; pgTAP & 0 & 0 (48 checks) & 0 (73 live checks, Nov 19; 122 pgTAP tests pass) \\
 Security & Backend requests not using TLS 1.3 & URL session minimum protocol (unit test) & 0 & 0 & 0 \\
 Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 (key-shaped strings in CI on every push; real values locally, Nov 15) \\
 Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1, justified (\texttt{join\_group}) & 0 unjustified (2 justified: \texttt{join\_group}; leaked-password protection, no password sign-in) \\
@@ -3148,7 +3148,7 @@ function.
 \endfoot
 Flows 2, 3, 15 & Spoofing & A forged ID token or session is presented. & Supabase Auth verifies Google's token signature; PostgREST verifies the JWT on every request. \\
 Flows 11, 14 & Tampering, Information disclosure & A network attacker reads or alters traffic (public Wi-Fi). & TLS 1.3 minimum, no ATS exceptions (NFR-06); traffic capture TC-S09. \\
-P6 / D3 & Elevation of privilege, Information disclosure & A user reads or writes another user's rows, or a non-member reads a group board. & RLS on all 19 tables; group policies via \texttt{private.is\_member()}; 67 checks, 0 failures (TC-S01). \\
+P6 / D3 & Elevation of privilege, Information disclosure & A user reads or writes another user's rows, or a non-member reads a group board. & RLS on all 23 tables; group policies via \texttt{private.is\_member()}; 73 checks, 0 failures (TC-S01). \\
 Flow 14 & Elevation of privilege & \texttt{join\_group} (definer rights) is abused to add another user or read other groups. & Inserts only \texttt{auth.uid()}; empty \texttt{search\_path}; returns only the joined group; revoked from anon. \\
 D3 (\texttt{weekly\_xp}) & Tampering & A user writes an inflated weekly XP. & Own row only, CHECK $\le$ 22,500, server keeps the maximum, growth clamped to 600 XP per minute; accepted residual risk R13. \\
 D2, flow 10 & Information disclosure & The session token leaks from storage or logs. & Keychain, this device only; logging audit: the 7 public log values are a launch duration, starter-deck keys and card IDs, sync event, state, and entity names, and tier names (NFR-21). \\
@@ -3192,7 +3192,7 @@ they were not run (limitations, Section~\ref{sec:conclusion}).
 \endhead
 \bottomrule
 \endfoot
-TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} in the Supabase SQL editor (or through the Supabase MCP server); two simulated users and a non-member try to read, change, and delete each other's rows on all 19 tables, and a guest tries to change the content; everything rolls back. & 0 of 67 checks fail & 0 of 57 failed on the live project (Nov 9, before the content checks 58--67 were added); 0 of 67 failed on the local stack (Nov 15) & Pass \\
+TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} in the Supabase SQL editor (or through the Supabase MCP server); two simulated users and a non-member try to read, change, and delete each other's rows on all 23 tables, and a guest tries to change the content or read hidden challenge tests; everything rolls back. & 0 of 73 checks fail & 0 of 73 failed on the live project (Nov 19, through the Supabase MCP server; 0 of 57 on Nov 9, before the content and challenge checks were added) & Pass \\
 TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after each migration; fix or justify each warning. & 0 unjustified warnings & 2 warnings, both justified (Nov 15): \texttt{join\_group} is the one exposed function (NFR-27); leaked-password protection is off, and Codey has no password sign-in (Google only) & Pass \\
 TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings and 0 real values (local, Nov 15) & Pass \\
 TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 21 warnings, all in third-party packages, 0 in Codey's sources (Oct 30) & Pass \\
@@ -3228,7 +3228,7 @@ and 21 of the course table, plus items 12, 13, 18, and 22), with the final resul
 3 & Stakeholders and their security needs & Students: private, encrypted progress; client: no cost, team-written code; team: no leaked keys. & Complete; group mates see only each other's profile row and weekly XP; content is public and holds no user data. \\
 4 & Usage context and operating environment & iPhone and iPad app, offline-capable, Supabase Free plan over the public internet, possibly public Wi-Fi. & Complete; NFR-03 to NFR-06. \\
 5 & Language and OS risks shared before design & Swift is memory-safe; known risks: secrets in logs, ATS exceptions, tokens in \texttt{UserDefaults}, RLS off by default. & Complete; documented in \texttt{supabase/README.md}, the PR template, and the secrets template. \\
-21 & Data from app server to database & RLS on every table; server-assigned owner; CHECK constraints; parameterized queries; SSL to Postgres; AES-256 at rest. & RLS on 23 of 23 tables; 57 live checks, 0 failed (Nov 9); 73 on the local stack, 0 failed; 122 pgTAP tests pass. \\
+21 & Data from app server to database & RLS on every table; server-assigned owner; CHECK constraints; parameterized queries; SSL to Postgres; AES-256 at rest. & RLS on 23 of 23 tables; 73 live checks, 0 failed (Nov 19); 122 pgTAP tests pass. \\
 12 & No backdoors or bypass paths & Test sign-in compiled only in DEBUG; no admin screens; internal functions revoked from the API. & DEBUG guard in place; Release check finds none of the DEBUG-only names on every CI run (TC-S05). \\
 13 & No secrets in code; no weak encryption & Keys only in the gitignored \texttt{Secrets.xcconfig}; secret scan; Keychain; Apple and Supabase encryption, no custom crypto. & Pattern scan 0 findings. The Sprint 2 ``gap'' is closed: NFR-04 was amended to \emph{complete unless open}. \\
 18 & Secure connections & TLS 1.3 minimum in code; no ATS exceptions; traffic capture. & Code and tests pass; the traffic capture (TC-S09) was not run. \\
@@ -3839,7 +3839,7 @@ IT-04 & SwiftData schema V1--V11 + migration plan: each older store opens and ke
 IT-05 & Content + store: seeding from the bundle or from Supabase rows, the content stamp, starter decks, exercises. & \texttt{DataSeederTests}, \texttt{BundledContentStampTests}, \texttt{ContentFilesTests} & 14 of 14 pass \\
 IT-06 & App limits + database CHECK constraints agree. & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests} & 11 of 11 pass \\
 IT-07 & Database tables + RLS + merge and rate-limit triggers, as a signed-in user and as a guest. & pgTAP \texttt{rls.sql}, \texttt{progress.sql}, \texttt{history.sql}, \texttt{content.sql}, \texttt{challenges.sql} & 122 of 122 pass (local stack, Nov 18) \\
-IT-08 & Two users, a non-member, and a guest against all 23 tables. & \texttt{rls\_live\_check.sql} & 0 of 57 fail on the live project (Nov 9); 0 of 73 on the local stack (Nov 18) \\
+IT-08 & Two users, a non-member, and a guest against all 23 tables. & \texttt{rls\_live\_check.sql} & 0 of 73 fail on the live project (Nov 19) \\
 IT-09 & Two Simulators, one account: a review on one shows on the other after one sync; sign-in with Google end to end. & By hand & Pass (Nov 10) \\
 \end{xltabular}
 
@@ -4139,7 +4139,7 @@ Run \texttt{scripts/check-secrets.sh} to confirm nothing secret is tracked.
         client IDs, and leave \emph{Skip nonce checks} off (the app sends a nonce).
   \item Run \texttt{supabase/checks/rls\_live\_check.sql} in the SQL editor; it ends
         with an error by design (so nothing is kept) whose message must read
-        ``RLS TESTS: 0 failed of 67''.
+        ``RLS TESTS: 0 failed of 73''.
 \end{itemize}
 \texttt{supabase/README.md} has the same steps.
 

@@ -304,7 +304,7 @@ supabase secrets set RUNNER_URL="$RUNNER_URL" RUNNER_KEY="$RUNNER_KEY"
 supabase secrets list
 ```
 
-(Or use the dashboard: **Edge Functions → Secrets**.) For CI's `scripts/challenges.py validate`, add the same two values as GitHub Actions secrets: **repo → Settings → Secrets and variables → Actions → New repository secret**.
+(Or use the dashboard: **Edge Functions → Secrets**.) CI needs no runner secrets: it runs `scripts/challenges.ts check` and the judge tests offline. The live check of every reference solution runs from your Mac: `runner/with-secrets.sh deno run -A scripts/challenges.ts validate`. (`push-secrets.sh` also copies the two values to GitHub Actions secrets; pass `--no-github` to skip that.)
 
 ---
 

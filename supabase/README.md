@@ -147,11 +147,11 @@ RLS is on for 23 of 23 tables (14 user-data tables, 5 public-read content tables
 tables whose hidden tests clients can't read, and `challenge_runs`, service role only). Security Advisor: `rls_auto_enable()` revoked;
 the one remaining warning is `join_group` (SECURITY DEFINER, justified: it must
 find a group the caller cannot see yet). `checks/rls_live_check.sql`, last run
-2026-11-09, after the study-progress migration: **0 failed of 57**, everything
-rolled back. Checks 58–67 (history tables and content, 2026-11-15) pass on the local
-stack (**0 failed of 67**). Checks 68–73 (coding challenges: hidden tests and the run
-log unreadable, nobody writes) pass on the local stack with both seeds loaded (**0 failed
-of 73**, 2026-11-18); the live run of the 73-check version is still to be made in the SQL editor. (2026-10-30: 0 of 48, before the rate limit.)
+2026-11-19 on the live project (through the Supabase MCP), with every migration and both seeds:
+**0 failed of 73**, everything rolled back (no test users or rows left). It covers
+the history tables and content (checks 58–67) and the coding challenges (68–73:
+hidden tests and the run log unreadable, nobody writes). (2026-11-09: 0 of 57,
+before checks 58–73.) (2026-10-30: 0 of 48, before the rate limit.)
 (2026-10-08: 0 of 30, before the groups and feedback tables.) Google provider:
 enabled with the Web + iOS client IDs; the app sends a nonce (BUG-02, Nov 9).
 

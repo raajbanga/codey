@@ -157,8 +157,15 @@ final class AccessibilityAuditUITests: XCTestCase {
         run.tap()
         XCTAssertTrue(app.descendants(matching: .any)["challenge.case.2"].waitForExistence(timeout: 5))
         try audit("challenge.result")
+        // Wait for the Code tab to come back before tapping Submit: on CI
+        // (main, Nov 18) the tap landed while the tab was still switching.
         app.buttons["Code"].firstMatch.tap()
-        app.buttons["challenge.submit"].tap()
+        let submit = app.buttons["challenge.submit"]
+        for _ in 0..<3 where !submit.waitForExistence(timeout: 3) {
+            app.buttons["Code"].firstMatch.tap()
+        }
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        submit.tap()
         let solvedDone = app.buttons["challenge.done"]
         XCTAssertTrue(solvedDone.waitForExistence(timeout: 5))
         try audit("challenge.solved")
