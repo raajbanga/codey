@@ -462,7 +462,7 @@ Secure data handling (encryption and row-level access control) & Paid third-part
 \midrule
 User-created flashcards & Code snippets on cards & Customized profile \\
 Working SwiftUI interface & Levels & Defect reports \\
-Easy/Medium/Hard difficulty & Dark/Light mode & Open-ended coding problems (dropped, R1) \\
+Easy/Medium/Hard difficulty & Dark/Light mode & \\
 Adaptive tier rotation (client mandate) & Starter decks & \\
 XP, daily streaks, and badges (client mandate) & Review returns of retired questions & \\
 Progress analytics and personalized study plan (client mandate) & Guest-mode upload, sync retries, conflict merge, and sync status & \\
@@ -472,6 +472,7 @@ Stable operation (no crashes during scripted test sessions) & & \\
 Code-completion exercises (client mandate) & & \\
 Leaderboards and weekly challenges (client mandate) & & \\
 Offline sync of study results (client mandate) & & \\
+Coding challenges with automated test cases (client mandate) & & \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -3568,8 +3569,8 @@ effort). Sprint~4 was the testing sprint: Activities~12.1, 12.2, 13.1, and 13.2 
 fed one subsection, and the defects found are listed in Section~\ref{sec:defects}.
 
 \subsection{Test Plan and Checklist}\label{sec:testplan}
-\textbf{Scope.} Everything in the app target and the database: the 68 functional
-requirements (Table~\ref{tab:fr}) and the 31 active non-functional requirements
+\textbf{Scope.} Everything in the app target and the database: the 75 functional
+requirements (Table~\ref{tab:fr}) and the 33 active non-functional requirements
 (Table~\ref{tab:nfr}). Out of scope: Apple's and Supabase's own code (SwiftUI,
 SwiftData, PostgREST, Google Sign-In), which is exercised only through Codey's use of
 it, and the retired NFR-32.
@@ -3929,8 +3930,8 @@ across this report and the README.
 specification. Codey's verification is the traceability check: every requirement
 names a test case, every test case names the suite that runs it
 (Tables~\ref{tab:rtm}, \ref{tab:rtm-nfr}, \ref{tab:tcmap}), and the suites above
-pass. All 68 functional requirements are implemented and traced to a passing test;
-of the 31 active non-functional requirements, NFR-01 was measured on an iPhone and
+pass. All 75 functional requirements are implemented and traced to a passing test;
+of the 33 active non-functional requirements, NFR-01 was measured on an iPhone and
 is met, while NFR-28 (peak memory on a device) and NFR-24 (traffic capture) were not
 verified and are limitations (Sections~\ref{sec:security} and
 \ref{sec:performance}). Design reviews of each migration against the security
@@ -3998,11 +3999,12 @@ TD-04 & UI tests could not find the Ask AI field or the solved exercise's Next C
 % =====================================================================
 \section{Concluding Remarks and Future Work}\label{sec:conclusion}
 % =====================================================================
-Codey now does what the client asked for. All 68 functional requirements are
+Codey now does what the client asked for. All 75 functional requirements are
 implemented, including every client mandate: adaptive tier rotation, XP, streaks and
 badges, progress analytics and a study plan, offline use with cloud sync of decks and,
-since Sprint~4, of study results, leaderboards and weekly challenges, and
-code-completion exercises. Since the last week of Sprint~4 the content itself
+since Sprint~4, of study results, leaderboards and weekly challenges, code-completion
+drills, and coding challenges whose code runs against automated test cases on the
+team's sandboxed runner. Since the last week of Sprint~4 the content itself
 (12 topics, 336 questions, 55 exercises, and 24 starter decks) is served from Supabase,
 so it can grow without an app update, and the bundled copy remains the offline
 fallback. The app is covered by 468 unit tests, 9 UI tests over 22 screens, 122
@@ -4016,10 +4018,11 @@ fixing, because otherwise the team learns to ignore red.
 
 Some things were deliberately left out, and are the natural next steps:
 \begin{itemize}
-  \item \textbf{Open-ended coding problems.} Exercises today compare each blank with
-        accepted answers (R1). Running students' code would need a sandboxed
-        execution service, which the Free plan and the client's no-cost constraint
-        rule out for now.
+  \item \textbf{More challenge types.} Challenge signatures are limited to numbers,
+        strings, booleans, and arrays of them (S45); linked lists and trees would need
+        larger test drivers, and the runner's Swift 5.3 is older than the app's. The
+        runner is one EC2 instance, so it is a single point of failure for Run and
+        Submit (drills and everything else keep working without it).
   \item \textbf{Server-computed weekly XP.} The leaderboard trusts the client's XP,
         bounded only by the 600-XP-per-minute pace limit (R13, accepted). A ledger of
         answers kept and summed on the server would make the leaderboard
