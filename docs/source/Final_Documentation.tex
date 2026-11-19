@@ -3599,7 +3599,7 @@ Unit & One type in isolation: models, rules, view models, loaders, validators. &
 Flow graph & Basis paths of two methods with branches and a loop. & Swift Testing, one test per path & With the unit tests \\
 Integration & Two or more real components together with stubs at the edge: sync engine with the store and a mock backend; client with stubbed HTTP; the database's policies and triggers. & Swift Testing; pgTAP (\texttt{supabase test db}); live SQL check & Swift and pgTAP on every push (CI); live check after each migration \\
 System & The whole app driven through its UI on a Simulator. & XCUITest (\texttt{codeyUITests}); scripted walkthroughs & Accessibility audit in CI, every UI suite locally before a merge; walkthroughs at the end of the sprint \\
-Acceptance & One scripted scenario per client mandate. & Scripted walkthrough by a non-author & Before the demonstration \\
+Acceptance & 19 scripted scenarios covering every client mandate. & Scripted walkthrough by a non-author & Before the demonstration \\
 Non-functional & Security (Section~\ref{sec:security}) and performance (Section~\ref{sec:performance}). & Scripts, analyzer, \texttt{PerformanceTests} & Per sprint \\
 \end{xltabular}
 
@@ -3649,7 +3649,7 @@ used.
 5 & Integration tests with stubs and drivers (Activity 12.2). & Done; Swift, pgTAP, live check \\
 6 & UI tests on three screen sizes, Light and Dark, with the accessibility audit. & Done; 18 screens on 3 sizes, 0 open issues \\
 7 & Scripted system tests (Activity 13.1). & Done; ST-01 to ST-08 pass (ST-03 partly by unit tests) \\
-8 & Acceptance tests by a non-author (Activity 13.2). & Done; 7 of 7 pass \\
+8 & Acceptance tests by a non-author (Activity 13.2). & Done; 19 of 19 pass \\
 9 & Security and performance re-runs. & Done on the Simulator; NFR-01 measured on the iPhone; the other device checks were not run \\
 10 & Defects logged with cause, fix, and regression test (Table~\ref{tab:defects}). & Done \\
 11 & CI runs every automated level on \texttt{main} and \texttt{dev}. & Done since Nov 14 \\
@@ -3939,32 +3939,45 @@ checklist (Table~\ref{tab:ssc}) are the other verification activity.
 
 \textbf{Validation} asks whether the right product was built, for the client.
 Following decision S34, it is done through acceptance tests rather than a peer
-usability study: one scripted scenario per client mandate (Table~\ref{tab:accept}),
+usability study: 19 scripted scenarios (Table~\ref{tab:accept}), one or more per
+client mandate plus the key non-functional requirements and the release itself,
 written from the mandate's wording, not from the code, and run by a team member who
 did not build that feature, on a fresh install, the way the Expo demonstration runs.
-\textbf{Run:} Activity~13.2, before the code freeze; a scenario passes only if every
-expected result is seen without help. \textbf{Exit:} all seven pass, or the client is
-told which do not and why.
+\textbf{Run:} Activity~13.2; the team ran all 19 on Nov~19 and the client runs them in
+class on Nov~24. A scenario passes only if every expected result is seen without help.
+\textbf{Exit:} all 19 pass, or the client is told which do not and why.
 
 \begin{xltabular}{\textwidth}{@{}L{1.0cm} L{3.0cm} Y L{2.0cm}@{}}
-\caption{Acceptance tests, one per client mandate}\label{tab:accept}\\
+\caption{Acceptance tests (Activity~13.2)}\label{tab:accept}\\
 \toprule
-\textbf{ID} & \textbf{Client mandate} & \textbf{Scenario and acceptance criterion} & \textbf{Result} \\
+\textbf{ID} & \textbf{Test} & \textbf{Scenario and acceptance criterion} & \textbf{Result} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{ID} & \textbf{Client mandate} & \textbf{Scenario and acceptance criterion} & \textbf{Result} \\
+\textbf{ID} & \textbf{Test} & \textbf{Scenario and acceptance criterion} & \textbf{Result} \\
 \midrule
 \endhead
 \bottomrule
 \endfoot
-AT-01 & Adaptive tier rotation & Answer Easy questions in one topic until Medium unlocks; the next quiz mixes in Medium, and retired questions stop appearing. & Pass \\
-AT-02 & XP, daily streaks, badges & Finish a study session and a quiz; XP and the streak rise on Home, and the first badge is awarded once. & Pass \\
-AT-03 & Progress analytics and study plan & After two sessions, Home shows accuracy per topic and a study plan that names the weakest topic. & Pass \\
-AT-04 & Offline use with cloud sync of decks & Create a deck in airplane mode; after reconnecting, it appears on a second device signed in to the same account. & Pass \\
-AT-05 & Code-completion exercises & Open three exercises in different languages; wrong blanks show Failed and the accepted answer, right ones Passed, with an explanation. & Pass \\
-AT-06 & Leaderboards and weekly challenges & Two accounts join one group; both appear on the weekly leaderboard with their XP, and the weekly challenge shows progress. & Pass \\
-AT-07 & Offline sync of study results & Study on device A offline, reconnect; device B shows the same mastery and unlocks after one sync. & Pass \\
+AT-01 & Adaptive quiz tiers & In one topic, answer Easy questions correctly until Medium unlocks. The next quiz mixes in Medium questions, and questions you have mastered stop coming back. & Pass \\
+AT-02 & XP, streaks, and badges & Finish a study session and a quiz. Home shows more XP and a longer streak, and the first badge is awarded once (not again on the next quiz). & Pass \\
+AT-03 & Progress and study plan & After two sessions, Home shows accuracy for each topic and a study plan that names the weakest topic. & Pass \\
+AT-04 & Offline decks with cloud sync & In airplane mode, create a deck with a code snippet. Turn the network back on: the deck appears on a second device signed in to the same account. & Pass \\
+AT-05 & Code-completion drills & Open three drills in different languages. A wrong blank shows Failed with the accepted answer; a right one shows Passed with an explanation and pays XP once. & Pass \\
+AT-06 & Hints, one at a time & On a drill and on a challenge, Hint 2 stays locked until Hint 1 is opened; opening a hint costs no XP. & Pass \\
+AT-07 & Leaderboard and weekly challenge & Two accounts join one group with its invite code. Both appear on the weekly leaderboard with their XP, and the weekly challenge shows progress. & Pass \\
+AT-08 & Study progress follows you & Study on device A while offline, then reconnect. After one sync, device B shows the same card mastery and tier unlocks. & Pass \\
+AT-09 & Coding challenge: Run & Open Two Sum, write a wrong answer in Python, and tap Run. The Result tab lists each example test with Passed or Failed, its input, expected and actual output, and anything the code printed. & Pass \\
+AT-10 & Coding challenge: Submit & Submit a correct solution in Swift, Python, Java, and C++. Each is Accepted and pays XP only the first time; hidden tests show only Passed, never their input or answer. & Pass \\
+AT-11 & Ask AI tutor & On a quiz question, open Ask AI and ask for help. The tutor explains the idea without naming the correct option; on a challenge it never writes the solution code. & Pass \\
+AT-12 & Fast launch (NFR-01) & Force-quit the app and open it on the iPhone. Home appears in 3 seconds or less, even with the network off. & Pass \\
+AT-13 & Works offline (NFR-09) & With the network off, study, answer a quiz, and create a deck. Turn it on: everything syncs, and nothing is lost or duplicated. & Pass \\
+AT-14 & Accessible screens (NFR-10 to 12) & Run the accessibility audit over the 22 main screens in Light and Dark Mode. It reports 0 issues (labels, contrast, text size, touch targets). & Pass \\
+AT-15 & Private data (NFR-07) & Signed in as a second account, try to see the first account's decks and progress. Nothing is visible; the live security test reports 0 of 73 checks failed. & Pass \\
+AT-16 & Layout on every device & iPhone stays in portrait. iPad in landscape and a wide Mac window show a challenge's description, code, and results side by side. & Pass \\
+AT-17 & Content updates without an app update & A topic added on Supabase appears in the app after it is closed and reopened, with no new build. & Pass \\
+AT-18 & Build and tests from the final tag & From the final tag on main, CI builds the app and runs every test: repository checks, 122 database tests, runner tests, and 470 app tests, all passing. & Pass \\
+AT-19 & Documentation matches the product & The final document's commit table and Appendix B point at the code in the final tag; all 75 functional requirements trace to a passing test; the screenshots show the final app. & Pass \\
 \end{xltabular}
 
 \subsection{Defects Found}\label{sec:defects}
