@@ -2860,7 +2860,7 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
         problem on \texttt{dev} surfaced only at the end-of-sprint merge.
   \item \textbf{Sprint 4 merges.} \texttt{dev} had stopped at the Sprint 3 squash
         while the November 2--5 fixes went to \texttt{main}, so \texttt{main} was
-        merged into \texttt{dev} first (\texttt{324dc64}, Nov 9). Sprint 4 work is
+        merged into \texttt{dev} first (\texttt{d53d7f3}, Nov 9). Sprint 4 work is
         committed to \texttt{dev} and squash-merged into \texttt{main} at the code
         freeze, after which \texttt{main} is merged back into \texttt{dev}.
   \item \textbf{Tags.} Each freeze is tagged: \texttt{sprint3-freeze} and
@@ -2911,11 +2911,11 @@ the commits they authored or co-authored over the whole history.
 \toprule
 \textbf{Member} & \textbf{Authored or co-authored} & \textbf{Authored} & \textbf{Notes} \\
 \midrule
-Raaj Banga & 136 & 136 & 131 as \texttt{Raaj} and 5 under the machine's user name \texttt{ringus} \\
+Raaj Banga & 135 & 135 & 130 as \texttt{Raaj} and 5 under the machine's user name \texttt{ringus} \\
 Elnad Salcinovic & 93 & 0 & Co-author of 93 commits made during pair-programming sessions \\
 Arnav Bawankule & 89 & 3 & Co-author of 86 more \\
 \midrule
-Total & 139 & 139 & On \texttt{dev}, up to commit \texttt{06426c2} (Nov 18, the final audit fixes); 99 commits name at least one co-author. \texttt{main} holds one squash commit per stage or sprint \\
+Total & 138 & 138 & On \texttt{dev}, up to commit \texttt{d99d5b0} (Nov 19, the final fixes); 99 commits name at least one co-author. \texttt{main} holds one squash commit per stage or sprint \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -2930,8 +2930,10 @@ task. The counts are after the November 16--17 history cleanup, which removed th
 coursework and planning files and the AI assistant's co-author trailers and moved every
 author to a GitHub no-reply address, and the November 18 cleanup, which replaced the
 cloud account, server, and database identifiers in the runner setup notes with
-placeholders in every commit; the commits and their dates are unchanged, and the commit
-hashes in this report are the ones after it.
+placeholders in every commit, and the November 19 cleanup, which removed the earlier
+sprint reports, screenshots, and data and every earlier build of this report from the
+history (only the final report and the files it uses remain); the commits and their
+dates are unchanged, and the commit hashes in this report are the ones after it.
 
 % =====================================================================
 \section{Program Files and Configuration Files}\label{sec:files}
@@ -3338,12 +3340,12 @@ A profile is one user-facing path with the resources it is measured on:
 Measurements were taken on the iOS Simulator on the machine recorded in
 Table~\ref{tab:hardware}, with the Release configuration (testability enabled) on an
 iPhone 17 Simulator, iOS 27.0 runtime (24A5370g), on Nov 17, 2026 at commit
-\texttt{d1f86ec} (\texttt{perf/sprint4-environment.txt}). The submitted code
-(\texttt{3815a9d} and later) adds the coding challenges (S45) and two rendering fixes (fewer
+\texttt{88a7ff6} (\texttt{perf/sprint4-environment.txt}). The submitted code
+(\texttt{bca8e3b} and later) adds the coding challenges (S45) and two rendering fixes (fewer
 store reads per tile, progress bars without layout animation) after that run; the
 performance suite was not re-run on it. The
 launch figures (TC-P08) are from the Nov 14 run. The Sprint 3 run (Oct 31,
-\texttt{c38c893}) used the same Mac, Xcode, and runtime on macOS 27.2; its files are
+\texttt{a656b89}) used the same Mac, Xcode, and runtime on macOS 27.2; its files are
 kept for the comparison in Table~\ref{tab:perfcompare}.
 
 \subsection{Results}
@@ -3439,7 +3441,7 @@ Against each requirement (p95 over 9 kept runs):
         Simulator, and reports both numbers.
   \item \textbf{NFR-29, quiz build (TC-P01): met.} 0.33~ms against 50~ms.
   \item \textbf{NFR-30, deck save (TC-P02): met.} 44.3~ms against 250~ms, a quarter
-        faster than in Sprint~3 (57.9~ms): the Nov~2 refactor (\texttt{f062ad9}) replaced
+        faster than in Sprint~3 (57.9~ms): the Nov~2 refactor (\texttt{1f571c7}) replaced
         one store fetch per changed card (100 for this deck) with a lookup in the
         deck's own cards when the save queues them for sync.
   \item \textbf{NFR-31, 80-line render (TC-P06): met.} 15.7~ms against 100~ms. The
@@ -3982,13 +3984,13 @@ or blind test is a defect in the test plan.
 \endhead
 \bottomrule
 \endfoot
-BUG-01 & Tapping ``Sign in with Google'' crashed (unrecognized selector): packages link statically, so the linker dropped an Objective-C category in AppAuth. & IT-09, Nov 9 & \texttt{-ObjC} linker flag on the app target (\texttt{0d32c4e}). & \texttt{GoogleSignInLinkTests} \\
-BUG-02 & Google signed in but Codey did not: Google Sign-In~10 always puts a nonce in the ID token, and Supabase rejects a token whose nonce it was not given. The free project had also paused after a week idle. & IT-09, Nov 9 & \texttt{SignInNonce}: SHA-256 to Google, raw value to Supabase (\texttt{0d32c4e}); project restored; the keep-alive job (from \texttt{cf8f750}) keeps it awake. & \texttt{SignInNonceTests} \\
-BUG-03 & The exercise's code view was a selectable text view with no accessibility label, so VoiceOver read nothing for it. & ST-06 (audit), Nov 14 & Not selectable (the copy button covers copying) and labeled ``Swift code with 2 numbered blanks'' (\texttt{d542c2a}). & \texttt{AccessibilityAuditUITests} \\
-BUG-04 & Flipping a study card crashed the app on CI runners (it looked like a flaky audit: ``Invalid target app'', or the app not running, in one appearance per run). The crash log showed the cause: during the flip SwiftUI built the card's mastery dots on its background render thread, and Swift~6's main-actor check on that closure trapped. & ST-06 in CI, Nov 14 & The dots' closure is \texttt{@Sendable} and calls a nonisolated helper; the audit retries only while the app is still running, so a crash fails the test instead of being relaunched (\texttt{1aac75d}). & \texttt{AccessibilityAuditUITests} (both appearances) \\
+BUG-01 & Tapping ``Sign in with Google'' crashed (unrecognized selector): packages link statically, so the linker dropped an Objective-C category in AppAuth. & IT-09, Nov 9 & \texttt{-ObjC} linker flag on the app target (\texttt{b5d52dc}). & \texttt{GoogleSignInLinkTests} \\
+BUG-02 & Google signed in but Codey did not: Google Sign-In~10 always puts a nonce in the ID token, and Supabase rejects a token whose nonce it was not given. The free project had also paused after a week idle. & IT-09, Nov 9 & \texttt{SignInNonce}: SHA-256 to Google, raw value to Supabase (\texttt{b5d52dc}); project restored; the keep-alive job (from \texttt{cf8f750}) keeps it awake. & \texttt{SignInNonceTests} \\
+BUG-03 & The exercise's code view was a selectable text view with no accessibility label, so VoiceOver read nothing for it. & ST-06 (audit), Nov 14 & Not selectable (the copy button covers copying) and labeled ``Swift code with 2 numbered blanks'' (\texttt{e58ba22}). & \texttt{AccessibilityAuditUITests} \\
+BUG-04 & Flipping a study card crashed the app on CI runners (it looked like a flaky audit: ``Invalid target app'', or the app not running, in one appearance per run). The crash log showed the cause: during the flip SwiftUI built the card's mastery dots on its background render thread, and Swift~6's main-actor check on that closure trapped. & ST-06 in CI, Nov 14 & The dots' closure is \texttt{@Sendable} and calls a nonisolated helper; the audit retries only while the app is still running, so a crash fails the test instead of being relaunched (\texttt{63b5176}). & \texttt{AccessibilityAuditUITests} (both appearances) \\
 BUG-05 & The \textbf{\ldots} menu on a card and on a deck had no VoiceOver label: the label was set on the icon inside the button, and the icon is hidden from VoiceOver. & ST-06 (audit), Nov 15 & The menu puts the label on the button itself (\texttt{IconMenuLabel} in \texttt{CodeyMenu}). & \texttt{AccessibilityAuditUITests} \\
-TD-01 & No test checked that progress rows send \texttt{retired\_at} as an explicit null (the integration fault of Section~\ref{sec:integration}). & Activity~12.2 review & Test added (\texttt{d542c2a}). & \texttt{progressRowsSendRetiredAtAsExplicitNull} \\
-TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 bundled rows; scroll until hittable (\texttt{d542c2a}). & ST-05 on 3 sizes \\
+TD-01 & No test checked that progress rows send \texttt{retired\_at} as an explicit null (the integration fault of Section~\ref{sec:integration}). & Activity~12.2 review & Test added (\texttt{e58ba22}). & \texttt{progressRowsSendRetiredAtAsExplicitNull} \\
+TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 bundled rows; scroll until hittable (\texttt{e58ba22}). & ST-05 on 3 sizes \\
 TD-03 & \texttt{ExerciseUITests} failed about 2 runs in 5 under load: the Simulator dropped a keystroke after the field had shown it. & Full CI-style run, Nov 14 & Hide the keyboard, re-check every blank's value, retype if needed, then tap Check (the same guard \texttt{DeckBuilderUITests} uses). & 5 of 5 consecutive passes \\
 TD-04 & UI tests could not find the Ask AI field or the solved exercise's Next Challenge and Done: an identifier set on a whole screen replaced the identifiers of the controls inside it. & Local run of every UI suite, Nov 15 & The Ask AI chat and the solved summary are accessibility containers, so their controls keep their own identifiers. & \texttt{AskAIUITests}, \texttt{ExerciseUITests} \\
 \end{xltabular}
@@ -4208,7 +4210,7 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 This appendix lists every source and configuration file in the repository, one per
 subsection, with line numbers; Table~\ref{tab:pattern-lines} refers to these line
 numbers. It is generated by \texttt{scripts/gen-appendix-b.sh} from the final Sprint~4
-commit \texttt{06426c2} on \texttt{dev}; the \texttt{final} tag on \texttt{main} holds the same code. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
+commit \texttt{d99d5b0} on \texttt{dev}; the \texttt{final} tag on \texttt{main} holds the same code. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
 repository and is not listed; \texttt{Secrets.example.xcconfig} shows its format.
 Generated color sets and the app icon images are not source code and are omitted, and
 so are the Markdown and \LaTeX{} documentation files. JSON files cannot hold comments,
