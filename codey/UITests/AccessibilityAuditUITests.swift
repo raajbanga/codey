@@ -154,20 +154,19 @@ final class AccessibilityAuditUITests: XCTestCase {
         let run = app.buttons["challenge.run"]
         XCTAssertTrue(run.waitForExistence(timeout: 5))
         try audit("challenge.code")
-        run.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["challenge.case.2"].waitForExistence(timeout: 5))
+        // On CI the first tap on the Run/Submit row after a tab switch or an
+        // audit is sometimes dropped (main Nov 18: Submit; dev Nov 19: Run,
+        // the screen recording stays on Code). Tap again until the result
+        // shows; a second tap during a run is ignored (run() guards it).
+        let secondCase = app.descendants(matching: .any)["challenge.case.2"]
+        tap(run, until: secondCase)
         try audit("challenge.result")
-        // Wait for the Code tab to come back before tapping Submit: on CI
-        // (main, Nov 18) the tap landed while the tab was still switching.
-        app.buttons["Code"].firstMatch.tap()
         let submit = app.buttons["challenge.submit"]
         for _ in 0..<3 where !submit.waitForExistence(timeout: 3) {
             app.buttons["Code"].firstMatch.tap()
         }
-        XCTAssertTrue(submit.waitForExistence(timeout: 5))
-        submit.tap()
         let solvedDone = app.buttons["challenge.done"]
-        XCTAssertTrue(solvedDone.waitForExistence(timeout: 5))
+        tap(submit, until: solvedDone)
         try audit("challenge.solved")
         solvedDone.tap()
 
@@ -199,6 +198,17 @@ final class AccessibilityAuditUITests: XCTestCase {
 
     /// Records every issue on the current screen instead of stopping at the
     /// first, so one run gives the full count.
+    /// Taps `button` until `result` appears (up to 3 taps), then asserts it.
+    private func tap(_ button: XCUIElement, until result: XCUIElement,
+                     file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(button.waitForExistence(timeout: 5), file: file, line: line)
+        for _ in 0..<3 {
+            if button.isHittable { button.tap() }
+            if result.waitForExistence(timeout: 5) { return }
+        }
+        XCTAssertTrue(result.waitForExistence(timeout: 5), file: file, line: line)
+    }
+
     private func audit(_ screen: String) throws {
         do {
             try performAudit(screen)

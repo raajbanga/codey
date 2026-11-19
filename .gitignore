@@ -99,6 +99,21 @@ __pycache__/
 # LaTeX build output next to the source (the deliverables are docs/*.pdf)
 docs/source/*.pdf
 
+### Documentation: only the final report and what it uses are tracked ###
+# Earlier sprint reports, screenshots, and data were removed from the repo and
+# its history on Nov 19; keep any local copies out of Git.
+docs/Sprint*
+docs/screenshots/
+docs/figures/
+docs/perf/
+docs/generated/
+docs/security/
+docs/source/screens/
+docs/source/security/
+docs/source/perf/sprint3.csv
+docs/source/perf/environment.txt
+docs/source/perf/launch.csv
+
 ### Coursework (instructor handouts and rubrics; kept locally, never published) ###
 docs/course/
 *rubric*

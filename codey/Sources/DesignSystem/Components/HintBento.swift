@@ -4,9 +4,9 @@ import SwiftUI
 /// each hint locked until the one before it is open, so a student reads
 /// them in order. Used by drills and coding challenges.
 ///
-///     ╭ 💡 Hint 1                 ⌄ ╮     ╭ 💡 Hint 1                 ⌃ ╮
+///     ╭ * Hint 1                  ⌄ ╮     ╭ * Hint 1                  ⌃ ╮
 ///     ╰─────────────────────────────╯     │ The loop must still run…    │
-///     ╭ 🔒 Hint 2   Open hint 1 first ╮   ╰─────────────────────────────╯
+///     ╭ x Hint 2    Open hint 1 first ╮   ╰─────────────────────────────╯
 struct HintBento: View {
     let hints: [String]
     var hue: CodeyColor.TopicHue = .slate
