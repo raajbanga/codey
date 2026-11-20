@@ -39,9 +39,12 @@ struct LibraryView: View {
     }
 
     var body: some View {
+        let challenges = ChallengeCatalog.shared.all
         let exerciseCounts = Dictionary(grouping: exercises, by: \.topicId).mapValues(\.count)
-        let deckCounts = Dictionary(grouping: decks.filter { !$0.isHidden }, by: \.topicId).mapValues(\.count)
-        let solved = Set(profiles.first?.solvedExerciseIds ?? []).intersection(exercises.map(\.id)).count
+        let challengeCounts = Dictionary(grouping: challenges, by: \.topicId).mapValues(\.count)
+        let completed = completedTopics(challenges: challenges)
+        let shown = shownTopics
+        let stats = QuizTopicStats.byTopic(shown, progressRows: progressRows, topicProgress: topicProgress, records: records, xp: profiles.first?.totalXP ?? 0)
         CodeyPage("Library", isTabRoot: true) {
             PageSearchButton(isSearching: $isSearching, text: $searchText, focus: $searchFocused)
                 .accessibilityIdentifier("library.search")
@@ -55,23 +58,23 @@ struct LibraryView: View {
             HeroCard(
                 title: "Library",
                 icon: "square.stack.3d.up",
-                progress: exercises.isEmpty ? 0 : Double(solved) / Double(exercises.count),
-                caption: "\(solved) of \(exercises.count) exercises solved"
+                progress: topics.isEmpty ? 0 : Double(completed) / Double(topics.count),
+                caption: "\(completed) of \(topics.count) topics completed"
             ) {
-                CodeyChip(exercises.count.counted("exercise"), systemImage: "chevron.left.forwardslash.chevron.right", variant: .xp)
+                CodeyChip((exercises.count + challenges.count).counted("activity", plural: "activities"), systemImage: "checklist", variant: .xp)
             }
         } content: {
             if isSearching {
                 PageSearchField(prompt: "Topic", text: $searchText, focus: $searchFocused)
             }
-            if shownTopics.isEmpty {
+            if shown.isEmpty {
                 ContentUnavailableView.search(text: searchText)
             } else {
                 BentoSection("Topics", columns: .spread) {
-                    ForEach(shownTopics) { topic in
+                    ForEach(shown) { topic in
                         TopicTile(
-                            stats: QuizTopicStats(topic: topic, progressRows: progressRows, topicProgress: topicProgress, records: records, xp: profiles.first?.totalXP ?? 0),
-                            counts: (exerciseCounts[topic.id] ?? 0, deckCounts[topic.id] ?? 0),
+                            stats: stats[topic.id]!,
+                            activities: (exerciseCounts[topic.id] ?? 0) + (challengeCounts[topic.id] ?? 0),
                             action: TileAction("Open", icon: "chevron.right")
                         ) { openTopic = topic }
                         .accessibilityIdentifier("library.topic.\(topic.title)")
@@ -94,7 +97,20 @@ struct LibraryView: View {
     }
 }
 
-/// One topic: its quiz (the Play tile), its exercises, its decks.
+extension LibraryView {
+    /// A topic is completed when every drill and challenge in it is solved
+    /// (topics with neither don't count as completed).
+    private func completedTopics(challenges: [Challenge]) -> Int {
+        let solved = Set(profiles.first?.solvedExerciseIds ?? [])
+        let items = Dictionary(grouping: exercises.map { ($0.topicId, $0.id) } + challenges.map { ($0.topicId, $0.id) }, by: \.0)
+        return topics.filter { topic in
+            guard let ids = items[topic.id], !ids.isEmpty else { return false }
+            return ids.allSatisfy { solved.contains($0.1) }
+        }.count
+    }
+}
+
+/// One topic: its quiz (the Play tile), its challenges, drills and decks.
 struct TopicPageView: View {
     let topic: Topic
 
@@ -122,6 +138,12 @@ struct TopicPageView: View {
         let stats = QuizTopicStats(topic: topic, progressRows: progressRows, topicProgress: topicProgress, records: records, xp: profile?.totalXP ?? 0)
         let tier = stats.tiers.last(where: \.isUnlocked)?.difficulty ?? .easy
         let hue = CodeyColor.TopicHue.of(topicID: topic.id)
+        // Activities: the topic's drills and challenges, done once solved.
+        let solved = Set(profile?.solvedExerciseIds ?? [])
+        let drills = ExerciseCatalog.shared.all.filter { $0.topicId == topic.id }
+        let challenges = ChallengeCatalog.shared.all.filter { $0.topicId == topic.id }
+        let activities = drills.map(\.id) + challenges.map(\.id)
+        let done = activities.filter(solved.contains).count
         // The topic's quiz is the page's hero: the same bar and tags as
         // its tile on Play, then Play.
         CodeyPage(topic.title, hero: {
@@ -130,8 +152,8 @@ struct TopicPageView: View {
                 subtitle: topic.summary,
                 icon: topic.iconName,
                 hue: hue,
-                progress: stats.accuracy ?? 0,
-                caption: stats.accuracy.map { "\($0.percentText) correct lately" } ?? "No answers yet"
+                progress: activities.isEmpty ? 0 : Double(done) / Double(activities.count),
+                caption: "\(done) of \(activities.count) activities completed"
             ) {
                 CodeyChip(xp: XPPolicy.base(tier))
             }
@@ -140,16 +162,22 @@ struct TopicPageView: View {
                 router.quizSetupTopic = topic
             }
             .accessibilityIdentifier("topic.play")
-            if ExerciseCatalog.shared.all.contains(where: { $0.topicId == topic.id }) {
-                BentoSection("Exercises") {
-                    ExerciseTiles(topics: [topic], solved: Set(profile?.solvedExerciseIds ?? []), topicID: topic.id)
+            if !challenges.isEmpty {
+                BentoSection("Challenges", count: challenges.count) {
+                    ChallengeTiles(solved: solved, topicID: topic.id)
                 }
             }
         } trailing: {
-            // iPad landscape: the decks are the second column.
+            // iPad landscape and Mac: the decks, then the drills, are the
+            // second column, so neither column is one long list.
             if !decks.isEmpty {
-                BentoSection("Decks") {
+                BentoSection("Decks", count: decks.count) {
                     ForEach(decks) { DeckTileLink(deck: $0, topic: topic) }
+                }
+            }
+            if !drills.isEmpty {
+                BentoSection("Drills", count: drills.count) {
+                    ExerciseTiles(topics: [topic], solved: solved, topicID: topic.id)
                 }
             }
         }

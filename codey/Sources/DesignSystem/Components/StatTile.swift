@@ -45,11 +45,7 @@ struct StatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(CodeySpacing.md)
-        .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.md))
-        .overlay {
-            RoundedRectangle.codey(CodeyRadius.md)
-                .strokeBorder(CodeyColor.separator, lineWidth: 1)
-        }
+        .codeySurface(CodeyColor.surfaceRaised, in: RoundedRectangle.codey(CodeyRadius.md))
         .codeyAnimation(CodeyMotion.snappy, value: value)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)

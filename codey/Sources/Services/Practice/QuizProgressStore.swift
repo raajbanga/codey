@@ -179,8 +179,18 @@ struct QuizProgressStore {
         xp: Int,
         config: GatingConfig = .standard
     ) -> [TierAvailability] {
+        availability(tallies: tallies(questions: questions, progress: progress), sticky: sticky, xp: xp, config: config)
+    }
+
+    /// The same, from tallies already counted.
+    static func availability(
+        tallies: [Difficulty: TierTally],
+        sticky: Set<Difficulty>,
+        xp: Int,
+        config: GatingConfig = .standard
+    ) -> [TierAvailability] {
         TierGate.availability(
-            tallies: tallies(questions: questions, progress: progress),
+            tallies: tallies,
             xp: xp,
             level: LevelCalculator.level(forXP: xp),
             alreadyUnlocked: sticky,

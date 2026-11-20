@@ -3,8 +3,8 @@
 # Simulator and writes docs/source/perf/<tag>.csv (one row per scenario: mean,
 # p95, stddev, peak memory, memory growth, threshold) plus
 # docs/source/perf/<tag>-environment.txt. Each sprint gets its own tag so
-# earlier results stay for the sprint-to-sprint comparison (NFR-17-19);
-# Sprint 3's are sprint3.csv and environment.txt.
+# earlier results stay for the sprint-to-sprint comparison (NFR-17-19).
+# Only Sprint 4's are kept in the repo (the final report uses them).
 #
 #   PERF_TAG=sprint4 scripts/perf-report.sh [destination]
 #   default tag: sprint4; default destination: 'platform=iOS Simulator,name=iPhone 17'

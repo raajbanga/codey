@@ -420,8 +420,7 @@ struct PageSearchField: View {
         }
         .padding(.horizontal, CodeySpacing.md)
         .frame(minHeight: 44)
-        .background(CodeyColor.surfaceRaised, in: .pill)
-        .overlay { RoundedRectangle.pill.strokeBorder(CodeyColor.separator, lineWidth: 1) }
+        .codeySurface(CodeyColor.surfaceRaised, in: RoundedRectangle.pill)
         .transition(.opacity)
     }
 }

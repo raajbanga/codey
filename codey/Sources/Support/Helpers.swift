@@ -24,9 +24,9 @@ extension Double {
 }
 
 extension Int {
-    /// "1 card", "3 cards".
-    func counted(_ noun: String) -> String {
-        "\(self) \(noun)\(self == 1 ? "" : "s")"
+    /// "1 card", "3 cards"; `plural` for nouns that don't just add s.
+    func counted(_ noun: String, plural: String? = nil) -> String {
+        "\(self) \(self == 1 ? noun : plural ?? noun + "s")"
     }
 }
 

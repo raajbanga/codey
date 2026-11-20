@@ -1,0 +1,23 @@
+{
+  "id": "ch-valid-palindrome", "topicId": "topic-algorithms", "title": "Valid Palindrome", "difficulty": "easy",
+  "statement": "A phrase is a palindrome if, after converting all uppercase letters to lowercase and removing every character that isn't a letter or a digit, it reads the same forward and backward.\n\nGiven a string `s`, return `true` if it is a palindrome, or `false` otherwise.",
+  "constraints": ["1 ≤ s.length ≤ 2 × 10⁵", "s contains printable ASCII characters only"],
+  "hints": [
+    "You don't need to build a cleaned-up copy of the string. Can you compare characters from both ends at once?",
+    "Use two pointers, one at each end. Skip anything that isn't a letter or digit, compare the rest case-insensitively, and move inward."
+  ],
+  "function": { "name": "isPalindrome", "params": [{ "name": "s", "type": "string" }], "returns": "bool" },
+  "comparator": "exact",
+  "editorial": "Two pointers move inward from both ends, skipping non-alphanumeric characters and comparing lowercase forms. **O(n)** time, **O(1)** extra space.",
+  "tests": [
+    { "args": ["A man, a plan, a canal: Panama"], "expected": true, "example": true, "explanation": "\"amanaplanacanalpanama\" reads the same both ways." },
+    { "args": ["race a car"], "expected": false, "example": true, "explanation": "\"raceacar\" is not a palindrome." },
+    { "args": [" "], "expected": true, "example": true, "explanation": "After cleaning, the string is empty, which is a palindrome." },
+    { "args": ["0P"], "expected": false },
+    { "args": ["ab_a"], "expected": true },
+    { "args": ["Madam"], "expected": true },
+    { "args": ["No 'x' in Nixon"], "expected": true },
+    { "args": ["abc"], "expected": false },
+    { "args": ["a."], "expected": true }
+  ]
+}

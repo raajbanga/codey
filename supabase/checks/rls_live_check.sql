@@ -2,10 +2,10 @@
 -- through the Supabase MCP (execute_sql) or the SQL editor, without pgTAP.
 --
 -- It ALWAYS ends with an error whose message holds the results, e.g.
---   "RLS TESTS: 0 failed of 67. ok 1 … | ok 67 …"
+--   "RLS TESTS: 0 failed of 73. ok 1 … | ok 73 …"
 -- Raising it rolls back every test user and row, so nothing persists.
 -- Checks 58-63 cover the S43 history tables, 64-67 the read-only content
--- tables (both added 2026-11-15). Last runs: see supabase/README.md.
+-- tables (both added 2026-11-15), 68-73 the coding challenges (S45). Last runs: see supabase/README.md.
 
 do $test$
 declare
@@ -343,6 +343,39 @@ begin
         get diagnostics n = row_count;
         if n = 0 then results := results || 'ok 67 anon deletes 0 content rows'::text; else failed := failed + 1; results := results || ('FAIL 67 deleted=' || n); end if;
     exception when insufficient_privilege then results := results || 'ok 67 anon can''t delete content (no grant)'::text; end;
+
+    -- Coding challenges (S45, 2026-11-18): challenges and starters are
+    -- public, hidden tests and the run log are not, and nobody writes.
+    begin
+        select count(*) into n from public.content_challenges;
+        if n > 0 then results := results || ('ok 68 anon reads challenges (' || n || ')'); else failed := failed + 1; results := results || 'FAIL 68 no challenges visible'::text; end if;
+    exception when others then failed := failed + 1; results := results || ('FAIL 68 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        select count(*) into n from public.content_challenge_tests where not is_example;
+        if n = 0 then results := results || 'ok 69 anon reads 0 hidden tests'::text; else failed := failed + 1; results := results || ('FAIL 69 hidden=' || n); end if;
+    exception when others then failed := failed + 1; results := results || ('FAIL 69 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        select count(*) into n from public.challenge_runs;
+        if n = 0 then results := results || 'ok 70 anon sees no run log'::text; else failed := failed + 1; results := results || ('FAIL 70 rows=' || n); end if;
+    exception when insufficient_privilege then results := results || 'ok 70 anon can''t read the run log (no grant)'::text; end;
+    begin
+        update public.content_challenge_tests set is_example = true where not is_example;
+        get diagnostics n = row_count;
+        if n = 0 then results := results || 'ok 71 anon reveals 0 hidden tests'::text; else failed := failed + 1; results := results || ('FAIL 71 updated=' || n); end if;
+    exception when insufficient_privilege then results := results || 'ok 71 anon can''t update tests (no grant)'::text; end;
+
+    -- As user A: still only the examples.
+    perform set_config('request.jwt.claims', claims_a, true);
+    execute 'set local role authenticated';
+    begin
+        select count(*) into n from public.content_challenge_tests where not is_example;
+        if n = 0 then results := results || 'ok 72 A reads 0 hidden tests'::text; else failed := failed + 1; results := results || ('FAIL 72 hidden=' || n); end if;
+    exception when others then failed := failed + 1; results := results || ('FAIL 72 ' || sqlstate || ' ' || sqlerrm); end;
+    begin
+        insert into public.challenge_runs (subject, mode) values ('u:evil', 'run');
+        failed := failed + 1; results := results || 'FAIL 73 A wrote the run log'::text;
+    exception when insufficient_privilege then results := results || 'ok 73 A can''t write the run log'::text;
+              when others then failed := failed + 1; results := results || ('FAIL 73 ' || sqlstate || ' ' || sqlerrm); end;
 
     raise exception 'RLS TESTS: % failed of %. %', failed, coalesce(array_length(results, 1), 0), array_to_string(results, ' | ');
 end

@@ -19,6 +19,9 @@ final class MockRemoteStore: RemoteDeckStore {
     private(set) var requests: [String] = []
     /// When true, every call throws (network drop / timeout).
     var isOffline = false
+    /// Drops the connection mid-sync: once a call with this name has
+    /// succeeded, every later call fails as if the network went away.
+    var goesOfflineAfter: String?
 
     private var clock = Date(timeIntervalSince1970: 1_900_000_000)
 
@@ -28,6 +31,7 @@ final class MockRemoteStore: RemoteDeckStore {
     }
 
     private func record(_ name: String) throws {
+        if let trigger = goesOfflineAfter, requests.contains(trigger) { isOffline = true }
         requests.append(name)
         if isOffline { throw Failure.offline }
     }

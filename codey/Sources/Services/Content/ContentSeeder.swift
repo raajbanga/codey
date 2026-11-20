@@ -30,6 +30,7 @@ enum ContentSeeder {
         try StarterDeckLoader.seed(context: context, file: content.decks)
         BundledContentStamp.record(stamp)
         ExerciseCatalog.shared.replace(with: content.exercises)
+        ChallengeCatalog.shared.replace(with: content.challenges)
     }
 
     /// A fresh download: when it differs from the last one and passes the
@@ -40,7 +41,7 @@ enum ContentSeeder {
         let content = try downloaded.validated()
         try downloaded.write()
         try seed(content, stamp: downloaded.stamp, context: context)
-        Logger.seeding.info("Content updated from Supabase: \(content.bank.questions.count) questions, \(content.decks.decks.count) decks, \(content.exercises.count) exercises")
+        Logger.seeding.info("Content updated from Supabase: \(content.bank.questions.count) questions, \(content.decks.decks.count) decks, \(content.exercises.count) drills, \(content.challenges.count) challenges")
         return true
     }
 }

@@ -256,6 +256,19 @@ struct AnswerLeakGuardTests {
             #expect(AnswerLeakGuard.leaks("Type \(secret) there", context: context))
         }
     }
+
+    @Test func challengeLeakIsACodeBlockLongerThanThreeLines() throws {
+        let challenge = try #require(try ContentFiles.bundled()?.validated().challenges.first)
+        let context = AskAIContext.challenge(challenge, language: .python, code: "def f():\n    pass")
+        #expect(context.maxCodeLines == 3)
+        #expect(!AnswerLeakGuard.leaks("Try a dictionary from value to index.", context: context))
+        #expect(!AnswerLeakGuard.leaks("For example:\n```python\nseen = {}\n\nseen[x] = i\n```", context: context))
+        let solution = "Here:\n```python\ndef f(nums, t):\n    seen = {}\n    for i, x in enumerate(nums):\n        if t - x in seen:\n            return [seen[t - x], i]\n```"
+        #expect(AnswerLeakGuard.leaks(solution, context: context))
+        #expect(AnswerLeakGuard.leaks("```\na\nb\nc\nd", context: context), "an unclosed fence still counts")
+        // Quizzes and drills keep their own rules: code there isn't a leak by length.
+        #expect(!AnswerLeakGuard.leaks(solution, context: quiz))
+    }
 }
 
 struct AskAIConfigTests {
