@@ -7,8 +7,10 @@ final class CodeyRunestoneTheme: Runestone.Theme {
     let font: UIFont
     let lineNumberFont: UIFont
 
-    init(traits: UITraitCollection = .current) {
-        let size = UIFont.preferredFont(forTextStyle: .callout, compatibleWith: traits).pointSize
+    /// `.callout` in the deck builder; `.body` where code is the page's
+    /// main task (a coding challenge).
+    init(traits: UITraitCollection = .current, textStyle: UIFont.TextStyle = .callout) {
+        let size = UIFont.preferredFont(forTextStyle: textStyle, compatibleWith: traits).pointSize
         font = .monospacedSystemFont(ofSize: size, weight: .regular)
         lineNumberFont = .monospacedDigitSystemFont(ofSize: size * 0.8, weight: .regular)
     }

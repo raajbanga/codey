@@ -1,6 +1,8 @@
--- Content for the content_* tables (migration 20261116000000_content.sql),
--- exported from the live project on 2026-11-15: 8 topics, 192 questions,
--- 25 coding exercises, 15 starter decks with 174 cards.
+-- Content for the content_* tables (migration 20261116002116_content.sql),
+-- exported from the live project on 2026-11-15 (8 topics, 192 questions,
+-- 25 coding exercises, 15 starter decks with 174 cards), plus the Nov 17
+-- additions at the end. In total: 12 topics, 336 questions, 55 coding
+-- exercises, 24 starter decks with 288 cards.
 -- Run once after the migrations (SQL editor, or psql -f supabase/seed.sql).
 -- Safe to re-run: rows are upserted by id, so edits made in the dashboard
 -- are overwritten with these values and nothing else is touched.
@@ -1165,6 +1167,602 @@ int main() {
 }', 11),
   ('sc-py-012', 'starter-python', 'What does the GIL mean for CPU-bound threads in CPython?', 'Only one thread runs Python bytecode at a time, so CPU-heavy threads don''t speed up. Use `multiprocessing` (or native code) for parallel CPU work; threads still help while waiting on I/O.', 'hard', null, null, 11),
   ('sc-swift-012', 'starter-swift', 'What does an `actor` guarantee?', 'Its mutable state is **isolated**: only one task touches it at a time. Outside callers must `await`, and the compiler rejects unsynchronized access, which rules out data races.', 'hard', null, null, 11)
+on conflict (id) do update set deck_key = excluded.deck_key, prompt = excluded.prompt, answer = excluded.answer, difficulty = excluded.difficulty, code_language = excluded.code_language, code_source = excluded.code_source, sort_index = excluded.sort_index;
+
+-- Nov 17 additions: 4 topics, 144 questions, 30 exercises, 9 decks, 114 cards.
+
+insert into public.content_topics (id, title, summary, icon_name, sort_index) values
+  ('topic-java', 'Java Basics', 'Types, classes, interfaces, collections, exceptions, and the JVM.', 'curlybraces', 8),
+  ('topic-cpp', 'C++ Basics', 'Pointers, references, memory, RAII, templates, and the STL.', 'terminal', 9),
+  ('topic-git', 'Git & Version Control', 'Commits, branches, merging, rebasing, and working with remotes.', 'arrow.triangle.2.circlepath', 10),
+  ('topic-security', 'Security Basics', 'Hashing, encryption, authentication, and common web vulnerabilities.', 'lock', 11)
+on conflict (id) do update set title = excluded.title, summary = excluded.summary, icon_name = excluded.icon_name, sort_index = excluded.sort_index;
+
+insert into public.content_questions (id, topic_id, prompt, options, correct_option_index, explanation, difficulty, sort_index) values
+  ('q-java-001', 'topic-java', 'What does the JVM execute?', array['Java source files (.java)', 'Bytecode (.class files)', 'Python bytecode', 'Native machine code produced by javac']::text[], 1, '`javac` compiles source into platform-independent bytecode, which the JVM interprets or JIT-compiles at run time.', 'easy', 2000),
+  ('q-java-002', 'topic-java', 'Which of these is a **primitive** type in Java?', array['Integer', 'String', 'ArrayList', 'int']::text[], 3, '`int` is one of the eight primitives. `Integer` is its wrapper class, and `String` and `ArrayList` are reference types.', 'easy', 2001),
+  ('q-java-003', 'topic-java', 'What keyword makes a class inherit from another class?', array['implements', 'extends', 'inherits', 'super']::text[], 1, '`class Dog extends Animal` inherits from `Animal`. `implements` is for interfaces.', 'easy', 2002),
+  ('q-java-004', 'topic-java', 'How many classes can a Java class directly extend?', array['Two', 'Any number', 'Exactly one (or Object implicitly)', 'None']::text[], 2, 'Java has single class inheritance. A class can implement many interfaces, but extend only one class.', 'easy', 2003),
+  ('q-java-005', 'topic-java', 'What does `final` mean on a local variable?', array['It is stored on the heap', 'It is garbage-collected first', 'It can be assigned only once', 'It is shared by all instances']::text[], 2, 'A `final` variable can be assigned exactly once. The object it points to can still be mutated.', 'easy', 2004),
+  ('q-java-006', 'topic-java', 'Which collection keeps **unique** elements?', array['HashSet', 'ArrayList', 'LinkedList', 'ArrayDeque']::text[], 0, '`Set` implementations like `HashSet` reject duplicates according to `equals` and `hashCode`.', 'easy', 2005),
+  ('q-java-007', 'topic-java', 'What is the entry point signature of a Java program?', array['public void main()', 'static int main(int argc)', 'void start(String args)', 'public static void main(String[] args)']::text[], 3, 'The JVM looks for `public static void main(String[] args)` in the class you launch.', 'easy', 2006),
+  ('q-java-008', 'topic-java', 'What does `s1 == s2` compare for two `String` objects?', array['Their lengths', 'Their hash codes', 'Their characters', 'Whether they are the same object']::text[], 3, '`==` compares references. Use `s1.equals(s2)` to compare the text.', 'easy', 2007),
+  ('q-java-009', 'topic-java', 'If you override `equals`, what else must you override?', array['hashCode', 'clone', 'compareTo', 'toString']::text[], 0, 'Equal objects must have equal hash codes, or `HashMap` and `HashSet` will lose or duplicate them.', 'medium', 2008),
+  ('q-java-010', 'topic-java', 'What is the difference between a **checked** and an **unchecked** exception?', array['Unchecked exceptions cannot be caught', 'Checked exceptions only happen at compile time', 'There is no difference since Java 8', 'Checked exceptions must be caught or declared with `throws`; unchecked ones need not be']::text[], 3, 'The compiler forces you to handle checked exceptions such as `IOException`. Subclasses of `RuntimeException` are unchecked.', 'medium', 2009),
+  ('q-java-011', 'topic-java', 'Which statement about interfaces is true in modern Java?', array['Interfaces cannot contain any method bodies', 'A class can implement only one interface', 'Interfaces can have `default` and `static` methods with bodies', 'Interfaces can have constructors']::text[], 2, 'Since Java 8, interfaces may provide `default` method implementations and `static` helpers.', 'medium', 2010),
+  ('q-java-012', 'topic-java', 'What happens when you add an `int` to an `ArrayList<Integer>`?', array['The list stores the raw int value', 'The int is autoboxed to an Integer', 'A ClassCastException is thrown', 'A compile error']::text[], 1, 'Generics only hold reference types, so Java autoboxes `int` to `Integer` automatically.', 'medium', 2011),
+  ('q-java-013', 'topic-java', 'Why is string concatenation in a loop often replaced with `StringBuilder`?', array['StringBuilder uses less memory per character', 'StringBuilder is thread-safe', '`+` cannot join strings in loops', 'Strings are immutable, so each `+` creates a new object']::text[], 3, 'Each `+` on a `String` copies into a new object, making repeated concatenation O(n²). `StringBuilder` appends in place.', 'medium', 2012),
+  ('q-java-014', 'topic-java', 'What does the `static` keyword mean on a field?', array['The field is private', 'One copy is shared by the class, not per instance', 'The field is stored on the stack', 'The value never changes']::text[], 1, 'A `static` field belongs to the class itself. Every instance sees the same value.', 'medium', 2013),
+  ('q-java-015', 'topic-java', 'Which access modifier allows access from the same package **and** subclasses?', array['protected', 'private', 'public', 'package-private (no modifier)']::text[], 0, '`protected` members are visible within the package and in subclasses, even in other packages.', 'medium', 2014),
+  ('q-java-016', 'topic-java', 'What does `Optional<T>` help you avoid?', array['Garbage collection pauses', 'Checked exceptions', 'Returning `null` to mean "no value"', 'Generic type erasure']::text[], 2, '`Optional` makes absence explicit, so callers must handle the empty case instead of hitting a `NullPointerException`.', 'medium', 2015),
+  ('q-java-cc-01', 'topic-java', 'Complete the code so it doubles every number.
+
+```java
+List<Integer> doubled = nums.stream()
+    .___(n -> n * 2)
+    .toList();
+```', array['forEach', 'map', 'reduce', 'filter']::text[], 1, '`map` transforms each element. `filter` keeps or drops elements, and `forEach` returns nothing.', 'medium', 2016),
+  ('q-java-017', 'topic-java', 'What is **type erasure** in Java generics?', array['Generic type information is removed at compile time, so `List<String>` and `List<Integer>` share one runtime class', 'A compiler warning for raw types', 'The JVM deletes unused generic classes', 'Generic types are converted to `Object` arrays at run time only when needed']::text[], 0, 'Generics are checked by the compiler and then erased. That is why you cannot write `new T()` or check `instanceof List<String>`.', 'hard', 2017),
+  ('q-java-018', 'topic-java', 'What does the `volatile` keyword guarantee?', array['Atomic increments with `++`', 'Only one thread can access the field at a time', 'The field is never garbage-collected', 'Reads and writes go to main memory, so other threads see the latest value']::text[], 3, '`volatile` gives visibility and ordering, not atomicity. `count++` on a volatile field can still race.', 'hard', 2018),
+  ('q-java-019', 'topic-java', 'Which garbage-collection fact is true?', array['Primitive locals are garbage-collected', '`System.gc()` always runs the collector immediately', 'Objects become eligible once no live reference can reach them', 'Objects are freed as soon as they go out of scope']::text[], 2, 'The GC frees objects unreachable from GC roots. When it runs is up to the JVM; `System.gc()` is only a hint.', 'hard', 2019),
+  ('q-java-020', 'topic-java', 'What does `HashMap` do when many keys land in the same bucket (Java 8+)?', array['Doubles the table immediately', 'Throws an exception', 'Drops the oldest key', 'Converts a long bucket list into a balanced tree']::text[], 3, 'Since Java 8, a bucket with many entries is turned into a red-black tree, so the worst case becomes O(log n) instead of O(n).', 'hard', 2020),
+  ('q-java-021', 'topic-java', 'Why can''t a lambda modify a local variable from the enclosing method?', array['Lambdas cannot read outer variables at all', 'Lambdas run on another thread', 'Captured locals must be effectively final', 'Local variables are stored on the heap']::text[], 2, 'Lambdas capture a copy of the value, so Java requires the variable to be effectively final to avoid confusion.', 'hard', 2021),
+  ('q-java-022', 'topic-java', 'What does `try`-with-resources require of the resource?', array['It must implement `AutoCloseable`', 'It must extend `Thread`', 'It must be declared `final` and `static`', 'It must be a checked exception']::text[], 0, 'Anything that implements `AutoCloseable` is closed automatically when the block exits, even after an exception.', 'hard', 2022),
+  ('q-java-cc-02', 'topic-java', 'Complete the code so the file is always closed.
+
+```java
+___ (var reader = new BufferedReader(new FileReader(path))) {
+    return reader.readLine();
+}
+```', array['using', 'synchronized', 'try', 'with']::text[], 2, '`try (resource) { ... }` is try-with-resources: `reader.close()` runs automatically when the block ends.', 'hard', 2023),
+  ('q-cpp-001', 'topic-cpp', 'What does the `&` in `int& r = x;` declare?', array['A reference (alias) to x', 'A pointer to x', 'A copy of x', 'The address of x']::text[], 0, 'A reference is another name for an existing object. Changing `r` changes `x`.', 'easy', 2024),
+  ('q-cpp-002', 'topic-cpp', 'What does the unary `*` do to a pointer `p`?', array['Takes its address', 'Dereferences it to reach the pointed-to value', 'Multiplies it', 'Deletes it']::text[], 1, '`*p` is the object `p` points to. `&x` goes the other way and yields an address.', 'easy', 2025),
+  ('q-cpp-003', 'topic-cpp', 'Which STL container is a resizable array?', array['std::map', 'std::set', 'std::vector', 'std::list']::text[], 2, '`std::vector` stores elements contiguously and grows as needed, with O(1) indexed access.', 'easy', 2026),
+  ('q-cpp-004', 'topic-cpp', 'What is `nullptr`?', array['A pointer to freed memory', 'A macro for `NULL`', 'The integer 0', 'A typed null pointer constant']::text[], 3, '`nullptr` has its own type, `std::nullptr_t`, so it never gets mistaken for an integer in overload resolution.', 'easy', 2027),
+  ('q-cpp-005', 'topic-cpp', 'Where is a local variable like `int x = 5;` inside a function normally stored?', array['On the stack', 'On the heap', 'In static storage', 'In the CPU cache only']::text[], 0, 'Automatic (local) variables live on the stack and are destroyed when the function returns.', 'easy', 2028),
+  ('q-cpp-006', 'topic-cpp', 'What must follow every `new` when you manage memory by hand?', array['A matching `delete`', 'Nothing, C++ has garbage collection', 'malloc', 'free']::text[], 0, 'Memory from `new` must be released with `delete` (or `delete[]` for arrays), otherwise it leaks.', 'easy', 2029),
+  ('q-cpp-007', 'topic-cpp', 'Which header gives you `std::cout`?', array['<iostream>', '<stdio.h>', '<vector>', '<string>']::text[], 0, '`<iostream>` declares the standard stream objects `std::cin`, `std::cout`, and `std::cerr`.', 'easy', 2030),
+  ('q-cpp-008', 'topic-cpp', 'What does `const` after a member function''s parameter list mean, as in `int size() const;`?', array['The function cannot be overridden', 'The function is static', 'The return value is constant', 'The function does not modify the object']::text[], 3, 'A `const` member function promises not to change the object''s state, so it can be called on `const` objects.', 'easy', 2031),
+  ('q-cpp-009', 'topic-cpp', 'What is **RAII**?', array['Reading arrays in increasing index order', 'A garbage-collection algorithm', 'Tying a resource''s lifetime to an object, so the destructor releases it', 'A rule that every class needs a virtual destructor']::text[], 2, 'Resource Acquisition Is Initialization: acquire in the constructor, release in the destructor. Scope exit then cleans up automatically, even after exceptions.', 'medium', 2032),
+  ('q-cpp-010', 'topic-cpp', 'Which smart pointer allows **only one** owner?', array['std::weak_ptr', 'std::unique_ptr', 'std::auto_ptr', 'std::shared_ptr']::text[], 1, '`std::unique_ptr` cannot be copied, only moved, so exactly one owner deletes the object.', 'medium', 2033),
+  ('q-cpp-011', 'topic-cpp', 'Why make a base class destructor `virtual`?', array['So the class cannot be instantiated', 'So deleting a derived object through a base pointer calls the derived destructor', 'So it runs faster', 'So the destructor can take arguments']::text[], 1, 'Without a virtual destructor, `delete basePtr` only runs the base destructor, which leaks or corrupts the derived part.', 'medium', 2034),
+  ('q-cpp-012', 'topic-cpp', 'What does `std::move(x)` actually do?', array['Frees x''s memory', 'Casts x to an rvalue so it can be moved from', 'Swaps x with a temporary', 'Copies x to a new location']::text[], 1, '`std::move` is just a cast. The move happens when the result is passed to a move constructor or move assignment.', 'medium', 2035),
+  ('q-cpp-013', 'topic-cpp', 'What is the average lookup time of `std::unordered_map`?', array['O(1)', 'O(log n)', 'O(n)', 'O(n log n)']::text[], 0, '`std::unordered_map` is a hash table. `std::map` is a balanced tree with O(log n) lookups.', 'medium', 2036),
+  ('q-cpp-014', 'topic-cpp', 'Passing a large object as `const T&` instead of `T` avoids what?', array['Name mangling', 'Copying the object', 'Dangling pointers', 'Virtual dispatch']::text[], 1, 'A const reference gives read-only access to the caller''s object with no copy.', 'medium', 2037),
+  ('q-cpp-015', 'topic-cpp', 'What happens if you read past the end of an array with `arr[i]`?', array['The index wraps to 0', 'An exception is thrown', 'The compiler always rejects it', 'Undefined behavior']::text[], 3, '`operator[]` does no bounds check. Use `.at(i)` on containers to get a `std::out_of_range` exception instead.', 'medium', 2038),
+  ('q-cpp-016', 'topic-cpp', 'What does a **template** let you write?', array['Classes with no constructors', 'One function or class that works for many types', 'Code that runs at the preprocessor stage only', 'Runtime reflection']::text[], 1, 'The compiler generates a version of the template for each type you use it with.', 'medium', 2039),
+  ('q-cpp-cc-01', 'topic-cpp', 'Complete the loop so it reads each element without copying.
+
+```cpp
+for (___ name : names) {
+    std::cout << name << ''\n'';
+}
+```', array['int', 'const auto&', 'auto', 'auto*']::text[], 1, '`const auto&` binds each element by reference: no copy, and no accidental modification.', 'medium', 2040),
+  ('q-cpp-017', 'topic-cpp', 'What is the **Rule of Three**?', array['If a class needs a custom destructor, copy constructor, or copy assignment, it probably needs all three', 'Every class should have three public methods', 'A class needs at most three constructors', 'Templates can nest at most three levels']::text[], 0, 'Those three all deal with ownership. Defining one by hand usually means the defaults are wrong for the others too (the Rule of Five adds the move operations).', 'hard', 2041),
+  ('q-cpp-018', 'topic-cpp', 'What problem can two `shared_ptr`s that point at each other cause?', array['Double deletion', 'A compile error', 'A reference cycle that is never freed', 'Slicing']::text[], 2, 'Each keeps the other''s count above zero. Break the cycle with `std::weak_ptr` for one side.', 'hard', 2042),
+  ('q-cpp-019', 'topic-cpp', 'What is **object slicing**?', array['Splitting an object across threads', 'Dividing an array into chunks', 'Removing unused members at compile time', 'Copying a derived object into a base object, losing the derived part']::text[], 3, '`Base b = derived;` copies only the `Base` part. Use references or pointers to keep polymorphism.', 'hard', 2043),
+  ('q-cpp-020', 'topic-cpp', 'Which iterator problem can happen after `push_back` on a `std::vector`?', array['The vector becomes sorted', 'Existing iterators may be invalidated if it reallocates', 'Nothing, iterators are always stable', 'Iterators start pointing to the new element']::text[], 1, 'When capacity runs out the vector moves to a new buffer, so old iterators, pointers, and references dangle.', 'hard', 2044),
+  ('q-cpp-021', 'topic-cpp', 'What does `constexpr` on a function allow?', array['It runs on the GPU', 'It can never throw', 'It can be evaluated at compile time when given constant arguments', 'It is always inlined']::text[], 2, 'A `constexpr` function can produce compile-time constants, for example array sizes, and still works at run time.', 'hard', 2045),
+  ('q-cpp-022', 'topic-cpp', 'What does the `virtual` keyword enable on a member function?', array['Compile-time overload resolution', 'Inlining across translation units', 'Dynamic dispatch: the derived override runs through a base pointer or reference', 'Calling the function without an object']::text[], 2, 'Virtual calls go through a vtable, so the actual object''s override is chosen at run time.', 'hard', 2046),
+  ('q-cpp-cc-02', 'topic-cpp', 'Complete the code so the widget is freed automatically.
+
+```cpp
+auto w = std::___<Widget>(42);
+w->draw();
+```', array['make_unique', 'allocate', 'malloc', 'new_ptr']::text[], 0, '`std::make_unique<Widget>(42)` creates a `unique_ptr`; the widget is deleted when `w` goes out of scope.', 'hard', 2047),
+  ('q-git-001', 'topic-git', 'What does `git status` show?', array['The list of remotes', 'The commit history', 'Changed, staged, and untracked files in the working tree', 'Who last edited each line']::text[], 2, '`git status` compares the working tree and staging area with the last commit.', 'easy', 2048),
+  ('q-git-002', 'topic-git', 'What does `git add file.txt` do?', array['Uploads the file to the remote', 'Stages the file''s current changes for the next commit', 'Commits the file', 'Creates a new branch called file.txt']::text[], 1, 'Staging puts the changes in the index. `git commit` then records everything in the index.', 'easy', 2049),
+  ('q-git-003', 'topic-git', 'What is a **commit** in Git?', array['A branch name', 'A snapshot of the project with a message, author, and parent', 'A backup of the .git folder', 'A diff stored on the server only']::text[], 1, 'Each commit records the full tree state plus metadata and points to its parent commit(s).', 'easy', 2050),
+  ('q-git-004', 'topic-git', 'Which command downloads a repository for the first time?', array['git fetch', 'git clone', 'git init', 'git pull']::text[], 1, '`git clone <url>` copies the repository and its history and sets up `origin`.', 'easy', 2051),
+  ('q-git-005', 'topic-git', 'What is a **branch** in Git?', array['A full copy of the repository', 'A movable pointer to a commit', 'A remote server', 'A folder inside .git/objects']::text[], 1, 'Branches are lightweight: creating one just writes a new pointer to the current commit.', 'easy', 2052),
+  ('q-git-006', 'topic-git', 'What does `git push` do?', array['Deletes the remote branch', 'Stages all files', 'Uploads local commits to a remote branch', 'Downloads remote commits']::text[], 2, '`git push` sends your commits to the remote so others can fetch them.', 'easy', 2053),
+  ('q-git-007', 'topic-git', 'What is `.gitignore` for?', array['Ignoring merge conflicts', 'Hiding commits from the log', 'Skipping hooks', 'Listing files Git should not track']::text[], 3, 'Patterns in `.gitignore` keep build output, secrets, and other generated files out of `git status` and commits.', 'easy', 2054),
+  ('q-git-008', 'topic-git', 'Which command shows the commit history?', array['git show-branch --all', 'git history', 'git log', 'git diff']::text[], 2, '`git log` lists commits from newest to oldest. Add `--oneline --graph` for a compact view.', 'easy', 2055),
+  ('q-git-009', 'topic-git', 'What is the difference between `git fetch` and `git pull`?', array['`pull` only works on main', '`fetch` downloads commits without changing your branch; `pull` fetches and then merges or rebases', 'They are identical', '`fetch` uploads, `pull` downloads']::text[], 1, '`git pull` = `git fetch` + integrate. Fetching first lets you inspect what changed before merging.', 'medium', 2056),
+  ('q-git-010', 'topic-git', 'When does Git report a **merge conflict**?', array['When both branches changed the same lines differently', 'When the remote is offline', 'Whenever a file was deleted', 'When two branches have different names']::text[], 0, 'Git merges non-overlapping changes automatically and asks you to resolve overlapping ones.', 'medium', 2057),
+  ('q-git-011', 'topic-git', 'What is a **fast-forward** merge?', array['A merge that squashes commits', 'A forced push', 'Moving the branch pointer ahead because the target has no new commits of its own', 'A merge that skips tests']::text[], 2, 'If `main` hasn''t moved since you branched, Git just moves `main` to your commit; no merge commit is needed.', 'medium', 2058),
+  ('q-git-012', 'topic-git', 'What does `HEAD` refer to?', array['The newest commit on the remote', 'The commit (usually via a branch) currently checked out', 'The staging area', 'The first commit in the repo']::text[], 1, '`HEAD` normally points at the current branch, which points at a commit. A detached HEAD points at a commit directly.', 'medium', 2059),
+  ('q-git-013', 'topic-git', 'What does `git stash` do?', array['Saves uncommitted changes aside and cleans the working tree', 'Creates a new remote', 'Deletes uncommitted changes', 'Squashes the last two commits']::text[], 0, '`git stash` shelves your work so you can switch branches; `git stash pop` brings it back.', 'medium', 2060),
+  ('q-git-014', 'topic-git', 'Which command safely undoes a commit that was **already pushed**?', array['git reset --hard HEAD~1', 'git commit --amend', 'git revert <commit>', 'git rm']::text[], 2, '`git revert` adds a new commit that undoes the old one, so shared history is not rewritten.', 'medium', 2061),
+  ('q-git-015', 'topic-git', 'What does `git diff --staged` show?', array['Changes staged for the next commit', 'The last commit''s message', 'Unstaged changes', 'Changes on the remote']::text[], 0, 'Plain `git diff` shows unstaged changes; `--staged` (or `--cached`) shows what will be committed.', 'medium', 2062),
+  ('q-git-016', 'topic-git', 'What does `git commit --amend` do?', array['Replaces the last commit with a new one including the staged changes and message', 'Creates a branch', 'Pushes the last commit', 'Reverts the last commit']::text[], 0, 'It rewrites the latest commit. Avoid amending commits others have already pulled.', 'medium', 2063),
+  ('q-git-cc-01', 'topic-git', 'Complete the command to create a new branch and switch to it.
+
+```
+git switch ___ feature/login
+```', array['-c', '-n', '--new', '-b']::text[], 0, '`git switch -c <name>` creates and switches. The older equivalent is `git checkout -b <name>`.', 'medium', 2064),
+  ('q-git-017', 'topic-git', 'What does `git rebase main` do on a feature branch?', array['Merges main with a merge commit', 'Deletes the feature branch', 'Replays the feature''s commits on top of the latest main, rewriting their hashes', 'Resets main to the feature branch']::text[], 2, 'Rebase gives a linear history, but it creates new commits, so don''t rebase commits others have pulled.', 'hard', 2065),
+  ('q-git-018', 'topic-git', 'What is the danger of `git push --force` on a shared branch?', array['It disables branch protection', 'It is slower', 'It deletes local branches', 'It can overwrite commits others pushed, losing their work']::text[], 3, 'Force-pushing replaces the remote history. `--force-with-lease` refuses if someone else pushed since you fetched.', 'hard', 2066),
+  ('q-git-019', 'topic-git', 'How does `git bisect` find the commit that introduced a bug?', array['It reads commit messages', 'Binary search over history while you mark commits good or bad', 'It runs every test in parallel', 'It compares file sizes']::text[], 1, 'Each step halves the range, so even thousands of commits take only a dozen or so checks.', 'hard', 2067),
+  ('q-git-020', 'topic-git', 'What does `git reflog` let you recover?', array['Deleted remotes', 'Files ignored by .gitignore', 'Other users'' stashes', 'Commits that branches no longer point to, such as after a bad reset']::text[], 3, 'The reflog records where `HEAD` and branches have been, so "lost" commits can be found and restored.', 'hard', 2068),
+  ('q-git-021', 'topic-git', 'What does a **squash merge** produce?', array['One new commit on the target with all the branch''s changes', 'A tag on the branch', 'A merge commit with two parents', 'A copy of every branch commit']::text[], 0, 'Squash merging combines the branch into a single commit, keeping the target''s history tidy but losing the branch''s individual commits.', 'hard', 2069),
+  ('q-git-022', 'topic-git', 'What is the difference between `git reset --soft` and `git reset --hard`?', array['No difference', '`--soft` moves the branch but keeps changes staged; `--hard` also discards working-tree changes', '`--soft` deletes untracked files', '`--hard` only affects the remote']::text[], 1, '`--soft` keeps everything staged, `--mixed` (default) keeps it unstaged, `--hard` throws it away.', 'hard', 2070),
+  ('q-git-cc-02', 'topic-git', 'Complete the command so the push is refused if someone else pushed first.
+
+```
+git push ___ origin feature
+```', array['--no-verify', '--force-with-lease', '--force', '--all']::text[], 1, '`--force-with-lease` only overwrites the remote branch if it still matches what you last fetched.', 'hard', 2071),
+  ('q-sec-001', 'topic-security', 'What is the difference between **authentication** and **authorization**?', array['Authorization happens first', 'They are the same', 'Authentication checks who you are; authorization checks what you may do', 'Authentication is only for admins']::text[], 2, 'Logging in proves identity (authN). Permissions decide access (authZ).', 'easy', 2072),
+  ('q-sec-002', 'topic-security', 'Why should passwords be stored **hashed**?', array['Hashes are shorter', 'Hashing makes login faster', 'So a database leak doesn''t reveal the actual passwords', 'Hashes can be decrypted by admins']::text[], 2, 'A one-way hash lets you verify a password without storing it. A leak exposes only hashes.', 'easy', 2073),
+  ('q-sec-003', 'topic-security', 'What does HTTPS add on top of HTTP?', array['Cookies', 'Compression', 'TLS encryption and server authentication', 'Faster DNS']::text[], 2, 'TLS encrypts traffic and proves the server''s identity with a certificate.', 'easy', 2074),
+  ('q-sec-004', 'topic-security', 'What is **phishing**?', array['Tricking people into revealing secrets through fake messages or sites', 'Flooding a server with traffic', 'Scanning ports', 'Guessing passwords offline']::text[], 0, 'Phishing targets people, not code: a convincing email or page asks for credentials.', 'easy', 2075),
+  ('q-sec-005', 'topic-security', 'What does **2FA / MFA** require?', array['Logging in twice', 'Two passwords', 'Two user accounts', 'A second factor, such as a code or security key, in addition to the password']::text[], 3, 'Multi-factor authentication combines something you know with something you have or are.', 'easy', 2076),
+  ('q-sec-006', 'topic-security', 'What is the **principle of least privilege**?', array['Use the fewest passwords possible', 'Log as little as possible', 'Grant only the permissions a user or program needs', 'Give every user admin rights']::text[], 2, 'Limiting permissions limits the damage a bug or stolen account can do.', 'easy', 2077),
+  ('q-sec-007', 'topic-security', 'Which is the strongest password policy?', array['8 characters with a symbol', 'Long, unique passphrases with a password manager', 'Changing passwords monthly', 'Reusing one strong password everywhere']::text[], 1, 'Length and uniqueness matter most. A password manager makes unique passwords practical.', 'easy', 2078),
+  ('q-sec-008', 'topic-security', 'Where should an app''s API secret keys **not** be stored?', array['Environment variables on the server', 'A gitignored local config file', 'Committed in the source repository', 'A secrets manager']::text[], 2, 'Anything in the repo ends up in clones, forks, and history. Rotate any key that was ever committed.', 'easy', 2079),
+  ('q-sec-009', 'topic-security', 'How does **SQL injection** happen?', array['Building SQL by concatenating untrusted input, so input can change the query', 'Using too many indexes', 'Using stored procedures', 'Running SQL on a slow server']::text[], 0, 'Input like `'' OR 1=1 --` rewrites the query. Parameterized queries keep data separate from SQL.', 'medium', 2080),
+  ('q-sec-010', 'topic-security', 'What is a **salt** in password hashing?', array['Random data added to each password before hashing', 'A secret key shared by all users', 'A rate limit', 'An encryption algorithm']::text[], 0, 'Unique salts make identical passwords hash differently and defeat precomputed rainbow tables.', 'medium', 2081),
+  ('q-sec-011', 'topic-security', 'Why use bcrypt, scrypt, or Argon2 instead of SHA-256 for passwords?', array['They don''t need salts', 'They are deliberately slow and tunable, which makes brute force expensive', 'They produce shorter hashes', 'SHA-256 is reversible']::text[], 1, 'Fast hashes let attackers test billions of guesses per second. Password hashes add a tunable work factor.', 'medium', 2082),
+  ('q-sec-012', 'topic-security', 'What is **cross-site scripting (XSS)**?', array['Loading CSS from a CDN', 'A denial-of-service attack', 'Injecting script into a page that runs in other users'' browsers', 'Sharing scripts between servers']::text[], 2, 'If user input is rendered without escaping, an attacker''s `<script>` runs with the victim''s session.', 'medium', 2083),
+  ('q-sec-013', 'topic-security', 'What is the main difference between **symmetric** and **asymmetric** encryption?', array['Symmetric only works over HTTPS', 'Symmetric uses one shared key; asymmetric uses a public/private key pair', 'Asymmetric doesn''t need keys', 'Symmetric is always more secure']::text[], 1, 'Symmetric (AES) is fast; asymmetric (RSA, ECC) solves key exchange and signatures. TLS uses both.', 'medium', 2084),
+  ('q-sec-014', 'topic-security', 'What does a **CSRF** attack exploit?', array['Unpatched kernels', 'Open ports', 'Weak password hashing', 'A browser automatically sending a logged-in user''s cookies with a forged request']::text[], 3, 'A malicious site triggers a request to your site; the cookie comes along. CSRF tokens and `SameSite` cookies prevent it.', 'medium', 2085),
+  ('q-sec-015', 'topic-security', 'What does **hashing** guarantee that **encryption** doesn''t aim to?', array['Confidentiality with a key', 'Key exchange', 'A fixed-size, one-way fingerprint that can''t be turned back into the input', 'Faster transmission']::text[], 2, 'Encryption is reversible with the key; hashing is one-way and used for integrity and password checks.', 'medium', 2086),
+  ('q-sec-016', 'topic-security', 'What does **rate limiting** a login endpoint defend against?', array['Man-in-the-middle', 'Online brute-force and credential-stuffing attacks', 'XSS', 'SQL injection']::text[], 1, 'Capping attempts per account or IP makes guessing passwords impractical.', 'medium', 2087),
+  ('q-sec-cc-01', 'topic-security', 'Complete the code so the query is safe from SQL injection.
+
+```python
+cur.execute(
+    "SELECT * FROM users WHERE email = ___",
+    (email,),
+)
+```', array['%email%', '{email}', '?', '''" + email + "''']::text[], 2, 'A `?` placeholder (or `%s`, depending on the driver) sends the value separately, so it can never change the SQL.', 'medium', 2088),
+  ('q-sec-017', 'topic-security', 'What does a **digital signature** prove?', array['That the sender''s IP is trusted', 'That the message was delivered', 'That the message is encrypted', 'That the holder of a private key produced the message and it wasn''t altered']::text[], 3, 'Anyone with the public key can verify the signature; only the private key holder could have made it.', 'hard', 2089),
+  ('q-sec-018', 'topic-security', 'In a **man-in-the-middle** attack on TLS, what normally stops the attacker?', array['Certificate validation against trusted certificate authorities', 'Compression', 'The TCP handshake', 'The firewall']::text[], 0, 'The attacker can''t present a valid certificate for the real domain, so the client rejects the connection.', 'hard', 2090),
+  ('q-sec-019', 'topic-security', 'What does **Row Level Security** in a database enforce?', array['Encrypting each row on disk', 'Indexes per user', 'Backups per row', 'Policies that filter which rows each user can read or change']::text[], 3, 'RLS policies run inside the database, so even a buggy client can''t read another user''s rows.', 'hard', 2091),
+  ('q-sec-020', 'topic-security', 'Why should a JWT''s signature always be verified on the server?', array['Because anyone can edit the payload; only the signature proves it wasn''t forged', 'To decompress it', 'To refresh it', 'Because JWTs are encrypted']::text[], 0, 'A JWT payload is just base64. Without verifying the signature, a client could grant itself any role.', 'hard', 2092),
+  ('q-sec-021', 'topic-security', 'What does **forward secrecy** in TLS protect?', array['Past sessions if the server''s long-term private key leaks later', 'Passwords stored on the server', 'Certificates from expiring', 'Future sessions from today''s bugs']::text[], 0, 'Ephemeral key exchange (ECDHE) creates per-session keys that the long-term key can''t recover.', 'hard', 2093),
+  ('q-sec-022', 'topic-security', 'Which is the safest way to compare a secret token with user input?', array['Compare only the first 8 characters', 'A constant-time comparison function', '`==` on strings', 'Compare their hashes with `==` after trimming']::text[], 1, 'Normal comparison stops at the first mismatch, leaking timing information. Use `hmac.compare_digest` or an equivalent.', 'hard', 2094),
+  ('q-sec-cc-02', 'topic-security', 'Complete the code to generate an unguessable reset token.
+
+```python
+import secrets
+
+token = secrets.___(32)
+```', array['random', 'choice', 'randint', 'token_urlsafe']::text[], 3, '`secrets.token_urlsafe` uses the OS''s cryptographic random source. The `random` module is predictable and unsafe for tokens.', 'hard', 2095),
+  ('q-ds-023', 'topic-data-structures', 'Which operation removes the front element of a queue?', array['dequeue', 'push', 'pop from the back', 'peek']::text[], 0, '`enqueue` adds at the back and `dequeue` removes from the front, keeping FIFO order.', 'easy', 2096),
+  ('q-ds-024', 'topic-data-structures', 'What does each node in a singly linked list hold?', array['Only an index', 'A value and a pointer to the next node', 'A value and its hash', 'A value and pointers to all other nodes']::text[], 1, 'Each node stores its data and a reference to the next node; the last node points to nothing.', 'easy', 2097),
+  ('q-ds-025', 'topic-data-structures', 'Which structure is the usual choice for a **priority queue**?', array['Binary heap', 'Linked list', 'Stack', 'Trie']::text[], 0, 'A binary heap gives O(log n) insert and remove-min with the smallest item always at the root.', 'medium', 2098),
+  ('q-ds-026', 'topic-data-structures', 'What extra feature does a **doubly** linked list add over a singly linked one?', array['Constant-time random access', 'A pointer to the previous node, so it can be walked both ways and a known node removed in O(1)', 'Less memory per node', 'Automatic sorting']::text[], 1, 'The `prev` pointer costs memory but lets you unlink a node without searching for its predecessor.', 'medium', 2099),
+  ('q-ds-027', 'topic-data-structures', 'In a **union-find** (disjoint set) structure, what do path compression and union by rank give you?', array['O(log n) per operation exactly', 'Nearly constant amortized time per operation', 'O(1) worst case for every call', 'Sorted sets']::text[], 1, 'Together they bring the amortized cost down to the inverse Ackermann function α(n), which is under 5 for any practical n.', 'hard', 2100),
+  ('q-ds-028', 'topic-data-structures', 'Why is a red-black tree''s height at most about 2·log₂(n+1)?', array['No root-to-leaf path can be more than twice as long as another, because red nodes can''t be adjacent and black heights are equal', 'It stores keys only in leaves', 'Every node has two children', 'It rebuilds itself after every insert']::text[], 0, 'Equal black height plus no two reds in a row keeps the longest path within twice the shortest, so operations stay O(log n).', 'hard', 2101),
+  ('q-algo-023', 'topic-algorithms', 'What is the time complexity of finding the maximum in an **unsorted** array?', array['O(1)', 'O(log n)', 'O(n)', 'O(n log n)']::text[], 2, 'Every element might be the maximum, so each must be looked at once.', 'easy', 2102),
+  ('q-algo-024', 'topic-algorithms', 'What does a recursive function do?', array['Calls itself on a smaller version of the problem', 'Sorts its input first', 'Runs on multiple threads', 'Loops forever by design']::text[], 0, 'Recursion breaks a problem into a smaller instance of the same problem until a base case is reached.', 'easy', 2103),
+  ('q-algo-025', 'topic-algorithms', 'Which technique keeps a window over an array and updates it as it slides, for problems like "longest substring without repeats"?', array['Divide and conquer', 'Binary lifting', 'Sliding window', 'Backtracking']::text[], 2, 'A sliding window adds the new element on the right and drops elements from the left, giving O(n) instead of checking every substring.', 'medium', 2104),
+  ('q-algo-026', 'topic-algorithms', 'What does **Kruskal''s algorithm** find?', array['Shortest paths from one source', 'A minimum spanning tree', 'Strongly connected components', 'A topological order']::text[], 1, 'Kruskal sorts edges by weight and adds each one that doesn''t form a cycle, using union-find.', 'medium', 2105),
+  ('q-algo-027', 'topic-algorithms', 'Which problem is solved with **backtracking**, abandoning a partial solution as soon as it can''t work?', array['N-Queens', 'Merge sort', 'Binary search', 'Prefix sums']::text[], 0, 'Backtracking places queens row by row and undoes a placement when a conflict appears, pruning huge parts of the search space.', 'hard', 2106),
+  ('q-algo-028', 'topic-algorithms', 'Why does **quickselect** find the k-th smallest element in O(n) on average?', array['Each partition recurses into only one side, so the work shrinks geometrically', 'It uses a heap of size k', 'It only scans half the array', 'It sorts the array first']::text[], 0, 'n + n/2 + n/4 + … ≈ 2n on average. A bad pivot every time still gives O(n²) worst case.', 'hard', 2107),
+  ('q-os-023', 'topic-os-basics', 'What is a **file system** responsible for?', array['Drawing windows', 'Organizing data on storage into files and directories', 'Scheduling threads', 'Encrypting network traffic']::text[], 1, 'The file system maps names and folders to blocks on disk and tracks permissions and metadata.', 'easy', 2108),
+  ('q-os-024', 'topic-os-basics', 'What happens to a program''s memory when its process exits?', array['The OS reclaims it', 'It moves to swap', 'It is given to the parent process', 'It stays allocated until reboot']::text[], 0, 'The kernel frees the whole address space when a process ends, even if the program leaked memory.', 'easy', 2109),
+  ('q-os-025', 'topic-os-basics', 'What is the difference between **preemptive** and **cooperative** multitasking?', array['Preemptive lets the OS interrupt a running task; cooperative waits for the task to yield', 'They differ only in memory use', 'Cooperative is used by every modern desktop OS', 'Preemptive needs no timer']::text[], 0, 'A timer interrupt lets a preemptive scheduler take the CPU back, so one busy task can''t freeze the system.', 'medium', 2110),
+  ('q-os-026', 'topic-os-basics', 'What is a **zombie** process?', array['A process using 100% CPU', 'A process with no threads', 'A finished child whose exit status hasn''t been collected by its parent', 'A process running as root']::text[], 2, 'The entry stays in the process table until the parent calls `wait()`. An orphaned child is adopted by `init` instead.', 'medium', 2111),
+  ('q-os-027', 'topic-os-basics', 'Why does the LRU page-replacement policy avoid **Belady''s anomaly**, while FIFO does not?', array['LRU never evicts pages', 'LRU is a stack algorithm: the pages in memory with k frames are always a subset of those with k+1', 'FIFO uses more memory', 'LRU only works with one process']::text[], 1, 'Stack algorithms like LRU and OPT can''t get more faults with more frames; FIFO can.', 'hard', 2112),
+  ('q-os-028', 'topic-os-basics', 'What does a **spinlock** do while it waits, and when is that a good idea?', array['Yields to a random thread; best on one CPU', 'Sleeps; best for long waits', 'Kills the holder; best for deadlocks', 'Busy-loops checking the lock; best when the wait is shorter than a context switch']::text[], 3, 'Spinning wastes CPU, but on a multicore system with very short critical sections it beats the cost of sleeping and waking.', 'hard', 2113),
+  ('q-db-023', 'topic-databases', 'Which SQL statement changes values in existing rows?', array['SELECT', 'ALTER', 'UPDATE', 'INSERT']::text[], 2, '`UPDATE table SET col = value WHERE ...` modifies rows. `ALTER` changes the table''s structure.', 'easy', 2114),
+  ('q-db-024', 'topic-databases', 'What does `ORDER BY created_at DESC` do?', array['Groups rows by date', 'Deletes old rows', 'Sorts rows from newest to oldest', 'Filters rows']::text[], 2, '`DESC` sorts descending; the default `ASC` sorts ascending.', 'easy', 2115),
+  ('q-db-025', 'topic-databases', 'What does `COUNT(*)` count compared with `COUNT(column)`?', array['`COUNT(column)` counts distinct values', '`COUNT(*)` ignores duplicates', '`COUNT(*)` counts all rows; `COUNT(column)` skips rows where the column is NULL', 'They are always equal']::text[], 2, 'Aggregate functions ignore NULLs, except `COUNT(*)`, which counts rows.', 'medium', 2116),
+  ('q-db-026', 'topic-databases', 'What is a **view** in SQL?', array['A locked table', 'A copy of a table on another server', 'An index on several columns', 'A stored query that can be selected from like a table']::text[], 3, 'A view saves a query under a name. A *materialized* view also stores the result.', 'medium', 2117),
+  ('q-db-027', 'topic-databases', 'How does **MVCC** let readers and writers avoid blocking each other?', array['It queues all writes until readers finish', 'It locks the whole table', 'Each transaction reads a consistent snapshot, while writers create new row versions', 'It disables transactions']::text[], 2, 'Postgres keeps old row versions visible to older snapshots, so reads never wait on writes.', 'hard', 2118),
+  ('q-db-028', 'topic-databases', 'What is **write skew** under snapshot isolation?', array['A slow write caused by many indexes', 'Two transactions read overlapping data and write different rows, together breaking a rule neither broke alone', 'Writing to the wrong table', 'A write that is lost because of a crash']::text[], 1, 'Example: two doctors each see another on call and both go off call. Serializable isolation prevents it.', 'hard', 2119),
+  ('q-oop-023', 'topic-oop', 'What is a **class**?', array['A blueprint that defines the data and behavior of its objects', 'A database table', 'A function that returns an object', 'A single object in memory']::text[], 0, 'Objects are instances created from a class.', 'easy', 2120),
+  ('q-oop-024', 'topic-oop', 'What is a **getter**?', array['A method that returns the value of a property', 'A static field', 'A method that deletes an object', 'A constructor with no parameters']::text[], 0, 'Getters (and setters) let a class control how its internal state is read and changed.', 'easy', 2121),
+  ('q-oop-025', 'topic-oop', 'What does the **Interface Segregation Principle** say?', array['Interfaces must be in separate files', 'Interfaces should never inherit', 'Clients shouldn''t be forced to depend on methods they don''t use, so prefer small focused interfaces', 'Every class needs an interface']::text[], 2, 'Splitting a fat interface means each client sees only what it needs, and changes ripple less.', 'medium', 2122),
+  ('q-oop-026', 'topic-oop', 'Which design pattern lets an object notify many listeners when its state changes?', array['Observer', 'Builder', 'Adapter', 'Singleton']::text[], 0, 'Observers subscribe to a subject and get called on change, as in event listeners or SwiftUI''s `@Observable`.', 'medium', 2123),
+  ('q-oop-027', 'topic-oop', 'What is the main criticism of the **Singleton** pattern?', array['It uses too much memory', 'It can''t be lazy', 'It is global mutable state that hides dependencies and makes testing hard', 'It requires multiple inheritance']::text[], 2, 'Code that reaches for `Shared.instance` can''t easily swap it for a fake. Passing dependencies in is easier to test.', 'hard', 2124),
+  ('q-oop-028', 'topic-oop', 'What does **double dispatch** (as used by the Visitor pattern) achieve?', array['Calling a method twice for reliability', 'Running a method on two threads', 'Choosing behavior based on the runtime types of two objects', 'Overloading by return type']::text[], 2, 'The element calls `visitor.visit(self)`, so both the element''s and the visitor''s types pick the method.', 'hard', 2125),
+  ('q-net-023', 'topic-networking', 'Which HTTP status code means the request succeeded?', array['301', '200', '500', '404']::text[], 1, '2xx means success. 3xx is redirection, 4xx client error, 5xx server error.', 'easy', 2126),
+  ('q-net-024', 'topic-networking', 'What is a **URL**?', array['A network cable standard', 'An encryption key', 'A type of IP address', 'An address that names a resource and how to reach it']::text[], 3, 'A URL combines a scheme, host, optional port, path, and query, such as `https://example.com/path?q=1`.', 'easy', 2127),
+  ('q-net-025', 'topic-networking', 'What does an HTTP **cookie** let a server do?', array['Encrypt the connection', 'Store small data in the browser that is sent back with later requests', 'Speed up DNS', 'Compress responses']::text[], 1, 'Cookies give the stateless HTTP protocol a way to remember sessions and preferences.', 'medium', 2128),
+  ('q-net-026', 'topic-networking', 'What does **CORS** control?', array['How fast data is sent', 'Which ports are open', 'Whether a page from one origin may read responses from another origin', 'Which browsers may load a site']::text[], 2, 'Browsers block cross-origin reads unless the server sends `Access-Control-Allow-Origin` headers allowing it.', 'medium', 2129),
+  ('q-net-027', 'topic-networking', 'Why does a **CDN** make a website faster for distant users?', array['It caches content on servers close to users, cutting round-trip latency', 'It compresses all images to text', 'It upgrades users'' bandwidth', 'It skips TLS']::text[], 0, 'Serving from a nearby edge server avoids long round trips to the origin, which dominate load time.', 'hard', 2130),
+  ('q-net-028', 'topic-networking', 'What does a **WebSocket** provide that plain HTTP requests don''t?', array['A long-lived, full-duplex connection where the server can push messages at any time', 'Encryption', 'Larger file uploads', 'DNS caching']::text[], 0, 'After an HTTP upgrade handshake, both sides can send frames whenever they like, without polling.', 'hard', 2131),
+  ('q-swift-023', 'topic-swift', 'What does `array.count` return?', array['The capacity', 'The number of elements', 'The size in bytes', 'The last index']::text[], 1, '`count` is the number of elements. The last valid index is `count - 1`.', 'easy', 2132),
+  ('q-swift-024', 'topic-swift', 'How do you write a constant tuple holding a name and an age?', array['let person = ["Ada", 36]', 'let person = <"Ada", 36>', 'let person = ("Ada", 36)', 'let person = {"Ada", 36}']::text[], 2, 'Tuples group values of different types in parentheses. Access them with `.0`, `.1`, or labels.', 'easy', 2133),
+  ('q-swift-025', 'topic-swift', 'What does a Swift `enum` with **associated values** let you do?', array['Attach different data to each case, like `case failure(Error)`', 'Give each case a raw integer only', 'Create mutable global state', 'Inherit from another enum']::text[], 0, 'Associated values make enums ideal for modeling states, as `Result<Success, Failure>` does.', 'medium', 2134),
+  ('q-swift-026', 'topic-swift', 'Why must a Swift `switch` be **exhaustive**?', array['So every possible value is handled; the compiler rejects missing cases', 'For performance', 'Because `default` is forbidden', 'So it can return a value']::text[], 0, 'Exhaustiveness means adding a new enum case flags every switch that must handle it.', 'medium', 2135),
+  ('q-swift-027', 'topic-swift', 'What does `Sendable` indicate about a type?', array['It can be encoded to JSON', 'It can be sent over the network', 'It is safe to pass across concurrency domains such as actors and tasks', 'It is a reference type']::text[], 2, 'The compiler checks that Sendable types have no unprotected shared mutable state, which prevents data races.', 'hard', 2136),
+  ('q-swift-028', 'topic-swift', 'What does `await` mark in Swift concurrency?', array['A call that can''t throw', 'A call that runs on the main thread', 'A blocking call that holds the thread', 'A suspension point where the task may pause and other work can run']::text[], 3, 'At an `await` the task can suspend without blocking its thread; state may have changed when it resumes.', 'hard', 2137),
+  ('q-py-023', 'topic-python', 'What does `"hello".upper()` return?', array['An error', '"hello"', '"Hello"', '"HELLO"']::text[], 3, '`upper()` returns a new uppercase string; strings are immutable, so the original is unchanged.', 'easy', 2138),
+  ('q-py-024', 'topic-python', 'How do you add an item to the end of a list `items`?', array['items.push(x)', 'items.insert(x)', 'items.append(x)', 'items.add(x)']::text[], 2, '`append` adds one item. `extend` adds every item from another iterable.', 'easy', 2139),
+  ('q-py-025', 'topic-python', 'What does `a, b = b, a` do?', array['Raises an error', 'Makes both equal to `b`', 'Creates a tuple named a', 'Swaps the values of `a` and `b`']::text[], 3, 'The right side builds a tuple first, then it is unpacked into the names on the left.', 'medium', 2140),
+  ('q-py-026', 'topic-python', 'What does `sorted(words, key=len)` return?', array['The words sorted in place', 'The words sorted alphabetically', 'A new list of the words sorted by length', 'The length of the longest word']::text[], 2, '`key` maps each item to the value used for comparison. `sorted` returns a new list; `list.sort` sorts in place.', 'medium', 2141),
+  ('q-py-027', 'topic-python', 'What does a `@dataclass` generate for you?', array['Type checks at run time', 'A singleton instance', 'A database table', '`__init__`, `__repr__`, and `__eq__` from the class''s annotated fields']::text[], 3, 'Dataclasses remove boilerplate for classes that mainly hold data. Add `frozen=True` to make them immutable.', 'hard', 2142),
+  ('q-py-028', 'topic-python', 'Why use `asyncio` for many slow network calls instead of plain sequential code?', array['While one coroutine awaits I/O, others run, so waits overlap on a single thread', 'It uses all CPU cores automatically', 'It removes the GIL', 'It makes each call faster']::text[], 0, 'asyncio is concurrency for I/O-bound work; CPU-bound work still needs processes.', 'hard', 2143)
+on conflict (id) do update set topic_id = excluded.topic_id, prompt = excluded.prompt, options = excluded.options, correct_option_index = excluded.correct_option_index, explanation = excluded.explanation, difficulty = excluded.difficulty, sort_index = excluded.sort_index;
+
+insert into public.content_exercises (id, topic_id, title, language, prompt, code, blanks, explanation, sort_index) values
+  ('ex-java-for-each', 'topic-java', 'Sum a list', 'java', 'Add up every score in the list.', 'int total = 0;
+for (int score ___ scores) {
+    total += score;
+}', '[{"accepted": [":"]}]'::jsonb, 'The enhanced `for (int score : scores)` loop visits each element in order, with no index to manage.', 200),
+  ('ex-java-implements', 'topic-java', 'Implement an interface', 'java', 'Make `Circle` a `Shape` so it must provide `area()`.', 'interface Shape {
+    double area();
+}
+
+class Circle ___ Shape {
+    private final double r;
+
+    Circle(double r) { this.r = r; }
+
+    public double area() {
+        return Math.PI * r * r;
+    }
+}', '[{"accepted": ["implements"]}]'::jsonb, 'A class `implements` an interface and must define every abstract method. `extends` is for inheriting from a class.', 201),
+  ('ex-java-catch', 'topic-java', 'Handle bad input', 'java', 'Return 0 when the text isn''t a number instead of crashing.', 'static int parseOrZero(String text) {
+    try {
+        return Integer.parseInt(text);
+    } ___ (NumberFormatException e) {
+        return 0;
+    }
+}', '[{"accepted": ["catch"]}]'::jsonb, '`Integer.parseInt` throws `NumberFormatException` for text like "abc"; the `catch` block handles it and returns a fallback.', 202),
+  ('ex-java-get-or-default', 'topic-java', 'Count words', 'java', 'Count how many times each word appears.', 'Map<String, Integer> counts = new HashMap<>();
+for (String word : words) {
+    counts.put(word, counts.___(word, 0) + 1);
+}', '[{"accepted": ["getOrDefault"]}]'::jsonb, '`getOrDefault(word, 0)` returns the current count, or 0 the first time a word appears. `counts.merge(word, 1, Integer::sum)` does the same in one call.', 203),
+  ('ex-cpp-swap-ref', 'topic-cpp', 'Swap two numbers', 'cpp', 'Make `swap` change the caller''s variables, not copies.', 'void swap(int___ a, int___ b) {
+    int tmp = a;
+    a = b;
+    b = tmp;
+}', '[{"accepted": ["&"]}, {"accepted": ["&"]}]'::jsonb, 'Taking `int& a` passes by reference, so assigning to `a` changes the caller''s variable. Passing `int a` would swap local copies.', 204),
+  ('ex-cpp-push-back', 'topic-cpp', 'Grow a vector', 'cpp', 'Collect the even numbers from 0 to 9.', 'std::vector<int> evens;
+for (int i = 0; i < 10; ++i) {
+    if (i % 2 == 0) {
+        evens.___(i);
+    }
+}', '[{"accepted": ["push_back", "emplace_back"]}]'::jsonb, '`push_back` appends to the end and grows the vector''s storage when needed.', 205),
+  ('ex-cpp-unique-ptr', 'topic-cpp', 'Own it once', 'cpp', 'Create the node so it is freed automatically.', 'struct Node {
+    int value;
+};
+
+auto node = std::___<Node>(Node{7});
+std::cout << node->value << ''\n'';', '[{"accepted": ["make_unique"]}]'::jsonb, '`std::make_unique` returns a `std::unique_ptr<Node>`. When `node` goes out of scope the Node is deleted, so there is no `delete` to forget.', 206),
+  ('ex-cpp-const-ref', 'topic-cpp', 'Print without copying', 'cpp', 'Print each name without copying the strings.', 'void printAll(const std::vector<std::string>& names) {
+    for (___ name : names) {
+        std::cout << name << ''\n'';
+    }
+}', '[{"accepted": ["const auto&", "const std::string&", "auto const&"]}]'::jsonb, '`const auto&` binds each element by reference: no copy is made and the loop can''t modify the names.', 207),
+  ('ex-git-stage', 'topic-git', 'Stage the changes', 'python', 'Stage every changed file before committing.', 'import subprocess
+
+subprocess.run(["git", "___", "."], check=True)', '[{"accepted": ["add"]}]'::jsonb, '`git add .` stages all changes in the current folder. Only staged changes go into the next commit.', 208),
+  ('ex-git-commit', 'topic-git', 'Record a snapshot', 'python', 'Commit the staged changes with a message.', 'import subprocess
+
+def save(message: str) -> None:
+    subprocess.run(["git", "___", "-m", message], check=True)', '[{"accepted": ["commit"]}]'::jsonb, '`git commit -m "message"` records the staged snapshot with a message describing why it changed.', 209),
+  ('ex-git-branch', 'topic-git', 'Start a feature branch', 'python', 'Create a new branch and switch to it in one command.', 'import subprocess
+
+def start_feature(name: str) -> None:
+    subprocess.run(["git", "switch", "___", name], check=True)', '[{"accepted": ["-c", "--create"]}]'::jsonb, '`git switch -c <name>` creates the branch at the current commit and checks it out, like the older `git checkout -b <name>`.', 210),
+  ('ex-sec-param-query', 'topic-security', 'Stop SQL injection', 'python', 'Look up a user by email without building SQL from the input.', 'def find_user(db, email):
+    return db.execute(
+        "SELECT id, name FROM users WHERE email = ___",
+        (email,),
+    ).fetchone()', '[{"accepted": ["?"]}]'::jsonb, 'The `?` placeholder sends `email` separately from the SQL text, so input like `'' OR 1=1 --` is treated as data, never as SQL.', 211),
+  ('ex-sec-escape-html', 'topic-security', 'Escape user input', 'python', 'Show the user''s name on a page without allowing script injection (XSS).', 'import html
+
+def greeting(name: str) -> str:
+    return "<p>Hello, " + html.___(name) + "</p>"', '[{"accepted": ["escape"]}]'::jsonb, '`html.escape` turns `<`, `>`, `&` and quotes into entities, so `<script>` is displayed as text instead of running.', 212),
+  ('ex-sec-compare-digest', 'topic-security', 'Compare secrets safely', 'python', 'Check an API token without leaking timing information.', 'import hmac
+
+def is_valid(token: str, expected: str) -> bool:
+    return hmac.___(token, expected)', '[{"accepted": ["compare_digest"]}]'::jsonb, '`hmac.compare_digest` takes the same time however many characters match, so an attacker can''t guess the token one character at a time.', 213),
+  ('ex-sec-hash-password', 'topic-security', 'Hash a password', 'python', 'Derive a slow, salted hash for storing a password.', 'import hashlib, os
+
+def hash_password(password: str) -> tuple[bytes, bytes]:
+    salt = os.___(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 600_000)
+    return salt, digest', '[{"accepted": ["urandom"]}]'::jsonb, '`os.urandom(16)` gives a random salt per password. PBKDF2 with many iterations makes each guess slow for an attacker.', 214),
+  ('ex-ds-linked-list', 'topic-data-structures', 'Link the nodes', 'swift', 'Give each node a link to the one after it.', 'final class Node {
+    let value: Int
+    var ___: Node?
+
+    init(_ value: Int) { self.value = value }
+}
+
+let head = Node(1)
+head.next = Node(2)', '[{"accepted": ["next"]}]'::jsonb, 'A singly linked list node stores its value and an optional `next`; the last node''s `next` is nil.', 215),
+  ('ex-ds-set', 'topic-data-structures', 'Count unique visitors', 'python', 'Count the distinct user ids in the log.', 'visits = ["ana", "bo", "ana", "cy", "bo"]
+unique = len(___(visits))', '[{"accepted": ["set"]}]'::jsonb, 'A set keeps one copy of each value, so `len(set(visits))` is 3. Building it is O(n).', 216),
+  ('ex-ds-heap', 'topic-data-structures', 'Use a priority queue', 'python', 'Always take the most urgent task (lowest number) first.', 'import heapq
+
+tasks = []
+heapq.___(tasks, (2, "write tests"))
+heapq.heappush(tasks, (1, "fix crash"))
+first = heapq.heappop(tasks)  # (1, "fix crash")', '[{"accepted": ["heappush"]}]'::jsonb, '`heapq` keeps a list as a min-heap: `heappush` and `heappop` are O(log n), and the smallest item is always at index 0.', 217),
+  ('ex-alg-swap', 'topic-algorithms', 'Bubble the largest up', 'swift', 'Swap neighbors that are out of order.', 'var numbers = [5, 1, 4, 2]
+for i in 0..<(numbers.count - 1) where numbers[i] > numbers[i + 1] {
+    numbers.___(i, i + 1)
+}', '[{"accepted": ["swapAt"]}]'::jsonb, '`swapAt` exchanges two elements in place. One pass like this moves the largest value to the end, which is one round of bubble sort.', 218),
+  ('ex-alg-two-sum', 'topic-algorithms', 'Two sum in one pass', 'python', 'Return the indices of two numbers that add up to `target`.', 'def two_sum(nums, target):
+    seen = {}
+    for i, n in enumerate(nums):
+        if target - n ___ seen:
+            return seen[target - n], i
+        seen[n] = i', '[{"accepted": ["in"]}]'::jsonb, 'Storing each number''s index in a dict makes the complement check O(1), so the whole search is O(n) instead of O(n²).', 219),
+  ('ex-alg-memo', 'topic-algorithms', 'Memoize Fibonacci', 'python', 'Cache results so each `fib(n)` is computed only once.', 'from functools import cache
+
+@___
+def fib(n):
+    return n if n < 2 else fib(n - 1) + fib(n - 2)', '[{"accepted": ["cache", "lru_cache(maxsize=None)", "lru_cache(None)"]}]'::jsonb, '`@cache` remembers each result, turning the exponential recursion into O(n) calls.', 220),
+  ('ex-os-semaphore', 'topic-os-basics', 'Limit concurrent downloads', 'python', 'Let at most three threads download at the same time.', 'import threading
+
+slots = threading.___(3)
+
+def download(url):
+    with slots:
+        fetch(url)', '[{"accepted": ["Semaphore", "BoundedSemaphore"]}]'::jsonb, 'A counting semaphore starts at 3; each thread takes a slot on entry and returns it on exit, so a fourth thread waits.', 221),
+  ('ex-os-env', 'topic-os-basics', 'Read an environment variable', 'python', 'Read `PORT` from the environment, with 8080 as the default.', 'import os
+
+port = int(os.environ.___("PORT", "8080"))', '[{"accepted": ["get"]}]'::jsonb, 'Every process inherits environment variables from its parent. `os.environ.get` returns the default instead of raising `KeyError`.', 222),
+  ('ex-db-join', 'topic-databases', 'Join two tables', 'python', 'List each order''s total with the customer''s name.', 'rows = db.execute(
+    "SELECT c.name, o.total FROM orders o "
+    "___ customers c ON c.id = o.customer_id"
+).fetchall()', '[{"accepted": ["JOIN", "INNER JOIN", "join", "inner join"]}]'::jsonb, '`JOIN ... ON` pairs each order with the customer whose id matches. Orders with no matching customer are left out.', 223),
+  ('ex-oop-abstract', 'topic-oop', 'An abstract shape', 'java', 'Every shape must say how to compute its own area.', '___ class Shape {
+    abstract double area();
+}
+
+class Square extends Shape {
+    double side;
+    double area() { return side * side; }
+}', '[{"accepted": ["abstract"]}]'::jsonb, 'A class with an abstract method must itself be `abstract`, so it can''t be instantiated; subclasses fill in `area()`.', 224),
+  ('ex-net-json-decode', 'topic-networking', 'Decode a response', 'swift', 'Turn the downloaded JSON into a `User`.', 'struct User: Decodable {
+    let id: Int
+    let name: String
+}
+
+let user = try JSONDecoder().___(User.self, from: data)', '[{"accepted": ["decode"]}]'::jsonb, '`JSONDecoder().decode` maps JSON keys onto the `Decodable` type''s properties and throws if the shape doesn''t match.', 225),
+  ('ex-net-json-loads', 'topic-networking', 'Parse JSON text', 'python', 'Parse the API''s JSON reply into a dict.', 'import json
+
+body = ''{"status": "ok", "count": 3}''
+data = json.___(body)
+print(data["count"])', '[{"accepted": ["loads"]}]'::jsonb, '`json.loads` parses a string; `json.load` reads from a file object.', 226),
+  ('ex-swift-switch-result', 'topic-swift', 'Handle a result', 'swift', 'Print the value on success and the error on failure.', 'switch result {
+case .success(let value):
+    print(value)
+___ .failure(let error):
+    print(error.localizedDescription)
+}', '[{"accepted": ["case"]}]'::jsonb, 'Each `case` pattern can bind associated values with `let`. The switch is exhaustive because `Result` has only these two cases.', 227),
+  ('ex-python-fstring', 'topic-python', 'Format a greeting', 'python', 'Build the greeting with an f-string.', 'name = "Ada"
+level = 3
+message = ___"{name} reached level {level}!"', '[{"accepted": ["f"]}]'::jsonb, 'An `f` prefix makes a formatted string literal: expressions in `{}` are evaluated and inserted.', 228),
+  ('ex-python-except', 'topic-python', 'Recover from bad input', 'python', 'Return None instead of crashing when the text isn''t a number.', 'def to_int(text):
+    try:
+        return int(text)
+    ___ ValueError:
+        return None', '[{"accepted": ["except"]}]'::jsonb, '`int("abc")` raises `ValueError`; the `except ValueError:` block catches only that error type.', 229)
+on conflict (id) do update set topic_id = excluded.topic_id, title = excluded.title, language = excluded.language, prompt = excluded.prompt, code = excluded.code, blanks = excluded.blanks, explanation = excluded.explanation, sort_index = excluded.sort_index;
+
+insert into public.content_decks (starter_key, topic_id, title, sort_index) values
+  ('starter-java', 'topic-java', 'Java Essentials', 103),
+  ('starter-java-2', 'topic-java', 'Collections & Exceptions', 104),
+  ('starter-cpp', 'topic-cpp', 'C++ Essentials', 105),
+  ('starter-cpp-2', 'topic-cpp', 'Memory & Ownership', 106),
+  ('starter-git', 'topic-git', 'Git Essentials', 107),
+  ('starter-git-2', 'topic-git', 'Branching & Collaboration', 108),
+  ('starter-sec', 'topic-security', 'Security Essentials', 109),
+  ('starter-sec-2', 'topic-security', 'Web Security', 110),
+  ('starter-swift-2', 'topic-swift', 'Swift in Practice', 111)
+on conflict (starter_key) do update set topic_id = excluded.topic_id, title = excluded.title, sort_index = excluded.sort_index;
+
+insert into public.content_cards (id, deck_key, prompt, answer, difficulty, code_language, code_source, sort_index) values
+  ('sc-java-001', 'starter-java', 'What does `javac` produce, and what runs it?', '**Bytecode** in `.class` files. The **JVM** runs it, so the same bytecode works on any platform with a JVM.', 'easy', null, null, 0),
+  ('sc-java-002', 'starter-java', '`int` vs `Integer`?', '`int` is a **primitive** (just the value). `Integer` is an **object** wrapper that can be `null` and can go in collections like `List<Integer>`.', 'easy', null, null, 1),
+  ('sc-java-003', 'starter-java', 'What does this print?', '`false` then `true`. `==` compares **references**; `equals` compares the **text**.', 'easy', 'java', 'String a = new String("hi");
+String b = new String("hi");
+System.out.println(a == b);
+System.out.println(a.equals(b));', 2),
+  ('sc-java-004', 'starter-java', '`extends` vs `implements`?', 'A class `extends` **one** class to inherit its code, and `implements` **any number** of interfaces, promising to provide their methods.', 'easy', null, null, 3),
+  ('sc-java-005', 'starter-java', 'What does `final` mean on a class, a method, and a variable?', 'Class: can''t be **subclassed**. Method: can''t be **overridden**. Variable: can be **assigned once**.', 'medium', null, null, 4),
+  ('sc-java-006', 'starter-java', 'What does this print?', '`3`. Integer division drops the remainder. Use `7 / 2.0` to get `3.5`.', 'medium', 'java', 'int a = 7;
+int b = 2;
+System.out.println(a / b);', 5),
+  ('sc-java-007', 'starter-java', 'Why must `hashCode` agree with `equals`?', 'Hash collections find the **bucket** with `hashCode` and then compare with `equals`. Equal objects with different hash codes land in different buckets, so lookups miss.', 'medium', null, null, 6),
+  ('sc-java-008', 'starter-java', 'What is a **static** method?', 'A method that belongs to the **class**, not an instance. Call it as `Math.max(a, b)`; it can''t use `this`.', 'medium', null, null, 7),
+  ('sc-java-009', 'starter-java', 'What does this print?', '`[1, 2, 3]` then `[1, 2, 3, 4]`. Both variables refer to the **same list** object.', 'hard', 'java', 'List<Integer> a = new ArrayList<>(List.of(1, 2, 3));
+List<Integer> b = a;
+System.out.println(a);
+b.add(4);
+System.out.println(a);', 8),
+  ('sc-java-010', 'starter-java', 'What is **type erasure**?', 'Generic types are checked at compile time and then **erased**: at run time `List<String>` is just `List`. So you can''t do `new T()` or `instanceof List<String>`.', 'hard', null, null, 9),
+  ('sc-java-011', 'starter-java', 'What does `volatile` guarantee, and what doesn''t it?', 'It guarantees **visibility**: every thread sees the latest write. It does **not** make `count++` atomic; use `AtomicInteger` or `synchronized` for that.', 'hard', null, null, 10),
+  ('sc-java-012', 'starter-java', 'What is a Java **record**?', 'A compact immutable data class: `record Point(int x, int y) {}` generates the constructor, accessors, `equals`, `hashCode`, and `toString`.', 'hard', 'java', 'record Point(int x, int y) {}
+
+var p = new Point(1, 2);
+System.out.println(p); // Point[x=1, y=2]', 11),
+  ('sc-java2-001', 'starter-java-2', '`ArrayList` vs `LinkedList`?', '`ArrayList` gives **O(1) indexed access** and is usually faster. `LinkedList` only wins for frequent inserts and removes at the ends via an iterator.', 'easy', null, null, 0),
+  ('sc-java2-002', 'starter-java-2', 'Which collection keeps **unique** values in insertion order?', '`LinkedHashSet`. `HashSet` has no order and `TreeSet` keeps values **sorted**.', 'easy', null, null, 1),
+  ('sc-java2-003', 'starter-java-2', 'What does `map.getOrDefault(key, 0)` return?', 'The value for `key`, or `0` when the key is missing. It never adds the key.', 'easy', null, null, 2),
+  ('sc-java2-004', 'starter-java-2', 'What happens here?', 'It throws **`ArrayIndexOutOfBoundsException`**: valid indices are 0 to 2.', 'easy', 'java', 'int[] nums = {1, 2, 3};
+System.out.println(nums[3]);', 3),
+  ('sc-java2-005', 'starter-java-2', '**Checked** vs **unchecked** exceptions?', 'Checked (`IOException`) must be **caught or declared** with `throws`. Unchecked (`RuntimeException` and subclasses) need not be; they usually mean a bug.', 'medium', null, null, 4),
+  ('sc-java2-006', 'starter-java-2', 'What does `finally` guarantee?', 'Its block runs whether the `try` **returns, throws, or finishes normally**. It''s for cleanup, though try-with-resources is usually better.', 'medium', null, null, 5),
+  ('sc-java2-007', 'starter-java-2', 'What does this print?', '`[ADA, LIN]`. The stream keeps names longer than 2 characters and uppercases them.', 'medium', 'java', 'List<String> names = List.of("ada", "al", "lin");
+List<String> out = names.stream()
+    .filter(n -> n.length() > 2)
+    .map(String::toUpperCase)
+    .toList();
+System.out.println(out);', 6),
+  ('sc-java2-008', 'starter-java-2', 'Why does removing from a list inside a for-each loop fail?', 'It throws **`ConcurrentModificationException`**. Use `iterator.remove()` or `list.removeIf(...)` instead.', 'medium', 'java', 'for (String name : names) {
+    if (name.isBlank()) {
+        names.remove(name); // throws
+    }
+}
+
+names.removeIf(String::isBlank); // fine', 7),
+  ('sc-java2-009', 'starter-java-2', '`Comparable` vs `Comparator`?', '`Comparable` is the type''s **natural order** (`compareTo`). A `Comparator` is a **separate** ordering, such as `Comparator.comparing(Person::age)`.', 'hard', null, null, 8),
+  ('sc-java2-010', 'starter-java-2', 'Why are `List.of(...)` lists special?', 'They''re **immutable**: `add` or `set` throws `UnsupportedOperationException`, and they reject `null` elements.', 'hard', null, null, 9),
+  ('sc-java2-011', 'starter-java-2', 'What does try-with-resources do?', 'Closes every `AutoCloseable` declared in `try (...)` when the block ends, **even after an exception**, and keeps close errors as suppressed exceptions.', 'hard', 'java', 'try (var in = new FileInputStream(path)) {
+    return in.readAllBytes();
+}', 10),
+  ('sc-java2-012', 'starter-java-2', 'How does `HashMap` handle many collisions in one bucket?', 'Since Java 8, a long bucket list turns into a **balanced tree**, so the worst case is O(log n) instead of O(n).', 'hard', null, null, 11),
+  ('sc-cpp-001', 'starter-cpp', 'Pointer vs reference?', 'A **pointer** holds an address, can be null, and can be re-pointed. A **reference** is an alias that must be bound once and can''t be null.', 'easy', null, null, 0),
+  ('sc-cpp-002', 'starter-cpp', 'What does this print?', '`10`. `r` is a reference to `x`, so assigning to `r` changes `x`.', 'easy', 'cpp', 'int x = 5;
+int& r = x;
+r = 10;
+std::cout << x;', 1),
+  ('sc-cpp-003', 'starter-cpp', 'What does `std::vector` give you over a raw array?', 'It **knows its size**, grows on `push_back`, frees its memory automatically, and offers `.at(i)` with bounds checking.', 'easy', null, null, 2),
+  ('sc-cpp-004', 'starter-cpp', 'What does `#include <iostream>` do?', 'The preprocessor pastes in the declarations for **`std::cout`**, `std::cin`, and friends before compiling.', 'easy', null, null, 3),
+  ('sc-cpp-005', 'starter-cpp', 'What does this print?', '`3`. `p` holds `a`''s address, and `*p` reads the value there.', 'medium', 'cpp', 'int a = 3;
+int* p = &a;
+std::cout << *p;', 4),
+  ('sc-cpp-006', 'starter-cpp', 'Why pass big objects as `const T&`?', 'No **copy** is made, and `const` stops the function from changing the caller''s object.', 'medium', null, null, 5),
+  ('sc-cpp-007', 'starter-cpp', 'What does `auto` do?', 'Lets the compiler **deduce** the type from the initializer, e.g. `auto it = map.begin();`. The type is still fixed at compile time.', 'medium', null, null, 6),
+  ('sc-cpp-008', 'starter-cpp', '`std::map` vs `std::unordered_map`?', '`map` is a **sorted** balanced tree with O(log n) operations. `unordered_map` is a **hash table** with O(1) average and no order.', 'hard', null, null, 7),
+  ('sc-cpp-009', 'starter-cpp', 'What does this print?', '`1 2 3`. The range-based `for` visits each element; `const auto&` avoids copies.', 'medium', 'cpp', 'std::vector<int> v{1, 2, 3};
+for (const auto& x : v) {
+    std::cout << x << '' '';
+}', 8),
+  ('sc-cpp-010', 'starter-cpp', 'What is a **template**?', 'A blueprint the compiler instantiates **per type**: `template <typename T> T maxOf(T a, T b)` works for ints, doubles, strings, and more.', 'hard', null, null, 9),
+  ('sc-cpp-011', 'starter-cpp', 'What is **undefined behavior**?', 'Code the standard gives no meaning to (out-of-bounds reads, use after free, signed overflow). The program may crash, seem fine, or do anything.', 'hard', null, null, 10),
+  ('sc-cpp-012', 'starter-cpp', 'Why does a polymorphic base class need a `virtual` destructor?', 'So `delete basePtr` runs the **derived** destructor too. Otherwise the derived part is never cleaned up.', 'hard', 'cpp', 'struct Base {
+    virtual ~Base() = default;
+};', 11),
+  ('sc-cpp2-001', 'starter-cpp-2', 'Stack vs heap?', '**Stack**: locals, freed automatically when the scope ends. **Heap**: `new` / `make_unique`, lives until something frees it.', 'easy', null, null, 0),
+  ('sc-cpp2-002', 'starter-cpp-2', 'What does `delete[]` pair with?', '`new[]`. Arrays from `new T[n]` need `delete[]`; plain `delete` on them is undefined behavior.', 'easy', null, null, 1),
+  ('sc-cpp2-003', 'starter-cpp-2', 'What is a **memory leak**?', 'Heap memory that is never freed after the last pointer to it is gone. Smart pointers prevent most leaks.', 'easy', null, null, 2),
+  ('sc-cpp2-004', 'starter-cpp-2', 'What is **RAII**?', 'Acquire a resource in a constructor, release it in the destructor. Leaving the scope, even by exception, cleans up automatically.', 'easy', null, null, 3),
+  ('sc-cpp2-005', 'starter-cpp-2', '`unique_ptr` vs `shared_ptr`?', '`unique_ptr`: **one owner**, move-only, no overhead. `shared_ptr`: **reference-counted**, deleted when the last owner goes away.', 'medium', 'cpp', 'auto a = std::make_unique<int>(1);
+auto b = std::move(a); // a is now null
+
+auto c = std::make_shared<int>(2);
+auto d = c;             // both own it', 4),
+  ('sc-cpp2-006', 'starter-cpp-2', 'What does this print?', '`2` then `1`. Copying a `shared_ptr` bumps the count; when `b` leaves the inner scope, it drops.', 'medium', 'cpp', 'auto a = std::make_shared<int>(7);
+{
+    auto b = a;
+    std::cout << a.use_count() << ''\n'';
+}
+std::cout << a.use_count() << ''\n'';', 5),
+  ('sc-cpp2-007', 'starter-cpp-2', 'What does `std::move` actually do?', 'It only **casts** to an rvalue. The move constructor or assignment that receives it does the moving; afterwards the source is valid but unspecified.', 'medium', null, null, 6),
+  ('sc-cpp2-008', 'starter-cpp-2', 'What is a **dangling pointer**?', 'A pointer to memory that was freed or went out of scope. Using it is undefined behavior.', 'medium', 'cpp', 'int* p;
+{
+    int x = 1;
+    p = &x;
+}
+// p now dangles', 7),
+  ('sc-cpp2-009', 'starter-cpp-2', 'What is the **Rule of Five**?', 'If a class defines one of destructor, copy constructor, copy assignment, move constructor, move assignment, it probably needs **all five**. Better: the **Rule of Zero**, where members like `unique_ptr` manage everything.', 'hard', null, null, 8),
+  ('sc-cpp2-010', 'starter-cpp-2', 'How do you break a `shared_ptr` cycle?', 'Make one side a **`std::weak_ptr`**. It observes without owning, so the counts can reach zero.', 'hard', 'cpp', 'struct Node {
+    std::shared_ptr<Node> next;
+    std::weak_ptr<Node> prev; // doesn''t own
+};', 9),
+  ('sc-cpp2-011', 'starter-cpp-2', 'Why can `push_back` invalidate iterators?', 'If the vector runs out of capacity it **reallocates** and moves elements to a new buffer, so old iterators, pointers, and references dangle.', 'hard', null, null, 10),
+  ('sc-cpp2-012', 'starter-cpp-2', 'What is **move semantics** for?', 'Transferring resources from temporaries instead of copying them: moving a `std::vector` just hands over its buffer pointer in O(1).', 'hard', null, null, 11),
+  ('sc-git-001', 'starter-git', 'What are Git''s three areas?', 'The **working tree** (your files), the **staging area** (what goes in the next commit), and the **repository** (committed history).', 'easy', null, null, 0),
+  ('sc-git-002', 'starter-git', 'What does `git add` do?', '**Stages** changes: copies the file''s current content into the staging area for the next commit.', 'easy', null, null, 1),
+  ('sc-git-003', 'starter-git', 'What does `git commit -m "msg"` do?', 'Records the staged snapshot as a new commit with that **message**, pointing to the previous commit as its parent.', 'easy', null, null, 2),
+  ('sc-git-004', 'starter-git', 'What does `git status` tell you?', 'Which files are **modified, staged, or untracked**, and which branch you''re on.', 'easy', null, null, 3),
+  ('sc-git-005', 'starter-git', '`git clone` vs `git init`?', '`clone` copies an **existing** repository with its history. `init` starts a **new, empty** one in the current folder.', 'medium', null, null, 4),
+  ('sc-git-006', 'starter-git', 'What is `HEAD`?', 'A pointer to **what you have checked out**, normally the current branch. "Detached HEAD" means it points at a commit directly.', 'hard', null, null, 5),
+  ('sc-git-007', 'starter-git', 'What makes a good commit message?', 'A short **imperative summary** ("Fix login crash on iPad"), then a body explaining **why**, if needed.', 'medium', null, null, 6),
+  ('sc-git-008', 'starter-git', 'What does `.gitignore` do?', 'Lists patterns of files Git won''t track: build output, `.DS_Store`, secrets. It doesn''t untrack files already committed.', 'medium', null, null, 7),
+  ('sc-git-009', 'starter-git', '`git diff` vs `git diff --staged`?', '`git diff` shows **unstaged** changes. `--staged` shows what''s **staged** for the next commit.', 'medium', null, null, 8),
+  ('sc-git-010', 'starter-git', 'What does `git commit --amend` do, and when should you avoid it?', 'It **replaces** the last commit with a new one. Avoid it once the commit is pushed and shared, because it rewrites history.', 'hard', null, null, 9),
+  ('sc-git-011', 'starter-git', '`git reset --soft`, `--mixed`, `--hard`?', 'All move the branch. `--soft` keeps changes **staged**, `--mixed` (default) keeps them **unstaged**, and `--hard` **discards** them.', 'hard', null, null, 10),
+  ('sc-git-012', 'starter-git', 'How do you get back a commit after a bad `reset --hard`?', 'Find it in **`git reflog`**, then `git reset --hard <hash>` or create a branch at it.', 'hard', null, null, 11),
+  ('sc-git2-001', 'starter-git-2', 'What is a branch?', 'A lightweight **pointer to a commit** that moves forward as you commit. Creating one is instant.', 'easy', null, null, 0),
+  ('sc-git2-002', 'starter-git-2', 'How do you create a branch and switch to it?', '`git switch -c feature` (or the older `git checkout -b feature`).', 'easy', null, null, 1),
+  ('sc-git2-003', 'starter-git-2', '`git fetch` vs `git pull`?', '`fetch` downloads remote commits **without touching** your branch. `pull` fetches **and then merges** (or rebases).', 'easy', null, null, 2),
+  ('sc-git2-004', 'starter-git-2', 'What is `origin`?', 'The default name for the **remote** you cloned from. `origin/main` is your local copy of its `main` branch.', 'easy', null, null, 3),
+  ('sc-git2-005', 'starter-git-2', 'What is a **fast-forward** merge?', 'When the target branch has no new commits, Git just **moves its pointer** ahead; no merge commit is created.', 'medium', null, null, 4),
+  ('sc-git2-006', 'starter-git-2', 'How do you resolve a merge conflict?', 'Edit the files to keep the right code and remove the `<<<<<<<` / `=======` / `>>>>>>>` markers, then `git add` them and `git commit`.', 'medium', null, null, 5),
+  ('sc-git2-007', 'starter-git-2', 'What is a **pull request**?', 'A request to merge a branch, hosted on GitHub or similar, where teammates **review** and CI **tests** the change before it lands.', 'medium', null, null, 6),
+  ('sc-git2-008', 'starter-git-2', '`git revert` vs `git reset`?', '`revert` adds a **new commit** that undoes an old one, which is safe on shared branches. `reset` **moves the branch back**, rewriting history.', 'medium', null, null, 7),
+  ('sc-git2-009', 'starter-git-2', 'Merge vs rebase?', '**Merge** keeps both histories and adds a merge commit. **Rebase** replays your commits on top of the target for a linear history, creating new hashes.', 'hard', null, null, 8),
+  ('sc-git2-010', 'starter-git-2', 'What does `--force-with-lease` protect against?', 'Overwriting commits someone else pushed. It refuses the push if the remote branch moved since you last fetched.', 'hard', null, null, 9),
+  ('sc-git2-011', 'starter-git-2', 'What does a **squash merge** do?', 'Combines all of a branch''s commits into **one** commit on the target, giving a tidy history but losing the individual commits.', 'hard', null, null, 10),
+  ('sc-git2-012', 'starter-git-2', 'How does `git bisect` work?', 'You mark one commit **good** and one **bad**; Git checks out the midpoint each time, a **binary search** for the commit that introduced the bug.', 'hard', null, null, 11),
+  ('sc-sec-001', 'starter-sec', 'Authentication vs authorization?', '**Authentication**: proving who you are (login). **Authorization**: deciding what you''re allowed to do (permissions).', 'easy', null, null, 0),
+  ('sc-sec-002', 'starter-sec', 'Hashing vs encryption?', '**Hashing** is one-way: a fixed-size fingerprint. **Encryption** is reversible with the right key.', 'easy', 'python', 'import hashlib
+
+hashlib.sha256(b"hello").hexdigest()
+# always the same 64 hex characters', 1),
+  ('sc-sec-003', 'starter-sec', 'What is **MFA**?', 'Multi-factor authentication: something you **know** (a password) plus something you **have** (a phone or key) or **are** (biometrics).', 'easy', null, null, 2),
+  ('sc-sec-004', 'starter-sec', 'What is the principle of **least privilege**?', 'Give each user, app, and key **only the access it needs**, so a compromise does less damage.', 'easy', null, null, 3),
+  ('sc-sec-005', 'starter-sec', 'Why use a password manager?', 'It makes **long, unique passwords** practical, so one leaked site can''t unlock your other accounts.', 'medium', null, null, 4),
+  ('sc-sec-006', 'starter-sec', 'What is a **salt**?', 'Random bytes stored with each password hash. Identical passwords hash differently, which defeats **rainbow tables**.', 'medium', 'python', 'import os, hashlib
+
+salt = os.urandom(16)
+digest = hashlib.pbkdf2_hmac("sha256", pw, salt, 600_000)
+# store salt and digest together', 5),
+  ('sc-sec-007', 'starter-sec', 'Why are bcrypt, scrypt, and Argon2 used for passwords?', 'They''re **deliberately slow** with a tunable cost, so an attacker can test far fewer guesses per second than with SHA-256.', 'medium', 'python', 'import hashlib
+
+digest = hashlib.scrypt(pw, salt=salt, n=2**14, r=8, p=1)', 6),
+  ('sc-sec-008', 'starter-sec', 'Symmetric vs asymmetric encryption?', '**Symmetric** (AES): one shared key, fast. **Asymmetric** (RSA, ECC): a public/private pair, used for key exchange and signatures.', 'medium', null, null, 7),
+  ('sc-sec-009', 'starter-sec', 'What is a **digital signature**?', 'A value made with a **private key** that anyone can check with the public key, proving who signed and that the data wasn''t changed.', 'hard', null, null, 8),
+  ('sc-sec-010', 'starter-sec', 'What does **forward secrecy** mean?', 'Each TLS session uses **ephemeral keys**, so leaking the server''s long-term key later can''t decrypt recorded past traffic.', 'hard', null, null, 9),
+  ('sc-sec-011', 'starter-sec', 'Why compare secrets in **constant time**?', 'A normal comparison stops at the first mismatch, so response timing leaks how many characters were right.', 'hard', 'python', 'import hmac
+
+hmac.compare_digest(given, expected)', 10),
+  ('sc-sec-012', 'starter-sec', 'What does a TLS certificate chain prove?', 'That a **trusted certificate authority** vouches for the server''s public key for that domain, which stops man-in-the-middle impersonation.', 'hard', null, null, 11),
+  ('sc-sec2-001', 'starter-sec-2', 'What is **SQL injection**?', 'Untrusted input **changes the SQL** because it was concatenated into the query, e.g. `'' OR 1=1 --`.', 'easy', null, null, 0),
+  ('sc-sec2-002', 'starter-sec-2', 'How do you prevent SQL injection?', 'Use **parameterized queries**: placeholders such as `?` send values separately from the SQL text.', 'easy', 'python', 'db.execute(
+    "SELECT * FROM users WHERE email = ?",
+    (email,),
+)', 1),
+  ('sc-sec2-003', 'starter-sec-2', 'What is **XSS**?', 'Cross-site scripting: attacker-controlled script ends up in a page and **runs in other users'' browsers**.', 'easy', null, null, 2),
+  ('sc-sec2-004', 'starter-sec-2', 'Why should API keys never be committed?', 'Everything in Git history is copied to every clone. A leaked key must be **rotated**, not just deleted.', 'easy', null, null, 3),
+  ('sc-sec2-005', 'starter-sec-2', 'How do you prevent XSS?', '**Escape output** for its context (HTML, attribute, JS), avoid inserting raw HTML, and add a **Content Security Policy**.', 'medium', 'python', 'import html
+
+html.escape("<script>alert(1)</script>")
+# ''&lt;script&gt;alert(1)&lt;/script&gt;''', 4),
+  ('sc-sec2-006', 'starter-sec-2', 'What is **CSRF**?', 'A malicious site makes your browser send a request to a site you''re logged into, **with your cookies**. Defend with CSRF tokens and `SameSite` cookies.', 'medium', null, null, 5),
+  ('sc-sec2-007', 'starter-sec-2', 'What do the `HttpOnly` and `Secure` cookie flags do?', '`HttpOnly`: JavaScript **can''t read** the cookie, which limits XSS theft. `Secure`: the cookie is **only sent over HTTPS**.', 'medium', null, null, 6),
+  ('sc-sec2-008', 'starter-sec-2', 'Why rate-limit a login endpoint?', 'To stop **brute-force** and **credential-stuffing** attacks that try many passwords quickly.', 'medium', null, null, 7),
+  ('sc-sec2-009', 'starter-sec-2', 'Why must a server verify a JWT''s signature?', 'The payload is just **base64**: anyone can edit it. Only a valid signature proves the server issued it.', 'hard', null, null, 8),
+  ('sc-sec2-010', 'starter-sec-2', 'What does **Row Level Security** add to a database?', 'Per-row **policies** (such as `owner_id = auth.uid()`) that the database enforces, so even a buggy client can''t read others'' rows.', 'hard', null, null, 9),
+  ('sc-sec2-011', 'starter-sec-2', 'What is an **IDOR** bug?', 'Insecure direct object reference: changing an id in a request (e.g. `/orders/124`) shows **someone else''s data** because ownership isn''t checked.', 'hard', 'python', 'def get_order(order_id, user):
+    order = db.find_order(order_id)
+    if order.owner_id != user.id:
+        raise PermissionError("not your order")
+    return order', 10),
+  ('sc-sec2-012', 'starter-sec-2', 'Why is `random` the wrong module for tokens in Python?', 'It''s **predictable**: its output can be reconstructed from observed values. Use **`secrets`**, which draws from the OS''s cryptographic source.', 'hard', 'python', 'import secrets
+
+token = secrets.token_urlsafe(32)', 11),
+  ('sc-swift2-001', 'starter-swift-2', 'What does this print?', '`3`. `count` is the number of elements.', 'easy', 'swift', 'let names = ["Ada", "Lin", "Bo"]
+print(names.count)', 0),
+  ('sc-swift2-002', 'starter-swift-2', 'What does `filter` do?', 'Returns a **new array** with only the elements for which the closure returns `true`.', 'easy', 'swift', 'let evens = [1, 2, 3, 4].filter { $0 % 2 == 0 }
+// [2, 4]', 1),
+  ('sc-swift2-003', 'starter-swift-2', 'What is a **computed property**?', 'A property with no stored value: it **calculates** its value each time it''s read.', 'easy', 'swift', 'struct Rect {
+    var width: Double
+    var height: Double
+    var area: Double { width * height }
+}', 2),
+  ('sc-swift2-004', 'starter-swift-2', 'What does `for (index, name) in names.enumerated()` give you?', 'Each element with its **position**, starting at 0.', 'easy', null, null, 3),
+  ('sc-swift2-005', 'starter-swift-2', 'What does this print?', '`1` then `2`. Structs are **value types**: `b` is a copy, so changing it leaves `a` alone.', 'medium', 'swift', 'struct Counter { var value = 1 }
+var a = Counter()
+var b = a
+b.value = 2
+print(a.value)
+print(b.value)', 4),
+  ('sc-swift2-006', 'starter-swift-2', 'What are enum **associated values**?', 'Data attached to a case, different per case, like `case success(Data)` and `case failure(Error)`.', 'medium', null, null, 5),
+  ('sc-swift2-007', 'starter-swift-2', 'What does `compactMap` do?', 'Maps each element and **drops the nils**.', 'medium', 'swift', 'let nums = ["1", "x", "3"].compactMap { Int($0) }
+// [1, 3]', 6),
+  ('sc-swift2-008', 'starter-swift-2', 'What does `throws` / `try` / `catch` look like in Swift?', 'A function marked `throws` can fail; callers write `try` and handle errors in a `do { } catch { }` block, or use `try?` to get an optional.', 'medium', null, null, 7),
+  ('sc-swift2-009', 'starter-swift-2', 'What does `async let` do?', 'Starts a child task **right away** and lets you `await` its result later, so several calls run in parallel.', 'hard', 'swift', 'async let user = loadUser()
+async let posts = loadPosts()
+let page = try await (user, posts)', 8),
+  ('sc-swift2-010', 'starter-swift-2', 'What is `@MainActor` for?', 'It runs code on the **main thread''s actor**, which UI updates require. The compiler enforces it.', 'hard', null, null, 9),
+  ('sc-swift2-011', 'starter-swift-2', 'What does `Sendable` mean?', 'A type is **safe to share across concurrency domains**. The compiler checks there''s no unprotected shared mutable state.', 'hard', null, null, 10),
+  ('sc-swift2-012', 'starter-swift-2', 'What is a **generic** function?', 'A function written once for **any type** meeting its constraints.', 'hard', 'swift', 'func largest<T: Comparable>(_ items: [T]) -> T? {
+    items.max()
+}', 11),
+  ('sc-oop2-011', 'starter-oop-2', 'What is the **Builder** pattern?', 'Building a complex object **step by step** with readable calls, then `build()`, instead of one constructor with many parameters.', 'easy', 'java', 'Pizza pizza = new Pizza.Builder()
+    .size(12)
+    .cheese(true)
+    .topping("mushroom")
+    .build();', 10),
+  ('sc-oop2-012', 'starter-oop-2', 'What is the **Command** pattern?', 'Wrapping a request as an **object** (with `execute()`), so it can be queued, logged, or **undone**.', 'hard', 'swift', 'protocol Command {
+    func execute()
+    func undo()
+}', 11),
+  ('sc-net2-011', 'starter-net-2', 'What does status **401** vs **403** mean?', '**401 Unauthorized**: you''re not authenticated (log in). **403 Forbidden**: you are authenticated but not allowed.', 'easy', null, null, 10),
+  ('sc-net2-012', 'starter-net-2', 'What does a **CDN** do?', 'Caches content on servers **near users**, cutting round-trip latency and load on the origin server.', 'hard', null, null, 11),
+  ('sc-py2-011', 'starter-python-2', 'What does a `@dataclass` give you?', 'Generated `__init__`, `__repr__`, and `__eq__` from the annotated fields.', 'easy', 'python', 'from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int', 10),
+  ('sc-py2-012', 'starter-python-2', 'What does this print?', '`[''bo'', ''ada'', ''lin'']`. `sorted` with `key=len` orders by length; ties keep their original order because the sort is **stable**.', 'hard', 'python', 'words = ["ada", "bo", "lin"]
+print(sorted(words, key=len))', 11)
 on conflict (id) do update set deck_key = excluded.deck_key, prompt = excluded.prompt, answer = excluded.answer, difficulty = excluded.difficulty, code_language = excluded.code_language, code_source = excluded.code_source, sort_index = excluded.sort_index;
 
 commit;

@@ -75,6 +75,23 @@ P = {
  'TopicOlive':    ('#404F22', '#404F22'),
  'TopicOliveSoft':('#E7EBE0', '#E7EBE0'),
  'TopicOliveFill':('#647642', '#647642'),
+ # Nov 17: five more hues for the extra topics and avatar colors (same
+ # two-tone rule; white on Fill and Ink on Soft clear 4.5:1).
+ 'TopicGold':    ('#332F1E', '#332F1E'),
+ 'TopicGoldSoft':('#E2DCC6', '#E2DCC6'),
+ 'TopicGoldFill':('#6A5F34', '#6A5F34'),
+ 'TopicGreen':   ('#1E3320', '#1E3320'),
+ 'TopicGreenSoft':('#C6E2C8', '#C6E2C8'),
+ 'TopicGreenFill':('#346A39', '#346A39'),
+ 'TopicIndigo':  ('#1E1E33', '#1E1E33'),
+ 'TopicIndigoSoft':('#C6C6E2', '#C6C6E2'),
+ 'TopicIndigoFill':('#44447E', '#44447E'),
+ 'TopicViolet':  ('#2A1E33', '#2A1E33'),
+ 'TopicVioletSoft':('#D5C6E2', '#D5C6E2'),
+ 'TopicVioletFill':('#60427B', '#60427B'),
+ 'TopicPlum':    ('#331E32', '#331E32'),
+ 'TopicPlumSoft':('#E2C6DF', '#E2C6DF'),
+ 'TopicPlumFill':('#743E70', '#743E70'),
  # Code
  'CodeBackground':('#F3F2EE', '#222221'),
  'SyntaxPlain':   ('#1B1C1E', '#E4E3DF'),
@@ -151,7 +168,7 @@ TEXT = ['TextPrimary', 'TextSecondary', 'Brand', 'Success', 'Warning', 'Danger',
 # Game colors (S41) keep their light pastels in dark mode too, as in the
 # mockup: light cards on the dark page. Their inks are only ever drawn on
 # their own soft fill, so that is the one pair checked.
-GAME = ['XP', 'TopicTeal', 'TopicSand', 'TopicSlate', 'TopicCoral', 'TopicSky', 'TopicRose', 'TopicOlive']
+GAME = ['XP', 'TopicTeal', 'TopicSand', 'TopicSlate', 'TopicCoral', 'TopicSky', 'TopicRose', 'TopicOlive', 'TopicGold', 'TopicGreen', 'TopicIndigo', 'TopicViolet', 'TopicPlum']
 
 def main():
     rows=[]; bad=[0]

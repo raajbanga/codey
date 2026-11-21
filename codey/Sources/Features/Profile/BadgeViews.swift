@@ -30,8 +30,7 @@ private struct BadgeCell: View {
 
     var body: some View {
         VStack(spacing: CodeySpacing.xs) {
-            Image(systemName: isEarned ? badge.symbol : "lock.fill")
-                .font(isEarned ? .codeyTitle : .codeyHeadline)
+            Icon(isEarned ? badge.symbol : "lock.fill", size: isEarned ? 26 : 18, relativeTo: .title2)
                 .foregroundStyle(isEarned ? (appHue ?? .slate).ink : CodeyColor.textSecondary)
                 .frame(width: size, height: size)
                 .background(isEarned ? (appHue ?? .slate).soft : CodeyColor.fillNeutral, in: Circle())

@@ -29,7 +29,22 @@ enum ContentSeeder {
         try DataSeeder.seed(context: context, bank: content.bank)
         try StarterDeckLoader.seed(context: context, file: content.decks)
         BundledContentStamp.record(stamp)
+        showCatalogs(content)
+    }
+
+    /// Shows the drills and challenges. A download with no challenges (a
+    /// backend without challenges-seed.sql, or a cache from before they
+    /// existed) keeps the bundled ones instead of hiding them all.
+    static func showCatalogs(_ content: ContentFiles.Content) {
         ExerciseCatalog.shared.replace(with: content.exercises)
+        ChallengeCatalog.shared.replace(with: challenges(for: content))
+    }
+
+    static func challenges(for content: ContentFiles.Content, bundle: Bundle = .main) -> [Challenge] {
+        guard content.challenges.isEmpty, let bundled = try? ContentFiles.bundled(bundle)?.validated() else {
+            return content.challenges
+        }
+        return bundled.challenges
     }
 
     /// A fresh download: when it differs from the last one and passes the
@@ -40,7 +55,7 @@ enum ContentSeeder {
         let content = try downloaded.validated()
         try downloaded.write()
         try seed(content, stamp: downloaded.stamp, context: context)
-        Logger.seeding.info("Content updated from Supabase: \(content.bank.questions.count) questions, \(content.decks.decks.count) decks, \(content.exercises.count) exercises")
+        Logger.seeding.info("Content updated from Supabase: \(content.bank.questions.count) questions, \(content.decks.decks.count) decks, \(content.exercises.count) drills, \(content.challenges.count) challenges")
         return true
     }
 }

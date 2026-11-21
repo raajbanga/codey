@@ -43,13 +43,31 @@ extension BackendFacade {
         groupCache.remove(group.id)
     }
 
-    /// FR-42. Pushes this week's XP first, so your own row is current.
-    func fetchLeaderboard(for groupID: UUID) async throws -> [LeaderboardEntry] {
+    /// FR-42. Pushes this week's XP first (unless the caller just did), so
+    /// your own row is current.
+    func fetchLeaderboard(for groupID: UUID, syncFirst: Bool = true) async throws -> [LeaderboardEntry] {
         let remote = try groupRemote()
-        await engine.syncNow()
+        if syncFirst { await engine.syncNow() }
         let entries = try await remote.fetchLeaderboard(groupID: groupID)
         groupCache.setBoard(entries, for: groupID, at: now())
         return entries
+    }
+
+    /// Every group's board (the Groups tab): one sync, then the fetches in
+    /// parallel. A board that fails is left out; its cached copy stays.
+    func fetchLeaderboards(for groupIDs: [UUID]) async -> [UUID: [LeaderboardEntry]] {
+        guard !groupIDs.isEmpty, (try? groupRemote()) != nil else { return [:] }
+        await engine.syncNow()
+        return await withTaskGroup(of: (UUID, [LeaderboardEntry]?).self) { tasks in
+            for id in groupIDs {
+                tasks.addTask { (id, try? await self.fetchLeaderboard(for: id, syncFirst: false)) }
+            }
+            var boards: [UUID: [LeaderboardEntry]] = [:]
+            for await (id, entries) in tasks {
+                if let entries { boards[id] = entries }
+            }
+            return boards
+        }
     }
 
     private func groupRemote() throws -> any RemoteDeckStore {

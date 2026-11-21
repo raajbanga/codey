@@ -30,9 +30,16 @@ extension View {
 /// A section heading above a grid or note.
 struct SectionTitle: View {
     let title: String
+    /// How many items the section holds, as a tag after the title.
+    var count: Int?
     @Environment(\.codeyLeadsColumn) private var leadsColumn
+    /// The count badge's diameter: the title's line height, so it scales with it.
+    @ScaledMetric(relativeTo: .headline) private var badge: CGFloat = 22
 
-    init(_ title: String) { self.title = title }
+    init(_ title: String, count: Int? = nil) {
+        self.title = title
+        self.count = count
+    }
 
     var body: some View {
         if leadsColumn {
@@ -46,29 +53,45 @@ struct SectionTitle: View {
     }
 
     private var label: some View {
-        Text(title)
-            .font(.codeyHeadline)
-            .foregroundStyle(CodeyColor.textSecondary)
-            .accessibilityAddTraits(.isHeader)
-            .padding(.leading, CodeySpacing.xs)
+        HStack(spacing: CodeySpacing.sm) {
+            Text(title)
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textSecondary)
+            if let count {
+                // A circle as tall as the title (a capsule past 2 digits).
+                Text("\(count)")
+                    .font(.codeyCaption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .padding(.horizontal, CodeySpacing.xs)
+                    .frame(minWidth: badge, minHeight: badge)
+                    .background(CodeyColor.fillNeutral, in: .pill)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
+        .accessibilityAddTraits(.isHeader)
+        .padding(.leading, CodeySpacing.xs)
     }
 }
 
 /// An optionally titled BentoGrid.
 struct BentoSection<Content: View>: View {
     let title: String?
+    var count: Int?
     var columns: BentoColumns = .pair
     @ViewBuilder let content: Content
 
-    init(_ title: String?, columns: BentoColumns = .pair, @ViewBuilder content: () -> Content) {
+    init(_ title: String?, count: Int? = nil, columns: BentoColumns = .pair, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.count = count
         self.columns = columns
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            if let title { SectionTitle(title) }
+            if let title { SectionTitle(title, count: count) }
             BentoGrid(columns: columns) { content }
         }
     }

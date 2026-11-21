@@ -50,3 +50,27 @@ func withCodeyAnimation<Result>(
 ) rethrows -> Result {
     try withAnimation(CodeyMotion.resolve(animation, reduceMotion: reduceMotion), body)
 }
+
+/// Keeps `isUp` in step with the on-screen keyboard, animated (Reduce
+/// Motion respected): the deck builder and a challenge shed their chrome
+/// while typing (§3b).
+private struct KeyboardTracker: ViewModifier {
+    @Binding var isUp: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                withCodeyAnimation(reduceMotion: reduceMotion) { isUp = true }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                withCodeyAnimation(reduceMotion: reduceMotion) { isUp = false }
+            }
+    }
+}
+
+extension View {
+    func trackKeyboard(_ isUp: Binding<Bool>) -> some View {
+        modifier(KeyboardTracker(isUp: isUp))
+    }
+}

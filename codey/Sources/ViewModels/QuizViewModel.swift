@@ -76,7 +76,6 @@ final class QuizViewModel {
     /// FR-20.
     var percentCorrect: Double { questions.isEmpty ? 0 : Double(correctCount) / Double(questions.count) }
     var isLastQuestion: Bool { index + 1 >= questions.count }
-    var profileXP: Int { profile.totalXP }
 
     // MARK: Actions
 

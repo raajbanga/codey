@@ -1,8 +1,10 @@
 # CI for every push to main and dev and every pull request to main.
 #   checks:   guard scripts (imports R7, design tokens R12, secrets R10 / TC-S03)
-#   database: the 109 pgTAP tests (RLS, CHECKs, FR-61 merge rules, read-only
-#             content) on a local
+#   database: the 122 pgTAP tests (RLS, CHECKs, FR-61 merge rules, read-only
+#             content, challenges) on a local
 #             Supabase database in Docker (TC-S01 offline half)
+#   runner:   Deno tests of the run-challenge judge and drivers, and the
+#             challenge files' schema check (no runner or secrets needed)
 #   app:      unit tests + accessibility audit with a readable per-test report
 #             and coverage in the job summary, then the Release-build check
 #             (TC-S05). No backend secrets: Secrets.xcconfig is absent
@@ -57,6 +59,27 @@ jobs:
 
       - name: pgTAP tests (supabase test db)
         run: supabase test db
+
+  runner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Judge and driver tests (judge_test.ts)
+        run: deno test -A supabase/functions/run-challenge/
+
+      - name: Challenge files are valid, and the seed and bundle are up to date
+        run: |
+          deno run -A scripts/challenges.ts check
+          deno run -A scripts/challenges.ts sql > /tmp/challenges-seed.sql
+          diff -q /tmp/challenges-seed.sql supabase/challenges-seed.sql
+          deno run -A scripts/challenges.ts bundle
+          git diff --exit-code codey/Resources/challenges.json
 
   app:
     runs-on: macos-26

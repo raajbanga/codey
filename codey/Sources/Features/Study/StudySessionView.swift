@@ -80,7 +80,7 @@ struct StudySessionView: View {
                 done: doneColors,
                 total: viewModel.queue.total,
                 accessibilityLabel: counterAccessibilityLabel,
-                accessibilityValue: viewModel.queue.progress.formatted(.percent.precision(.fractionLength(0)))
+                accessibilityValue: viewModel.queue.progress.percentText
             )
             .accessibilityIdentifier("study.counter")
         } trailing: {
@@ -270,14 +270,10 @@ private struct SwipeCard<Card: View>: View {
         let pastThreshold = CardRating.forSwipe(drag, threshold: SwipeMotion.threshold)
         let progress = min(max(abs(drag.width), abs(drag.height)) / SwipeMotion.threshold, 1)
         card
-            .overlay {
-                if let candidate {
-                    RoundedRectangle.codey(CodeyRadius.lg)
-                        .strokeBorder(candidate.tint, lineWidth: 3)
-                        .opacity(progress)
-                        .allowsHitTesting(false)
-                }
-            }
+            // Drawn by the card's own note (NoteSurface), so it hugs the card
+            // whatever its size, not this view's frame (on iPad and Mac the
+            // card is narrower than the space it is centred in).
+            .environment(\.noteOutline, candidate.map { NoteOutline(color: $0.tint.opacity(progress)) })
             .overlay(alignment: .top) {
                 if let pastThreshold {
                     CodeyChip(pastThreshold.title, variant: pastThreshold.chipVariant)
@@ -328,7 +324,7 @@ private struct SwipeHint: View {
     }
 
     private func item(_ rating: CardRating) -> some View {
-        Label(rating.title, systemImage: rating.swipeSymbol)
+        Label(rating.title, icon: rating.swipeSymbol)
             .foregroundStyle(rating.tint)
             .lineLimit(1)
     }

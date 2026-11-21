@@ -245,11 +245,16 @@ protocol RemoteDeckStore: Sendable {
 
     /// The teaching content (content_* tables), public to every client.
     func fetchContent() async throws -> ContentFiles
+
+    /// Runs code for a coding challenge on the Codey runner (S45, FR-70/71).
+    func runChallenge(_ request: ChallengeRunRequest) async throws -> ChallengeVerdict
 }
 
 extension RemoteDeckStore {
     /// Fakes without content: the app keeps what it has.
     func fetchContent() async throws -> ContentFiles { throw URLError(.resourceUnavailable) }
+    /// Fakes can't run code.
+    func runChallenge(_ request: ChallengeRunRequest) async throws -> ChallengeVerdict { throw ChallengeRunError.notConfigured }
 }
 
 /// Network reachability (NWPathMonitor in the app).

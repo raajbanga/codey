@@ -33,10 +33,11 @@ groups=(
     "Support|codey/Sources/Support/"
     "Unit tests|codey/Tests/"
     "UI tests|codey/UITests/"
-    "Resources|codey/Resources/Schemas/ codey/Resources/questions-seed.json codey/Resources/starter-decks.json codey/Resources/exercises.json"
-    "Build configuration|Config/Base.xcconfig Config/Secrets.example.xcconfig"
-    "Project manifests|Project.swift Tuist.swift Tuist/Package.swift Tuist/Package.resolved .gitignore .mcp.json"
-    "Supabase backend|supabase/config.toml supabase/.gitignore supabase/migrations/ supabase/seed.sql supabase/tests/ supabase/checks/"
+    "Resources|codey/Resources/Schemas/ codey/Resources/questions-seed.json codey/Resources/starter-decks.json codey/Resources/exercises.json codey/Resources/challenges.json"
+    "Build configuration|Config/Base.xcconfig Config/Secrets.example.xcconfig codey/codey.entitlements"
+    "Project manifests|Project.swift Tuist.swift Tuist/Package.swift Tuist/Package.resolved .gitignore .mcp.example.json"
+    "Supabase backend|supabase/config.toml supabase/.gitignore supabase/migrations/ supabase/seed.sql supabase/challenges-seed.sql supabase/drill-hints.sql supabase/content/ supabase/functions/ supabase/tests/ supabase/checks/"
+    "Code runner|runner/"
     "Scripts|scripts/"
     "Continuous integration|.github/workflows/"
 )
@@ -47,7 +48,7 @@ language_of() {
         *.sql) echo CodeySQL ;;
         *.sh) echo CodeyBash ;;
         *.py) echo CodeyPython ;;
-        *.json|*.resolved|.mcp.json) echo CodeyJSON ;;
+        *.json|*.resolved) echo CodeyJSON ;;
         *.yml|*.yaml) echo CodeyYAML ;;
         *) echo CodeyPlain ;;
     esac
@@ -55,7 +56,7 @@ language_of() {
 label_of() { printf 'appB:%s' "$(printf '%s' "$1" | sed 's/[^A-Za-z0-9]/-/g')"; }
 tex_escape() { sed -e 's/[_&%#$]/\\&/g'; }
 # Big seed data is set smaller so the appendix stays readable.
-size_of() { case "$1" in *questions-seed.json|*starter-decks.json|*exercises.json|*seed.sql) echo '\scriptsize' ;; *) echo '\footnotesize' ;; esac; }
+size_of() { case "$1" in *questions-seed.json|*starter-decks.json|*exercises.json|*challenges.json|*seed.sql|*drill-hints.sql) echo '\scriptsize' ;; *) echo '\footnotesize' ;; esac; }
 
 seen=$(mktemp)
 trap 'rm -f "$seen"' EXIT

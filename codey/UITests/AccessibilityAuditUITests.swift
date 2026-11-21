@@ -51,7 +51,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         // The stubbed Ask AI client (no network) so the chat can be audited.
         // A fresh XCUIApplication, so the audit targets the new process.
         app = XCUIApplication()
-        app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-appearance", appearance]
+        app.launchArguments = ["-UITestInMemoryStore", "-UITestAskAIStub", "-UITestRunnerStub", "-appearance", appearance]
         app.launch()
 
         // Home and the profile sheet.
@@ -85,6 +85,10 @@ final class AccessibilityAuditUITests: XCTestCase {
 
         let tile = app.buttons["deckTile.Data Structures Essentials"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        // On a slow CI runner the builder sheet can still be sliding away
+        // over the tile: wait until it can be tapped.
+        let hittable = expectation(for: NSPredicate(format: "isHittable == true"), evaluatedWith: tile)
+        wait(for: [hittable], timeout: 5)
         tile.tap()
         XCTAssertTrue(app.buttons["deck.study"].waitForExistence(timeout: 5))
         try audit("deckDetail")
@@ -124,13 +128,48 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(blank.waitForExistence(timeout: 5))
         try audit("exercise")
         blank.tap()
-        blank.typeText("guard")
-        app.buttons["exercise.submit"].tap()
+        blank.typeText("guard\n")
+        // The hints push Check to the bottom edge, under the keyboard:
+        // hide the keyboard and scroll it into reach (as ExerciseUITests).
+        if app.keyboards.firstMatch.exists { app.typeText("\n") }
+        let check = app.buttons["exercise.submit"]
+        for _ in 0..<4 where !check.isHittable { app.swipeUp() }
+        check.tap()
         XCTAssertTrue(app.descendants(matching: .any)["exercise.summary"].waitForExistence(timeout: 5))
         try audit("exercise.result")
         app.swipeBack()
         XCTAssertTrue(exercise.waitForExistence(timeout: 5))
         app.swipeBack()
+
+        // Coding challenges (FR-69 to FR-74) with the stubbed runner: Run
+        // fails one example, Submit is accepted.
+        app.openTopic("Algorithms")
+        let challenge = app.buttons["challenge.ch-two-sum"]
+        XCTAssertTrue(challenge.waitForExistence(timeout: 5))
+        for _ in 0..<8 where !challenge.isHittable { app.swipeUp() }
+        challenge.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["challenge.statement"].waitForExistence(timeout: 5))
+        try audit("challenge.description")
+        app.buttons["Code"].firstMatch.tap()
+        let run = app.buttons["challenge.run"]
+        XCTAssertTrue(run.waitForExistence(timeout: 5))
+        try audit("challenge.code")
+        // On CI the first tap on the Run/Submit row after a tab switch or an
+        // audit is sometimes dropped (main Nov 18: Submit; dev Nov 19: Run,
+        // the screen recording stays on Code). Tap again until the result
+        // shows; a second tap during a run is ignored (run() guards it).
+        let secondCase = app.descendants(matching: .any)["challenge.case.2"]
+        tap(run, until: secondCase)
+        try audit("challenge.result")
+        let submit = app.buttons["challenge.submit"]
+        for _ in 0..<3 where !submit.waitForExistence(timeout: 3) {
+            app.buttons["Code"].firstMatch.tap()
+        }
+        let solvedDone = app.buttons["challenge.done"]
+        tap(submit, until: solvedDone)
+        try audit("challenge.solved")
+        solvedDone.tap()
+
         app.openTopic("Algorithms")
         let quizTopic = app.buttons["topic.play"]
         XCTAssertTrue(quizTopic.waitForExistence(timeout: 5))
@@ -159,6 +198,17 @@ final class AccessibilityAuditUITests: XCTestCase {
 
     /// Records every issue on the current screen instead of stopping at the
     /// first, so one run gives the full count.
+    /// Taps `button` until `result` appears (up to 3 taps), then asserts it.
+    private func tap(_ button: XCUIElement, until result: XCUIElement,
+                     file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(button.waitForExistence(timeout: 5), file: file, line: line)
+        for _ in 0..<3 {
+            if button.isHittable { button.tap() }
+            if result.waitForExistence(timeout: 5) { return }
+        }
+        XCTAssertTrue(result.waitForExistence(timeout: 5), file: file, line: line)
+    }
+
     private func audit(_ screen: String) throws {
         do {
             try performAudit(screen)

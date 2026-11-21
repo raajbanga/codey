@@ -14,6 +14,10 @@ command -v pg_dump >/dev/null || { echo "pg_dump not found (brew install libpq)"
 
 mkdir -p backups
 out="backups/codey-$(date -u +%Y%m%dT%H%M%SZ).sql"
-# Our schema + data only; auth and storage are Supabase-managed.
-pg_dump "$SUPABASE_DB_URL" --schema=public --no-owner --no-privileges --file="$out"
+# Our two schemas: public (tables and data) and private (the helper functions
+# that RLS policies and triggers call). auth and storage are Supabase-managed,
+# so restore into the same project, whose auth.users the owner_id keys point
+# at: psql "$SUPABASE_DB_URL" -f <file> on a database reset to the migrations'
+# empty state.
+pg_dump "$SUPABASE_DB_URL" --schema=public --schema=private --no-owner --no-privileges --file="$out"
 echo "Wrote $out ($(wc -c <"$out" | tr -d ' ') bytes)"

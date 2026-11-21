@@ -77,6 +77,11 @@ enum CodeyColor {
         static let sky = TopicHue(ink: Color(.topicSky), soft: Color(.topicSkySoft), fill: Color(.topicSkyFill))
         static let rose = TopicHue(ink: Color(.topicRose), soft: Color(.topicRoseSoft), fill: Color(.topicRoseFill))
         static let olive = TopicHue(ink: Color(.topicOlive), soft: Color(.topicOliveSoft), fill: Color(.topicOliveFill))
+        static let gold = TopicHue(ink: Color(.topicGold), soft: Color(.topicGoldSoft), fill: Color(.topicGoldFill))
+        static let green = TopicHue(ink: Color(.topicGreen), soft: Color(.topicGreenSoft), fill: Color(.topicGreenFill))
+        static let indigo = TopicHue(ink: Color(.topicIndigo), soft: Color(.topicIndigoSoft), fill: Color(.topicIndigoFill))
+        static let violet = TopicHue(ink: Color(.topicViolet), soft: Color(.topicVioletSoft), fill: Color(.topicVioletFill))
+        static let plum = TopicHue(ink: Color(.topicPlum), soft: Color(.topicPlumSoft), fill: Color(.topicPlumFill))
         static let brand = TopicHue(ink: CodeyColor.brand, soft: CodeyColor.brandSoft, fill: CodeyColor.brand)
 
         static func of(topicID: String?) -> TopicHue {
@@ -85,9 +90,13 @@ enum CodeyColor {
             case "topic-data-structures": .sky
             case "topic-python": .olive
             case "topic-databases": .sand
-            case "topic-networking": .sky
+            case "topic-networking": .indigo
             case "topic-os-basics": .rose
             case "topic-oop", "topic-swift": .coral
+            case "topic-java": .gold
+            case "topic-cpp": .plum
+            case "topic-git": .green
+            case "topic-security": .violet
             default: .brand
             }
         }

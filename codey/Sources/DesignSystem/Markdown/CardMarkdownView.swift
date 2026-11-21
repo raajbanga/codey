@@ -28,7 +28,8 @@ struct CardMarkdownView: View {
         }
     }
 
-    /// One-line previews (collapsed rows): inline markdown rendered as
+    /// Inline markdown in one line of text (collapsed rows, drill prompts,
+    /// hints, challenge notes), rendered as
     /// bold/italic/code instead of showing `**` and backticks. Block syntax
     /// is left as text; falls back to the raw string if parsing fails.
     static func inlinePreview(_ markdown: String) -> AttributedString {

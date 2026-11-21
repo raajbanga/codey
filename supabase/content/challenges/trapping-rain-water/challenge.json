@@ -1,0 +1,22 @@
+{
+  "id": "ch-trapping-rain-water", "topicId": "topic-algorithms", "title": "Trapping Rain Water", "difficulty": "hard",
+  "statement": "Given `n` non-negative integers representing an elevation map where each bar is 1 wide, compute how much water it can trap after raining.\n\nThe water above a bar is limited by the shorter of the tallest bar to its left and the tallest bar to its right.",
+  "constraints": ["1 ≤ height.length ≤ 2 × 10⁴", "0 ≤ height[i] ≤ 10⁵"],
+  "hints": [
+    "Water at index i = min(tallest bar on the left, tallest bar on the right) − height[i], if positive. Can you precompute those maximums?",
+    "Two pointers from both ends: always move the side with the smaller max, because that side's water level is already decided."
+  ],
+  "function": { "name": "trap", "params": [{ "name": "height", "type": "int[]" }], "returns": "int" },
+  "comparator": "exact",
+  "editorial": "Two pointers with running `leftMax` and `rightMax`. Whichever side's max is smaller bounds the water there, so add `max - height` on that side and step inward. **O(n)** time, **O(1)** space. (Prefix and suffix max arrays give the same answer in O(n) space.)",
+  "tests": [
+    { "args": [[0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]], "expected": 6, "example": true, "explanation": "6 units of water are trapped between the bars." },
+    { "args": [[4, 2, 0, 3, 2, 5]], "expected": 9, "example": true },
+    { "args": [[1]], "expected": 0 },
+    { "args": [[2, 0, 2]], "expected": 2 },
+    { "args": [[3, 0, 0, 2, 0, 4]], "expected": 10 },
+    { "args": [[5, 4, 3, 2, 1]], "expected": 0 },
+    { "args": [[1, 2, 3, 4]], "expected": 0 },
+    { "args": [[4, 2, 3]], "expected": 1 }
+  ]
+}

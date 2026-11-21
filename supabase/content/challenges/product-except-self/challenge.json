@@ -1,0 +1,22 @@
+{
+  "id": "ch-product-except-self", "topicId": "topic-algorithms", "title": "Product of Array Except Self", "difficulty": "medium",
+  "statement": "Given an integer array `nums`, return an array `answer` where `answer[i]` is the product of every element of `nums` except `nums[i]`.\n\nSolve it in **O(n)** time **without using division**.",
+  "constraints": ["2 ≤ nums.length ≤ 10⁵", "-30 ≤ nums[i] ≤ 30", "Every product fits in a 32-bit integer"],
+  "hints": [
+    "answer[i] is (product of everything to the left of i) × (product of everything to the right of i).",
+    "Fill answer with prefix products in one pass left to right, then multiply in suffix products with a running variable in a second pass right to left."
+  ],
+  "function": { "name": "productExceptSelf", "params": [{ "name": "nums", "type": "int[]" }], "returns": "int[]" },
+  "comparator": "exact",
+  "editorial": "Two passes: `answer[i]` first holds the product of everything left of `i`; then a running `right` product sweeps from the end, multiplying it in. No division, so zeros need no special case. **O(n)** time, **O(1)** extra space besides the output.",
+  "tests": [
+    { "args": [[1, 2, 3, 4]], "expected": [24, 12, 8, 6], "example": true },
+    { "args": [[-1, 1, 0, -3, 3]], "expected": [0, 0, 9, 0, 0], "example": true },
+    { "args": [[2, 3]], "expected": [3, 2] },
+    { "args": [[0, 0]], "expected": [0, 0] },
+    { "args": [[1, 1, 1, 1]], "expected": [1, 1, 1, 1] },
+    { "args": [[5, 0, 2]], "expected": [0, 10, 0] },
+    { "args": [[-2, -3, 4]], "expected": [-12, -8, 6] },
+    { "args": [[10, 3, 5, 6, 2]], "expected": [180, 600, 360, 300, 900] }
+  ]
+}

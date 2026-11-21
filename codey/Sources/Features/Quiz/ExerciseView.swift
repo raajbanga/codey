@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import os
 
 /// One code-completion exercise (FR-39 to FR-41): the highlighted snippet
 /// with numbered blanks, one monospaced field per blank, and Check, which
@@ -8,7 +7,7 @@ import os
 /// nothing else is saved.
 ///
 /// §3c: a full pass swaps the page for the shared session summary (Solved,
-/// XP, explanation, Next Challenge / Done), like the end of a quiz. A miss
+/// XP, explanation, Next Drill / Done), like the end of a quiz. A miss
 /// keeps the per-blank results with Try Again and Try Another. Next and
 /// Another load the picked exercise in place (ExercisePicker).
 struct ExerciseView: View {
@@ -18,6 +17,8 @@ struct ExerciseView: View {
     @State private var result: ExerciseResult?
     /// XP the last Check paid (S41): 0 if already solved before.
     @State private var xpPaid = 0
+    /// The level a first solve reached, for the summary's celebration.
+    @State private var reachedLevel: Int?
     @Environment(\.modelContext) private var context
     @FocusState private var focusedBlank: Int?
     /// Ask AI (S39): lives as long as this exercise is on screen (FR-68).
@@ -26,6 +27,8 @@ struct ExerciseView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var profiles: [UserProfile]
+    @Environment(\.codeyLayout) private var layout
+    @State private var width: CGFloat = 0
 
     init(exercise: Exercise) {
         _exercise = State(initialValue: exercise)
@@ -59,35 +62,43 @@ struct ExerciseView: View {
     /// The task, the code, a field per blank, then Check; after a miss, the
     /// per-blank results and Try Again / Try Another. Ask AI floats at the
     /// bottom right, by the thumb, and steps aside while typing.
+    ///
+    ///     narrow (readable width)     wide (≥ splitWidth)
+    ///     ╭ hero ╮                    ╭ hero  ╮  ╭ blank 1 ╮
+    ///     code                        code       [Check]
+    ///     blanks, Check               hints      results
+    ///     hints
     private var workspace: some View {
-        CodeyPage(exercise.title, isReadable: true) {
+        CodeyPage(exercise.title, isReadable: !isWide) {
             header
         } content: {
-            workspaceContent
-            if AskAI.client != nil {
-                // Room to scroll the last button clear of Ask AI.
-                Color.clear.frame(height: 44).accessibilityHidden(true)
-            }
+            problem
+            if !isWide { answerColumn }
+        } trailing: {
+            if isWide { answerColumn }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         // A new exercise starts at the top, not where the last one was left.
         .id(exercise.id)
         .overlay(alignment: .bottomTrailing) {
             if let client = AskAI.client, focusedBlank == nil {
-                CircleIconButton(systemImage: "ask.ai", label: "Ask Codey", kind: .soft) {
+                AskAIButton {
                     askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
                     router.askAI = askAI
                 }
-                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
                 .padding([.trailing, .bottom], CodeySpacing.md)
                 .transition(.opacity)
-                .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
-                .accessibilityIdentifier("askAI.open")
             }
         }
         .codeyAnimation(CodeyMotion.snappy, value: focusedBlank == nil)
     }
 
-    @ViewBuilder private var workspaceContent: some View {
+    /// Two panes from splitWidth (iPad landscape, Mac): the code and hints
+    /// on the left, the answers on the right.
+    private var isWide: Bool { layout.isRegular && width >= CodeyLayout.splitWidth }
+
+    /// The code, and on a wide page the hints under it.
+    @ViewBuilder private var problem: some View {
         // Not selectable: the header's copy button covers copying, and
         // a selectable text view has no accessibility label.
         CardMarkdownView(
@@ -98,9 +109,22 @@ struct ExerciseView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(exercise.language.displayName) code with \(exercise.blanks.count) numbered blanks")
 
+        if isWide { hints }
+    }
+
+    @ViewBuilder private var hints: some View {
+        if let hints = exercise.hints, !hints.isEmpty, result == nil {
+            HintBento(hints: hints, hue: hue, idPrefix: "exercise")
+        }
+    }
+
+    /// A field per blank and Check; after a miss, the results.
+    @ViewBuilder private var answerColumn: some View {
         ForEach(exercise.blanks.indices, id: \.self) { index in
             blankField(index)
         }
+
+        if !isWide { hints }
 
         if let result {
             summary(result)
@@ -121,39 +145,44 @@ struct ExerciseView: View {
             CodeyButton("Check", systemImage: "checkmark", kind: .hue(hue), fullWidth: true) {
                 focusedBlank = nil
                 let checked = ExerciseValidator.check(answers, for: exercise)
-                let paid = checked.allPassed ? payXP() : 0
+                let paid = checked.allPassed ? payXP() : (xp: 0, reachedLevel: nil)
                 withCodeyAnimation(reduceMotion: reduceMotion) {
-                    xpPaid = paid
+                    xpPaid = paid.xp
+                    reachedLevel = paid.reachedLevel
                     result = checked
                 }
             }
             .accessibilityIdentifier("exercise.submit")
         }
+
+        if AskAI.client != nil {
+            // Room to scroll the last button clear of Ask AI.
+            Color.clear.frame(height: 44).accessibilityHidden(true)
+        }
     }
 
     /// The win screen: the same summary as a quiz or study session.
     private var solvedSummary: some View {
-        let total = exercise.blanks.count
+        let solved = Set(profiles.first?.solvedExerciseIds ?? [])
+        let drills = ExerciseCatalog.shared.all
         return SessionSummary(
             title: "Solved!",
-            subtitle: "All \(total) \(total == 1 ? "test" : "tests") passed",
-            xpEarned: xpPaid > 0 ? xpPaid : nil,
-            againTitle: "Next Challenge",
+            subtitle: exercise.title,
+            hue: hue,
+            xpEarned: xpPaid,
+            stats: [
+                SummaryStat(value: exercise.blanks.count, label: "Tests passed", systemImage: "checkmark.circle.fill", tint: CodeyColor.success),
+                SummaryStat(value: drills.filter { solved.contains($0.id) }.count, label: "of \(drills.count) drills solved", systemImage: "chevron.left.forwardslash.chevron.right"),
+            ],
+            againTitle: "Next Drill",
             againSystemImage: "arrow.right",
             againID: "exercise.next",
             doneID: "exercise.done",
             again: nextExercise.map { next in { open(next) } },
-            done: { dismiss() }
+            done: { dismiss() },
+            celebration: SummaryBanner.celebration(level: reachedLevel, unlockedTiers: [])
         ) {
-            SessionSummaryIcon(systemImage: "checkmark.seal", hue: hue)
-        } details: {
-            if xpPaid == 0 {
-                // Said, not hidden: otherwise a repeat solve looks broken.
-                Text("Already solved, so no XP this time. XP is paid on the first solve.")
-                    .font(.codeySubheadline)
-                    .foregroundStyle(CodeyColor.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
+            if let reachedLevel { SummaryBanner.levelUp(reachedLevel) }
             explanation
         }
         // A container, so the id doesn't replace its buttons' own ids.
@@ -162,23 +191,13 @@ struct ExerciseView: View {
     }
 
     private var explanation: some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.xs) {
-            Text("Explanation")
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.textPrimary)
-            Text(Self.inline(exercise.explanation))
-                .font(.codeyBody)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .codeyCard()
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("exercise.explanation")
+        SummaryNote(title: "Explanation", markdown: exercise.explanation)
+            .accessibilityIdentifier("exercise.explanation")
     }
 
     // MARK: Moving on
 
-    /// What Next Challenge / Try Another opens; nil hides them.
+    /// What Next Drill / Try Another opens; nil hides them.
     private var nextExercise: Exercise? {
         ExercisePicker.next(
             after: exercise,
@@ -192,6 +211,7 @@ struct ExerciseView: View {
             answers = Array(repeating: "", count: exercise.blanks.count)
             result = nil
             xpPaid = 0
+            reachedLevel = nil
         }
         focusedBlank = 0
     }
@@ -204,6 +224,7 @@ struct ExerciseView: View {
             answers = Array(repeating: "", count: next.blanks.count)
             result = nil
             xpPaid = 0
+            reachedLevel = nil
         }
         askAI = nil
         focusedBlank = nil
@@ -216,18 +237,11 @@ struct ExerciseView: View {
             title: exercise.title,
             icon: "chevron.left.forwardslash.chevron.right",
             hue: hue,
-            attributedSubtitle: Self.inline(exercise.prompt)
+            attributedSubtitle: CardMarkdownView.inlinePreview(exercise.prompt)
         ) {
             CodeyChip(exercise.language.displayName, variant: .outline(hue.ink))
-            CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count)
+            CodeyChip(xp: exercise.xpReward)
         }
-    }
-
-    /// Inline Markdown (`code`, *emphasis*) as styled text; plain text if
-    /// it doesn't parse.
-    static func inline(_ markdown: String) -> AttributedString {
-        (try? AttributedString(markdown: markdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            ?? AttributedString(markdown)
     }
 
     /// One blank on a note: its number, the field, and after Check the
@@ -284,36 +298,22 @@ struct ExerciseView: View {
     private func summary(_ result: ExerciseResult) -> some View {
         let total = result.blanks.count
         let passed = result.allPassed
-        return HStack(spacing: CodeySpacing.sm) {
-            Icon(passed ? "checkmark.seal.fill" : "exclamationmark.triangle", size: 24, relativeTo: .title2)
-                .foregroundStyle(passed ? CodeyColor.success : CodeyColor.warning)
-            Text(passed
-                 ? "All \(total) \(total == 1 ? "test" : "tests") passed"
-                 : "\(result.passedCount) of \(total) \(total == 1 ? "test" : "tests") passed")
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.textPrimary)
-            Spacer(minLength: 0)
+        return ResultBanner(
+            icon: passed ? "checkmark.seal.fill" : "exclamationmark.triangle",
+            tint: passed ? CodeyColor.success : CodeyColor.warning,
+            title: passed ? "All \(total.counted("test")) passed" : "\(result.passedCount) of \(total.counted("test")) passed",
+            passed: passed
+        ) {
             if xpPaid > 0 {
                 CodeyChip(xp: xpPaid)
             }
         }
-        .padding(CodeySpacing.md)
-        .codeyNote(fill: passed ? CodeyColor.Soft.success : CodeyColor.Soft.warning, edge: .clear)
-        .accessibilityElement(children: .combine)
         .accessibilityIdentifier("exercise.summary")
     }
 
     /// The first full solve pays 10 XP per blank (XPRewards).
-    private func payXP() -> Int {
-        let profile = DataSeeder.ensureProfile(context: context)
-        let paid = XPRewards.solveExercise(id: exercise.id, blanks: exercise.blanks.count, profile: profile, weeklyXP: WeeklyXPStore(), now: .now)
-        do {
-            try BadgeEvaluator.award(context: context, now: .now)
-            try context.save()
-        } catch {
-            Logger.quiz.error("Saving exercise XP failed: \(String(describing: error))")
-        }
-        return paid
+    private func payXP() -> (xp: Int, reachedLevel: Int?) {
+        XPRewards.payFirstSolve(id: exercise.id, amount: exercise.xpReward, context: context)
     }
 }
 
