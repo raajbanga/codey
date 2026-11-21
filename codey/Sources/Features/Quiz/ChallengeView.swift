@@ -420,12 +420,10 @@ struct ChallengeView: View {
                         .foregroundStyle(test.status == .passed ? CodeyColor.success : test.status == .notRun ? CodeyColor.textSecondary : CodeyColor.danger)
                 }
             }
-            if let error = tests.first(where: { $0.error != nil })?.error {
-                Text(error)
-                    .font(.codeyCaption.monospaced())
-                    .foregroundStyle(CodeyColor.danger)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text("Hidden tests never show their output or error messages. Use Run to debug with the examples.")
+                .font(.codeyCaption)
+                .foregroundStyle(CodeyColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .codeyCard()
         .accessibilityElement(children: .combine)

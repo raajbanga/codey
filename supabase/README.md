@@ -165,8 +165,9 @@ S45 challenge tables from 2026-11-17 (content loaded: `challenges-seed.sql`), an
 last avatar colors from 2026-11-18.
 RLS is on for 23 of 23 tables (14 user-data tables, 5 public-read content tables, 3 challenge
 tables whose hidden tests clients can't read, and `challenge_runs`, service role only). Security Advisor: `rls_auto_enable()` revoked;
-the one remaining warning is `join_group` (SECURITY DEFINER, justified: it must
-find a group the caller cannot see yet). `checks/rls_live_check.sql`, last run
+two warnings remain, both justified: `join_group` (SECURITY DEFINER: it must
+find a group the caller cannot see yet) and leaked-password protection (off;
+there is no password sign-in). `checks/rls_live_check.sql`, last run
 2026-11-19 on the live project (through the Supabase MCP), with every migration and both seeds:
 **0 failed of 73**, everything rolled back (no test users or rows left). It covers
 the history tables and content (checks 58–67) and the coding challenges (68–73:

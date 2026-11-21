@@ -15,7 +15,7 @@ if [[ "${1:-}" == "--history" ]]; then
     trap 'rm -f "$history"' EXIT
     git log --all -p > "$history"
 fi
-patterns='eyJ[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9_-]{10,}|sb_publishable_[A-Za-z0-9_-]{10,}|[0-9]{6,}-[a-z0-9]{20,}\.apps\.googleusercontent\.com|GOCSPX-[A-Za-z0-9_-]{10,}|sk-or-v1-[A-Fa-f0-9]{20,}'
+patterns='eyJ[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9_-]{10,}|sb_publishable_[A-Za-z0-9_-]{10,}|[0-9]{6,}-[a-z0-9]{20,}\.apps\.googleusercontent\.com|GOCSPX-[A-Za-z0-9_-]{10,}|sk-or-v1-[A-Fa-f0-9]{20,}|(RUNNER_KEY|X-Runner-Key)[^0-9A-Za-z]{1,4}[0-9a-f]{64}'
 
 if git ls-files --error-unmatch Config/Secrets.xcconfig >/dev/null 2>&1; then
     echo "Config/Secrets.xcconfig is tracked"; fail=1

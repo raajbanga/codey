@@ -8,7 +8,7 @@ App ──HTTPS──▶ Supabase Edge Function `run-challenge` ──HTTPS + X-
 
 - **Piston** ([engineer-man/piston](https://github.com/engineer-man/piston), MIT) runs each job in an Isolate sandbox: no network, time, process, and file limits.
 - **Caddy** provides HTTPS (a free Let's Encrypt certificate for `<ip>.sslip.io`, so no domain needed). It only lets through requests that carry the secret header, and only to `/api/v2/execute` and `/api/v2/runtimes`. Package install and delete can't be reached from outside.
-- The app **never** knows this address or key. Only the Edge Function's secrets do.
+- The app **never** knows this address or key. Only the Edge Function's secrets do. The key is the secret: the address alone gets nothing, because Caddy refuses every request without the key. Still keep both out of the repo.
 
 Total time: about 30–40 minutes, most of it the Swift and Java package downloads.
 

@@ -1,7 +1,7 @@
 // deno test supabase/functions/run-challenge/
 import { assertEquals, assertThrows } from "jsr:@std/assert@1";
 import { buildProgram, checkValue, MARKER } from "./drivers.ts";
-import { judge, type JudgeTest, matches } from "./judge.ts";
+import { judge, type JudgeTest, matches, SEALED_COMPILE_NOTE } from "./judge.ts";
 
 const ex = (ordinal: number, expected: unknown, hidden = false): JudgeTest => ({ ordinal, hidden, expected, input: hidden ? "" : `x = ${ordinal}` });
 const line = (n: number, body: unknown) => `${MARKER}${n}@@${JSON.stringify(body)}`;
@@ -23,6 +23,30 @@ Deno.test("a wrong value → wrong_answer with actual shown for examples", () =>
 Deno.test("hidden tests never carry input, expected, or actual", () => {
   const v = judge({ run: { stdout: line(1, { ok: true, value: 5 }), code: 0 } }, [ex(1, 3, true)], "exact");
   assertEquals(v.tests[0], { ordinal: 1, hidden: true, status: "failed" });
+});
+
+Deno.test("with hidden tests (Submit), no output, error text, or compiler text leaves", () => {
+  // Printing, raising with, or exiting with the arguments must not reveal a hidden input.
+  const v = judge({
+    run: {
+      stdout: `x = 1\n${line(1, { ok: true, value: 1 })}\nargs=[42]\n${line(2, { ok: false, error: "Exception: [42]" })}\n`,
+      stderr: "SystemExit: [42]", code: 1,
+    },
+  }, [ex(1, 1), ex(2, 2, true)], "exact");
+  assertEquals(v.status, "runtime_error");
+  assertEquals(v.stdout, "");
+  assertEquals(v.stderr, "");
+  assertEquals(v.compileOutput, "");
+  assertEquals(v.tests[1], { ordinal: 2, hidden: true, status: "error" });
+});
+
+Deno.test("with hidden tests, compile errors and source dumps show a fixed note only", () => {
+  const compiled = judge({ compile: { code: 1, stderr: "main.cpp:9: error: f(vector<int>{42})" }, run: {} }, [ex(1, 1), ex(2, 2, true)], "exact");
+  assertEquals(compiled.compileOutput, SEALED_COMPILE_NOTE);
+  const dumped = judge({ run: { stdout: "", stderr: "__run(2, [42])", code: 1 } }, [ex(1, 1), ex(2, 2, true)], "exact");
+  assertEquals(dumped.status, "compile_error");
+  assertEquals(dumped.compileOutput, SEALED_COMPILE_NOTE);
+  assertEquals(dumped.stderr, "");
 });
 
 Deno.test("compile error → every test not run, compiler output shown without job paths", () => {

@@ -117,6 +117,22 @@ struct SupabaseDataClientTests {
         #expect(changes.cursor == Date(timeIntervalSince1970: 1_791_428_403))
     }
 
+    @Test func progressPullOrdersEveryTableByItsWholeKey() async throws {
+        // One upsert stamps many rows with the same server_updated_at, so the
+        // order must be total or an offset page can skip a row for good.
+        StubURLProtocol.reset { _ in "[]" }
+        _ = try await makeClient().fetchProgressChanges(since: nil)
+
+        let orders = Dictionary(uniqueKeysWithValues: StubURLProtocol.requests.map {
+            // supabase-swift writes each key as "<column>.asc.nullslast".
+            ($0.url.lastPathComponent, ($0.query["order"] ?? "").replacingOccurrences(of: ".nullslast", with: ""))
+        })
+        #expect(orders["quiz_answers"] == "server_updated_at.asc,question_id.asc,answered_at.asc")
+        #expect(orders["daily_activity"] == "server_updated_at.asc,device_id.asc,day.asc")
+        #expect(orders["card_progress"] == "server_updated_at.asc,card_id.asc")
+        #expect(orders["badge_awards"] == "server_updated_at.asc,badge.asc")
+    }
+
     @Test func deckVersionsUseAnInFilter() async throws {
         StubURLProtocol.reset(responseJSON: "[]")
         _ = try await makeClient().fetchDeckVersions(ids: [deckID])

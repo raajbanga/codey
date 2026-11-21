@@ -53,9 +53,11 @@ struct SupabaseDataClient: RemoteDeckStore {
 
     /// Every row changed after `since`, a page at a time. PostgREST caps each
     /// response at max-rows, so a single request can silently truncate.
-    /// Ordered by (server_updated_at, id) so offsets are stable across pages.
+    /// Ordered by server_updated_at, then the row's whole primary key (RLS
+    /// fixes owner_id), so the order is total and offsets are stable across
+    /// pages even when one upsert gives many rows the same server_updated_at.
     private func fetchAll<Row: Decodable & Sendable>(
-        _ table: String, columns: String, since: String?, key: String = "id"
+        _ table: String, columns: String, since: String?, keys: [String] = ["id"]
     ) async throws -> [Row] {
         var rows: [Row] = []
         while true {
@@ -63,9 +65,9 @@ struct SupabaseDataClient: RemoteDeckStore {
             if let since {
                 query = query.gt("server_updated_at", value: since)
             }
-            let page: [Row] = try await query
-                .order("server_updated_at")
-                .order(key)
+            var ordered = query.order("server_updated_at")
+            for key in keys { ordered = ordered.order(key) }
+            let page: [Row] = try await ordered
                 .range(from: rows.count, to: rows.count + pageSize - 1)
                 .execute()
                 .value
@@ -134,12 +136,12 @@ struct SupabaseDataClient: RemoteDeckStore {
 extension SupabaseDataClient {
     func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges {
         let since = cursor?.formatted(Self.timestampStyle)
-        async let cardRows: [CardProgressRow] = fetchAll("card_progress", columns: CardProgressRow.columns, since: since, key: "card_id")
-        async let questionRows: [QuestionProgressRow] = fetchAll("question_progress", columns: QuestionProgressRow.columns, since: since, key: "question_id")
-        async let topicRows: [TopicProgressRow] = fetchAll("topic_progress", columns: TopicProgressRow.columns, since: since, key: "topic_id")
-        async let answerRows: [QuizAnswerRow] = fetchAll("quiz_answers", columns: QuizAnswerRow.columns, since: since, key: "question_id")
-        async let dayRows: [DailyActivityRow] = fetchAll("daily_activity", columns: DailyActivityRow.columns, since: since, key: "day")
-        async let badgeRows: [BadgeAwardRow] = fetchAll("badge_awards", columns: BadgeAwardRow.columns, since: since, key: "badge")
+        async let cardRows: [CardProgressRow] = fetchAll("card_progress", columns: CardProgressRow.columns, since: since, keys: ["card_id"])
+        async let questionRows: [QuestionProgressRow] = fetchAll("question_progress", columns: QuestionProgressRow.columns, since: since, keys: ["question_id"])
+        async let topicRows: [TopicProgressRow] = fetchAll("topic_progress", columns: TopicProgressRow.columns, since: since, keys: ["topic_id"])
+        async let answerRows: [QuizAnswerRow] = fetchAll("quiz_answers", columns: QuizAnswerRow.columns, since: since, keys: ["question_id", "answered_at"])
+        async let dayRows: [DailyActivityRow] = fetchAll("daily_activity", columns: DailyActivityRow.columns, since: since, keys: ["device_id", "day"])
+        async let badgeRows: [BadgeAwardRow] = fetchAll("badge_awards", columns: BadgeAwardRow.columns, since: since, keys: ["badge"])
         let (cards, questions, topics) = try await (cardRows, questionRows, topicRows)
         let (answers, days, badges) = try await (answerRows, dayRows, badgeRows)
         // Every table is read to the end, so the newest row of any is a safe cursor.

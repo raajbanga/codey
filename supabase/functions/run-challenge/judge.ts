@@ -40,13 +40,22 @@ export interface PistonReply { compile?: PistonStage; run?: PistonStage; message
 const LIMIT = 8000;
 const clip = (s: string) => (s.length > LIMIT ? s.slice(0, LIMIT) + "\n… (output cut)" : s);
 
+/** Shown instead of compiler messages when the program held hidden tests. */
+export const SEALED_COMPILE_NOTE = "Compiler messages are shown on Run only, so the hidden tests stay hidden. Run your code to see them.";
+
 export function judge(reply: PistonReply, tests: JudgeTest[], comparator: Comparator): Verdict {
+  // The program's own output can print a hidden test's arguments (or read
+  // the program file, where they are literals), and compiler messages can
+  // quote the driver's call lines. So when any test is hidden (Submit), the
+  // reply carries no stdout, stderr, or compiler text (FR-71).
+  const sealed = tests.some((t) => t.hidden);
   const compile = reply.compile;
   if (compile && compile.code !== 0 && compile.code != null) {
     return {
       status: "compile_error", passedCount: 0, total: tests.length,
       tests: tests.map((t) => shown(t, { ordinal: t.ordinal, hidden: t.hidden, status: "not_run" })),
-      stdout: "", stderr: "", compileOutput: clip(cleanPaths(compile.stderr || compile.output || "")),
+      stdout: "", stderr: "",
+      compileOutput: sealed ? SEALED_COMPILE_NOTE : clip(cleanPaths(compile.stderr || compile.output || "")),
     };
   }
 
@@ -65,7 +74,7 @@ export function judge(reply: PistonReply, tests: JudgeTest[], comparator: Compar
   const out: TestResult[] = tests.map((t) => {
     const r = results.get(t.ordinal);
     if (!r) return shown(t, { ordinal: t.ordinal, hidden: t.hidden, status: "not_run" });
-    if (!r.ok) return shown(t, { ordinal: t.ordinal, hidden: t.hidden, status: "error", error: r.error }, true);
+    if (!r.ok) return shown(t, { ordinal: t.ordinal, hidden: t.hidden, status: "error", error: r.error });
     const passed = matches(r.value, t.expected, comparator);
     return shown(t, { ordinal: t.ordinal, hidden: t.hidden, status: passed ? "passed" : "failed", actual: r.value });
   });
@@ -84,6 +93,12 @@ export function judge(reply: PistonReply, tests: JudgeTest[], comparator: Compar
   const nothingRan = results.size === 0 && !killed;
   // Java (source mode) and Python report compile/syntax errors at run time.
   if (nothingRan && run.code !== 0 && stderr.trim() !== "") status = "compile_error";
+  if (sealed) {
+    return {
+      status, passedCount, total: tests.length, tests: out, stdout: "", stderr: "",
+      compileOutput: status === "compile_error" ? SEALED_COMPILE_NOTE : "",
+    };
+  }
   return {
     status, passedCount, total: tests.length, tests: out,
     stdout: clip(trimEnd(userOut.join("\n"))),
@@ -92,9 +107,10 @@ export function judge(reply: PistonReply, tests: JudgeTest[], comparator: Compar
   };
 }
 
-/** Hidden tests never carry their input, expected, or actual value. */
-function shown(t: JudgeTest, r: TestResult, keepError = false): TestResult {
-  if (t.hidden) return { ordinal: r.ordinal, hidden: true, status: r.status, ...(keepError && r.error ? { error: r.error } : {}) };
+/** Hidden tests carry only their status: no input, expected, actual value,
+ *  or error message (the user's code chooses that message). */
+function shown(t: JudgeTest, r: TestResult): TestResult {
+  if (t.hidden) return { ordinal: r.ordinal, hidden: true, status: r.status };
   return { ...r, input: t.input, expected: t.expected };
 }
 
