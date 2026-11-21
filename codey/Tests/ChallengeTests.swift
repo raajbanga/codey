@@ -82,6 +82,14 @@ struct ChallengeTests {
         #expect(catalog.next(after: all[0], solved: ["ch-b"])?.id == "ch-c")
         #expect(catalog.next(after: all[2], solved: [])?.id == "ch-a", "wraps to the start")
         #expect(catalog.next(after: all[0], solved: ["ch-b", "ch-c"])?.id == "ch-b", "all solved: the next one anyway")
+
+        // Same topic first, as for drills.
+        let mixed = try ChallengeLoader.decode(
+            try file([challenge(["id": "ch-a"]), challenge(["id": "ch-x", "topicId": "topic-swift"]), challenge(["id": "ch-b"])]),
+            topicIds: topics.union(["topic-swift"])
+        )
+        catalog.replace(with: mixed)
+        #expect(catalog.next(after: mixed[0], solved: [])?.id == "ch-b")
     }
 
     // MARK: Drafts (FR-73)
@@ -125,8 +133,8 @@ struct ChallengeTests {
     @Test func solvePaysOnce() {
         let profile = UserProfile(username: "x")
         let weekly = WeeklyXPStore(defaults: UserDefaults(suiteName: "codey-ch-\(UUID().uuidString)")!)
-        let first = XPRewards.solveChallenge(id: "ch-a", difficulty: .medium, profile: profile, weeklyXP: weekly, now: .now)
-        let again = XPRewards.solveChallenge(id: "ch-a", difficulty: .medium, profile: profile, weeklyXP: weekly, now: .now)
+        let first = XPRewards.payFirstSolve(id: "ch-a", amount: XPRewards.challengeReward(.medium), profile: profile, weeklyXP: weekly, now: .now)
+        let again = XPRewards.payFirstSolve(id: "ch-a", amount: XPRewards.challengeReward(.medium), profile: profile, weeklyXP: weekly, now: .now)
         #expect(first == 35)
         #expect(again == 0)
         #expect(profile.totalXP == 35)

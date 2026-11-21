@@ -53,7 +53,7 @@ struct HintBento: View {
                     }
                 }
                 if isOpen {
-                    Text(ExerciseView.inline(hints[index]))
+                    Text(CardMarkdownView.inlinePreview(hints[index]))
                         .font(.codeyBody)
                         .foregroundStyle(CodeyColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)

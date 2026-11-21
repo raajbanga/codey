@@ -39,4 +39,16 @@ struct ContentFilesTests {
         files.exercises = Data(#"{"schemaVersion":1,"exercises":[]}"#.utf8)
         #expect(throws: ExerciseLoaderError.empty) { try files.validated() }
     }
+
+    /// A backend without challenges-seed.sql sends an empty list; the app
+    /// keeps the bundled challenges rather than hiding them all.
+    @Test @MainActor func emptyChallengeDownloadKeepsTheBundledChallenges() throws {
+        var files = try #require(ContentFiles.bundled())
+        let bundled = try files.validated().challenges
+        #expect(!bundled.isEmpty)
+        files.challenges = Data(#"{"challenges":[],"schemaVersion":1}"#.utf8)
+        let content = try files.validated()
+        #expect(content.challenges.isEmpty)
+        #expect(ContentSeeder.challenges(for: content).map(\.id) == bundled.map(\.id))
+    }
 }

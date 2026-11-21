@@ -12,31 +12,29 @@ struct ContentFiles: Equatable, Sendable {
     var questions: Data
     var decks: Data
     var exercises: Data
-    /// Coding challenges (S45). Empty in a cache from before they existed,
-    /// which loads as "no challenges" until the next download.
+    /// Coding challenges (S45). Empty in a cache from before they existed;
+    /// ContentSeeder then shows the bundled challenges.
     var challenges = Data()
 
     private static let names = (questions: "questions-seed", decks: "starter-decks", exercises: "exercises", challenges: "challenges")
 
     /// The copies shipped in the app.
     static func bundled(_ bundle: Bundle = .main) -> ContentFiles? {
-        func read(_ name: String) -> Data? {
-            bundle.url(forResource: name, withExtension: "json").flatMap { try? Data(contentsOf: $0) }
-        }
-        guard let questions = read(names.questions), let decks = read(names.decks), let exercises = read(names.exercises) else {
-            return nil
-        }
-        return ContentFiles(questions: questions, decks: decks, exercises: exercises, challenges: read(names.challenges) ?? Data())
+        read { name in bundle.url(forResource: name, withExtension: "json").flatMap { try? Data(contentsOf: $0) } }
     }
 
     /// The last download, only when the first three files are there
     /// (challenges may be missing from an older download).
     static func cached(in directory: URL = cacheDirectory) -> ContentFiles? {
-        func read(_ name: String) -> Data? { try? Data(contentsOf: directory.appending(path: "\(name).json")) }
-        guard let questions = read(names.questions), let decks = read(names.decks), let exercises = read(names.exercises) else {
+        read { name in try? Data(contentsOf: directory.appending(path: "\(name).json")) }
+    }
+
+    /// The four files from `data(name)`; nil unless the first three exist.
+    private static func read(_ data: (String) -> Data?) -> ContentFiles? {
+        guard let questions = data(names.questions), let decks = data(names.decks), let exercises = data(names.exercises) else {
             return nil
         }
-        return ContentFiles(questions: questions, decks: decks, exercises: exercises, challenges: read(names.challenges) ?? Data())
+        return ContentFiles(questions: questions, decks: decks, exercises: exercises, challenges: data(names.challenges) ?? Data())
     }
 
     /// What boot seeds from: the download, else the bundle. A store in

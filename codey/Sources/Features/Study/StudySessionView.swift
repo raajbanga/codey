@@ -80,7 +80,7 @@ struct StudySessionView: View {
                 done: doneColors,
                 total: viewModel.queue.total,
                 accessibilityLabel: counterAccessibilityLabel,
-                accessibilityValue: viewModel.queue.progress.formatted(.percent.precision(.fractionLength(0)))
+                accessibilityValue: viewModel.queue.progress.percentText
             )
             .accessibilityIdentifier("study.counter")
         } trailing: {
@@ -324,7 +324,7 @@ private struct SwipeHint: View {
     }
 
     private func item(_ rating: CardRating) -> some View {
-        Label(rating.title, systemImage: rating.swipeSymbol)
+        Label(rating.title, icon: rating.swipeSymbol)
             .foregroundStyle(rating.tint)
             .lineLimit(1)
     }

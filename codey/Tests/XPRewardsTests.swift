@@ -36,8 +36,8 @@ struct XPRewardsTests {
     @Test func exercisePaysPerBlankOnce() {
         let profile = UserProfile(username: "x")
         let weekly = store()
-        let first = XPRewards.solveExercise(id: "ex-1", blanks: 3, profile: profile, weeklyXP: weekly, now: .now)
-        let again = XPRewards.solveExercise(id: "ex-1", blanks: 3, profile: profile, weeklyXP: weekly, now: .now)
+        let first = XPRewards.payFirstSolve(id: "ex-1", amount: 30, profile: profile, weeklyXP: weekly, now: .now)
+        let again = XPRewards.payFirstSolve(id: "ex-1", amount: 30, profile: profile, weeklyXP: weekly, now: .now)
         #expect(first == 30)
         #expect(again == 0)
         #expect(profile.totalXP == 30)

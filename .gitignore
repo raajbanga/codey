@@ -120,5 +120,8 @@ docs/course/
 docs/Activity*
 docs/ProjectDetails*
 
+### Presentation build files (local only; the deliverable is docs/Final_Presentation.pdf) ###
+docs/presentation/
+
 ### Planning notes (kept locally, never published) ###
 todo.md

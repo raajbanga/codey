@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import os
 
 /// One code-completion exercise (FR-39 to FR-41): the highlighted snippet
 /// with numbered blanks, one monospaced field per blank, and Check, which
@@ -18,6 +17,8 @@ struct ExerciseView: View {
     @State private var result: ExerciseResult?
     /// XP the last Check paid (S41): 0 if already solved before.
     @State private var xpPaid = 0
+    /// The level a first solve reached, for the summary's celebration.
+    @State private var reachedLevel: Int?
     @Environment(\.modelContext) private var context
     @FocusState private var focusedBlank: Int?
     /// Ask AI (S39): lives as long as this exercise is on screen (FR-68).
@@ -81,15 +82,12 @@ struct ExerciseView: View {
         .id(exercise.id)
         .overlay(alignment: .bottomTrailing) {
             if let client = AskAI.client, focusedBlank == nil {
-                CircleIconButton(systemImage: "ask.ai", label: "Ask Codey", kind: .soft) {
+                AskAIButton {
                     askAI = AskAISession.reusing(askAI, for: .exercise(exercise), client: client)
                     router.askAI = askAI
                 }
-                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
                 .padding([.trailing, .bottom], CodeySpacing.md)
                 .transition(.opacity)
-                .accessibilityHint("Opens a tutor that explains the idea without giving the answer")
-                .accessibilityIdentifier("askAI.open")
             }
         }
         .codeyAnimation(CodeyMotion.snappy, value: focusedBlank == nil)
@@ -147,9 +145,10 @@ struct ExerciseView: View {
             CodeyButton("Check", systemImage: "checkmark", kind: .hue(hue), fullWidth: true) {
                 focusedBlank = nil
                 let checked = ExerciseValidator.check(answers, for: exercise)
-                let paid = checked.allPassed ? payXP() : 0
+                let paid = checked.allPassed ? payXP() : (xp: 0, reachedLevel: nil)
                 withCodeyAnimation(reduceMotion: reduceMotion) {
-                    xpPaid = paid
+                    xpPaid = paid.xp
+                    reachedLevel = paid.reachedLevel
                     result = checked
                 }
             }
@@ -180,8 +179,10 @@ struct ExerciseView: View {
             againID: "exercise.next",
             doneID: "exercise.done",
             again: nextExercise.map { next in { open(next) } },
-            done: { dismiss() }
+            done: { dismiss() },
+            celebration: SummaryBanner.celebration(level: reachedLevel, unlockedTiers: [])
         ) {
+            if let reachedLevel { SummaryBanner.levelUp(reachedLevel) }
             explanation
         }
         // A container, so the id doesn't replace its buttons' own ids.
@@ -196,7 +197,7 @@ struct ExerciseView: View {
 
     // MARK: Moving on
 
-    /// What Next Challenge / Try Another opens; nil hides them.
+    /// What Next Drill / Try Another opens; nil hides them.
     private var nextExercise: Exercise? {
         ExercisePicker.next(
             after: exercise,
@@ -210,6 +211,7 @@ struct ExerciseView: View {
             answers = Array(repeating: "", count: exercise.blanks.count)
             result = nil
             xpPaid = 0
+            reachedLevel = nil
         }
         focusedBlank = 0
     }
@@ -222,6 +224,7 @@ struct ExerciseView: View {
             answers = Array(repeating: "", count: next.blanks.count)
             result = nil
             xpPaid = 0
+            reachedLevel = nil
         }
         askAI = nil
         focusedBlank = nil
@@ -234,18 +237,11 @@ struct ExerciseView: View {
             title: exercise.title,
             icon: "chevron.left.forwardslash.chevron.right",
             hue: hue,
-            attributedSubtitle: Self.inline(exercise.prompt)
+            attributedSubtitle: CardMarkdownView.inlinePreview(exercise.prompt)
         ) {
             CodeyChip(exercise.language.displayName, variant: .outline(hue.ink))
-            CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count)
+            CodeyChip(xp: exercise.xpReward)
         }
-    }
-
-    /// Inline Markdown (`code`, *emphasis*) as styled text; plain text if
-    /// it doesn't parse.
-    static func inline(_ markdown: String) -> AttributedString {
-        (try? AttributedString(markdown: markdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            ?? AttributedString(markdown)
     }
 
     /// One blank on a note: its number, the field, and after Check the
@@ -302,36 +298,22 @@ struct ExerciseView: View {
     private func summary(_ result: ExerciseResult) -> some View {
         let total = result.blanks.count
         let passed = result.allPassed
-        return HStack(spacing: CodeySpacing.sm) {
-            Icon(passed ? "checkmark.seal.fill" : "exclamationmark.triangle", size: 24, relativeTo: .title2)
-                .foregroundStyle(passed ? CodeyColor.success : CodeyColor.warning)
-            Text(passed
-                 ? "All \(total) \(total == 1 ? "test" : "tests") passed"
-                 : "\(result.passedCount) of \(total) \(total == 1 ? "test" : "tests") passed")
-                .font(.codeyHeadline)
-                .foregroundStyle(CodeyColor.textPrimary)
-            Spacer(minLength: 0)
+        return ResultBanner(
+            icon: passed ? "checkmark.seal.fill" : "exclamationmark.triangle",
+            tint: passed ? CodeyColor.success : CodeyColor.warning,
+            title: passed ? "All \(total.counted("test")) passed" : "\(result.passedCount) of \(total.counted("test")) passed",
+            passed: passed
+        ) {
             if xpPaid > 0 {
                 CodeyChip(xp: xpPaid)
             }
         }
-        .padding(CodeySpacing.md)
-        .codeyNote(fill: passed ? CodeyColor.Soft.success : CodeyColor.Soft.warning, edge: .clear)
-        .accessibilityElement(children: .combine)
         .accessibilityIdentifier("exercise.summary")
     }
 
     /// The first full solve pays 10 XP per blank (XPRewards).
-    private func payXP() -> Int {
-        let profile = DataSeeder.ensureProfile(context: context)
-        let paid = XPRewards.solveExercise(id: exercise.id, blanks: exercise.blanks.count, profile: profile, weeklyXP: WeeklyXPStore(), now: .now)
-        do {
-            try BadgeEvaluator.award(context: context, now: .now)
-            try context.save()
-        } catch {
-            Logger.quiz.error("Saving exercise XP failed: \(String(describing: error))")
-        }
-        return paid
+    private func payXP() -> (xp: Int, reachedLevel: Int?) {
+        XPRewards.payFirstSolve(id: exercise.id, amount: exercise.xpReward, context: context)
     }
 }
 

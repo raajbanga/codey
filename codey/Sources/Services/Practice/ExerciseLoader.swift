@@ -128,7 +128,7 @@ enum ExerciseLoader {
 }
 
 /// The exercises on screen: Library's tiles and an exercise's Next
-/// Challenge / Try Another read the same list. Loaded at boot from the
+/// Drill / Try Another read the same list. Loaded at boot from the
 /// current content (the Supabase download, else the bundle) and replaced
 /// when a newer download lands, which redraws whoever reads it.
 @MainActor
@@ -145,12 +145,21 @@ final class ExerciseCatalog {
     }
 }
 
-/// Which exercise "Next Challenge" and "Try Another" open (§3c).
+/// A drill or a coding challenge: what ExercisePicker chooses between.
+protocol PracticeItem: Identifiable, Equatable where ID == String {
+    var topicId: String { get }
+}
+
+extension Exercise: PracticeItem {}
+extension Challenge: PracticeItem {}
+
+/// What a drill's "Next Drill" / "Try Another" and a challenge's "Next
+/// Challenge" open (§3c).
 enum ExercisePicker {
-    /// The first match after `current` in bundle order (wrapping), trying in
-    /// turn: unsolved in the same topic, unsolved anywhere, then any other
-    /// exercise. Nil only when `current` is the only one.
-    static func next(after current: Exercise, in all: [Exercise], solved: Set<String>) -> Exercise? {
+    /// The first match after `current` in content order (wrapping), trying
+    /// in turn: unsolved in the same topic, unsolved anywhere, then any
+    /// other item. Nil only when `current` is the only one.
+    static func next<Item: PracticeItem>(after current: Item, in all: [Item], solved: Set<String>) -> Item? {
         let start = (all.firstIndex(of: current) ?? -1) + 1
         let others = (all[min(start, all.count)...] + all[..<min(start, all.count)]).filter { $0.id != current.id }
         let unsolved = others.filter { !solved.contains($0.id) }

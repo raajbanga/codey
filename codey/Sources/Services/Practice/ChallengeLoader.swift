@@ -114,11 +114,10 @@ final class ChallengeCatalog {
         all = challenges
     }
 
-    /// The next unsolved challenge after `current` (same rules as drills).
+    /// The next challenge after `current`, by the drills' rules: unsolved
+    /// in the same topic first (ExercisePicker).
     func next(after current: Challenge, solved: Set<String>) -> Challenge? {
-        let start = (all.firstIndex(of: current) ?? -1) + 1
-        let others = (all[min(start, all.count)...] + all[..<min(start, all.count)]).filter { $0.id != current.id }
-        return others.first { !solved.contains($0.id) } ?? others.first
+        ExercisePicker.next(after: current, in: all, solved: solved)
     }
 }
 

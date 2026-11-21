@@ -30,6 +30,8 @@ struct ChallengeView: View {
     @State private var running: ChallengeRunMode?
     @State private var isAccepted = false
     @State private var xpPaid = 0
+    /// The level a first solve reached, for the summary's celebration.
+    @State private var reachedLevel: Int?
     @State private var confirmsReset = false
     @State private var askAI: AskAISession?
     /// Keyboard on screen (§3b, like the deck builder): the page sheds
@@ -47,6 +49,7 @@ struct ChallengeView: View {
     @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var profiles: [UserProfile]
 
     init(challenge: Challenge) {
@@ -76,14 +79,17 @@ struct ChallengeView: View {
             guard let new else { return nil }
             return new.isAccepted ? .success : .error
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            withCodeyAnimation(reduceMotion: reduceMotion) { keyboardUp = true }
+        .trackKeyboard($keyboardUp)
+        // The draft is saved once typing pauses, not on every keystroke;
+        // leaving the screen or the app saves what's left.
+        .task(id: code) {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            saveDraft()
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withCodeyAnimation(reduceMotion: reduceMotion) { keyboardUp = false }
-        }
-        .onChange(of: code) { _, new in
-            ChallengeDrafts.save(new, id: challenge.id, language: language)
+        .onDisappear { saveDraft() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { saveDraft() }
         }
         .codeyConfirm(
             "Reset to the starter code?",
@@ -201,13 +207,11 @@ struct ChallengeView: View {
             .disabled(running != nil)
             .accessibilityIdentifier("challenge.submit")
             if let client = AskAI.client {
-                CircleIconButton(systemImage: "ask.ai", label: "Ask Codey", kind: .soft) {
+                AskAIButton(hint: "Opens a tutor that explains the idea without writing your code") {
                     let context = AskAIContext.challenge(challenge, language: language, code: code)
                     askAI = AskAISession.reusing(askAI, for: context, client: client)
                     router.askAI = askAI
                 }
-                .accessibilityHint("Opens a tutor that explains the idea without writing your code")
-                .accessibilityIdentifier("askAI.open")
             }
         }
     }
@@ -221,7 +225,7 @@ struct ChallengeView: View {
             attributedSubtitle: AttributedString(solvedBefore ? "Solved before" : "Write the whole function")
         ) {
             CodeyChip(tier: challenge.difficulty)
-            CodeyChip(xp: XPRewards.challengeReward(challenge.difficulty))
+            CodeyChip(xp: challenge.xpReward)
         }
     }
 
@@ -242,7 +246,7 @@ struct ChallengeView: View {
                     .font(.codeyHeadline)
                     .foregroundStyle(CodeyColor.textPrimary)
                 ForEach(challenge.constraints, id: \.self) { constraint in
-                    Text("• \(ExerciseView.inline(constraint))")
+                    Text("• \(CardMarkdownView.inlinePreview(constraint))")
                 }
                 .font(.codeySubheadline)
                 .foregroundStyle(CodeyColor.textPrimary)
@@ -265,10 +269,10 @@ struct ChallengeView: View {
             Text("Example \(index + 1)")
                 .font(.codeyHeadline)
                 .foregroundStyle(CodeyColor.textPrimary)
-            labeledCode("Input", example.input)
-            labeledCode("Output", example.output)
+            LabeledCodeBlock("Input", example.input)
+            LabeledCodeBlock("Output", example.output)
             if let explanation = example.explanation, !explanation.isEmpty {
-                Text(ExerciseView.inline(explanation))
+                Text(CardMarkdownView.inlinePreview(explanation))
                     .font(.codeySubheadline)
                     .foregroundStyle(CodeyColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -329,7 +333,7 @@ struct ChallengeView: View {
             language
         } set: { new in
             guard new != language else { return }
-            ChallengeDrafts.save(code, id: challenge.id, language: language)
+            saveDraft()
             language = new
             code = ChallengeDrafts.load(challenge.id, language: new) ?? challenge.starter(for: new)
         }
@@ -391,23 +395,14 @@ struct ChallengeView: View {
 
     private func verdictCard(_ verdict: ChallengeVerdict) -> some View {
         let style = Self.style(verdict.status)
-        return HStack(spacing: CodeySpacing.sm) {
-            Icon(style.symbol, size: 24, relativeTo: .title2)
-                .foregroundStyle(style.color)
-            VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-                Text(style.title)
-                    .font(.codeyHeadline)
-                    .foregroundStyle(CodeyColor.textPrimary)
-                Text("\(verdict.passedCount) of \(verdict.total) \(verdict.mode == .run ? "examples" : "tests") passed"
-                     + (verdict.elapsedMs.map { " · \($0) ms" } ?? ""))
-                    .font(.codeySubheadline.monospacedDigit())
-                    .foregroundStyle(CodeyColor.textSecondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(CodeySpacing.md)
-        .codeyNote(fill: verdict.isAccepted ? CodeyColor.Soft.success : CodeyColor.Soft.warning, edge: .clear)
-        .accessibilityElement(children: .combine)
+        return ResultBanner(
+            icon: style.symbol,
+            tint: style.color,
+            title: style.title,
+            detail: "\(verdict.passedCount) of \(verdict.total) \(verdict.mode == .run ? "examples" : "tests") passed"
+                + (verdict.elapsedMs.map { " · \($0) ms" } ?? ""),
+            passed: verdict.isAccepted
+        )
         .accessibilityIdentifier("challenge.verdict")
     }
 
@@ -455,21 +450,6 @@ struct ChallengeView: View {
         .codeyCard()
     }
 
-    private func labeledCode(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-            Text(label)
-                .font(.codeyCaption)
-                .foregroundStyle(CodeyColor.textSecondary)
-            Text(value)
-                .font(.codeyCode)
-                .foregroundStyle(CodeyColor.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(CodeySpacing.sm)
-                .background(CodeyColor.codeBackground, in: .codey(CodeyRadius.md))
-        }
-    }
-
     static func style(_ status: ChallengeVerdict.Status) -> (title: String, symbol: String, color: Color) {
         switch status {
         case .accepted: ("Accepted", "checkmark.seal.fill", CodeyColor.success)
@@ -507,13 +487,14 @@ struct ChallengeView: View {
                 newError = ChallengeRunError.notConfigured.localizedDescription
             }
             let accepted = newVerdict?.isAccepted == true && mode == .submit
-            let paid = accepted ? payXP() : 0
+            let paid = accepted ? payXP() : (xp: 0, reachedLevel: nil)
             withCodeyAnimation(reduceMotion: reduceMotion) {
                 running = nil
                 verdict = newVerdict ?? verdict
                 runError = newError
                 if newError != nil { verdict = nil }
-                xpPaid = paid
+                xpPaid = paid.xp
+                reachedLevel = paid.reachedLevel
                 isAccepted = accepted
             }
         }
@@ -524,16 +505,18 @@ struct ChallengeView: View {
     }
 
     /// The first accepted submission pays by difficulty (XPRewards).
-    private func payXP() -> Int {
-        let profile = DataSeeder.ensureProfile(context: context)
-        let paid = XPRewards.solveChallenge(id: challenge.id, difficulty: challenge.difficulty, profile: profile, weeklyXP: WeeklyXPStore(), now: .now)
-        do {
-            try BadgeEvaluator.award(context: context, now: .now)
-            try context.save()
-        } catch {
-            Logger.quiz.error("Saving challenge XP failed: \(String(describing: error))")
+    private func payXP() -> (xp: Int, reachedLevel: Int?) {
+        XPRewards.payFirstSolve(id: challenge.id, amount: challenge.xpReward, context: context)
+    }
+
+    /// Saves the code; untouched starter code is not a draft, so a newer
+    /// starter from a content download still reaches this challenge.
+    private func saveDraft() {
+        if code == challenge.starter(for: language) {
+            ChallengeDrafts.remove(challenge.id, language: language)
+        } else {
+            ChallengeDrafts.save(code, id: challenge.id, language: language)
         }
-        return paid
     }
 
     private func resetCode() {
@@ -558,8 +541,10 @@ struct ChallengeView: View {
             againID: "challenge.next",
             doneID: "challenge.done",
             again: nextChallenge.map { next in { open(next) } },
-            done: { dismiss() }
+            done: { dismiss() },
+            celebration: SummaryBanner.celebration(level: reachedLevel, unlockedTiers: [])
         ) {
+            if let reachedLevel { SummaryBanner.levelUp(reachedLevel) }
             if !challenge.editorial.isEmpty {
                 SummaryNote(title: "How it works", markdown: challenge.editorial)
                     .accessibilityIdentifier("challenge.editorial")
@@ -574,6 +559,7 @@ struct ChallengeView: View {
     }
 
     private func open(_ next: Challenge) {
+        saveDraft()
         let nextLanguage = challenge.languages.contains(language) && next.languages.contains(language) ? language : Self.preferredLanguage(for: next)
         withCodeyAnimation(reduceMotion: reduceMotion) {
             challenge = next
@@ -582,6 +568,7 @@ struct ChallengeView: View {
             verdict = nil
             runError = nil
             xpPaid = 0
+            reachedLevel = nil
             isAccepted = false
             tab = .description
         }
@@ -609,9 +596,9 @@ struct TestCaseCard: View {
                 Spacer(minLength: 0)
                 TestResultChip(status: test.status)
             }
-            if let input = test.input { row("Input", input) }
-            if let expected = test.expected { row("Expected", expected.description) }
-            if let actual = test.actual { row("Your output", actual.description, highlight: test.status == .failed) }
+            if let input = test.input { LabeledCodeBlock("Input", input) }
+            if let expected = test.expected { LabeledCodeBlock("Expected", expected.description) }
+            if let actual = test.actual { LabeledCodeBlock("Your output", actual.description, highlight: test.status == .failed) }
             if let error = test.error {
                 Text(error)
                     .font(.codeyCaption.monospaced())
@@ -622,21 +609,6 @@ struct TestCaseCard: View {
         .codeyCard()
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("challenge.case.\(test.ordinal)")
-    }
-
-    private func row(_ label: String, _ value: String, highlight: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: CodeySpacing.xxs) {
-            Text(label)
-                .font(.codeyCaption)
-                .foregroundStyle(CodeyColor.textSecondary)
-            Text(value)
-                .font(.codeyCode)
-                .foregroundStyle(highlight ? CodeyColor.danger : CodeyColor.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(CodeySpacing.sm)
-                .background(CodeyColor.codeBackground, in: .codey(CodeyRadius.md))
-        }
     }
 }
 

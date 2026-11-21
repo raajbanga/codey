@@ -59,6 +59,11 @@ Deno.serve(async (req) => {
     admin.from("challenge_runs").select("id", { count: "exact", head: true })
       .eq("subject", subject).gte("created_at", since(86_400_000)),
   ]);
+  // A failed count would read as 0 and switch the limit off: refuse instead.
+  if (minute.error || day.error) {
+    console.error("rate limit", String(minute.error ?? day.error));
+    return fail(503, "runner_down", "The code runner is offline. Try again later.");
+  }
   const perMinute = mode === "run" ? LIMITS.runPerMinute : LIMITS.submitPerMinute;
   if ((minute.count ?? 0) >= perMinute) {
     return fail(429, "rate_limited", "Too many runs. Wait a minute and try again.", { "Retry-After": "60" });
@@ -66,7 +71,11 @@ Deno.serve(async (req) => {
   if ((day.count ?? 0) >= LIMITS.perDay) {
     return fail(429, "rate_limited", "That's today's limit of runs. Try again tomorrow.", { "Retry-After": "3600" });
   }
-  await admin.from("challenge_runs").insert({ subject, mode });
+  const { error: logError } = await admin.from("challenge_runs").insert({ subject, mode });
+  if (logError) {
+    console.error("rate limit log", String(logError));
+    return fail(503, "runner_down", "The code runner is offline. Try again later.");
+  }
   if (Math.random() < 0.02) await admin.from("challenge_runs").delete().lt("created_at", since(2 * 86_400_000));
 
   // ── Challenge and tests ──
@@ -143,7 +152,9 @@ async function subjectFor(req: Request, admin: Auth): Promise<string> {
     const { data } = await admin.auth.getUser(token);
     if (data?.user?.id) return `u:${data.user.id}`;
   }
-  const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  // Supabase sits behind Cloudflare, which sets cf-connecting-ip itself; the
+  // first x-forwarded-for entry is whatever the client sent, so it's the fallback.
+  const ip = (req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown").trim();
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`codey-runner:${ip}`));
   return "ip:" + Array.from(new Uint8Array(digest)).slice(0, 12).map((b) => b.toString(16).padStart(2, "0")).join("");
 }

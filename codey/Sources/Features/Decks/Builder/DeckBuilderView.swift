@@ -91,12 +91,7 @@ struct DeckBuilderView: View {
             }
         }
         .codeyPaperBackground()
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            withCodeyAnimation(reduceMotion: reduceMotion) { keyboardUp = true }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withCodeyAnimation(reduceMotion: reduceMotion) { keyboardUp = false }
-        }
+        .trackKeyboard($keyboardUp)
         .overlay(alignment: .bottom) { undoToast }
         .codeyConfirm("Discard changes?", isPresented: $confirmDiscard, cancelTitle: "Keep Editing") {
             [CodeyDialog.Action("Discard Changes", isDestructive: true) { dismiss() }]

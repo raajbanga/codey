@@ -4,9 +4,18 @@ extension XCUIApplication {
     /// A tab's button. iPhone draws the tab bar at the bottom (a TabBar);
     /// iPadOS draws it floating at the top, where its items are plain
     /// buttons outside any TabBar, so fall back to the button by label.
-    func tab(_ name: String) -> XCUIElement {
+    /// Waits for it: right after `swipeBack()` the tab bar is still coming
+    /// back, and tapping then failed (CI flake, testAuditDark).
+    func tab(_ name: String, timeout: TimeInterval = 5) -> XCUIElement {
         let bottom = tabBars.buttons[name]
-        return bottom.exists ? bottom : buttons[name].firstMatch
+        let top = buttons[name].firstMatch
+        let deadline = Date.now.addingTimeInterval(timeout)
+        repeat {
+            if bottom.exists && bottom.isHittable { return bottom }
+            if top.exists && top.isHittable { return top }
+            RunLoop.current.run(until: .now.addingTimeInterval(0.1))
+        } while Date.now < deadline
+        return bottom.exists ? bottom : top
     }
 
     /// Back to the previous page. Pages have no back button (§3b, Nov 15):

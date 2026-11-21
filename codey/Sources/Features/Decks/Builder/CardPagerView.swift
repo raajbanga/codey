@@ -68,8 +68,7 @@ struct CardPagerView: View {
             withAnimation(CodeyMotion.snappy) { page = .card(id) }
         } label: {
             VStack(spacing: CodeySpacing.sm) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.codeyDisplay)
+                Icon("plus.circle.fill", size: 34, relativeTo: .largeTitle)
                 Text("New card")
                     .font(.codeyHeadline)
             }

@@ -197,11 +197,11 @@ final class BackendFacade: DeckBackend {
             if removingLocalDecks {
                 removeDecks(ownedBy: signedOutUser)
             }
-            cursors.setCursor(nil, for: signedOutUser)
+            cursors.set(nil, .pullCursor, for: signedOutUser)
             // FR-61: the next sign-in pulls and pushes all progress again.
-            cursors.setProgressCursor(nil, for: signedOutUser)
-            cursors.setProgressPushedAt(nil, for: signedOutUser)
-            cursors.setHistoryPushedAt(nil, for: signedOutUser)
+            cursors.set(nil, .progressCursor, for: signedOutUser)
+            cursors.set(nil, .progressPushedAt, for: signedOutUser)
+            cursors.set(nil, .historyPushedAt, for: signedOutUser)
         }
         groupCache.clear()
         authState = .signedOut
@@ -223,7 +223,7 @@ final class BackendFacade: DeckBackend {
     }
 
     private func refreshLastSyncedAt() {
-        lastSyncedAt = currentUser.flatMap { cursors.lastSyncedAt(for: $0.id) }
+        lastSyncedAt = currentUser.flatMap { cursors.date(.lastSyncedAt, for: $0.id) }
     }
 
     // MARK: Private

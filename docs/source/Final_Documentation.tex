@@ -43,6 +43,11 @@
 \usepackage{graphicx}
 \graphicspath{{figures/}}
 \usepackage[hidelinks]{hyperref}
+\hypersetup{
+  pdftitle={Codey: Final Project Documentation},
+  pdfauthor={Raaj Banga, Arnav Bawankule, Elnad Salcinovic},
+  pdfsubject={A gamified computer science study app}
+}
 
 % ---------- Diagrams --------------------------------------------------
 \usepackage{tikz}
@@ -739,7 +744,7 @@ Network simulation & None is needed: Home does not wait on the network (sync and
 Physical device & Raaj Banga's iPhone 16 Pro Max (128 GB), used for the on-device launch measurement (NFR-01). The app is installed from Xcode with a free Apple ID (personal team). No paid Apple Developer Program membership is required, but builds signed this way expire after seven days and must be reinstalled. \\
 Cloud backend & Supabase project on the Free plan (AWS region) providing GoTrue Auth, the PostgREST API, and a managed PostgreSQL database. Clients connect over HTTPS on port 443. The backend connects to PostgreSQL over SSL on port 5432. The \texttt{run-challenge} Edge Function (Deno) runs in the same project (S45). \\
 Code runner & One AWS EC2 \texttt{t3.small} instance (2 vCPU, 2 GB, Ubuntu 24.04, 30 GB encrypted disk, IMDSv2 only) with an Elastic IP, running Piston in Docker behind Caddy (TLS through sslip.io). Its security group opens only ports 80 and 443; administration is through AWS Systems Manager, with no SSH. Setup: \texttt{runner/SETUP.md}. \\
-Source control and tracking & GitHub repository with GitHub Actions workflows for tests (repository checks, database tests, app tests) and the Supabase keep-alive (Section~\ref{sec:vc}); tasks are tracked in the project plan (\texttt{todo.md}) in the repository. CI runs on GitHub's hosted macOS and Ubuntu runners. \\
+Source control and tracking & GitHub repository with GitHub Actions workflows for tests (repository checks, database tests, app tests) and the Supabase keep-alive (Section~\ref{sec:vc}); tasks are tracked in the project plan (\texttt{todo.md}; in the repository until the Nov 19 history cleanup, kept locally after it). CI runs on GitHub's hosted macOS and Ubuntu runners. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -823,8 +828,8 @@ Sprint 4 & Nov 4 -- Dec 1 & Testing: unit (Activity 12.1), integration (12.2), s
 \begin{itemize}
   \item \textbf{Meetings.} The team meets Tuesday, Thursday, and Sunday from 6:00 to
         9:00 PM, in person or over Discord voice and screen share. Decisions and
-        action items are recorded in the project plan (\texttt{todo.md}) in the
-        repository, under the sprint's decision log (decisions S1 to S45 by the end
+        action items are recorded in the project plan (\texttt{todo.md}), under
+        the sprint's decision log (decisions S1 to S45 by the end
         of Sprint 4; Table~\ref{tab:decisions4}).
   \item \textbf{Communication.} Discord is used for design discussion and asynchronous
         communication, and SMS/iMessage for urgent notifications. Members provide at
@@ -1541,7 +1546,7 @@ FR-39 -- FR-41 & UC-23, UC-24 & \texttt{ExerciseLoader}, \texttt{content\_exerci
 FR-69 -- FR-73 & UC-26 & \texttt{Challenge}, \texttt{ChallengeLoader}, \texttt{ChallengeCatalog}, \texttt{ChallengeDrafts}, \texttt{ChallengeRunning} (\texttt{SupabaseDataClient.runChallenge()}), \texttt{ChallengeView}, \texttt{ChallengeTiles}, \texttt{CodeEditorView}; \texttt{content\_challenge*} tables, \texttt{run-challenge} Edge Function (\texttt{drivers.ts}, \texttt{judge.ts}) & TC-69 -- TC-73 & Implemented \\
 FR-74, FR-75 & UC-23, UC-26 & \texttt{HintBento}; \texttt{Exercise.hints}, \texttt{content\_exercises.hints}; \texttt{UISupportedInterfaceOrientations} in \texttt{Project.swift} & TC-74, TC-75 & Implemented \\
 FR-67, FR-68 & UC-25 & \texttt{OpenRouterClient}, \texttt{AskAIPrompt.system}, \texttt{AskAIContext}, \texttt{AnswerLeakGuard}, \texttt{AskAISession}, \texttt{AskAIChatView}, \texttt{AskAIButton}, \texttt{FloatingPanel} & TC-67, TC-68 & Implemented \\
-FR-42, FR-52 & UC-22 & \texttt{GroupBoardView}, \texttt{BackendFacade.fetchLeaderboard()}, \texttt{leaveGroup()}, \texttt{LeaderboardRanking}, \texttt{GroupCache}, \texttt{WeeklyXPStore}; \texttt{group\_leaderboard} view, \texttt{weekly\_xp} & TC-42, TC-52 & Implemented \\
+FR-42, FR-52 & UC-22 & \texttt{GroupBoardView}, \texttt{BackendFacade.fetchLeaderboard()}, \texttt{fetchLeaderboards()}, \texttt{leaveGroup()}, \texttt{LeaderboardRanking}, \texttt{GroupCache}, \texttt{WeeklyXPStore}; \texttt{group\_leaderboard} view, \texttt{weekly\_xp} & TC-42, TC-52 & Implemented \\
 FR-43, FR-53 & UC-18 & \texttt{WeeklyChallenge}, \texttt{UTCWeek}, Play quest tile, \texttt{Badge.weeklyChallenge} & TC-43, TC-53 & Implemented \\
 FR-50, FR-51 & UC-20, UC-21 & \texttt{GroupsView} (create and join sheets), \texttt{BackendFacade.createGroup()}, \texttt{joinGroup(code:)}, \texttt{ModelValidator.validateGroupName()}, \texttt{validateInviteCode()}; \texttt{groups}, \texttt{group\_members}, \texttt{join\_group(code)} & TC-50, TC-51 & Implemented \\
 FR-44 & UC-09 & \texttt{BackendFacade.saveDeck()}, \texttt{SwiftDataService.apply()} & TC-44 & Implemented \\
@@ -2154,7 +2159,7 @@ offline display (\texttt{GroupCache}).
   \draw[assoc] (res.west) -- node[lbl] {0..*} (br.east);
   \node[cls={orange}{6.4cm}, anchor=north] (xr) at (0.6,-9.0) {\ctitle{\st{enum}\\\textbf{XPRewards}}
     \nodepart{two}\raggedright +cardMovedUp = 5\\ +exerciseBlank = 10\\ +dailyGoalBonus = 50\\ +weeklyChallengeBonus = 100
-    \nodepart{three}\raggedright +grant(amount, to: UserProfile, weeklyXP, now)\\ +forCard(previousScore, newScore) : Int\\ +solveExercise(id, blanks, profile, \dots) : Int\\ +payQuestBonuses(context, profile, \dots) : [Bonus]};
+    \nodepart{three}\raggedright +grant(amount, to: UserProfile, weeklyXP, now)\\ +forCard(previousScore, newScore) : Int\\ +payFirstSolve(id, amount, \dots) : Int\\ +payQuestBonuses(context, profile, \dots) : [Bonus]};
   \node[cls={magenta}{4.6cm}, anchor=north] (up) at (-6.6,-9.0) {\ctitle{\st{V9 model}\\\textbf{UserProfile}}
     \nodepart{two}\raggedright +totalXP: Int\\ +solvedExerciseIds: [String]\\ +goalBonusDay: String?\\ +challengeBonusWeek: String?
     \nodepart{three}~};
@@ -2269,7 +2274,7 @@ protocol, so unit tests and \texttt{AskAIUITests} use a stub and
     \nodepart{three}~};
   \node[cls={magenta}{5.6cm}, anchor=north] (view) at (-5.4,-5.2) {\ctitle{\st{view}\\\textbf{ChallengeView}}
     \nodepart{two}\raggedright -code, language, verdict\\ -tab: description, code, result
-    \nodepart{three}\raggedright -run(mode: run | submit)\\ -payXP() (\texttt{XPRewards.solveChallenge})};
+    \nodepart{three}\raggedright -run(mode: run | submit)\\ -payXP() (\texttt{XPRewards.payFirstSolve})};
   \node[cls={magenta}{4.4cm}, anchor=north] (hb) at (-5.4,-8.6) {\ctitle{\st{view}\\\textbf{HintBento}}
     \nodepart{two}\raggedright +hints: [String]\\ -opened: Int
     \nodepart{three}~};
@@ -2415,7 +2420,7 @@ disallowed operation in Figure~\ref{fig:state} (risk R9).
     \nodepart{three}~};
   \node[cls={magenta}{9.4cm}, anchor=north] (bf) at (0,-1.7) {\ctitle{\textbf{BackendFacade}}
     \nodepart{two}\raggedright +authState: AuthState\\ +pendingCount: Int\\ +engine: SyncEngine\\ \priv auth: AuthProviding?\\ \textasciitilde context: ModelContext\\ \priv cursors: SyncCursorStore\\ \textasciitilde groupCache: GroupCache
-    \nodepart{three}\raggedright \textit{core:} +start()\quad +handle(url) : Bool\quad +signInWithGoogle()\\ \quad +signOut(removingLocalDecks: Bool)\quad +syncPending()\\ \quad +refreshContent(force:)\quad +appDidBecomeActive()\\ \textit{+Decks:} +saveDeck(draft) : FlashcardDeck\quad +deleteDeck(deck)\\ \quad +deleteCard(card)\quad +setHidden(hidden, deck)\\ \textit{+Profile:} +updateProfile(displayName, avatarId)\\ \quad +submitFeedback(text)\quad +didResetProgress()\\ \textit{+Groups:} +fetchGroups()\quad +createGroup(name)\quad +joinGroup(code)\\ \quad +leaveGroup(group)\quad +fetchLeaderboard(for: UUID)};
+    \nodepart{three}\raggedright \textit{core:} +start()\quad +handle(url) : Bool\quad +signInWithGoogle()\\ \quad +signOut(removingLocalDecks: Bool)\quad +syncPending()\\ \quad +refreshContent(force:)\quad +appDidBecomeActive()\\ \textit{+Decks:} +saveDeck(draft) : FlashcardDeck\quad +deleteDeck(deck)\\ \quad +deleteCard(card)\quad +setHidden(hidden, deck)\\ \textit{+Profile:} +updateProfile(displayName, avatarId)\\ \quad +submitFeedback(text)\quad +didResetProgress()\\ \textit{+Groups:} +fetchGroups()\quad +createGroup(name)\quad +joinGroup(code)\\ \quad +leaveGroup(group)\quad +fetchLeaderboard(for: UUID)\\ \quad +fetchLeaderboards(for: [UUID])};
   % The subsystem rows hang below the facade's real bottom edge, so a longer
   % operation list can never overlap them.
   \path (bf.south) ++(0,-1.3) coordinate (row1);
@@ -2948,9 +2953,8 @@ READMEs, the design-system rules, and the pull request template), grouped by fol
 It is generated from \texttt{git ls-files} by \texttt{scripts/gen-file-table.py},
 which stops if a file belongs to no group, so the table cannot silently miss a file.
 Only the \texttt{docs/} folder (this document with its sources, figures, and
-measurement data, the Sprint 2 document, and the course material), the project plan
-(\texttt{todo.md}), and image assets (the app icon and the color sets generated by
-\texttt{scripts/palette}) are not listed. Every listed file except
+measurement data, and the final presentation) and image assets (the app icon and the
+color sets generated by \texttt{scripts/palette}) are not listed. Every listed file except
 the documentation files has its own subsection in Appendix~B.
 
 {\singlespacing\footnotesize
@@ -3199,16 +3203,16 @@ they were not run (limitations, Section~\ref{sec:conclusion}).
 \endfoot
 TC-S01 & Row Level Security, live (NFR-07, NFR-25) & Run \texttt{supabase/checks/rls\_live\_check.sql} in the Supabase SQL editor (or through the Supabase MCP server); two simulated users and a non-member try to read, change, and delete each other's rows on all 23 tables, and a guest tries to change the content or read hidden challenge tests; everything rolls back. & 0 of 73 checks fail & 0 of 73 failed on the live project (Nov 19, through the Supabase MCP server; 0 of 57 on Nov 9, before the content and challenge checks were added) & Pass \\
 TC-S02 & Security Advisor (NFR-27) & Run the Supabase Security Advisor after each migration; fix or justify each warning. & 0 unjustified warnings & 2 warnings, both justified (Nov 15): \texttt{join\_group} is the one exposed function (NFR-27); leaked-password protection is off, and Codey has no password sign-in (Google only) & Pass \\
-TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings and 0 real values (local, Nov 15) & Pass \\
+TC-S03 & Secret scan (NFR-22) & \texttt{scripts/check-secrets.sh -{}-history}: key-shaped strings in tracked files and every commit, plus the real values from the local \texttt{Secrets.xcconfig}. & 0 findings & 0 key-shaped strings and 0 real values (local, Nov 20, after the TD-05 fix) & Pass \\
 TC-S04 & Static analysis & \texttt{xcodebuild analyze -scheme codey}; count security warnings. & 0 & 0 security findings; 21 warnings, all in third-party packages, 0 in Codey's sources (Oct 30) & Pass \\
-TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & None found (CI, Nov 14) & Pass \\
+TC-S05 & No test bypass in Release (NFR-26, SSC 12) & \texttt{scripts/check-release-build.sh}: build Release, search the binary's symbols and strings for the DEBUG-only names. & None found & None found (local Release build, Nov 20, after the TD-05 fix) & Pass \\
 TC-S06 & Server limits match client (NFR-23) & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests}. & Pass & Pass in the 458-test run (Nov 17) & Pass \\
 TC-S07 & Token storage and logging (NFR-21) & \texttt{KeychainSessionStorageTests}; search the source for public log values and \texttt{UserDefaults} writes of tokens. & Keychain only; no token logged & 7 public log values, none sensitive; no token in \texttt{UserDefaults} (Oct 30) & Pass \\
 TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, \texttt{AppConfigTests} (Info.plist). & Pass & Pass in the 458-test run (Nov 17) & Pass \\
 TC-S09 & Hosts and TLS on the wire (NFR-24) & Capture Simulator traffic with Proxyman during sign-in, sync, and a leaderboard load. & Only Supabase, Google, and OpenRouter, all TLS 1.3 & Not run (limitation) & Not verified \\
 TC-S10 & File protection on device (NFR-04) & Install on an iPhone, read the store files' protection attribute. & \emph{complete unless open} & Not run on a device (limitation); \texttt{StoreFileProtectionTests} sets and checks the class & Not verified \\
 TC-S11 & SDK confinement (R7) & \texttt{scripts/check-imports.sh}. & Pass & Pass (local, Nov 15) & Pass \\
-TC-S12 & Database policies and triggers (NFR-07, NFR-25, FR-61) & \texttt{supabase test db}: pgTAP suites \texttt{rls.sql}, \texttt{progress.sql}, \texttt{history.sql}, \texttt{content.sql}, and \texttt{challenges.sql} against a fresh local database built from the 16 migrations. & 122 of 122 pass & 122 of 122 passed (local stack, Nov 18) & Pass \\
+TC-S12 & Database policies and triggers (NFR-07, NFR-25, FR-61) & \texttt{supabase test db}: pgTAP suites \texttt{rls.sql}, \texttt{progress.sql}, \texttt{history.sql}, \texttt{content.sql}, and \texttt{challenges.sql} against a fresh local database built from the 16 migrations. & 122 of 122 pass & 122 of 122 passed (local stack, Nov 20) & Pass \\
 \end{xltabular}
 
 \subsection{Software Security Checklist}
@@ -3662,12 +3666,12 @@ Each unit test sets up one type with in-memory data, calls it, and checks the re
 or state change; nothing touches the network, and SwiftData runs in memory. Tests are
 named for the behavior they check (for example
 \texttt{againRequeuesAtTheEndOnlyOnce}), and many are parameterized, so one test
-function covers several inputs. Table~\ref{tab:unitresults} groups the 62 unit
+function covers several inputs. Table~\ref{tab:unitresults} groups the 63 unit
 suites that run by default by layer; the per-suite counts are in \texttt{docs/source/tests/unit.csv}.
 
 \begin{table}[H]
 \centering
-\caption{Unit test results by layer (iPhone 17 Simulator, Nov 18)}
+\caption{Unit test results by layer (iPhone 17 Simulator, Nov 20)}
 \label{tab:unitresults}
 \begin{tabularx}{\textwidth}{@{}L{3.4cm} Y r r@{}}
 \toprule
@@ -3675,14 +3679,14 @@ suites that run by default by layer; the per-suite counts are in \texttt{docs/so
 \midrule
 Domain rules and models & \texttt{StudyQueueTests}, \texttt{TierGateTests}, \texttt{QuestionPoolTests}, \texttt{ModelValidatorTests}, \texttt{ExerciseValidatorTests}, \texttt{StreakCalculatorTests}, \texttt{XPRewardsTests}, \texttt{ExercisePickerTests} (21 suites) & 141 & 0 \\
 View models and navigation & \texttt{StudySessionViewModelTests}, \texttt{QuizViewModelTests}, \texttt{DeckViewModelTests}, \texttt{RouterTests} (4) & 51 & 0 \\
-Content and persistence & \texttt{ExerciseLoaderTests}, \texttt{StarterDeckLoaderTests}, \texttt{DataSeederTests}, \texttt{ContentFilesTests}, \texttt{MigrationTests} (10) & 58 & 0 \\
+Content and persistence & \texttt{ExerciseLoaderTests}, \texttt{StarterDeckLoaderTests}, \texttt{DataSeederTests}, \texttt{ContentFilesTests}, \texttt{MigrationTests} (10) & 59 & 0 \\
 Sync and backend & \texttt{SyncEngineTests}, \texttt{DeckSyncStateTests}, \texttt{ProgressSyncTests}, \texttt{ProgressHistorySyncTests}, \texttt{SupabaseDataClientTests}, \texttt{GroupsAndChallengeTests} (10) & 133 & 0 \\
 Security and configuration & \texttt{KeychainSessionStorageTests}, \texttt{TransportSecurityTests}, \texttt{SignInNonceTests}, \texttt{AppConfigTests} (5) & 14 & 0 \\
 Design system & \texttt{ContrastTests}, \texttt{ColorTokenTests}, \texttt{MarkdownFormattingTests}, \texttt{MarkdownRichTextTests} (8) & 33 & 0 \\
 Ask AI tutor & \texttt{OpenRouterClientTests}, \texttt{AskAISessionTests}, \texttt{AnswerLeakGuardTests}, \texttt{AskAIConfigTests} (4) & 29 & 0 \\
 Coding challenges (S45, Nov 17) & \texttt{ChallengeTests} (1) & 9 & 0 \\
 \midrule
-\textbf{Total} & 63 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{468} & \textbf{0} \\
+\textbf{Total} & 63 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{469} & \textbf{0} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -3695,7 +3699,8 @@ here. Compared with Sprint~3 (342 tests, 89.4\% over unit and UI tests together)
 Sprint~4 added 114 unit tests, mostly for FR-61 (including the S43 history sync), the coding exercises, the Ask AI
 tutor, the XP rewards, and the content served from Supabase. The coding challenges
 (S45) added \texttt{ChallengeTests}; the full suite was re-run on Nov 18 after them
-(468 unit tests and both accessibility audits passed, 0 failed); the coverage figures above are from the earlier run.
+(468 unit tests and both accessibility audits passed, 0 failed), and again on Nov 20 after the final
+clean-up, which added one test (469 passed, 0 failed); the coverage figures above are from the earlier run.
 
 \subsection{Flow-Graph Coverage}\label{sec:flowgraph}
 Two methods with real branching were drawn as control flow graphs, and each basis
@@ -3841,9 +3846,9 @@ IT-01 & \texttt{SyncEngine} + \texttt{SyncQueue} + \texttt{ConflictResolver} + S
 IT-02 & \texttt{SyncEngine} + \texttt{ProgressSync} + SwiftData: progress and history (answers, days, badges) from a second device merge (newest review wins, unlocks never relock, day counters keep the larger), offline then online. & \texttt{ProgressSyncTests}, \texttt{ProgressHistorySyncTests}; \texttt{MockRemoteStore.otherDeviceUpsert} & 24 of 24 pass \\
 IT-03 & \texttt{SupabaseDataClient} + Supabase SDK: request bodies, explicit nulls, paging, error mapping. & Stubbed \texttt{URLProtocol} (\texttt{SupabaseTestClient}) & 12 of 12 pass \\
 IT-04 & SwiftData schema V1--V11 + migration plan: each older store opens and keeps its data. & \texttt{MigrationTests} & 12 of 12 pass \\
-IT-05 & Content + store: seeding from the bundle or from Supabase rows, the content stamp, starter decks, exercises. & \texttt{DataSeederTests}, \texttt{BundledContentStampTests}, \texttt{ContentFilesTests} & 14 of 14 pass \\
+IT-05 & Content + store: seeding from the bundle or from Supabase rows, the content stamp, starter decks, exercises. & \texttt{DataSeederTests}, \texttt{BundledContentStampTests}, \texttt{ContentFilesTests} & 15 of 15 pass \\
 IT-06 & App limits + database CHECK constraints agree. & \texttt{SupabaseSchemaTests}, \texttt{FlashcardSchemaFileTests} & 11 of 11 pass \\
-IT-07 & Database tables + RLS + merge and rate-limit triggers, as a signed-in user and as a guest. & pgTAP \texttt{rls.sql}, \texttt{progress.sql}, \texttt{history.sql}, \texttt{content.sql}, \texttt{challenges.sql} & 122 of 122 pass (local stack, Nov 18) \\
+IT-07 & Database tables + RLS + merge and rate-limit triggers, as a signed-in user and as a guest. & pgTAP \texttt{rls.sql}, \texttt{progress.sql}, \texttt{history.sql}, \texttt{content.sql}, \texttt{challenges.sql} & 122 of 122 pass (local stack, Nov 20) \\
 IT-08 & Two users, a non-member, and a guest against all 23 tables. & \texttt{rls\_live\_check.sql} & 0 of 73 fail on the live project (Nov 19) \\
 IT-09 & Two Simulators, one account: a review on one shows on the other after one sync; sign-in with Google end to end. & By hand & Pass (Nov 10) \\
 \end{xltabular}
@@ -3978,13 +3983,13 @@ AT-14 & Accessible screens (NFR-10 to 12) & Run the accessibility audit over the
 AT-15 & Private data (NFR-07) & Signed in as a second account, try to see the first account's decks and progress. Nothing is visible; the live security test reports 0 of 73 checks failed. & Pass \\
 AT-16 & Layout on every device & iPhone stays in portrait. iPad in landscape and a wide Mac window show a challenge's description, code, and results side by side. & Pass \\
 AT-17 & Content updates without an app update & A topic added on Supabase appears in the app after it is closed and reopened, with no new build. & Pass \\
-AT-18 & Build and tests from the final tag & From the final tag on main, CI builds the app and runs every test: repository checks, 122 database tests, runner tests, and 470 app tests, all passing. & Pass \\
+AT-18 & Build and tests from the final tag & From the final tag on main, CI builds the app and runs every test: repository checks, 122 database tests, runner tests, and 471 app tests, all passing. & Pass \\
 AT-19 & Documentation matches the product & The final document's commit table and Appendix B point at the code in the final tag; all 75 functional requirements trace to a passing test; the screenshots show the final app. & Pass \\
 \end{xltabular}
 
 \subsection{Defects Found}\label{sec:defects}
 Table~\ref{tab:defects} lists the defects found in Sprint~4, how, and their fixes.
-Each fix has a regression test, so the defect cannot return unnoticed. Four of the
+Each fix has a regression test, so the defect cannot return unnoticed. Six of the
 entries are faults in the tests rather than the app; they are listed because a flaky
 or blind test is a defect in the test plan.
 
@@ -4009,6 +4014,8 @@ TD-01 & No test checked that progress rows send \texttt{retired\_at} as an expli
 TD-02 & \texttt{ExerciseUITests} failed on the iPhone~17e: the exercise row was not built yet in a lazy list below the fold. & ST-05, Nov 14 & Plain stack for the 12 bundled rows; scroll until hittable (\texttt{e58ba22}). & ST-05 on 3 sizes \\
 TD-03 & \texttt{ExerciseUITests} failed about 2 runs in 5 under load: the Simulator dropped a keystroke after the field had shown it. & Full CI-style run, Nov 14 & Hide the keyboard, re-check every blank's value, retype if needed, then tap Check (the same guard \texttt{DeckBuilderUITests} uses). & 5 of 5 consecutive passes \\
 TD-04 & UI tests could not find the Ask AI field or the solved exercise's Next Challenge and Done: an identifier set on a whole screen replaced the identifiers of the controls inside it. & Local run of every UI suite, Nov 15 & The Ask AI chat and the solved summary are accessibility containers, so their controls keep their own identifiers. & \texttt{AskAIUITests}, \texttt{ExerciseUITests} \\
+TD-05 & \texttt{check-secrets.sh -{}-history} and \texttt{check-release-build.sh} could never report a hit: under \texttt{pipefail}, \texttt{grep -q} stops at the first match, the command feeding it gets SIGPIPE, and the pipeline reads as ``not found''. TC-S03 and TC-S05 passed whatever the input. & Repository audit, Nov 20 & Both scripts write the history (or the binary's symbols and strings) to a file first and search the file. Re-run: no secrets in history, no DEBUG-only names in Release. & A string known to be in history is now reported \\
+TD-06 & \texttt{testAuditDark} failed in CI: it tapped the Decks tab right after swiping back, while the tab bar was still returning. & CI, Nov 19 & \texttt{UITestNavigation.tab()} waits for the tab's button before returning it. & \texttt{AccessibilityAuditUITests} \\
 \end{xltabular}
 
 % =====================================================================
@@ -4022,7 +4029,7 @@ drills, and coding challenges whose code runs against automated test cases on th
 team's sandboxed runner. Since the last week of Sprint~4 the content itself
 (12 topics, 336 questions, 55 exercises, and 24 starter decks) is served from Supabase,
 so it can grow without an app update, and the bundled copy remains the offline
-fallback. The app is covered by 468 unit tests, 9 UI tests over 22 screens, 122
+fallback. The app is covered by 469 unit tests, 9 UI tests over 22 screens, 122
 database tests, 11 Deno tests of the code runner, and a 73-check security test of the live policies. The unit tests,
 the accessibility audit, the database tests, and the repository checks run in CI on
 every push; the other UI suites and the live check are run by hand. The team's main lessons were
@@ -4151,9 +4158,18 @@ Run \texttt{scripts/check-secrets.sh} to confirm nothing secret is tracked.
         the CLI (\texttt{supabase link -{}-project-ref \textit{ref}} then
         \texttt{supabase db push}) or by pasting each file into the SQL editor.
   \item Load the app content: paste \texttt{supabase/seed.sql} into the SQL editor and
-        run it (12 topics, 336 questions, 55 exercises, 24 starter decks, 288 cards). It
-        upserts by ID, so running it again after a content change is safe. Without it
-        the app shows its bundled copy.
+        run it (12 topics, 336 questions, 55 exercises, 24 starter decks, 288 cards),
+        then \texttt{supabase/challenges-seed.sql} (the 11 coding challenges and their
+        tests) and \texttt{supabase/drill-hints.sql} (two hints per drill, added to the
+        rows \texttt{seed.sql} made). All three are safe to run again after a content
+        change. Without the first two the app keeps its bundled copy; without the
+        hints, drills download with none.
+  \item Coding challenges need the code runner and the Edge Function: set up the
+        runner with \texttt{runner/SETUP.md}, then run
+        \texttt{supabase functions deploy run-challenge} and set the
+        \texttt{RUNNER\_URL} and \texttt{RUNNER\_KEY} secrets
+        (\texttt{runner/push-secrets.sh} does this). Without them, Challenges
+        report that the runner is offline and everything else works.
   \item Authentication $\to$ Sign In / Providers $\to$ Google: enable it and enter the
         Web client ID and secret from A.7; add the iOS client ID to the authorized
         client IDs, and leave \emph{Skip nonce checks} off (the app sends a nonce).

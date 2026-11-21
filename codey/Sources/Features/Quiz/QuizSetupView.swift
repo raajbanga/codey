@@ -113,7 +113,7 @@ struct QuizSetupView: View {
     private var masteredState: some View {
         CodeyCard(tint: CodeyColor.success) {
             VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                Label("Topic mastered!", systemImage: "checkmark.seal.fill")
+                Label("Topic mastered!", icon: "checkmark.seal.fill")
                     .font(.codeyHeadline)
                     .foregroundStyle(CodeyColor.success)
                 Text(masteredMessage)

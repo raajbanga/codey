@@ -185,13 +185,13 @@ begin
 
     -- ── S3-D: groups, weekly XP, leaderboard (A is still the role here) ──
     begin
-        insert into public.groups (id, name, invite_code, created_by) values (grp, '  CS 360  ', 'AAAAAA', b);
+        insert into public.groups (id, name, invite_code, created_by) values (grp, '  Study Group  ', 'AAAAAA', b);
         select invite_code into code from public.groups where id = grp;
         select count(*) into n from public.group_members where group_id = grp and user_id = a;
         if code ~ '^[A-Z0-9]{6}$' and code <> 'AAAAAA' and n = 1 then results := results || 'ok 37 create group: server code, creator is a member'::text;
         else failed := failed + 1; results := results || ('FAIL 37 code=' || coalesce(code, 'null') || ' members=' || n); end if;
     exception when others then failed := failed + 1; results := results || ('FAIL 37 ' || sqlstate || ' ' || sqlerrm); end;
-    select count(*) into n from public.groups where id = grp and created_by = a and name = 'CS 360';
+    select count(*) into n from public.groups where id = grp and created_by = a and name = 'Study Group';
     if n = 1 then results := results || 'ok 38 created_by forced to A, name trimmed'::text; else failed := failed + 1; results := results || ('FAIL 38 rows=' || n); end if;
     begin
         insert into public.group_members (group_id, user_id) values (grp, b);

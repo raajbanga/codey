@@ -129,15 +129,18 @@ struct HomeView: View {
 
     // MARK: Weekly plan (FR-38)
 
+    /// The cached plan, nil before the first one or if it doesn't decode.
+    private var storedPlan: StudyPlan? { try? JSONDecoder().decode(StudyPlan.self, from: studyPlanData) }
+
     private var plannedTopics: [Topic] {
-        guard let plan = try? JSONDecoder().decode(StudyPlan.self, from: studyPlanData) else { return [] }
+        guard let plan = storedPlan else { return [] }
         let byID = topics.keyed(by: \.id)
         return plan.topicIDs.compactMap { byID[$0] }
     }
 
     /// Keeps the cached plan while it's this week's; rebuilds on Monday.
     private func refreshPlan(_ stats: HomeStats) {
-        let cached = try? JSONDecoder().decode(StudyPlan.self, from: studyPlanData)
+        let cached = storedPlan
         let plan = StudyPlan.current(cached: cached, now: .now, knownTopicIDs: Set(topics.map(\.id))) {
             StudyPlanBuilder.build(topicIDs: topics.map(\.id), answerCounts: stats.answerCounts, accuracy: stats.accuracyByTopic)
         }

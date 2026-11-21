@@ -196,13 +196,14 @@ codey/
 ├── supabase/               # migrations, RLS policies, pgTAP tests, Edge Function, content, setup guide
 ├── runner/                 # code-runner setup (EC2 + Piston + Caddy)
 ├── scripts/                # repo checks, test runner, perf and backup tools
-├── docs/                   # final report (PDF) and its LaTeX source and figures
+├── docs/                   # final report (PDF, LaTeX source, figures) and the presentation
 └── Project.swift           # Tuist manifest
 ```
 
 ## Documentation
 
 - 📄 [Final report](docs/Final_Documentation.pdf) ([reading copy](docs/Final_Documentation_reading.pdf), without the code listings): requirements, design, testing and the full build guide (Appendix A)
+- 🎤 [Final presentation](docs/Final_Presentation.pdf)
 - 🗄️ [Backend setup](supabase/README.md): Supabase and Google OAuth
 - 🧪 [Code runner setup](runner/SETUP.md): the sandbox that runs coding challenges
 
@@ -217,5 +218,5 @@ codey/
 </table>
 
 <div align="center">
-<sub>CS 360 · Western Kentucky University</sub>
+<sub>Western Kentucky University</sub>
 </div>

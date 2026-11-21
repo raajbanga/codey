@@ -107,10 +107,30 @@ supabase db push                       # applies migrations/*.sql in order
 `supabase/config.toml` is committed, so there is no `supabase init` step.
 (`.branches`/`.temp` are gitignored.)
 
-Then load the content: open the SQL editor, paste `supabase/seed.sql`, and run
-it (or `psql "<session pooler URI>" -f supabase/seed.sql`). Without it the
-content tables are empty, the app rejects the empty download, and it keeps
-using the bundled JSON.
+Then load the content: in the SQL editor, paste and run these three files in
+order (or `psql "<session pooler URI>" -f <file>` for each). All three are safe
+to re-run.
+
+1. `supabase/seed.sql`: topics, questions, drills, starter decks and cards.
+   Without it the content tables are empty, the app rejects the empty download,
+   and it keeps using the bundled JSON.
+2. `supabase/challenges-seed.sql`: the 11 coding challenges and their tests.
+   Without it the app keeps its bundled challenges, but Run and Submit fail
+   because the Edge Function finds no tests.
+3. `supabase/drill-hints.sql`: two hints for each drill, written into the rows
+   `seed.sql` made (so run it after `seed.sql`). Without it the drills download
+   with no hints.
+
+Then deploy the Edge Function that runs challenge code, and give it the runner's
+address and key (set up the runner first: `runner/SETUP.md`):
+
+```sh
+supabase functions deploy run-challenge
+supabase secrets set RUNNER_URL=<url> RUNNER_KEY=<key>   # or runner/push-secrets.sh
+```
+
+Without the runner, Challenges show "The code runner is offline"; everything
+else works.
 
 ## 6. Run the RLS tests
 

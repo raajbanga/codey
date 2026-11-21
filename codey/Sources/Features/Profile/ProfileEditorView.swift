@@ -176,7 +176,7 @@ struct AvatarGlyph: View {
     var emphasized = false
 
     var body: some View {
-        Image(systemName: ProfileAvatar.glyph(for: symbol))
+        CodeyIcon.image(ProfileAvatar.glyph(for: symbol))
             .resizable()
             .scaledToFit()
             .fontWeight(.medium)

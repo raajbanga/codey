@@ -21,8 +21,8 @@ Values in angle brackets are placeholders: fill in your own and keep the real on
 | Region | `<region>`, the one closest to the Supabase project; keep everything in it |
 | Instance | `t3.small` (2 vCPU, 2 GB), Ubuntu 24.04, 30 GB gp3 (encrypted), IMDSv2 only, tagged `Name=codey-runner` |
 | Address | An Elastic IP, so the URL `https://<a-b-c-d>.sslip.io` never changes |
-| Security group | Ports 80 and 443 only. **No SSH**: use SSM |
-| Instance role | An EC2 role with only `AmazonSSMManagedInstanceCore` |
+| Security group | Ports 80 and 443 only. The automated path opens **no SSH** (use SSM); the manual path also opens SSH (22) to your own IP |
+| Instance role | An EC2 role with only `AmazonSSMManagedInstanceCore` (automated path; `push-secrets.sh` and `with-secrets.sh` need it) |
 | CLI identity | An IAM user with only the EC2, SSM and IAM actions this setup needs, in a named AWS CLI profile. Never root |
 | Secrets | On the runner in `/etc/codey-runner/secrets.env` (root-only). Copied to Supabase and GitHub by `runner/push-secrets.sh`. Never in the repo or the app |
 
@@ -232,7 +232,9 @@ Create the key and the hostname, then write the Caddyfile. The heredoc is unquot
 ```bash
 RUNNER_KEY=$(openssl rand -hex 32)
 HOST="$(curl -s https://checkip.amazonaws.com | tr . -).sslip.io"
-printf 'RUNNER_URL=https://%s\nRUNNER_KEY=%s\n' "$HOST" "$RUNNER_KEY" > ~/runner-secrets.txt && chmod 600 ~/runner-secrets.txt
+sudo install -d -m 700 /etc/codey-runner
+printf 'RUNNER_URL=https://%s\nRUNNER_KEY=%s\n' "$HOST" "$RUNNER_KEY" | sudo tee /etc/codey-runner/secrets.env > /dev/null
+sudo chmod 600 /etc/codey-runner/secrets.env
 
 sudo tee /etc/caddy/Caddyfile > /dev/null <<EOF
 $HOST {
@@ -251,7 +253,7 @@ $HOST {
 EOF
 sudo chown root:caddy /etc/caddy/Caddyfile && sudo chmod 640 /etc/caddy/Caddyfile
 sudo systemctl reload caddy
-cat ~/runner-secrets.txt
+sudo cat /etc/codey-runner/secrets.env
 ```
 
 Copy the two lines it prints into the team password manager. They're secrets: **never commit them** and never put them in `Config/Secrets.xcconfig` (the app must not have them).
@@ -316,10 +318,10 @@ supabase secrets list
 | Piston logs | `docker logs --tail 100 piston_api` |
 | Restart Piston | `cd /opt/piston && docker compose restart` |
 | Update Piston | `cd /opt/piston && docker compose pull && docker compose up -d` (packages persist in `./data`) |
-| Rotate the key | Run step 9 again (new `RUNNER_KEY`), then step 11 |
+| Rotate the key | Manual path: run step 9 again (it overwrites `secrets.env`), then step 11. Automated path: `sudo rm /etc/codey-runner/secrets.env`, run `configure-caddy.sh` through SSM again, then `runner/push-secrets.sh` on your Mac |
 | Disk use | `df -h /` |
 
 - Ubuntu installs security updates automatically (`unattended-upgrades`). Reboot monthly: `sudo reboot`, and both services come back on their own.
 - **Stopping the instance** (EC2 → Instance state → Stop) pauses compute billing. The Elastic IP is billed while the instance is stopped, but it keeps the URL the same. Start it again before a demo and run the step 10 checks.
 - **If the runner is down**, the Edge Function returns `runner_down` and the app shows "The code runner is offline, try again later". Drills and everything else keep working.
-- **Your IP changed and SSH hangs:** EC2 → Security Groups → `codey-runner-sg` → edit the SSH rule → **My IP**.
+- **Your IP changed and SSH hangs (manual path):** EC2 → Security Groups → `codey-runner-sg` → edit the SSH rule → **My IP**.

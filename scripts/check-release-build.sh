@@ -24,8 +24,13 @@ binary="$derived/Build/Products/Release-iphonesimulator/codey.app/codey"
 # Names that exist only inside #if DEBUG.
 needles=(SupabaseTestClient "Replay Onboarding" ComponentGallery StubAskAIClient UITestAskAIStub)
 fail=0
+# Symbols and strings go to a file first: under pipefail, `nm | grep -q`
+# reports "absent" when grep exits early on a match (nm gets SIGPIPE).
+dump=$(mktemp)
+trap 'rm -f "$dump"' EXIT
+{ nm "$binary" 2>/dev/null || true; strings -a "$binary"; } > "$dump"
 for needle in "${needles[@]}"; do
-    if nm "$binary" 2>/dev/null | grep -qF -- "$needle" || strings -a "$binary" | grep -qF -- "$needle"; then
+    if grep -qF -- "$needle" "$dump"; then
         echo "Release binary contains: $needle"; fail=1
     fi
 done

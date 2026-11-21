@@ -22,7 +22,7 @@ struct StudySummaryView: View {
             hue: .of(topicID: deck.topicId),
             progress: summary.endProgressRate,
             // S19: progress in mastery points, so a first pass shows what changed.
-            caption: "\(Int((summary.endProgressRate * 100).rounded()))% progress, \(deltaPoints > 0 ? "+" : "")\(deltaPoints) pts",
+            caption: "\(summary.endProgressRate.percentText) progress, \(deltaPoints > 0 ? "+" : "")\(deltaPoints) pts",
             xpEarned: wasEmpty ? nil : summary.xpEarned,
             stats: wasEmpty ? [] : [
                 SummaryStat(value: summary.reviewed, label: reviewedLabel, systemImage: "rectangle.on.rectangle"),
@@ -33,12 +33,12 @@ struct StudySummaryView: View {
             doneID: "study.done",
             again: wasEmpty ? nil : studyAgain,
             done: done,
-            celebration: summary.unlockedTiers.last.map { ("\($0.style.label) unlocked!", $0.style.symbol) }
+            celebration: SummaryBanner.celebration(level: nil, unlockedTiers: summary.unlockedTiers)
         ) {
             if wasEmpty {
                 EmptyStateView(systemImage: "checkmark.seal.fill", title: "All caught up", message: emptyMessage)
             } else {
-                ForEach(summary.unlockedTiers, id: \.self) { TierUnlockedBanner(tier: $0) }
+                ForEach(summary.unlockedTiers, id: \.self) { SummaryBanner.tierUnlocked($0) }
             }
         }
     }

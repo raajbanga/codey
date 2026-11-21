@@ -118,8 +118,7 @@ struct LoadingView: View {
             if BundledContentStamp.isSeeded(stamp, context: context) {
                 // Same content as last launch: nothing to upsert.
                 DataSeeder.ensureProfile(context: context)
-                ExerciseCatalog.shared.replace(with: content.exercises)
-                ChallengeCatalog.shared.replace(with: content.challenges)
+                ContentSeeder.showCatalogs(content)
                 Logger.seeding.info("Content unchanged; seeding skipped")
             } else {
                 try ContentSeeder.seed(content, stamp: stamp, context: context)

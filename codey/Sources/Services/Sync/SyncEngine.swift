@@ -125,7 +125,7 @@ final class SyncEngine {
                 try await syncWeeklyXP(remote: remote, userID: userID)
                 consecutiveFailures = 0
                 lastError = nil
-                cursors.setLastSyncedAt(now(), for: userID)
+                cursors.set(now(), .lastSyncedAt, for: userID)
             } catch {
                 failCycle(error)
                 return false
@@ -263,7 +263,7 @@ final class SyncEngine {
     // MARK: Pull
 
     private func pull(remote: any RemoteDeckStore, userID: UUID) async throws {
-        let since = cursors.cursor(for: userID).map { $0.addingTimeInterval(-Self.pullOverlap) }
+        let since = cursors.date(.pullCursor, for: userID).map { $0.addingTimeInterval(-Self.pullOverlap) }
         let changes = try await remote.fetchChanges(since: since)
         let pending = try queue.pendingIDs(.deck)
         try RemoteChangeApplier(context: context, now: now).apply(changes, ownerId: userID) { deck in
@@ -271,7 +271,7 @@ final class SyncEngine {
         }
         try context.save()
         if let cursor = changes.cursor {
-            cursors.setCursor(max(cursor, cursors.cursor(for: userID) ?? cursor), for: userID)
+            cursors.set(max(cursor, cursors.date(.pullCursor, for: userID) ?? cursor), .pullCursor, for: userID)
         }
     }
 
@@ -284,24 +284,24 @@ final class SyncEngine {
     private func syncProgress(remote: any RemoteDeckStore, userID: UUID) async throws {
         let progress = ProgressSync(context: context, deviceId: deviceID ?? "local")
 
-        let since = cursors.progressCursor(for: userID).map { $0.addingTimeInterval(-Self.pullOverlap) }
+        let since = cursors.date(.progressCursor, for: userID).map { $0.addingTimeInterval(-Self.pullOverlap) }
         let changes = try await remote.fetchProgressChanges(since: since)
         try progress.apply(changes.progress)
         try context.save()
         if let cursor = changes.cursor {
-            cursors.setProgressCursor(max(cursor, cursors.progressCursor(for: userID) ?? cursor), for: userID)
+            cursors.set(max(cursor, cursors.date(.progressCursor, for: userID) ?? cursor), .progressCursor, for: userID)
         }
 
         let pushStartedAt = now()
-        let local = try progress.localChanges(since: cursors.progressPushedAt(for: userID),
-                                              historySince: cursors.historyPushedAt(for: userID))
+        let local = try progress.localChanges(since: cursors.date(.progressPushedAt, for: userID),
+                                              historySince: cursors.date(.historyPushedAt, for: userID))
             .subtracting(changes.progress)
         if !local.isEmpty {
             try await remote.upsertProgress(local)
             Logger.sync.notice("Pushed \(local.count) progress row(s)")
         }
-        cursors.setProgressPushedAt(pushStartedAt, for: userID)
-        cursors.setHistoryPushedAt(pushStartedAt, for: userID)
+        cursors.set(pushStartedAt, .progressPushedAt, for: userID)
+        cursors.set(pushStartedAt, .historyPushedAt, for: userID)
     }
 
     // MARK: Profile (D10)
