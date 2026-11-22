@@ -110,6 +110,17 @@ ICONS = {
              '<path d="m12 3.8 2.5 5.2 5.7.7-4.2 3.9 1.1 5.6-5.1-2.7-5.1 2.7 1.1-5.6-4.2-3.9 5.7-.7z"/>'),
     'trophy': (['trophy.fill', 'trophy'],
                '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.5a2.5 2.5 0 0 0 2.6 3.5M16 6h2.5a2.5 2.5 0 0 1-2.6 3.5M12 13v7M8.5 20h7"/>'),
+    # Badge glyphs (the trophy case, Nov 21): drawn inside BadgeArt's shapes.
+    'chevrons-up': (['chevron.up.2'], '<path d="M7 12.5l5-5 5 5M7 17.5l5-5 5 5"/>'),
+    'quiz-check': (['checkmark.bubble'],
+                   '<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-4.5 3.5V17H6a2 2 0 0 1-2-2z"/>'
+                   '<path d="m8.5 10.5 2.3 2.3 4.7-4.6"/>'),
+    'deck-check': (['checkmark.rectangle.stack'],
+                   '<rect x="4" y="8" width="13" height="12" rx="2"/><path d="M8 4.5h10a2 2 0 0 1 2 2V16"/><path d="m7.5 14 2 2 3.5-3.5"/>'),
+    'deck-plus': (['plus.rectangle.on.rectangle'],
+                  '<rect x="4" y="8" width="13" height="12" rx="2"/><path d="M8 4.5h10a2 2 0 0 1 2 2V16"/><path d="M10.5 11v6M7.5 14h6"/>'),
+    'card-check': (['checkmark.rectangle.portrait'],
+                   '<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="m9 12.2 2.2 2.2 4-4.2"/>'),
     'medal': (['medal'], '<path d="M6 2.5l4 8.2M18 2.5l-4 8.2M9.5 2.5h5"/><circle cx="12" cy="15.5" r="5.5"/>'),
     'flag': (['flag.checkered', 'flag.fill', 'flag'], '<path d="M5.5 21V4M5.5 4.5h12l-2.5 4 2.5 4h-12"/>'),
     'pin': (['pin'], '<path d="M12 16v5M8 4h8l-1 5.5 3 3V16H6v-3.5l3-3z"/>'),

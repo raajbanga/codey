@@ -132,6 +132,9 @@ struct LoadingView: View {
             } catch {
                 Logger.seeding.error("Badge catch-up failed: \(String(describing: error))")
             }
+            // Play's quests take turns with the next badges, once a launch
+            // (UI tests keep the quests, which they look for).
+            if !AppLaunchOptions.usesInMemoryStore { PlayRotation.advance() }
             progress = 1.0
 
             let facade = AppLaunchOptions.usesInMemoryStore

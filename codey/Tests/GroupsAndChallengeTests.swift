@@ -72,7 +72,7 @@ struct GroupsAndChallengeTests {
         }
         try context.save()
 
-        #expect(try BadgeEvaluator.facts(in: context, now: now).weeklyChallengesCompleted == 1)
+        #expect(try BadgeEvaluator.facts(in: context, now: now)[.weeklyChallenges] == 1)
         #expect(try BadgeEvaluator.award(context: context, now: now).contains(.weeklyChallenge))
     }
 

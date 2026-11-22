@@ -46,7 +46,7 @@ GROUPS = [
     ("codey/Sources/Features/Study/*", "Source", "Study session screens: launcher, card, swipe rating, summary."),
     ("codey/Sources/Features/Quiz/*", "Source", "Quiz setup panel, quiz run, summary, topic stats; coding-exercise tiles and exercise screen (FR-39--FR-41)."),
     ("codey/Sources/Features/AskAI/*", "Source", "Ask AI chat panel and its button (FR-67)."),
-    ("codey/Sources/Features/Profile/*", "Source", "Profile sheet, profile editor, badges row, defect report form."),
+    ("codey/Sources/Features/Profile/*", "Source", "Profile sheet, profile editor, the trophy case (badges grid and badge panel), defect report form."),
     ("codey/Sources/Features/Groups/*", "Source", "Groups list, create and join sheets, weekly leaderboard (FR-42, FR-50--FR-52)."),
     ("codey/Sources/Features/Onboarding/*", "Source", "Three-step first-launch onboarding."),
     ("codey/Sources/Navigation/*", "Source", "Tab root and the router that owns tabs, sheets and covers."),

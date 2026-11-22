@@ -46,7 +46,7 @@ your progress across all your devices and to study with friends in groups.
 | 💻 **Drills** | Fill in the blanks of a code snippet, with two hints each |
 | 🧩 **Coding challenges** | LeetCode-style problems in Swift, Python, Java or C++: write the function, Run the examples, Submit against hidden tests |
 | ✨ **Ask AI tutor** | Ask about a quiz question, drill or challenge and get help understanding it; it never gives the answer away |
-| 🏆 **Progress** | XP, levels, daily streaks, badges, daily quests and weekly challenges |
+| 🏆 **Progress** | XP, levels, daily streaks, 27 badges in a trophy case, daily quests and weekly challenges |
 | 👥 **Groups** | Create or join with a 6-character code and race on a weekly XP board |
 | ☁️ **Sync** | Works offline; sign in with Google to back up and pick up where you left off on any device |
 | ♿ **Accessible** | Light and dark mode, Dynamic Type and full VoiceOver support |

@@ -166,9 +166,10 @@ struct MigrationTests {
         let activity = try context.fetch(FetchDescriptor<DailyActivity>())
         #expect(StreakCalculator.currentStreak(endingOn: today, activity: activity) == 2)
 
-        #expect(try BadgeEvaluator.award(context: context, now: today) == [.xp1000])
+        // Level 4 at 1,500 XP: Level 2 and 1,000 XP (their +75 XP stays short of Level 5).
+        #expect(try BadgeEvaluator.award(context: context, now: today) == [.level2, .xp1000])
         try context.save()
-        #expect(try context.fetchCount(FetchDescriptor<BadgeAward>()) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<BadgeAward>()) == 2)
     }
 
     /// S19: a V7 store with a session in progress opens as V8. The session

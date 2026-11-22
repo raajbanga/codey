@@ -38,7 +38,6 @@ struct ProfileSheet: View {
             } hero: {
                 hero
             } content: {
-                NoteGroup("Badges") { BadgesRow() }
                 accountSection
                 appearanceSection
                 studySection

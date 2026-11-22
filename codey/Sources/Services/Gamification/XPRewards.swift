@@ -13,6 +13,9 @@ import os
 ///     challenge accepted               +20/35/50 by tier, first solve only
 ///     daily goal met                   +50  once per local day
 ///     weekly challenge complete        +100 once per UTC week
+///     badge earned                     +25 to +300, once per badge
+///                                      (BadgeEvaluator; total XP only,
+///                                      not the weekly leaderboard)
 enum XPRewards {
     static let cardMovedUp = 5
     static let exerciseBlank = 10

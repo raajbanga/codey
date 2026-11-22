@@ -103,14 +103,24 @@ struct BentoSection<Content: View>: View {
 ///     .spread  a page's only grid (Decks, Library): two, or three on a
 ///              page wide enough for two columns (iPad landscape); three
 ///              wide tiles rather than four skinny ones (Nov 16)
+///     .badges  small square tiles (the trophy case): three on iPhone,
+///              four on a regular-width page, six on a wide one
 enum BentoColumns: Sendable {
     case pair
     case spread
+    case badges
 
-    func count(pageIsWide: Bool, isAccessibilitySize: Bool) -> Int {
-        let base = self == .spread && pageIsWide ? 3 : 2
+    func count(pageIsWide: Bool, isAccessibilitySize: Bool, isRegular: Bool = false) -> Int {
+        let base = switch self {
+        case .pair: 2
+        case .spread: pageIsWide ? 3 : 2
+        case .badges: pageIsWide ? 6 : isRegular ? 4 : 3
+        }
         return isAccessibilitySize ? max(base - 1, 1) : base
     }
+
+    /// Whether a last odd tile spans a two-column row (not square tiles).
+    var spansLastTile: Bool { self != .badges }
 }
 
 /// Equal columns (two by default); in a two-column grid a last odd tile
@@ -129,14 +139,15 @@ struct BentoGrid<Content: View>: View {
     }
 
     var body: some View {
-        let columns = columns.count(pageIsWide: pageIsWide, isAccessibilitySize: typeSize.isAccessibilitySize)
+        let kind = columns
+        let columns = kind.count(pageIsWide: pageIsWide, isAccessibilitySize: typeSize.isAccessibilitySize, isRegular: layout.isRegular)
         let gap = layout.gridGap
         Group(subviews: content) { tiles in
             Grid(horizontalSpacing: gap, verticalSpacing: gap) {
                 ForEach(Array(stride(from: 0, to: tiles.count, by: columns)), id: \.self) { start in
                     GridRow {
                         ForEach(tiles[start..<min(start + columns, tiles.count)]) { tile in
-                            let spans = start + 1 == tiles.count && columns == 2
+                            let spans = kind.spansLastTile && start + 1 == tiles.count && columns == 2
                             tile
                                 .frame(maxHeight: .infinity, alignment: .top)
                                 .gridCellColumns(spans ? columns : 1)

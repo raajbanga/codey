@@ -574,7 +574,7 @@ FR-31 & The app shall compute the user's level as $\lfloor \text{XP}/500 \rfloor
 FR-32 & The app shall mark the daily goal as met when the user answers 20 questions (quiz questions answered plus flashcards rated) within one calendar day in the device's time zone. & Must & Client & Implemented \\
 FR-33 & The app shall set the daily streak to 1 on a day the daily goal is met following a day it was not met, and increase it by one for each subsequent consecutive day the goal is met. & Must & Client & Implemented \\
 FR-34 & The app shall reset the daily streak to zero after a calendar day in which the daily goal was not met. & Must & Client & Implemented \\
-FR-35 & The app shall award a badge for each of four milestones: saving a first deck, reaching a 7-day streak, earning 1,000 total XP, and completing a weekly challenge; an earned badge stays earned. & Must & Client & Implemented \\
+FR-35 & The app shall award 27 badges for milestones across levels, XP, streaks, the daily goal, the weekly challenge, correct quiz answers, tier unlocks, completed topics, drills, coding challenges, decks created and mastered, and cards mastered; each badge pays its XP (25 to 300, more for harder badges) once, an earned badge stays earned, and the badges are shown in a trophy case opened from the streak counter & Must & Client & Implemented \\
 \multicolumn{5}{@{}l}{\textit{Progress and analytics}} \\
 FR-36 & The app shall calculate per-topic accuracy as the percentage of correct answers over the user's last 50 quiz answers in that topic. & Must & Client & Implemented \\
 FR-37 & The app shall display a home dashboard (the Play tab) showing total XP, level, current streak, and per-topic accuracy. & Must & Client & Implemented \\
@@ -712,7 +712,7 @@ Security & Backend requests not using TLS 1.3 & URL session minimum protocol (un
 Security & Secrets or tokens found in source, history, or logs & \texttt{check-secrets.sh -{}-history}; logging audit & 0 & 0 & 0 (key-shaped strings in CI on every push; real values locally, Nov 15) \\
 Security & Open Security Advisor warnings & Supabase Security Advisor & 0 unjustified & 1, justified (\texttt{join\_group}) & 0 unjustified (2 justified: \texttt{join\_group}; leaked-password protection, no password sign-in) \\
 Security & Static-analyzer security warnings & \texttt{xcodebuild analyze} & 0 & 0 & 0 in the app's code (21 in third-party packages, Oct 30 run) \\
-Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{scripts/test.sh} with \texttt{xccov} & All pass; $\ge$ 70\% & 342 of 342; 89.4\% & 472 of 472; 86.8\% (coverage from the Nov 17 run) \\
+Quality & Unit tests passing; line coverage (Model, ViewModel, Service) & \texttt{scripts/test.sh} with \texttt{xccov} & All pass; $\ge$ 70\% & 342 of 342; 89.4\% & 478 of 478; 86.8\% (coverage from the Nov 17 run) \\
 User interface & Screens passing the layout pass (3 sizes, Light and Dark) & UI tests on 3 Simulators; walkthrough & 100\% & 100\% (96 of 96: 16 screens, 3 sizes, 2 modes) & 100\% (108 of 108: 18 screens, 3 sizes, 2 modes) \\
 User interface & Text/background pairs below 4.5:1 & \texttt{ContrastTests} (Light, Dark, Increase Contrast) & 0 & 0 & 0 \\
 User interface & Accessibility audit issues & System accessibility audit (\texttt{AccessibilityAuditUITests}) over every main screen, Light and Dark & 0 & 0 open over 16 screens & 0 open over 22 screens (2 fixed, BUG-03 and BUG-05) \\
@@ -914,6 +914,7 @@ S42 & Leaderboard as a podium of bars; avatars gain a color (stored as \texttt{s
 S43 & Sync covers quiz answer history (append-only), daily activity (one row per device and day, the larger counter wins, the day's total is the sum over devices, so streak and goal match everywhere), badges (the earliest date wins), and solved exercises (a union); an older install backfills its history once. Schema V10 adds \texttt{DeviceDayActivity} for other devices' days; V11 adds hidden cards (\texttt{Flashcard.isHidden}), synced like hidden decks. \\
 S44 & Content moves to Supabase: topics, questions, exercises, and starter decks are rows in public, read-only \texttt{content\_*} tables that the app downloads at launch and on return to the foreground (at most every 10 minutes), checks with the bundle's loaders, caches, and re-seeds by ID; the bundled JSON stays as the fallback, so new content needs no app update. A Library tab holds every topic with its quiz, exercises, and decks; Play keeps the game. \\
 S45 & Coding challenges join the drills (the code-completion exercises, renamed in the UI only, so the \texttt{Exercise} type, tables, and test ids keep their names). A challenge is rows in public \texttt{content\_challenges}, \texttt{content\_challenge\_starters}, and \texttt{content\_challenge\_tests}, where RLS lets clients read only example tests. Run and Submit go to the \texttt{run-challenge} Edge Function, which loads the tests with the service role, wraps the code in a per-language driver, runs it on Piston (EC2, behind Caddy with a secret header), and judges the output; the app never learns the runner's address. Drafts are files per challenge and language on the device, never synced. A solve is paid once and recorded with the solved exercises (challenge ids start with \texttt{ch-}), so it syncs with FR-61 and needs no schema change. Every drill and challenge has two hints in a shared \texttt{HintBento}. iPhone is locked to portrait. \\
+S46 & The trophy case: 27 badges (was 4), each a count reaching a target (\texttt{BadgeMetric}), paying 25 to 300~XP once when awarded, to the total only (not the weekly leaderboard, so catching up on many badges at once on upgrade doesn't top a group's board); badge XP that reaches a level awards that level's badge in the same pass. Badges already earned before the change pay nothing. The streak pill opens the trophy case (square bento tiles, 3/4/6 a row by width, locked ones a grey silhouette with their XP); a badge opens in a floating panel with its date and XP, or its progress. Badge art is drawn in code (\texttt{BadgeArt}): the shape gives the family, inner rings the difficulty, habit badges a stitched patch. Play's quest row alternates per launch with the three badges closest to done. No schema change; one migration widens the \texttt{badge\_awards} CHECK. The groups button's trophy becomes a medal. \\
 \end{xltabular}
 
 \subsection{Input Validation and Failure Handling}
@@ -1484,7 +1485,7 @@ UC-15 Manage Profile & Edit display name (1--30 characters) and avatar; saved lo
 UC-05 Report UI/UX Defect & Signed-in student sends a 1--1,000 character report; kept for retry if offline. & FR-49 \\
 UC-17 View Weekly Plan & Play tags the three weakest topics ``This week'', fixed until Monday. & FR-36, FR-38 \\
 UC-18 Track Weekly Challenge & Play shows $n$ of 15 correct in the week's topic; 15 pays 100 XP and earns a badge. & FR-43, FR-53 \\
-UC-19 Earn / View Badges & Rules run after a save, rating, or answer; earned badges stay earned. & FR-32--FR-35 \\
+UC-19 Earn / View Badges & Rules run after a save, rating, answer, or solve, and at launch; each new badge pays its XP once and stays earned. The streak pill opens the trophy case; a badge opens with its date and XP, or its progress. & FR-32--FR-35 \\
 UC-20 Create Group & Signed in and online; the server makes the invite code. & FR-50 \\
 UC-21 Join Group & Code checked and joined through \texttt{join\_group}. & FR-51 \\
 UC-22 View Weekly Leaderboard & Push own weekly XP, fetch the board, cache it for offline. & FR-42, FR-52 \\
@@ -1539,9 +1540,9 @@ FR-19 -- FR-21 & UC-11 & \texttt{QuizViewModel}, \texttt{QuestionPool.build()}, 
 FR-22 -- FR-29, FR-56 -- FR-58 & UC-11, UC-12 & \texttt{QuizProgressStore}, \texttt{QuestionProgress}, \texttt{TopicProgress}, \texttt{TierGate}, \texttt{QuestionPool}, \texttt{StudyPool}, \texttt{GatingConfig} & TC-22 -- TC-29, TC-56 -- TC-58 & Implemented \\
 FR-30 -- FR-31 & UC-11 & \texttt{XPPolicy}, \texttt{XPRewards} (study, exercises, quest bonuses), \texttt{UserProfile} (V9: rewards already paid), \texttt{LevelCalculator}, \texttt{QuizViewModel.select()} & TC-30 -- TC-31 & Implemented \\
 FR-32 -- FR-34 & UC-19 & \texttt{StreakCalculator.isGoalMet()}, \texttt{currentStreak(endingOn:)}, \texttt{GatingConfig.dailyGoal}, \texttt{DailyActivity}; Home level line & TC-32 -- TC-34 & Implemented \\
-FR-35 & UC-19 & \texttt{Badge}, \texttt{BadgeEvaluator.award()}, \texttt{BadgeAward} (V7), \texttt{BadgesRow}, \texttt{.badgeBanner()} & TC-35 & Implemented \\
+FR-35 & UC-19 & \texttt{Badge}, \texttt{BadgeMetric}, \texttt{BadgeEvaluator.award()} and \texttt{facts(in:)}, \texttt{BadgeAward} (V7), \texttt{BadgesView} (trophy case), \texttt{BadgeArt}, \texttt{.badgeBanner()}, \texttt{PlayRotation} & TC-35 & Implemented \\
 FR-36 & UC-17 & \texttt{QuizAnswerRecord}, \texttt{QuizProgressStore.accuracy()} & TC-36 & Implemented \\
-FR-37 & UC-17 & \texttt{HomeView} (Play: \texttt{HeroCard} with level and streak badge, \texttt{TopicTile} with per-topic accuracy, \texttt{QuestTile}) & TC-37 & Implemented \\
+FR-37 & UC-17 & \texttt{HomeView} (Play: \texttt{HeroCard} with level, streak pill that opens the trophy case, \texttt{TopicTile} with per-topic accuracy, \texttt{QuestTile}) & TC-37 & Implemented \\
 FR-38 & UC-17 & \texttt{StudyPlanBuilder.build()}, \texttt{StudyPlan.current()} (cached per week), ``This week'' tag on Play's topic tiles & TC-38 & Implemented \\
 FR-39 -- FR-41 & UC-23, UC-24 & \texttt{ExerciseLoader}, \texttt{content\_exercises} via \texttt{ContentSeeder} (bundled \texttt{exercises.json} as fallback), \texttt{ExercisePicker}, \texttt{ExerciseValidator.check()}, \texttt{normalize()}, \texttt{ExerciseResult}, \texttt{ExerciseTiles}, \texttt{ExerciseView}; no code is executed on the device & TC-39 -- TC-41 & Implemented \\
 FR-69 -- FR-73 & UC-26 & \texttt{Challenge}, \texttt{ChallengeLoader}, \texttt{ChallengeCatalog}, \texttt{ChallengeDrafts}, \texttt{ChallengeRunning} (\texttt{SupabaseDataClient.runChallenge()}), \texttt{ChallengeView}, \texttt{ChallengeTiles}, \texttt{CodeEditorView}; \texttt{content\_challenge*} tables, \texttt{run-challenge} Edge Function (\texttt{drivers.ts}, \texttt{judge.ts}) & TC-69 -- TC-73 & Implemented \\
@@ -2068,8 +2069,8 @@ changes take a \texttt{CardRating}.
     \nodepart{two}\raggedright +badgeRaw: String \{unique\}\\ +earnedAt: Date
     \nodepart{three}~};
   \node[cls={gray}{4.4cm}] (badge) at (5.6,0) {\ctitle{\st{enum}\\\textbf{Badge}}
-    \nodepart{two}\raggedright firstDeck, sevenDayStreak,\\ xp1000, weeklyChallenge
-    \nodepart{three}~};
+    \nodepart{two}\raggedright 27 cases (S46): level2 \ldots{} cards100
+    \nodepart{three}\raggedright +metric, target, xp\\ +title, requirement};
   \node[cls={orange}{5.0cm}, anchor=north] (be) at (5.6,-2.6) {\ctitle{\st{enum}\\\textbf{BadgeEvaluator}}
     \nodepart{two}~
     \nodepart{three}\raggedright +qualifying(facts) : Set$<$Badge$>$\\ +award(context: ModelContext)};
@@ -2114,7 +2115,7 @@ is everything else in the figure. \texttt{StreakCalculator} derives the daily go
 and streak from \texttt{DailyActivity} plus other devices' \texttt{DeviceDayActivity} (S43); \texttt{WeeklyChallenge} derives the week's
 topic and progress from \texttt{QuizAnswerRecord}; and \texttt{BadgeEvaluator} turns
 those facts and the deck count and XP into the set of qualifying badges, inserting a
-\texttt{BadgeAward} for each new one. All three are pure enumerations with no stored
+\texttt{BadgeAward} for each new one (the final sprint widened it to 27 badges that pay XP, decision S46). All three are pure enumerations with no stored
 state, in the style of \texttt{LevelCalculator} and \texttt{XPPolicy}, so they are
 tested without a store. \texttt{GroupSummary} and \texttt{LeaderboardEntry} are value
 types returned by the facade; group data is never stored in SwiftData, only cached for
@@ -2811,7 +2812,7 @@ artifacts each node hosts.
         read (of the challenge tests, only the examples) and none may change, and the
         service-role-only \texttt{challenge\_runs} table behind the rate limit (NFR-34). Helper
         functions live in a \texttt{private} schema that PostgREST does not expose. The
-        schema is versioned as 16 migration files in \texttt{supabase/migrations}, and
+        schema is versioned as 17 migration files in \texttt{supabase/migrations}, and
         the content rows are in \texttt{supabase/seed.sql}. Stored data is
         encrypted at rest (NFR-05). The Free plan includes no automated backups, so
         the team exports every table's rows with \texttt{pg\_dump}
@@ -3705,7 +3706,7 @@ suites that run by default by layer; the per-suite counts are in \texttt{docs/so
 \toprule
 \textbf{Layer} & \textbf{Suites (examples)} & \textbf{Tests} & \textbf{Failed} \\
 \midrule
-Domain rules and models & \texttt{StudyQueueTests}, \texttt{TierGateTests}, \texttt{QuestionPoolTests}, \texttt{ModelValidatorTests}, \texttt{ExerciseValidatorTests}, \texttt{StreakCalculatorTests}, \texttt{XPRewardsTests}, \texttt{ExercisePickerTests} (21 suites) & 141 & 0 \\
+Domain rules and models & \texttt{StudyQueueTests}, \texttt{TierGateTests}, \texttt{QuestionPoolTests}, \texttt{ModelValidatorTests}, \texttt{ExerciseValidatorTests}, \texttt{StreakCalculatorTests}, \texttt{XPRewardsTests}, \texttt{ExercisePickerTests}, \texttt{BadgeEvaluatorTests} (21 suites) & 147 & 0 \\
 View models and navigation & \texttt{StudySessionViewModelTests}, \texttt{QuizViewModelTests}, \texttt{DeckViewModelTests}, \texttt{RouterTests} (4) & 51 & 0 \\
 Content and persistence & \texttt{ExerciseLoaderTests}, \texttt{StarterDeckLoaderTests}, \texttt{DataSeederTests}, \texttt{ContentFilesTests}, \texttt{MigrationTests} (10) & 59 & 0 \\
 Sync and backend & \texttt{SyncEngineTests}, \texttt{DeckSyncStateTests}, \texttt{ProgressSyncTests}, \texttt{ProgressHistorySyncTests}, \texttt{SupabaseDataClientTests}, \texttt{GroupsAndChallengeTests} (10) & 136 & 0 \\
@@ -3714,7 +3715,7 @@ Design system & \texttt{ContrastTests}, \texttt{ColorTokenTests}, \texttt{Markdo
 Ask AI tutor & \texttt{OpenRouterClientTests}, \texttt{AskAISessionTests}, \texttt{AnswerLeakGuardTests}, \texttt{AskAIConfigTests} (4) & 29 & 0 \\
 Coding challenges (S45, Nov 17) & \texttt{ChallengeTests} (1) & 9 & 0 \\
 \midrule
-\textbf{Total} & 63 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{472} & \textbf{0} \\
+\textbf{Total} & 63 suites run; \texttt{PerformanceTests} (7) and \texttt{LaunchFixtureSeed} (1) skipped unless enabled & \textbf{478} & \textbf{0} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -3730,8 +3731,9 @@ tutor, the XP rewards, and the content served from Supabase. The coding challeng
 (468 unit tests and both accessibility audits passed, 0 failed), and again on Nov 20 after the final
 clean-up, which added one test (469 passed, 0 failed), and once more after the final audit
 fixes, which added one test for the sync page order (470 passed, 0 failed), and on Nov 21
-after the sign-out fix (BUG-06), which added two tests (472 passed, 0 failed); the coverage
-figures above are from the earlier run.
+after the sign-out fix (BUG-06), which added two tests (472 passed, 0 failed), and after the trophy case (S46), whose badge
+rules, XP payout, and \emph{Next badges} ordering added six (478 passed, both audits
+passed, 0 failed); the coverage figures above are from the earlier run.
 
 \subsection{Flow-Graph Coverage}\label{sec:flowgraph}
 Two methods with real branching were drawn as control flow graphs, and each basis
@@ -4014,7 +4016,7 @@ AT-14 & Accessible screens (NFR-10 to 12) & Run the accessibility audit over the
 AT-15 & Private data (NFR-07) & Signed in as a second account, try to see the first account's decks and progress. Nothing is visible; the live security test reports 0 of 73 checks failed. & Pass \\
 AT-16 & Layout on every device & iPhone stays in portrait. iPad in landscape and a wide Mac window show a challenge's description, code, and results side by side. & Pass \\
 AT-17 & Content updates without an app update & A topic added on Supabase appears in the app after it is closed and reopened, with no new build. & Pass \\
-AT-18 & Build and tests from the final tag & From the final tag on main, CI builds the app and runs every test: repository checks, 122 database tests, runner tests, and 474 app tests, all passing. & Pass \\
+AT-18 & Build and tests from the final tag & From the final tag on main, CI builds the app and runs every test: repository checks, 122 database tests, runner tests, and 480 app tests, all passing. & Pass \\
 AT-19 & Documentation matches the product & The final document's commit table and Appendix B point at the code in the final tag; all 75 functional requirements trace to a passing test; the screenshots show the final app. & Pass \\
 \end{xltabular}
 
@@ -4061,7 +4063,7 @@ drills, and coding challenges whose code runs against automated test cases on th
 team's sandboxed runner. Since the last week of Sprint~4 the content itself
 (12 topics, 336 questions, 55 exercises, and 24 starter decks) is served from Supabase,
 so it can grow without an app update, and the bundled copy remains the offline
-fallback. The app is covered by 472 unit tests, 9 UI tests over 22 screens, 122
+fallback. The app is covered by 478 unit tests, 9 UI tests over 22 screens, 122
 database tests, 13 Deno tests of the code runner, and a 73-check security test of the live policies. The unit tests,
 the accessibility audit, the database tests, and the repository checks run in CI on
 every push; the other UI suites and the live check are run by hand. The team's main lessons were

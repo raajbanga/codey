@@ -4,11 +4,11 @@ import SwiftUI
 /// Play (S41, the game layer; was Home), laid out as the S41 mockup: few
 /// words, big targets, color per topic, on the dotted paper.
 ///
-///     🔥4                            (▲) (◎)  ← streak; groups, profile
+///     🔥4                            (▲) (◎)  ← streak (opens badges); groups, profile
 ///     ╭ (avatar) Hello, Codey!     [Level 3] ╮   ← HeroCard, app hue
 ///     │ ████████████░░░░░░                   │
 ///     ╰ 320 / 500 XP                         ╯
-///     Today's quests
+///     Today's quests                         ← or Next badges, every other launch
 ///     ╭ ◎ Answer 20   ╮ ╭ ⚑ 15 right in…  ╮      ← next quest large,
 ///     │ ━━━━──        │ ╰─────────────────╯         the others stacked
 ///     ╰ [  ▶ Play  ]  ╯ ╭ ▭ Warm up: SQL  ╮         small (1½)
@@ -25,6 +25,14 @@ struct HomeView: View {
     @AppStorage("home.signInNudgeDismissed") private var nudgeDismissed = false
     /// FR-38: this week's plan (JSON StudyPlan), so it doesn't reshuffle.
     @AppStorage("home.studyPlan") private var studyPlanData = Data()
+    /// This launch shows the next badges in place of the quests (PlayRotation).
+    @AppStorage(PlayRotation.key) private var showsBadgeQuests = false
+    /// The trophy case, from the streak pill or a badge quest.
+    @State private var showsBadges = false
+    /// The badges closest to done and the counts behind them, gathered
+    /// when Play appears.
+    @State private var nextBadges: [Badge] = []
+    @State private var badgeFacts = BadgeFacts()
 
     @Query private var profiles: [UserProfile]
     @Query(sort: \Topic.title) private var topics: [Topic]
@@ -39,6 +47,7 @@ struct HomeView: View {
     @Query private var otherActivity: [DeviceDayActivity]
     @Query private var progressRows: [QuestionProgress]
     @Query private var topicProgress: [TopicProgress]
+    @Query private var awards: [BadgeAward]
 
     private var profile: UserProfile? { profiles.first }
     private var xp: Int { profile?.totalXP ?? 0 }
@@ -66,6 +75,8 @@ struct HomeView: View {
             LaunchTimer.markHomeReady()
         }
         .onChange(of: topics.map(\.id)) { refreshPlan(stats) }
+        .task(id: awards.count) { refreshNextBadges() }
+        .navigationDestination(isPresented: $showsBadges) { BadgesView() }
     }
 
     // MARK: Warm-up suggestion
@@ -84,12 +95,21 @@ struct HomeView: View {
 
     // MARK: Header
 
-    /// Always shown, 0 included (FR-37: the current streak).
+    /// Always shown, 0 included (FR-37: the current streak). Opens the
+    /// trophy case (FR-35).
     private var streakBadge: some View {
         let streak = StreakCalculator.currentStreak(endingOn: .now, totals: dayTotals)
-        return HeaderBadge(value: streak, icon: "flame", ink: CodeyColor.xp, fill: CodeyColor.xpSoft)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(streak) day streak")
+        return Button {
+            showsBadges = true
+        } label: {
+            HeaderBadge(value: streak, icon: "flame", ink: CodeyColor.xp, fill: CodeyColor.xpSoft)
+        }
+        .buttonStyle(TilePressStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(streak) day streak")
+        .accessibilityHint("Opens your badges")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("play.badges")
     }
 
     @ViewBuilder
@@ -97,7 +117,8 @@ struct HomeView: View {
         NavigationLink {
             GroupsView()
         } label: {
-            CircleIcon(systemImage: "trophy", kind: .soft)
+            // The medal, not the trophy: the trophy is the badges (Nov 21).
+            CircleIcon(systemImage: "medal", kind: .soft)
         }
         .buttonStyle(TilePressStyle())
         .accessibilityLabel("Groups and leaderboard")
@@ -215,6 +236,30 @@ struct HomeView: View {
         return quests
     }
 
+    /// The badges closest to done, as quests that open the trophy case
+    /// (on alternate launches, PlayRotation).
+    private var badgeQuests: [Quest] {
+        nextBadges.map { badge in
+            let (value, target) = badge.progress(badgeFacts)
+            return Quest(
+                id: "play.badge.\(badge.rawValue)", icon: badge.symbol, title: badge.requirement,
+                detail: "\(value) of \(target)", progress: badge.fraction(badgeFacts),
+                bonus: badge.xp, isPaid: false, hue: badge.hue,
+                accessibilityLabel: "Badge: \(badge.requirement), \(value) of \(target), plus \(badge.xp) XP"
+            ) { showsBadges = true }
+        }
+    }
+
+    /// Gathers the badge counts once (not on every redraw), and only on a
+    /// launch that shows them.
+    private func refreshNextBadges() {
+        guard showsBadgeQuests else { return }
+        let earned = Set(awards.compactMap(\.badge))
+        guard let facts = try? BadgeEvaluator.facts(in: context, for: Set(Badge.allCases).subtracting(earned)) else { return }
+        badgeFacts = facts
+        nextBadges = HomeLogic.nextBadges(earned: earned, facts: facts)
+    }
+
     /// The deck to warm up with: the session in progress, the starter deck,
     /// or a deck in the suggested topic.
     private func warmUpDeck(_ stats: HomeStats) -> (deck: FlashcardDeck, resume: Bool, title: String, detail: String)? {
@@ -234,11 +279,12 @@ struct HomeView: View {
     /// right (a mixed fraction); one quest alone takes the row.
     @ViewBuilder
     private func questsSection(_ stats: HomeStats) -> some View {
-        let all = quests(stats)
+        let showsBadgeRow = showsBadgeQuests && !nextBadges.isEmpty
+        let all = showsBadgeRow ? badgeQuests : quests(stats)
         if let large = all.first(where: { !$0.isPaid }) ?? all.first {
             let small = all.filter { $0.id != large.id }
             VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                SectionTitle("Today's quests")
+                SectionTitle(showsBadgeRow ? "Next badges" : "Today's quests")
                 HStack(alignment: .top, spacing: layout.gridGap) {
                     questButton(large, isLarge: true)
                     if !small.isEmpty {

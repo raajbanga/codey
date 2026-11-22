@@ -7,6 +7,10 @@ import Observation
 /// Supabase download, else the bundle). Only example tests are here: hidden
 /// tests never reach the app (FR-72).
 struct Challenge: Codable, Equatable, Identifiable, Hashable {
+    /// Every challenge id starts with it, so solved challenges and drills
+    /// share `solvedExerciseIds` without clashing (and can be told apart).
+    static let idPrefix = "ch-"
+
     struct Param: Codable, Equatable, Hashable {
         let name: String
         let type: String
@@ -83,7 +87,7 @@ enum ChallengeLoader {
         }
         var seen = Set<String>()
         for challenge in file.challenges {
-            guard challenge.id.hasPrefix("ch-") else { throw ChallengeLoaderError.badId(challenge.id) }
+            guard challenge.id.hasPrefix(Challenge.idPrefix) else { throw ChallengeLoaderError.badId(challenge.id) }
             guard seen.insert(challenge.id).inserted else { throw ChallengeLoaderError.duplicateId(challenge.id) }
             guard topicIds.contains(challenge.topicId) else {
                 throw ChallengeLoaderError.unknownTopicId(challengeId: challenge.id, topicId: challenge.topicId)
