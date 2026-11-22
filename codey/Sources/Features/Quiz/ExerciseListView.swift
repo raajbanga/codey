@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Coding exercises (FR-39) on Play (S41): one GameTile each, with what a
-/// first solve pays (+10 XP a blank) or Solved once done. Goes inside a
+/// Coding exercises (FR-39) on Play (S41): one SolvableTile each, with what
+/// a first solve pays (+10 XP a blank) or Solved once done. Goes inside a
 /// BentoSection.
 struct ExerciseTiles: View {
     let topics: [Topic]
@@ -23,39 +23,21 @@ struct ExerciseTiles: View {
     var body: some View {
         Group {
             if let loadError {
-                GameTile(icon: "exclamationmark.triangle", title: "Exercises didn't load", detail: loadError, hue: .rose, filled: false)
+                GameTile(icon: "exclamationmark.triangle", title: "Drills didn't load", detail: loadError, hue: .rose, filled: false)
             } else {
                 ForEach(ordered) { exercise in
-                    let done = solved.contains(exercise.id)
-                    NavigationLink {
+                    SolvableTile(
+                        icon: "chevron.left.forwardslash.chevron.right",
+                        title: exercise.title,
+                        detail: exercise.language.displayName,
+                        topicID: exercise.topicId,
+                        isSolved: solved.contains(exercise.id),
+                        xpReward: exercise.xpReward,
+                        accessibilityHint: "Opens the drill",
+                        identifier: "exercise.\(exercise.id)"
+                    ) {
                         ExerciseView(exercise: exercise)
-                    } label: {
-                        // Same tile as a topic, on the plain note so the
-                        // section reads apart from the topics above (S41).
-                        GameTile(
-                            icon: done ? "checkmark.circle.fill" : "chevron.left.forwardslash.chevron.right",
-                            title: exercise.title,
-                            detail: exercise.language.displayName,
-                            hue: .of(topicID: exercise.topicId),
-                            filled: false,
-                            action: TileAction(
-                                done ? "Again" : "Solve",
-                                icon: done ? "arrow.counterclockwise" : "play",
-                                prominent: !done
-                            )
-                        ) {
-                            // Solved, or what a first solve pays.
-                            if done {
-                                CodeyChip("Solved", systemImage: "checkmark", variant: .success)
-                            } else {
-                                CodeyChip(xp: XPRewards.exerciseBlank * exercise.blanks.count)
-                            }
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityHint("Opens the exercise")
                     }
-                    .buttonStyle(TilePressStyle())
-                    .accessibilityIdentifier("exercise.\(exercise.id)")
                 }
             }
         }

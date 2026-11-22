@@ -47,6 +47,7 @@ enum LocalDataReset {
         try deleteAll(Topic.self, context: context)
         try context.save()
         weeklyXP.reset()
+        ChallengeDrafts.removeAll()
 
         try DataSeeder.seed(context: context, bank: bank)
         try StarterDeckLoader.seed(context: context, file: decks ?? StarterDeckLoader.loadBundle())

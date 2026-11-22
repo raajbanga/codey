@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import os
 
 /// Every XP source beyond a correct quiz answer (S41, the game layer), and
 /// the one place XP is added, so the level, the leaderboard's weekly XP,
@@ -9,8 +10,12 @@ import SwiftData
 ///     card moves up a mastery step     +5   (a re-rating that doesn't
 ///                                            raise the score pays 0)
 ///     exercise solved, per blank       +10  first solve only
+///     challenge accepted               +20/35/50 by tier, first solve only
 ///     daily goal met                   +50  once per local day
 ///     weekly challenge complete        +100 once per UTC week
+///     badge earned                     +25 to +300, once per badge
+///                                      (BadgeEvaluator; total XP only,
+///                                      not the weekly leaderboard)
 enum XPRewards {
     static let cardMovedUp = 5
     static let exerciseBlank = 10
@@ -48,14 +53,41 @@ enum XPRewards {
         new > previous ? cardMovedUp : 0
     }
 
-    /// Pays a fully solved exercise the first time only. Returns the XP paid.
+    /// FR-69: an accepted coding challenge, by difficulty.
+    static func challengeReward(_ difficulty: Difficulty) -> Int {
+        switch difficulty {
+        case .easy: 20
+        case .medium: 35
+        case .hard: 50
+        }
+    }
+
+    /// Pays a solved drill or accepted challenge the first time only
+    /// (challenge ids start with ch-, so both share solvedExerciseIds
+    /// without clashing). Returns the XP paid.
     @discardableResult
-    static func solveExercise(id: String, blanks: Int, profile: UserProfile, weeklyXP: WeeklyXPStore, now: Date) -> Int {
+    static func payFirstSolve(id: String, amount: Int, profile: UserProfile, weeklyXP: WeeklyXPStore, now: Date) -> Int {
         guard !profile.solvedExerciseIds.contains(id) else { return 0 }
         profile.solvedExerciseIds.append(id)
-        let amount = exerciseBlank * blanks
         grant(amount, to: profile, weeklyXP: weeklyXP, now: now)
         return amount
+    }
+
+    /// The same for a screen: pays the first solve, awards any badge it
+    /// earns, and saves. Returns the XP paid and the level it reached, if
+    /// the XP crossed into a new one (for the summary's celebration).
+    @MainActor
+    static func payFirstSolve(id: String, amount: Int, context: ModelContext, now: Date = .now) -> (xp: Int, reachedLevel: Int?) {
+        let profile = DataSeeder.ensureProfile(context: context)
+        let levelBefore = profile.level
+        let paid = payFirstSolve(id: id, amount: amount, profile: profile, weeklyXP: WeeklyXPStore(), now: now)
+        do {
+            try BadgeEvaluator.award(context: context, now: now)
+            try context.save()
+        } catch {
+            Logger.quiz.error("Saving solve XP failed: \(String(describing: error))")
+        }
+        return (paid, profile.level > levelBefore ? profile.level : nil)
     }
 
     /// Pays the daily-goal and weekly-challenge bonuses that are met and not
@@ -100,4 +132,14 @@ extension WeeklyChallenge {
         ))
         return correct >= goal
     }
+}
+
+extension Exercise {
+    /// What a first full solve pays: 10 XP a blank.
+    var xpReward: Int { XPRewards.exerciseBlank * blanks.count }
+}
+
+extension Challenge {
+    /// What a first accepted submission pays, by tier (FR-69).
+    var xpReward: Int { XPRewards.challengeReward(difficulty) }
 }

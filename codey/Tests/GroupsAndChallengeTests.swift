@@ -72,7 +72,7 @@ struct GroupsAndChallengeTests {
         }
         try context.save()
 
-        #expect(try BadgeEvaluator.facts(in: context, now: now).weeklyChallengesCompleted == 1)
+        #expect(try BadgeEvaluator.facts(in: context, now: now)[.weeklyChallenges] == 1)
         #expect(try BadgeEvaluator.award(context: context, now: now).contains(.weeklyChallenge))
     }
 
@@ -171,8 +171,8 @@ struct GroupsAndChallengeTests {
 
     @Test func createJoinAndLeave() async throws {
         let h = try SyncHarness()
-        let group = try await h.facade.createGroup(name: "  CS 360  ")
-        #expect(group.name == "CS 360")
+        let group = try await h.facade.createGroup(name: "  Study Group  ")
+        #expect(group.name == "Study Group")
         #expect(h.facade.cachedGroups?.groups == [group])
 
         // Joining by a lowercase code finds the same group.
@@ -205,6 +205,13 @@ struct GroupsAndChallengeTests {
         #expect(rows.map(\.entry.xp) == [80, 50])
         #expect(rows.first?.isMe == true)
         #expect(h.facade.cachedLeaderboard(for: group.id)?.entries == entries)
+
+        // The Groups tab: one sync, then every board.
+        let other = try await h.facade.createGroup(name: "Other")
+        let fetchesBefore = h.remote.requests.filter { $0 == "fetchLeaderboard" }.count
+        let boards = await h.facade.fetchLeaderboards(for: [group.id, other.id])
+        #expect(Set(boards.keys) == [group.id, other.id])
+        #expect(h.remote.requests.filter { $0 == "fetchLeaderboard" }.count == fetchesBefore + 2)
 
         // Offline: the call fails, the cached board stays.
         h.remote.isOffline = true

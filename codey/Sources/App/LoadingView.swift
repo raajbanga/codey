@@ -118,7 +118,7 @@ struct LoadingView: View {
             if BundledContentStamp.isSeeded(stamp, context: context) {
                 // Same content as last launch: nothing to upsert.
                 DataSeeder.ensureProfile(context: context)
-                ExerciseCatalog.shared.replace(with: content.exercises)
+                ContentSeeder.showCatalogs(content)
                 Logger.seeding.info("Content unchanged; seeding skipped")
             } else {
                 try ContentSeeder.seed(content, stamp: stamp, context: context)
@@ -132,6 +132,9 @@ struct LoadingView: View {
             } catch {
                 Logger.seeding.error("Badge catch-up failed: \(String(describing: error))")
             }
+            // Play's quests take turns with the next badges, once a launch
+            // (UI tests keep the quests, which they look for).
+            if !AppLaunchOptions.usesInMemoryStore { PlayRotation.advance() }
             progress = 1.0
 
             let facade = AppLaunchOptions.usesInMemoryStore

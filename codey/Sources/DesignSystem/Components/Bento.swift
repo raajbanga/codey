@@ -30,9 +30,16 @@ extension View {
 /// A section heading above a grid or note.
 struct SectionTitle: View {
     let title: String
+    /// How many items the section holds, as a tag after the title.
+    var count: Int?
     @Environment(\.codeyLeadsColumn) private var leadsColumn
+    /// The count badge's diameter: the title's line height, so it scales with it.
+    @ScaledMetric(relativeTo: .headline) private var badge: CGFloat = 22
 
-    init(_ title: String) { self.title = title }
+    init(_ title: String, count: Int? = nil) {
+        self.title = title
+        self.count = count
+    }
 
     var body: some View {
         if leadsColumn {
@@ -46,29 +53,45 @@ struct SectionTitle: View {
     }
 
     private var label: some View {
-        Text(title)
-            .font(.codeyHeadline)
-            .foregroundStyle(CodeyColor.textSecondary)
-            .accessibilityAddTraits(.isHeader)
-            .padding(.leading, CodeySpacing.xs)
+        HStack(spacing: CodeySpacing.sm) {
+            Text(title)
+                .font(.codeyHeadline)
+                .foregroundStyle(CodeyColor.textSecondary)
+            if let count {
+                // A circle as tall as the title (a capsule past 2 digits).
+                Text("\(count)")
+                    .font(.codeyCaption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(CodeyColor.textSecondary)
+                    .padding(.horizontal, CodeySpacing.xs)
+                    .frame(minWidth: badge, minHeight: badge)
+                    .background(CodeyColor.fillNeutral, in: .pill)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
+        .accessibilityAddTraits(.isHeader)
+        .padding(.leading, CodeySpacing.xs)
     }
 }
 
 /// An optionally titled BentoGrid.
 struct BentoSection<Content: View>: View {
     let title: String?
+    var count: Int?
     var columns: BentoColumns = .pair
     @ViewBuilder let content: Content
 
-    init(_ title: String?, columns: BentoColumns = .pair, @ViewBuilder content: () -> Content) {
+    init(_ title: String?, count: Int? = nil, columns: BentoColumns = .pair, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.count = count
         self.columns = columns
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-            if let title { SectionTitle(title) }
+            if let title { SectionTitle(title, count: count) }
             BentoGrid(columns: columns) { content }
         }
     }
@@ -80,14 +103,24 @@ struct BentoSection<Content: View>: View {
 ///     .spread  a page's only grid (Decks, Library): two, or three on a
 ///              page wide enough for two columns (iPad landscape); three
 ///              wide tiles rather than four skinny ones (Nov 16)
+///     .badges  small square tiles (the trophy case): three on iPhone,
+///              four on a regular-width page, six on a wide one
 enum BentoColumns: Sendable {
     case pair
     case spread
+    case badges
 
-    func count(pageIsWide: Bool, isAccessibilitySize: Bool) -> Int {
-        let base = self == .spread && pageIsWide ? 3 : 2
+    func count(pageIsWide: Bool, isAccessibilitySize: Bool, isRegular: Bool = false) -> Int {
+        let base = switch self {
+        case .pair: 2
+        case .spread: pageIsWide ? 3 : 2
+        case .badges: pageIsWide ? 6 : isRegular ? 4 : 3
+        }
         return isAccessibilitySize ? max(base - 1, 1) : base
     }
+
+    /// Whether a last odd tile spans a two-column row (not square tiles).
+    var spansLastTile: Bool { self != .badges }
 }
 
 /// Equal columns (two by default); in a two-column grid a last odd tile
@@ -106,14 +139,15 @@ struct BentoGrid<Content: View>: View {
     }
 
     var body: some View {
-        let columns = columns.count(pageIsWide: pageIsWide, isAccessibilitySize: typeSize.isAccessibilitySize)
+        let kind = columns
+        let columns = kind.count(pageIsWide: pageIsWide, isAccessibilitySize: typeSize.isAccessibilitySize, isRegular: layout.isRegular)
         let gap = layout.gridGap
         Group(subviews: content) { tiles in
             Grid(horizontalSpacing: gap, verticalSpacing: gap) {
                 ForEach(Array(stride(from: 0, to: tiles.count, by: columns)), id: \.self) { start in
                     GridRow {
                         ForEach(tiles[start..<min(start + columns, tiles.count)]) { tile in
-                            let spans = start + 1 == tiles.count && columns == 2
+                            let spans = kind.spansLastTile && start + 1 == tiles.count && columns == 2
                             tile
                                 .frame(maxHeight: .infinity, alignment: .top)
                                 .gridCellColumns(spans ? columns : 1)

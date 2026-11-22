@@ -1,0 +1,23 @@
+{
+  "id": "ch-valid-parentheses", "topicId": "topic-data-structures", "title": "Valid Parentheses", "difficulty": "easy",
+  "statement": "Given a string `s` containing only the characters `(`, `)`, `{`, `}`, `[` and `]`, decide whether it is valid.\n\nA string is valid when every open bracket is closed by the same type of bracket, brackets close in the correct order, and every close bracket has a matching open bracket.",
+  "constraints": ["1 ≤ s.length ≤ 10⁴", "s consists of parentheses only: ()[]{}"],
+  "hints": [
+    "The most recently opened bracket must be the first one closed. Which data structure gives you \"last in, first out\"?",
+    "Push each opening bracket onto a stack. On a closing bracket, the stack must be non-empty and its top must be the matching opener. At the end, the stack must be empty."
+  ],
+  "function": { "name": "isValid", "params": [{ "name": "s", "type": "string" }], "returns": "bool" },
+  "comparator": "exact",
+  "editorial": "A stack of open brackets: push openers, pop and compare on closers. Valid if every closer matches and the stack ends empty. **O(n)** time and space.",
+  "tests": [
+    { "args": ["()"], "expected": true, "example": true },
+    { "args": ["()[]{}"], "expected": true, "example": true },
+    { "args": ["(]"], "expected": false, "example": true, "explanation": "( is closed by ], a different type." },
+    { "args": ["([)]"], "expected": false },
+    { "args": ["{[]}"], "expected": true },
+    { "args": ["("], "expected": false },
+    { "args": ["))"], "expected": false },
+    { "args": ["(((())))[]{}"], "expected": true },
+    { "args": ["]"], "expected": false }
+  ]
+}

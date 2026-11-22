@@ -18,30 +18,11 @@ struct TierLockNote: View {
 
     var body: some View {
         if let locked = tiers.first(where: { !$0.isUnlocked }), let reason = locked.lockReason {
-            Label("\(locked.difficulty.style.label) unlocks: \(reason)", systemImage: "lock")
+            Label("\(locked.difficulty.style.label) unlocks: \(reason)", icon: "lock")
                 .font(.codeySubheadline)
                 .foregroundStyle(CodeyColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("tier.locked")
-        }
-    }
-}
-
-/// "Tier unlocked: Medium" banner on the study and quiz summaries.
-struct TierUnlockedBanner: View {
-    let tier: Difficulty
-
-    // Same note + colored edge as the level-up banner it sits under.
-    var body: some View {
-        CodeyCard(tint: tier.style.color) {
-            Label {
-                Text("Tier unlocked: \(tier.style.label)")
-                    .font(.codeyHeadline)
-                    .foregroundStyle(CodeyColor.textPrimary)
-            } icon: {
-                Icon(tier.style.symbol, relativeTo: .headline)
-                    .foregroundStyle(tier.style.color)
-            }
         }
     }
 }

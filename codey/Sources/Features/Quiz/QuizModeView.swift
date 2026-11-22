@@ -220,7 +220,7 @@ struct QuizModeView: View {
                 HStack(spacing: CodeySpacing.xs) {
                     Label(
                         feedback.correct ? "Correct" : "Not quite",
-                        systemImage: feedback.correct ? "checkmark.circle.fill" : "xmark.circle.fill"
+                        icon: feedback.correct ? "checkmark.circle.fill" : "xmark.circle.fill"
                     )
                     .font(.codeyHeadline)
                     .foregroundStyle(feedback.correct ? CodeyColor.success : CodeyColor.danger)

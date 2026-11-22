@@ -5,7 +5,7 @@
 #
 #   PERF_TAG=sprint4 scripts/perf-launch.sh [runs]
 #   default 10 runs (the first is discarded); writes docs/source/perf/<tag>-launch.csv
-#   (default tag sprint4; Sprint 3's results are launch.csv)
+#   (default tag sprint4)
 #
 # First it runs the opt-in LaunchFixtureSeed test (Release, hosted in the
 # app) on the booted Simulator: that installs the Release app, adds the

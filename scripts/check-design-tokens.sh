@@ -23,6 +23,12 @@ SCREENS=("$SRC/Features" "$SRC/App" "$SRC/Navigation")
 check "no raw Color(...) / hex in screens" 'Color\(|#[0-9A-Fa-f]{6}|Color\.(red|blue|green|orange|yellow|purple|pink|gray|white|black)\b|\.foregroundStyle\(\.(white|black)\)' "${SCREENS[@]}"
 check "no literal corner radii in screens" 'cornerRadius: *[0-9]|\.cornerRadius\(' "${SCREENS[@]}"
 check "no raw system fonts in screens" '\.font\(\.(largeTitle|title|title2|title3|headline|body|callout|subheadline|footnote|caption|caption2)\b|\.system\(size' "${SCREENS[@]}"
+# Codey line icons in screens (Icon / Label(_:icon:)), not raw SF Symbols.
+# Searched per file, not per line, so a Label split over lines is caught too.
+hits=$(find "$SRC/Features" -name '*.swift' -print0 \
+    | xargs -0 perl -0777 -ne 'while (/Image\(systemName:|\bLabel\((?:[^()]|\([^()]*\))*?systemImage:/g) { my $l = 1 + (substr($_, 0, pos) =~ tr/\n//); print "$ARGV:$l\n" }' || true)
+if [[ -n "$hits" ]]; then echo "✗ raw SF Symbols in screens (use Icon / Label(_:icon:))"; echo "$hits" | sed 's/^/    /'; fail=1
+else echo "✓ Codey line icons in screens: Icon / Label(_:icon:), not raw SF Symbols"; fi
 check "haptics via .sensoryFeedback, not UIKit generators" 'UI(Impact|Notification|Selection)FeedbackGenerator' "$SRC"
 
 # Capsule only for bars (§3b, Nov 15): progress bars and the onboarding

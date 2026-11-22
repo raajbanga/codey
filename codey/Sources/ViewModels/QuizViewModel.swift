@@ -76,7 +76,6 @@ final class QuizViewModel {
     /// FR-20.
     var percentCorrect: Double { questions.isEmpty ? 0 : Double(correctCount) / Double(questions.count) }
     var isLastQuestion: Bool { index + 1 >= questions.count }
-    var profileXP: Int { profile.totalXP }
 
     // MARK: Actions
 
@@ -121,7 +120,7 @@ final class QuizViewModel {
 
         do {
             try DailyActivity.forDay(timestamp, context: context).quizAnswers += 1
-            // Quest bonuses (S41) before badges, so their XP counts toward xp1000.
+            // Quest bonuses (S41) before badges, so their XP counts toward the XP and level badges.
             let bonuses = try XPRewards.payQuestBonuses(context: context, profile: profile, weeklyXP: weeklyXP, now: timestamp)
             if !bonuses.isEmpty {
                 xpEarned += bonuses.map(\.amount).reduce(0, +)

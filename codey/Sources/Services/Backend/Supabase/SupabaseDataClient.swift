@@ -33,14 +33,11 @@ struct SupabaseDataClient: RemoteDeckStore {
             .select("id,server_updated_at")
             .execute()
             .value
-        return Dictionary(rows.map { ($0.id, $0.serverUpdatedAt) }, uniquingKeysWith: { _, last in last })
+        return DeckVersionRow.dates(rows)
     }
 
     func upsertCards(_ cards: [RemoteCard]) async throws {
-        guard !cards.isEmpty else { return }
-        try await client.from("flashcards")
-            .upsert(cards.map(CardRow.init), onConflict: "id", returning: .minimal)
-            .execute()
+        try await upsert("flashcards", cards.map(CardRow.init), onConflict: "id")
     }
 
     func fetchChanges(since cursor: Date?) async throws -> RemoteChanges {
@@ -56,9 +53,11 @@ struct SupabaseDataClient: RemoteDeckStore {
 
     /// Every row changed after `since`, a page at a time. PostgREST caps each
     /// response at max-rows, so a single request can silently truncate.
-    /// Ordered by (server_updated_at, id) so offsets are stable across pages.
+    /// Ordered by server_updated_at, then the row's whole primary key (RLS
+    /// fixes owner_id), so the order is total and offsets are stable across
+    /// pages even when one upsert gives many rows the same server_updated_at.
     private func fetchAll<Row: Decodable & Sendable>(
-        _ table: String, columns: String, since: String?, key: String = "id"
+        _ table: String, columns: String, since: String?, keys: [String] = ["id"]
     ) async throws -> [Row] {
         var rows: [Row] = []
         while true {
@@ -66,9 +65,9 @@ struct SupabaseDataClient: RemoteDeckStore {
             if let since {
                 query = query.gt("server_updated_at", value: since)
             }
-            let page: [Row] = try await query
-                .order("server_updated_at")
-                .order(key)
+            var ordered = query.order("server_updated_at")
+            for key in keys { ordered = ordered.order(key) }
+            let page: [Row] = try await ordered
                 .range(from: rows.count, to: rows.count + pageSize - 1)
                 .execute()
                 .value
@@ -84,7 +83,7 @@ struct SupabaseDataClient: RemoteDeckStore {
             .in("id", values: ids.map(\.uuidString))
             .execute()
             .value
-        return Dictionary(rows.map { ($0.id, $0.serverUpdatedAt) }, uniquingKeysWith: { _, last in last })
+        return DeckVersionRow.dates(rows)
     }
 
     func fetchDeckSnapshot(id: UUID) async throws -> RemoteDeckSnapshot? {
@@ -137,12 +136,12 @@ struct SupabaseDataClient: RemoteDeckStore {
 extension SupabaseDataClient {
     func fetchProgressChanges(since cursor: Date?) async throws -> RemoteProgressChanges {
         let since = cursor?.formatted(Self.timestampStyle)
-        async let cardRows: [CardProgressRow] = fetchAll("card_progress", columns: CardProgressRow.columns, since: since, key: "card_id")
-        async let questionRows: [QuestionProgressRow] = fetchAll("question_progress", columns: QuestionProgressRow.columns, since: since, key: "question_id")
-        async let topicRows: [TopicProgressRow] = fetchAll("topic_progress", columns: TopicProgressRow.columns, since: since, key: "topic_id")
-        async let answerRows: [QuizAnswerRow] = fetchAll("quiz_answers", columns: QuizAnswerRow.columns, since: since, key: "question_id")
-        async let dayRows: [DailyActivityRow] = fetchAll("daily_activity", columns: DailyActivityRow.columns, since: since, key: "day")
-        async let badgeRows: [BadgeAwardRow] = fetchAll("badge_awards", columns: BadgeAwardRow.columns, since: since, key: "badge")
+        async let cardRows: [CardProgressRow] = fetchAll("card_progress", columns: CardProgressRow.columns, since: since, keys: ["card_id"])
+        async let questionRows: [QuestionProgressRow] = fetchAll("question_progress", columns: QuestionProgressRow.columns, since: since, keys: ["question_id"])
+        async let topicRows: [TopicProgressRow] = fetchAll("topic_progress", columns: TopicProgressRow.columns, since: since, keys: ["topic_id"])
+        async let answerRows: [QuizAnswerRow] = fetchAll("quiz_answers", columns: QuizAnswerRow.columns, since: since, keys: ["question_id", "answered_at"])
+        async let dayRows: [DailyActivityRow] = fetchAll("daily_activity", columns: DailyActivityRow.columns, since: since, keys: ["device_id", "day"])
+        async let badgeRows: [BadgeAwardRow] = fetchAll("badge_awards", columns: BadgeAwardRow.columns, since: since, keys: ["badge"])
         let (cards, questions, topics) = try await (cardRows, questionRows, topicRows)
         let (answers, days, badges) = try await (answerRows, dayRows, badgeRows)
         // Every table is read to the end, so the newest row of any is a safe cursor.
@@ -161,39 +160,27 @@ extension SupabaseDataClient {
     /// target (owner_id, key) matches; RLS rejects any other owner.
     func upsertProgress(_ batch: ProgressBatch) async throws {
         guard let userID = client.auth.currentUser?.id else { return }
-        if !batch.cards.isEmpty {
-            try await client.from("card_progress")
-                .upsert(batch.cards.map { CardProgressRow($0, ownerId: userID) }, onConflict: "owner_id,card_id", returning: .minimal)
-                .execute()
-        }
-        if !batch.questions.isEmpty {
-            try await client.from("question_progress")
-                .upsert(batch.questions.map { QuestionProgressRow($0, ownerId: userID) }, onConflict: "owner_id,question_id", returning: .minimal)
-                .execute()
-        }
-        if !batch.topics.isEmpty {
-            try await client.from("topic_progress")
-                .upsert(batch.topics.map { TopicProgressRow($0, ownerId: userID) }, onConflict: "owner_id,topic_id", returning: .minimal)
-                .execute()
-        }
+        try await upsert("card_progress", batch.cards.map { CardProgressRow($0, ownerId: userID) }, onConflict: "owner_id,card_id")
+        try await upsert("question_progress", batch.questions.map { QuestionProgressRow($0, ownerId: userID) }, onConflict: "owner_id,question_id")
+        try await upsert("topic_progress", batch.topics.map { TopicProgressRow($0, ownerId: userID) }, onConflict: "owner_id,topic_id")
         // Append-only: a resent answer is skipped (ON CONFLICT DO NOTHING),
         // so there's no update policy to need.
         for chunk in batch.answers.chunked(into: 500) {
-            try await client.from("quiz_answers")
-                .upsert(chunk.map { QuizAnswerRow($0, ownerId: userID) }, onConflict: "owner_id,question_id,answered_at",
-                        returning: .minimal, ignoreDuplicates: true)
-                .execute()
+            try await upsert("quiz_answers", chunk.map { QuizAnswerRow($0, ownerId: userID) },
+                             onConflict: "owner_id,question_id,answered_at", ignoreDuplicates: true)
         }
-        if !batch.days.isEmpty {
-            try await client.from("daily_activity")
-                .upsert(batch.days.map { DailyActivityRow($0, ownerId: userID) }, onConflict: "owner_id,device_id,day", returning: .minimal)
-                .execute()
-        }
-        if !batch.badges.isEmpty {
-            try await client.from("badge_awards")
-                .upsert(batch.badges.map { BadgeAwardRow($0, ownerId: userID) }, onConflict: "owner_id,badge", returning: .minimal)
-                .execute()
-        }
+        try await upsert("daily_activity", batch.days.map { DailyActivityRow($0, ownerId: userID) }, onConflict: "owner_id,device_id,day")
+        try await upsert("badge_awards", batch.badges.map { BadgeAwardRow($0, ownerId: userID) }, onConflict: "owner_id,badge")
+    }
+
+    /// Upserts `rows` without reading them back; nothing to send, no request.
+    private func upsert<Row: Encodable & Sendable>(
+        _ table: String, _ rows: [Row], onConflict: String, ignoreDuplicates: Bool = false
+    ) async throws {
+        guard !rows.isEmpty else { return }
+        try await client.from(table)
+            .upsert(rows, onConflict: onConflict, returning: .minimal, ignoreDuplicates: ignoreDuplicates)
+            .execute()
     }
 }
 
@@ -278,7 +265,6 @@ private struct GroupRow: Decodable {
     var name: String
     var inviteCode: String
 
-
     var summary: GroupSummary { GroupSummary(id: id, name: name, inviteCode: inviteCode) }
 }
 
@@ -293,14 +279,12 @@ private struct LeaderboardRow: Decodable {
     var displayName: String
     var avatarId: String?
     var xp: Int
-
 }
 
 private struct WeeklyXPRow: Encodable {
     var ownerId: UUID
     var weekStart: String
     var xp: Int
-
 }
 
 // MARK: - Rows (camelCase here, snake_case on the wire via `databaseOptions`)
@@ -311,7 +295,6 @@ private struct FeedbackReportRow: Encodable {
     var description: String
     var appVersion: String?
     var osVersion: String?
-
 
     init(_ payload: FeedbackReportPayload) {
         id = payload.id
@@ -332,7 +315,6 @@ private struct DeckRow: Codable {
     var deletedAt: Date?
     /// Never sent: the server sets it.
     var serverUpdatedAt: Date?
-
 
     init(_ payload: DeckPayload) {
         id = payload.id
@@ -364,6 +346,10 @@ private struct DeckVersionRow: Decodable {
     var id: UUID
     var serverUpdatedAt: Date
 
+    /// Each deck's server version (the last row wins on a repeat).
+    static func dates(_ rows: [Self]) -> [UUID: Date] {
+        Dictionary(rows.map { ($0.id, $0.serverUpdatedAt) }, uniquingKeysWith: { _, last in last })
+    }
 }
 
 /// Mastery isn't a flashcards column: it syncs per user in card_progress (FR-61).
@@ -443,7 +429,6 @@ private struct SyncLogRow: Encodable {
     var op: String
     var clientTs: Date
     var deviceId: String?
-
 
     init(_ entry: SyncLogEntry) {
         entity = entry.entity.rawValue

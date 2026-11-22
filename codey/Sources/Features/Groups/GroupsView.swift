@@ -102,7 +102,8 @@ struct GroupsView: View {
         await loadRanks()
     }
 
-    /// Your rank and XP from the saved boards first, then fresh ones.
+    /// Your rank and XP from the saved boards first, then fresh ones (one
+    /// sync, every board fetched at once).
     private func loadRanks() async {
         let me = backend.currentUser?.id
         func apply(_ entries: [LeaderboardEntry], to group: UUID) {
@@ -113,8 +114,8 @@ struct GroupsView: View {
         for group in list.items {
             if let cached = backend.cachedLeaderboard(for: group.id) { apply(cached.entries, to: group.id) }
         }
-        for group in list.items {
-            if let entries = try? await backend.fetchLeaderboard(for: group.id) { apply(entries, to: group.id) }
+        for (group, entries) in await backend.fetchLeaderboards(for: list.items.map(\.id)) {
+            apply(entries, to: group)
         }
     }
 
@@ -153,7 +154,7 @@ struct StaleNotice: View {
                 }
             }
         } icon: {
-            Image(systemName: "wifi.exclamationmark")
+            Icon("wifi.exclamationmark", relativeTo: .subheadline)
                 .foregroundStyle(CodeyColor.warning)
         }
     }

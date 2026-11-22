@@ -19,7 +19,7 @@ enum ProfileAvatar {
 
     /// The avatar colors: the topic hues, so an avatar sits with the tiles.
     enum Color: String, CaseIterable, Identifiable {
-        case slate, teal, sky, olive, sand, coral, rose
+        case slate, teal, sky, olive, sand, coral, rose, gold, green, indigo, violet, plum
 
         var id: String { rawValue }
 
@@ -32,6 +32,11 @@ enum ProfileAvatar {
             case .sand: .sand
             case .coral: .coral
             case .rose: .rose
+            case .gold: .gold
+            case .green: .green
+            case .indigo: .indigo
+            case .violet: .violet
+            case .plum: .plum
             }
         }
 

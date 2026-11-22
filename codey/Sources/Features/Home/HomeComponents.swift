@@ -4,12 +4,13 @@ import SwiftUI
 
 /// One topic (S41 mockup): a GameTile in the topic's color with what a
 /// question pays, its accuracy bar, and an action. On Play the tag is its
-/// top tier and the action plays; in the Library the tags count its
-/// exercises and decks (like a deck's card count) and the action opens it.
+/// top tier and the action plays; in the Library one tag counts its
+/// activities (drills and challenges, as its page's hero), and the
+/// action opens it.
 struct TopicTile: View {
     let stats: QuizTopicStats
-    /// Exercises and decks, shown instead of the tier (Library).
-    var counts: (exercises: Int, decks: Int)?
+    /// Its drills and challenges, shown instead of the tier (Library).
+    var activities: Int?
     var action = TileAction("Play")
     let open: () -> Void
 
@@ -32,17 +33,9 @@ struct TopicTile: View {
             ) {
                 CodeyChip(xp: XPPolicy.base(bestTier))
             } tags: {
-                if let counts {
-                    // Worded like a deck's "6 cards"; the decks drop out
-                    // when both don't fit.
-                    let exercises = CodeyChip(counts.exercises.counted("exercise"), systemImage: "chevron.left.forwardslash.chevron.right")
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: CodeySpacing.xs) {
-                            exercises
-                            CodeyChip(counts.decks.counted("deck"), systemImage: "rectangle.stack")
-                        }
-                        exercises
-                    }
+                if let activities {
+                    // Worded like a deck's "6 cards".
+                    CodeyChip(activities.counted("activity", plural: "activities"), systemImage: "checklist")
                 } else {
                     CodeyChip(tier: bestTier)
                 }
@@ -56,10 +49,10 @@ struct TopicTile: View {
 
     private var accessibilityLabel: String {
         let accuracy = stats.accuracy.map { "\($0.percentText) correct. " } ?? ""
-        guard let counts else {
+        guard let activities else {
             return "Play \(topic.title). \(accuracy)\(bestTier.style.label) tier, \(XPPolicy.base(bestTier)) XP a question"
         }
-        return "\(topic.title). \(accuracy)\(counts.exercises.counted("exercise")), \(counts.decks.counted("deck"))"
+        return "\(topic.title). \(accuracy)\(activities.counted("activity", plural: "activities"))"
     }
 }
 

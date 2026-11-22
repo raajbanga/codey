@@ -50,7 +50,7 @@ struct FeedbackFormView: View {
 
     /// One line in a note, for the signed-out and sent states.
     private func status(_ text: String, icon: String, color: Color) -> some View {
-        Label(text, systemImage: icon)
+        Label(text, icon: icon)
             .font(.codeyBody)
             .foregroundStyle(color)
             .codeyCard()

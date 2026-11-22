@@ -104,8 +104,11 @@ struct SupabaseSchemaTests {
     /// day keys, and their ids fit like the progress tables'.
     @Test func historyLimitsMatchApp() throws {
         let sql = try #require(try migrations().first { $0.name.hasSuffix("_progress_history.sql") }?.sql)
+        // The newest migration that sets the badge list (the trophy case
+        // widened it) must list exactly the app's badges, in order.
+        let badgeSQL = try #require(try migrations().last { $0.sql.contains("badge in (") }?.sql)
         let badges = Badge.allCases.map { "'\($0.rawValue)'" }.joined(separator: ", ")
-        #expect(sql.contains("badge in (\(badges))"))
+        #expect(badgeSQL.contains("badge in (\(badges))"))
         #expect(sql.contains("char_length(question_id) between 1 and 100"))
         #expect(sql.contains("day ~ '^\\d{4}-\\d{2}-\\d{2}$'"))
         #expect(DailyActivity.dayKey(for: Date(timeIntervalSince1970: 0)).wholeMatch(of: /\d{4}-\d{2}-\d{2}/) != nil)

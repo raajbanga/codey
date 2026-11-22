@@ -165,9 +165,9 @@ set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000a",
 
 select lives_ok($$
     insert into public.groups (id, name, invite_code, created_by)
-    values ('30000000-0000-0000-0000-00000000000a', '  CS 360  ', 'AAAAAA', '00000000-0000-0000-0000-00000000000b')
+    values ('30000000-0000-0000-0000-00000000000a', '  Study Group  ', 'AAAAAA', '00000000-0000-0000-0000-00000000000b')
 $$, 'A can create a group');
-select ok((select invite_code ~ '^[A-Z0-9]{6}$' and invite_code <> 'AAAAAA' and created_by = '00000000-0000-0000-0000-00000000000a' and name = 'CS 360'
+select ok((select invite_code ~ '^[A-Z0-9]{6}$' and invite_code <> 'AAAAAA' and created_by = '00000000-0000-0000-0000-00000000000a' and name = 'Study Group'
            from public.groups where id = '30000000-0000-0000-0000-00000000000a'),
           'the server sets the code and creator, and trims the name');
 select is((select count(*)::int from public.group_members where group_id = '30000000-0000-0000-0000-00000000000a'),

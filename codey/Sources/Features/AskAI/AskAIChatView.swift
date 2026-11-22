@@ -95,7 +95,7 @@ struct AskAIChatView: View {
     private func errorRow(_ error: AskAIError) -> some View {
         CodeyCard(tint: CodeyColor.danger) {
             VStack(alignment: .leading, spacing: CodeySpacing.sm) {
-                Label(error.message, systemImage: "exclamationmark.triangle.fill")
+                Label(error.message, icon: "exclamationmark.triangle.fill")
                     .font(.codeySubheadline)
                     .foregroundStyle(CodeyColor.textPrimary)
                 CodeyButton("Retry", systemImage: "arrow.clockwise", kind: .secondary, compact: true) {

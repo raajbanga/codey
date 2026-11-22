@@ -11,7 +11,8 @@
       "blanks": [
         { "accepted": ["if"] }
       ],
-      "explanation": "`if let name` unwraps the optional: the block runs only when `name` is not nil, and inside it `name` is a plain `String`."
+      "explanation": "`if let name` unwraps the optional: the block runs only when `name` is not nil, and inside it `name` is a plain `String`.",
+      "hints": ["Optional binding runs a block only when the optional has a value.", "It's the same keyword you'd use for any condition; Swift 5.7+ lets you write just `___ let name` without `= name`."]
     },
     {
       "id": "ex-swift-guard",
@@ -24,7 +25,8 @@
         { "accepted": ["guard"] },
         { "accepted": ["else"] }
       ],
-      "explanation": "`guard condition else { ... }` runs the `else` block when the condition is false, and that block must leave the scope (here with `return nil`)."
+      "explanation": "`guard condition else { ... }` runs the `else` block when the condition is false, and that block must leave the scope (here with `return nil`).",
+      "hints": ["This is an early exit: check the condition up front and leave if it fails.", "Blank 1 is the keyword for an early-exit check; blank 2 is the word that introduces the block that runs when the check fails."]
     },
     {
       "id": "ex-swift-map",
@@ -36,7 +38,8 @@
       "blanks": [
         { "accepted": ["map"] }
       ],
-      "explanation": "`map` calls the closure on every element and returns a new array of the results, in the same order."
+      "explanation": "`map` calls the closure on every element and returns a new array of the results, in the same order.",
+      "hints": ["You want a new array with every element transformed.", "The higher-order function that transforms each element and returns an array of the results."]
     },
     {
       "id": "ex-swift-mutating",
@@ -48,7 +51,8 @@
       "blanks": [
         { "accepted": ["mutating"] }
       ],
-      "explanation": "Structs are value types, so a method that changes a stored property must be marked `mutating`."
+      "explanation": "Structs are value types, so a method that changes a stored property must be marked `mutating`.",
+      "hints": ["Struct methods can't change stored properties by default.", "Mark the method with the keyword that lets a value-type method modify `self`."]
     },
     {
       "id": "ex-python-def",
@@ -60,7 +64,8 @@
       "blanks": [
         { "accepted": ["def"] }
       ],
-      "explanation": "Python functions start with `def`, then the name, the parameters in parentheses, and a colon."
+      "explanation": "Python functions start with `def`, then the name, the parameters in parentheses, and a colon.",
+      "hints": ["Every Python function starts with a keyword.", "It's short for \"define\"."]
     },
     {
       "id": "ex-python-comprehension",
@@ -73,7 +78,8 @@
         { "accepted": ["for"] },
         { "accepted": ["if"] }
       ],
-      "explanation": "A list comprehension reads `[expression for item in iterable if condition]`; the `if` part drops items that fail the test."
+      "explanation": "A list comprehension reads `[expression for item in iterable if condition]`; the `if` part drops items that fail the test.",
+      "hints": ["A list comprehension reads like: value, loop, optional filter.", "Blank 1 starts the loop over `numbers`; blank 2 starts the filter condition."]
     },
     {
       "id": "ex-python-dict-get",
@@ -85,7 +91,8 @@
       "blanks": [
         { "accepted": ["get"] }
       ],
-      "explanation": "`dict.get(key, default)` returns the default instead of raising `KeyError` when the key is missing."
+      "explanation": "`dict.get(key, default)` returns the default instead of raising `KeyError` when the key is missing.",
+      "hints": ["Reading a missing key with `counts[word]` raises `KeyError`.", "Use the dict method that returns a default value when the key isn't there."]
     },
     {
       "id": "ex-alg-binary-search",
@@ -98,7 +105,8 @@
         { "accepted": ["<="] },
         { "accepted": ["mid + 1", "1 + mid"] }
       ],
-      "explanation": "The range is inclusive, so the loop runs while `low <= high`. When the middle item is too small, the target can only be to its right, so `low = mid + 1`."
+      "explanation": "The range is inclusive, so the loop runs while `low <= high`. When the middle item is too small, the target can only be to its right, so `low = mid + 1`.",
+      "hints": ["The loop must still run when the range has one item left.", "Blank 1 compares `low` and `high` so equal still loops; blank 2 moves past `mid`, since `mid` was already checked."]
     },
     {
       "id": "ex-alg-factorial",
@@ -111,7 +119,8 @@
         { "accepted": ["1"] },
         { "accepted": ["n - 1"] }
       ],
-      "explanation": "0! and 1! are both 1, which stops the recursion. Every other call multiplies `n` by the factorial of the next smaller number, `n - 1`."
+      "explanation": "0! and 1! are both 1, which stops the recursion. Every other call multiplies `n` by the factorial of the next smaller number, `n - 1`.",
+      "hints": ["Recursion needs a stopping value and a smaller subproblem.", "0! and 1! are both the same small number; the recursive call works on the number just below `n`."]
     },
     {
       "id": "ex-ds-stack",
@@ -124,7 +133,8 @@
         { "accepted": ["append"] },
         { "accepted": ["popLast"] }
       ],
-      "explanation": "A stack is last in, first out. `append` adds to the end, and `popLast()` removes from the end, returning nil when the stack is empty (unlike `removeLast()`, which crashes)."
+      "explanation": "A stack is last in, first out. `append` adds to the end, and `popLast()` removes from the end, returning nil when the stack is empty (unlike `removeLast()`, which crashes).",
+      "hints": ["A stack adds and removes at the same end: last in, first out.", "Array methods: one adds at the end, the other removes the last element and returns it as an optional."]
     },
     {
       "id": "ex-ds-queue",
@@ -136,7 +146,8 @@
       "blanks": [
         { "accepted": ["popleft"] }
       ],
-      "explanation": "A queue is first in, first out. `deque.popleft()` removes from the front in O(1); `list.pop(0)` would be O(n)."
+      "explanation": "A queue is first in, first out. `deque.popleft()` removes from the front in O(1); `list.pop(0)` would be O(n).",
+      "hints": ["A queue is first in, first out: take from the front.", "`deque` has a pop method for the left end."]
     },
     {
       "id": "ex-oop-inheritance",
@@ -148,7 +159,8 @@
       "blanks": [
         { "accepted": ["extends"] }
       ],
-      "explanation": "In Java a class inherits with `extends`. `@Override` asks the compiler to check that `sound()` really replaces a method of the superclass."
+      "explanation": "In Java a class inherits with `extends`. `@Override` asks the compiler to check that `sound()` really replaces a method of the superclass.",
+      "hints": ["Java has a keyword for \"is a subclass of\".", "It's the keyword for class inheritance, not the one for interfaces."]
     }
   ]
 }

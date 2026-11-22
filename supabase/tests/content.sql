@@ -1,4 +1,4 @@
--- App content (content_* tables, migration 20261116000000_content.sql):
+-- App content (content_* tables, migration 20261116002116_content.sql):
 -- anyone can read it, no client can change it (NFR-07, TC-S01).
 -- Run with: supabase test db   (pgTAP; everything rolls back at the end)
 

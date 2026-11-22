@@ -20,6 +20,8 @@ struct StatTile: View {
     var suffix: String?
     var systemImage: String?
     var tint: Color = CodeyColor.brand
+    /// Shown in place of the number (a date, "2 of 5").
+    var text: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: CodeySpacing.xs) {
@@ -28,9 +30,13 @@ struct StatTile: View {
                     .foregroundStyle(tint)
             }
             HStack(alignment: .firstTextBaseline, spacing: CodeySpacing.xxs) {
-                Text(value, format: .number)
-                    .font(.codeyNumeric)
-                    .contentTransition(.numericText(value: Double(value)))
+                if let text {
+                    Text(text).font(.codeyNumeric)
+                } else {
+                    Text(value, format: .number)
+                        .font(.codeyNumeric)
+                        .contentTransition(.numericText(value: Double(value)))
+                }
                 if let suffix {
                     Text(suffix)
                         .font(.codeyNumericSmall)
@@ -45,14 +51,17 @@ struct StatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(CodeySpacing.md)
-        .background(CodeyColor.surfaceRaised, in: .codey(CodeyRadius.md))
-        .overlay {
-            RoundedRectangle.codey(CodeyRadius.md)
-                .strokeBorder(CodeyColor.separator, lineWidth: 1)
-        }
+        .codeySurface(CodeyColor.surfaceRaised, in: RoundedRectangle.codey(CodeyRadius.md))
         .codeyAnimation(CodeyMotion.snappy, value: value)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
-        .accessibilityValue("\(value.formatted())\(suffix ?? "")")
+        .accessibilityValue(text ?? "\(value.formatted())\(suffix ?? "")")
+    }
+}
+
+extension StatTile {
+    /// A tile whose value is text rather than a count.
+    init(text: String, label: String, systemImage: String? = nil, tint: Color = CodeyColor.brand) {
+        self.init(value: 0, label: label, systemImage: systemImage, tint: tint, text: text)
     }
 }

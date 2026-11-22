@@ -81,7 +81,7 @@ struct HomeStats {
         accuracyByTopic = counts.reduce(into: [:]) { result, entry in
             result[entry.key] = Double(correct[entry.key] ?? 0) / Double(entry.value)
         }
-        decksByTopic = Dictionary(grouping: decks.filter { !$0.isHidden && $0.cardCount > 0 }, by: \.topicId)
+        decksByTopic = Dictionary(grouping: decks.filter { !$0.isHidden && $0.hasActiveCards }, by: \.topicId)
             .mapValues { decks in
                 decks.sorted { lhs, rhs in
                     if lhs.origin != rhs.origin { return lhs.origin == .starter }
@@ -90,5 +90,34 @@ struct HomeStats {
             }
         deckByID = decks.keyed(by: \.id)
         snapshotDeckIDs = Set(snapshots.map(\.deckId))
+    }
+}
+
+/// What Play's quest bentos show this launch: today's quests, or the
+/// badges closest to done. Flips once per launch (LoadingView), so the
+/// row changes between visits, never while it's on screen.
+enum PlayRotation {
+    static let key = "play.showsBadgeQuests"
+
+    static func advance(defaults: UserDefaults = .standard) {
+        defaults.set(!defaults.bool(forKey: key), forKey: key)
+    }
+}
+
+extension HomeLogic {
+    /// The unearned badges closest to done: most progress first, then the
+    /// smaller reward, then trophy-case order.
+    static func nextBadges(earned: Set<Badge>, facts: BadgeFacts, limit: Int = 3) -> [Badge] {
+        let order = Dictionary(uniqueKeysWithValues: Badge.allCases.enumerated().map { ($1, $0) })
+        return Badge.allCases
+            .filter { !earned.contains($0) }
+            .sorted { lhs, rhs in
+                let (left, right) = (lhs.fraction(facts), rhs.fraction(facts))
+                if left != right { return left > right }
+                if lhs.xp != rhs.xp { return lhs.xp < rhs.xp }
+                return order[lhs, default: 0] < order[rhs, default: 0]
+            }
+            .prefix(limit)
+            .map { $0 }
     }
 }
