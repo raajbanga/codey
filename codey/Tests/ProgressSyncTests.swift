@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import Testing
+import UIKit
 @testable import codey
 
 /// FR-61 study progress sync against the mock backend (no network): the
@@ -202,5 +203,62 @@ struct ProgressSyncTests {
         // Everything pulled back is an echo, so nothing new goes up.
         #expect(h.remote.pushedProgress.count == pushedBefore)
         #expect(card.masteryScore == 1)
+    }
+
+    @Test func anotherAccountsSignInClearsTheProgressTheLastAccountLeftButTheSameAccountKeepsIt() async throws {
+        let h = try SyncHarness()
+        let card = try card(h)
+        let alice = SyncHarness.alice
+        let bob = AppUser(id: UUID(), email: "b@example.com", displayName: "Bob")
+        // Offline: nothing reaches the server before Alice signs out.
+        h.reachability.isReachable = false
+        card.updateMastery(rating: .good, at: t0)
+        let profile = DataSeeder.ensureProfile(context: h.context)
+        profile.totalXP = 120
+        h.weeklyXP.add(40)
+        try h.context.save()
+        h.facade.didResetProgress() // a queued profile update for Alice
+
+        // The same account signing back in keeps everything, unsynced included.
+        await h.facade.signOut(removingLocalDecks: false)
+        h.auth.nextSignIn = alice
+        await h.facade.signInWithGoogle(presenting: UIViewController())
+        #expect(card.masteryScore == 1)
+        #expect(DataSeeder.ensureProfile(context: h.context).totalXP == 120)
+        #expect(h.weeklyXP.xp() == 40)
+        #expect(try h.queue.pendingOperation(.profile, id: profile.id) != nil)
+
+        // Another account starts from zero, and Alice's queued update is gone.
+        await h.facade.signOut(removingLocalDecks: false)
+        h.auth.nextSignIn = bob
+        await h.facade.signInWithGoogle(presenting: UIViewController())
+        #expect(card.masteryScore == 0)
+        #expect(card.lastReviewedAt == nil)
+        #expect(DataSeeder.ensureProfile(context: h.context).totalXP == 0)
+        #expect(h.weeklyXP.xp() == 0)
+        #expect(try h.queue.pendingOperation(.profile, id: profile.id) == nil)
+
+        // A session that ends without a sign-out (revoked token) is covered too.
+        profile.totalXP = 50
+        try h.context.save()
+        h.auth.user = nil
+        h.auth.nextSignIn = alice
+        await h.facade.signInWithGoogle(presenting: UIViewController())
+        #expect(DataSeeder.ensureProfile(context: h.context).totalXP == 0)
+    }
+
+    @Test func anInstallFromBeforeTheOwnerCheckTakesTheLastAccountToSyncAsTheOwner() throws {
+        let suite = UserDefaults(suiteName: "codey-tests-\(UUID().uuidString)")!
+        let cursors = SyncCursorStore(defaults: suite)
+        let alice = UUID(), bob = UUID()
+        #expect(cursors.lastSyncedAccount == nil)
+        cursors.set(t0, .lastSyncedAt, for: alice)
+        cursors.set(t0.addingTimeInterval(60), .lastSyncedAt, for: bob)
+        #expect(cursors.lastSyncedAccount == bob)
+
+        // Signed out at launch: the last account to sync owns the progress.
+        _ = BackendFacade(context: try TestSupport.inMemoryContext(), auth: MockAuth(), remote: MockRemoteStore(),
+                          reachability: MockReachability(), cursors: cursors, weeklyXP: WeeklyXPStore(defaults: suite))
+        #expect(cursors.progressOwner == bob)
     }
 }

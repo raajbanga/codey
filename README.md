@@ -172,7 +172,7 @@ output lands in `build/test.log`.
 
 | Check | What it guards |
 | --- | --- |
-| [CI](.github/workflows/test.yml) | Every push to `main` or `dev` and every PR: repo checks, pgTAP, Deno tests of the code runner, unit tests and the accessibility audit (report and coverage in the job summary), Release build |
+| [CI](.github/workflows/test.yml) | Every push to `main` or `dev` and every PR to `main`: repo checks, pgTAP, Deno tests of the code runner, unit tests and the accessibility audit (report and coverage in the job summary), Release build |
 | `scripts/check-imports.sh` | Only the backend layer imports Supabase and Google Sign-In |
 | `scripts/check-design-tokens.sh` | The design-system rules (tokens instead of raw values) hold |
 | `scripts/check-secrets.sh` | No keys are staged |

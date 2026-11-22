@@ -116,7 +116,7 @@ to re-run.
    and it keeps using the bundled JSON.
 2. `supabase/challenges-seed.sql`: the 11 coding challenges and their tests.
    Without it the app keeps its bundled challenges, but Run and Submit fail
-   because the Edge Function finds no tests.
+   because the Edge Function finds no such challenge (404).
 3. `supabase/drill-hints.sql`: two hints for each drill, written into the rows
    `seed.sql` made (so run it after `seed.sql`). Without it the drills download
    with no hints.
@@ -183,7 +183,8 @@ reports, and re-run `checks/rls_live_check.sql`.
 ## 7. Ops (R11, NFR-20)
 
 - **Backups**: `SUPABASE_DB_URL='<session pooler URI>' scripts/backup.sh` writes
-  `backups/codey-<timestamp>.sql` (gitignored). Needs `pg_dump`
+  every table's rows to `backups/codey-<timestamp>.sql` (gitignored; the schema
+  is the migrations). The restore command is in the script's comment. Needs `pg_dump`
   (`brew install libpq && brew link --force libpq`). Do it weekly; keep the
   last few dumps outside the repo, e.g. in the team drive.
 - **Keep-alive**: free projects pause after 7 days idle.

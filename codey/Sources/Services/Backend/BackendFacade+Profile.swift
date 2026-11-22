@@ -2,8 +2,9 @@ import Foundation
 import UIKit
 
 // MARK: - [Pattern: Facade] Facade (profile, feedback)
-/// Profile identity (FR-04), defect reports (FR-49) and the progress-reset
-/// push (D10). Part of the BackendFacade (§9.4).
+/// Profile identity (FR-04), defect reports (FR-49), the progress-reset
+/// push (D10), and whose progress is on the device (BUG-06). Part of the
+/// BackendFacade (§9.4).
 extension BackendFacade {
     /// FR-04: saves the name and avatar locally and, when signed in, queues
     /// a profile push. A queued profile operation makes the local values win
@@ -39,6 +40,31 @@ extension BackendFacade {
         let profile = DataSeeder.ensureProfile(context: context)
         try? queue.enqueue(.profile, id: profile.id, op: .upsert, ownerId: userID)
         try? persist()
+    }
+
+    /// BUG-06: the progress on the device belongs to the account that last
+    /// signed in (kept even if its session ends without a sign-out). When a
+    /// different account signs in, that progress (synced to its owner, or
+    /// lost with its unsynced part) is cleared before the first sync merges
+    /// the device's progress into the new account. The same account signing
+    /// back in keeps it all.
+    func clearProgress(ifOwnedByAnotherAccountThan userID: UUID) throws {
+        if let owner = cursors.progressOwner, owner != userID {
+            do {
+                // A queued profile update would push the cleared XP to its account.
+                try queue.remove(.profile, ids: [DataSeeder.ensureProfile(context: context).id])
+                try LocalDataReset.resetProgress(context: context, weeklyXP: weeklyXP)
+            } catch {
+                context.rollback()
+                throw error
+            }
+            // This account's own progress may have been cleared here before
+            // (its session ended without a sign-out): pull and push it all.
+            for key in [SyncCursorStore.Key.progressCursor, .progressPushedAt, .historyPushedAt] {
+                cursors.set(nil, key, for: userID)
+            }
+        }
+        cursors.progressOwner = userID
     }
 }
 

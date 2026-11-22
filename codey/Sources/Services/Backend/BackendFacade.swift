@@ -29,7 +29,8 @@ final class BackendFacade: DeckBackend {
     @ObservationIgnored let context: ModelContext
     @ObservationIgnored private let auth: (any AuthProviding)?
     @ObservationIgnored let remote: (any RemoteDeckStore)?
-    @ObservationIgnored private let cursors: SyncCursorStore
+    @ObservationIgnored let cursors: SyncCursorStore
+    @ObservationIgnored let weeklyXP: WeeklyXPStore
     @ObservationIgnored let groupCache: GroupCache
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored let queue: SyncQueue
@@ -56,6 +57,7 @@ final class BackendFacade: DeckBackend {
         self.auth = auth
         self.remote = remote
         self.cursors = cursors
+        self.weeklyXP = weeklyXP
         self.groupCache = groupCache
         self.now = now
         queue = SyncQueue(context: context, now: now)
@@ -66,6 +68,11 @@ final class BackendFacade: DeckBackend {
             weeklyXP: weeklyXP, deviceID: deviceID, now: now, sleep: sleep, currentUserID: { weakAuth?.currentUserID() }
         )
         authState = auth?.currentUser().map(AuthState.signedIn) ?? .signedOut
+        // BUG-06: on installs from before progressOwner, the signed-in
+        // account, or else the last one to sync here, owns the progress.
+        if cursors.progressOwner == nil, let owner = auth?.currentUserID() ?? cursors.lastSyncedAccount {
+            cursors.progressOwner = owner
+        }
         refreshPendingCount()
         refreshLastSyncedAt()
         engine.onCycleFinished = { [weak self] in
@@ -177,11 +184,14 @@ final class BackendFacade: DeckBackend {
                 authState = .signedOut
                 return
             }
+            try clearProgress(ifOwnedByAnotherAccountThan: user.id)
             try claimGuestDecks(for: user.id)
             authState = .signedIn(user)
             await engine.syncNow()
         } catch {
             Logger.auth.error("Sign-in failed: \(String(describing: error))")
+            // No session may stay behind: another account's progress may still be here.
+            await auth.signOut()
             authState = .error("Couldn't sign in. Check your connection and try again.")
         }
     }
@@ -197,6 +207,9 @@ final class BackendFacade: DeckBackend {
             if removingLocalDecks {
                 removeDecks(ownedBy: signedOutUser)
             }
+            // BUG-06: the progress stays (nothing unsynced is lost) and stays
+            // marked as this account's, so another account can't upload it.
+            cursors.progressOwner = signedOutUser
             cursors.set(nil, .pullCursor, for: signedOutUser)
             // FR-61: the next sign-in pulls and pushes all progress again.
             cursors.set(nil, .progressCursor, for: signedOutUser)

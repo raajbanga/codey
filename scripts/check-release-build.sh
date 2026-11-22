@@ -22,7 +22,7 @@ binary="$derived/Build/Products/Release-iphonesimulator/codey.app/codey"
 [[ -f "$binary" ]] || { echo "No Release binary at $binary (build first)"; exit 2; }
 
 # Names that exist only inside #if DEBUG.
-needles=(SupabaseTestClient "Replay Onboarding" ComponentGallery StubAskAIClient UITestAskAIStub)
+needles=(SupabaseTestClient "Replay Onboarding" ComponentGallery StubAskAIClient UITestAskAIStub StubChallengeRunner UITestRunnerStub)
 fail=0
 # Symbols and strings go to a file first: under pipefail, `nm | grep -q`
 # reports "absent" when grep exits early on a match (nm gets SIGPIPE).
