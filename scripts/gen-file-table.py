@@ -79,6 +79,7 @@ GROUPS = [
     (".github/workflows/*", "CI", "GitHub Actions: tests and repository checks on every push to dev and main and every pull request to main (checks, database, runner, app jobs); Supabase keep-alive every 3 days."),
     # Documentation the project uses: listed here, not reproduced in Appendix B.
     ("README.md", "Doc", "Repository overview, build summary, and the repository checks."),
+    ("LICENSE", "Doc", "MIT License for the source code."),
     ("codey/DESIGN_SYSTEM.md", "Doc", "Design-system rules: tokens, components, and what check-design-tokens.sh enforces."),
     ("runner/SETUP.md", "Doc", "Code-runner setup guide: EC2 instance, Elastic IP, budget alert, Piston, Caddy, secrets."),
     ("supabase/README.md", "Doc", "Supabase setup, migrations, RLS tests, operations, and the project's current state."),
