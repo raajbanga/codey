@@ -14,6 +14,7 @@ Available for iPhone, iPad and Mac.
 [![Tests](https://github.com/raajbanga/codey/actions/workflows/test.yml/badge.svg)](https://github.com/raajbanga/codey/actions/workflows/test.yml)
 [![Supabase](https://img.shields.io/badge/Supabase-backend-3ECF8E?logo=supabase&logoColor=white)](supabase/README.md)
 [![Tuist](https://img.shields.io/badge/Tuist-4-6236FF)](https://tuist.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 [Features](#features) · [Screenshots](#screenshots) · [Build from source](#build-from-source) · [Architecture](#architecture) · [Testing](#testing) · [Docs](#documentation)
 
@@ -216,6 +217,10 @@ codey/
     <td align="center"><a href="https://github.com/elnadsalcinovic2005-oss"><img src="https://github.com/elnadsalcinovic2005-oss.png?size=120" width="80" alt=""><br><b>Elnad Salcinovic</b></a><br><sub>UI/UX and QA</sub></td>
   </tr>
 </table>
+
+## License
+
+Codey is released under the [MIT License](LICENSE).
 
 <div align="center">
 <sub>Western Kentucky University</sub>

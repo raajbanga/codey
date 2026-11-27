@@ -1313,13 +1313,17 @@ bundled copy as the fallback.
   \pic at (-7.6,-8.0) {stickman};
   \node (student) at (-7.6,-8.0) [minimum width=0.6cm, minimum height=1.0cm] {};
   \node[below=0.05cm of student] {Student / User};
-  \node[store] (local)  at (7.2,-0.8) {\st{system}\\Local Data\\(SwiftData)};
-  \node[store] (cloud)  at (7.2,-4.6) {\st{system}\\Cloud Sync\\(Supabase)};
-  \node[store] (google) at (7.2,-8.4) {\st{system}\\Google\\Account};
-  \node[store] (orouter) at (7.2,-15.2) {\st{system}\\AI Model\\(OpenRouter)};
+  \foreach \n/\y/\t in {local/-0.8/Local Data\\(SwiftData), cloud/-4.6/Cloud Sync\\(Supabase), google/-8.4/Google\\Account, orouter/-15.2/AI Model\\(OpenRouter)} {
+    \pic at (7.6,\y) {stickman};
+    \node (\n) at (7.6,\y) [minimum width=0.6cm, minimum height=1.0cm] {};
+    \node[below=0.05cm of \n, align=center] {\st{system}\\\t};
+  }
   % Associations
+  % Associations sit behind the use cases, so no line crosses a use case's text.
+  \begin{scope}[on background layer]
   \foreach \u in {onboard,create,study,quiz,hide,profile,report,plan,chall,badges,mkgroup,join,board,exer}
     \draw[line width=0.6pt] (student) -- (\u);
+  \end{scope}
   \draw[line width=0.6pt] (validate) -- (local);
   \draw[line width=0.6pt] (cache)    -- (local);
   \draw[line width=0.6pt] (queue)    -- (local);
@@ -1329,8 +1333,9 @@ bundled copy as the fallback.
   \draw[line width=0.6pt] (auth)     -- (cloud);
   \draw[line width=0.6pt] (auth)     -- (google);
   \draw[line width=0.6pt] (askai)    -- (orouter);
-  % Include / extend
+  % Include / extend (behind the use cases too)
   \tikzset{ucl/.style={font=\sffamily\scriptsize, inner sep=1pt}}
+  \begin{scope}[on background layer]
   \draw[dep] (attach)  -- node[ucl, above, sloped] {\st{extend}} (create);
   \draw[dep] (create)  -- node[lbl] {\st{include}} (validate);
   \draw[dep] (tier)    -- node[ucl, below, sloped] {\st{extend}} (quiz);
@@ -1343,6 +1348,7 @@ bundled copy as the fallback.
   \draw[dep] (exer) -- node[ucl, above] {\st{include}} (checkans);
   \draw[dep] (askai) -- node[ucl, above, sloped, pos=0.6] {\st{extend}} (quiz);
   \draw[dep] (askai) -- node[ucl, below, sloped, pos=0.6] {\st{extend}} (exer);
+  \end{scope}
 \end{tikzpicture}}
 \caption{UML use case diagram: decks, study, quizzes, coding exercises, the Ask AI tutor, profile, groups, challenges, and synchronization}
 \label{fig:usecase}
@@ -1999,7 +2005,14 @@ additions,
 Sections~\ref{sec:factory} through~\ref{sec:facade} present one Gang of Four design
 pattern from each category, and Section~\ref{sec:patternmap} maps every pattern
 participant to its source lines in Appendix~B. Visibility is denoted by \texttt{+} (public), \texttt{-}
-(private), and \texttt{\#} (protected).
+(private), \texttt{\#} (protected), and \texttt{\textasciitilde} (package: Swift's default
+\texttt{internal} access). Keywords follow UML: \st{interface} is a Swift protocol,
+\st{enumeration} an enum with cases, and \st{utility} a caseless enum that only groups
+static members. Three stereotypes are our own, for Swift and SwiftData kinds UML has no
+keyword for: \st{entity} is a persistent SwiftData model, \st{struct} a Swift value type,
+and \st{view} a SwiftUI view. An interface a class realizes is shown either as a dashed
+arrow with a hollow triangle to the interface or, where the interface is not drawn, as a
+ball (lollipop) on the class.
 
 \subsection{Core Domain Model}\label{sec:domain}
 \begin{figure}[!htbp]
@@ -2062,28 +2075,28 @@ changes take a \texttt{CardRating}.
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}
-  \node[cls={magenta}{5.0cm}] (prof) at (-5.2,0) {\ctitle{\st{V7 model}\\\textbf{UserProfile}}
+  \node[cls={magenta}{5.0cm}] (prof) at (-5.2,0) {\ctitle{\st{entity}\\\textbf{UserProfile}}
     \nodepart{two}\raggedright +username: String (display name)\\ +avatarId: String?\\ +totalXP: Int\\ +pinnedTopicIds: [String]
     \nodepart{three}\raggedright +level: Int \{get\}};
-  \node[cls={magenta}{4.4cm}] (award) at (0.4,0) {\ctitle{\st{V7 model}\\\textbf{BadgeAward}}
+  \node[cls={magenta}{4.4cm}] (award) at (0.4,0) {\ctitle{\st{entity}\\\textbf{BadgeAward}}
     \nodepart{two}\raggedright +badgeRaw: String \{unique\}\\ +earnedAt: Date
     \nodepart{three}~};
-  \node[cls={gray}{4.4cm}] (badge) at (5.6,0) {\ctitle{\st{enum}\\\textbf{Badge}}
+  \node[cls={gray}{4.4cm}] (badge) at (5.6,0) {\ctitle{\st{enumeration}\\\textbf{Badge}}
     \nodepart{two}\raggedright 27 cases (S46): level2 \ldots{} cards100
     \nodepart{three}\raggedright +metric, target, xp\\ +title, requirement};
-  \node[cls={orange}{5.0cm}, anchor=north] (be) at (5.6,-2.6) {\ctitle{\st{enum}\\\textbf{BadgeEvaluator}}
+  \node[cls={orange}{5.0cm}, anchor=north] (be) at (5.6,-2.6) {\ctitle{\st{utility}\\\textbf{BadgeEvaluator}}
     \nodepart{two}~
     \nodepart{three}\raggedright +qualifying(facts) : Set$<$Badge$>$\\ +award(context: ModelContext)};
-  \node[cls={orange}{5.4cm}, anchor=north] (sc) at (-5.2,-3.4) {\ctitle{\st{enum}\\\textbf{StreakCalculator}}
+  \node[cls={orange}{5.4cm}, anchor=north] (sc) at (-5.2,-3.4) {\ctitle{\st{utility}\\\textbf{StreakCalculator}}
     \nodepart{two}~
     \nodepart{three}\raggedright +isGoalMet(day: DailyActivity) : Bool\\ +currentStreak(endingOn, activity, calendar) : Int};
-  \node[cls={teal}{4.4cm}, anchor=north] (da) at (-5.2,-6.4) {\ctitle{\st{V3 model}\\\textbf{DailyActivity}}
+  \node[cls={teal}{4.4cm}, anchor=north] (da) at (-5.2,-6.4) {\ctitle{\st{entity}\\\textbf{DailyActivity}}
     \nodepart{two}\raggedright +day: String\\ +quizAnswers: Int\\ +cardsRated: Int
     \nodepart{three}~};
-  \node[cls={orange}{5.0cm}, anchor=north] (wc) at (0.4,-3.8) {\ctitle{\st{enum}\\\textbf{WeeklyChallenge}}
+  \node[cls={orange}{5.0cm}, anchor=north] (wc) at (0.4,-3.8) {\ctitle{\st{utility}\\\textbf{WeeklyChallenge}}
     \nodepart{two}\raggedright +goal = 15
     \nodepart{three}\raggedright +topicID(for: Date, topicIDs) : String?\\ +status(now, topicIDs, records) : Status?};
-  \node[cls={teal}{4.4cm}, anchor=north] (qa) at (0.4,-6.8) {\ctitle{\st{V4 model}\\\textbf{QuizAnswerRecord}}
+  \node[cls={teal}{4.4cm}, anchor=north] (qa) at (0.4,-6.8) {\ctitle{\st{entity}\\\textbf{QuizAnswerRecord}}
     \nodepart{two}\raggedright +topicId: String\\ +correct: Bool\\ +answeredAt: Date
     \nodepart{three}~};
   \node[cls={cyan}{4.4cm}, anchor=north] (gs) at (5.6,-5.9) {\ctitle{\st{struct}\\\textbf{GroupSummary}}
@@ -2132,16 +2145,16 @@ offline display (\texttt{GroupCache}).
   \node[cls={cyan}{3.6cm}, anchor=north] (blank) at (-5.2,-3.9) {\ctitle{\st{struct}\\\textbf{ExerciseBlank}}
     \nodepart{two}\raggedright +accepted: [String]
     \nodepart{three}~};
-  \node[cls={orange}{4.8cm}] (loader) at (1.0,0) {\ctitle{\st{enum}\\\textbf{ExerciseLoader}}
+  \node[cls={orange}{4.8cm}] (loader) at (1.0,0) {\ctitle{\st{utility}\\\textbf{ExerciseLoader}}
     \nodepart{two}\raggedright +expectedSchemaVersion = 1
     \nodepart{three}\raggedright +load(from: Bundle) : [Exercise]\\ +decode(data, topicIds) : [Exercise]};
-  \node[cls={orange}{5.6cm}, anchor=north] (val) at (0.6,-2.7) {\ctitle{\st{enum}\\\textbf{ExerciseValidator}}
+  \node[cls={orange}{5.6cm}, anchor=north] (val) at (0.6,-2.7) {\ctitle{\st{utility}\\\textbf{ExerciseValidator}}
     \nodepart{two}~
     \nodepart{three}\raggedright +check(answers, for: Exercise) : ExerciseResult\\ +check(answer, accepted) : BlankResult\\ +normalize(text) : String};
   \node[cls={cyan}{4.2cm}, anchor=north] (res) at (0.6,-6.0) {\ctitle{\st{struct}\\\textbf{ExerciseResult}}
     \nodepart{two}\raggedright +blanks: [BlankResult]
     \nodepart{three}\raggedright +passedCount: Int \{get\}\\ +allPassed: Bool \{get\}};
-  \node[cls={gray}{3.6cm}, anchor=north] (br) at (-5.2,-6.0) {\ctitle{\st{enum}\\\textbf{BlankResult}}
+  \node[cls={gray}{3.6cm}, anchor=north] (br) at (-5.2,-6.0) {\ctitle{\st{enumeration}\\\textbf{BlankResult}}
     \nodepart{two}\raggedright passed, failed, empty
     \nodepart{three}~};
   \node[cls={orange}{5.0cm}] (ps) at (6.4,0) {\ctitle{\st{struct}\\\textbf{ProgressSync}}
@@ -2150,7 +2163,7 @@ offline display (\texttt{GroupCache}).
   \node[cls={cyan}{5.0cm}, anchor=north] (pb) at (6.4,-3.6) {\ctitle{\st{struct}\\\textbf{ProgressBatch}}
     \nodepart{two}\raggedright +cards: [CardProgressPayload]\\ +questions: [QuestionProgressPayload]\\ +topics: [TopicProgressPayload]\\ +answers: [QuizAnswerPayload]\\ +days: [DailyActivityPayload]\\ +badges: [BadgeAwardPayload]
     \nodepart{three}\raggedright +isEmpty: Bool \{get\}};
-  \node[cls={violet}{5.0cm}, anchor=north] (se) at (6.4,-6.6) {\ctitle{\st{class}\\\textbf{SyncEngine}}
+  \node[cls={violet}{5.0cm}, anchor=north] (se) at (6.4,-6.6) {\ctitle{\textbf{SyncEngine}}
     \nodepart{two}~
     \nodepart{three}\raggedright -syncProgress(remote, userID)};
   \draw[compo] (ex.south) -- node[pos=0.15, right, font=\sffamily\scriptsize] {1} node[pos=0.85, right, font=\sffamily\scriptsize] {1..*} (blank.north);
@@ -2159,10 +2172,10 @@ offline display (\texttt{GroupCache}).
   \draw[dep] (val.south) -- node[lbl] {\st{create}} (res.north);
   \draw[dep] (val.west) -| node[lbl, pos=0.25] {reads} (ex.south east);
   \draw[assoc] (res.west) -- node[lbl] {0..*} (br.east);
-  \node[cls={orange}{6.4cm}, anchor=north] (xr) at (0.6,-9.0) {\ctitle{\st{enum}\\\textbf{XPRewards}}
+  \node[cls={orange}{6.4cm}, anchor=north] (xr) at (0.6,-9.0) {\ctitle{\st{utility}\\\textbf{XPRewards}}
     \nodepart{two}\raggedright +cardMovedUp = 5\\ +exerciseBlank = 10\\ +dailyGoalBonus = 50\\ +weeklyChallengeBonus = 100
     \nodepart{three}\raggedright +grant(amount, to: UserProfile, weeklyXP, now)\\ +forCard(previousScore, newScore) : Int\\ +payFirstSolve(id, amount, \dots) : Int\\ +payQuestBonuses(context, profile, \dots) : [Bonus]};
-  \node[cls={magenta}{4.6cm}, anchor=north] (up) at (-6.6,-9.0) {\ctitle{\st{V9 model}\\\textbf{UserProfile}}
+  \node[cls={magenta}{4.6cm}, anchor=north] (up) at (-6.6,-9.0) {\ctitle{\st{entity}\\\textbf{UserProfile}}
     \nodepart{two}\raggedright +totalXP: Int\\ +solvedExerciseIds: [String]\\ +goalBonusDay: String?\\ +challengeBonusWeek: String?
     \nodepart{three}~};
   \draw[dep] (se.north) -- node[lbl] {\st{use}} (pb.south);
@@ -2198,7 +2211,7 @@ existing progress models (\texttt{Flashcard}, \texttt{QuestionProgress},
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}
-  \node[cls={violet}{5.4cm}, anchor=north] (sess) at (-7.4,0) {\ctitle{\st{class}\\\textbf{AskAISession}}
+  \node[cls={violet}{5.4cm}, anchor=north] (sess) at (-7.4,0) {\ctitle{\textbf{AskAISession}}
     \nodepart{two}\raggedright +context: AskAIContext\\ +messages: [Message] \{read\}\\ +isWaiting: Bool \{read\}\\ +error: AskAIError? \{read\}\\ +draft: String\\ -client: AskAIClient
     \nodepart{three}\raggedright +start()\\ +send()\\ +retry()\\ +turns() : [ChatTurn]\\ +reusing(old?, for, client) : AskAISession};
   \node[cls={cyan}{4.4cm}, anchor=north] (turn) at (-8.1,-6.6) {\ctitle{\st{struct}\\\textbf{ChatTurn}}
@@ -2207,10 +2220,10 @@ existing progress models (\texttt{Flashcard}, \texttt{QuestionProgress},
   \node[cls={cyan}{5.4cm}, anchor=north] (ctx) at (0.2,0) {\ctitle{\st{struct}\\\textbf{AskAIContext}}
     \nodepart{two}\raggedright +id: String\\ +kind: quiz | exercise\\ +problem: String\\ +secrets: [String]\\ +correctLetter: String?
     \nodepart{three}\raggedright +quiz(question) : AskAIContext\\ +exercise(Exercise) : AskAIContext};
-  \node[cls={orange}{5.4cm}, anchor=north] (guard) at (0.2,-4.4) {\ctitle{\st{enum}\\\textbf{AnswerLeakGuard}}
+  \node[cls={orange}{5.4cm}, anchor=north] (guard) at (0.2,-4.4) {\ctitle{\st{utility}\\\textbf{AnswerLeakGuard}}
     \nodepart{two}~
     \nodepart{three}\raggedright +secrets(candidates, visibleText) : [String]\\ +leaks(reply, context) : Bool\\ +normalize(text) : String};
-  \node[cls={orange}{5.4cm}, anchor=north] (prompt) at (0.2,-7.4) {\ctitle{\st{enum}\\\textbf{AskAIPrompt}}
+  \node[cls={orange}{5.4cm}, anchor=north] (prompt) at (0.2,-7.4) {\ctitle{\st{utility}\\\textbf{AskAIPrompt}}
     \nodepart{two}\raggedright +system, greeting, refusal, rewrite: String
     \nodepart{three}~};
   \node[cls={gray}{5.2cm}, anchor=north] (client) at (6.4,0) {\ctitle{\st{interface}\\\textbf{AskAIClient}}
@@ -2219,7 +2232,7 @@ existing progress models (\texttt{Flashcard}, \texttt{QuestionProgress},
   \node[cls={cyan}{5.2cm}, anchor=north] (or) at (6.4,-2.6) {\ctitle{\st{struct}\\\textbf{OpenRouterClient}}
     \nodepart{two}\raggedright +endpoint: URL \{static\}\\ +apiKey, model: String
     \nodepart{three}\raggedright +makeRequest(turns) : URLRequest\\ +complete(turns) : String};
-  \node[cls={gray}{5.2cm}, anchor=north] (err) at (6.4,-6.4) {\ctitle{\st{enum}\\\textbf{AskAIError}}
+  \node[cls={gray}{5.2cm}, anchor=north] (err) at (6.4,-6.4) {\ctitle{\st{enumeration}\\\textbf{AskAIError}}
     \nodepart{two}\raggedright offline, timeout, unauthorized,\\ rateLimited, modelUnavailable,\\ server, emptyReply
     \nodepart{three}\raggedright +message: String \{get\}};
   \draw[assoc] (sess.east |- ctx.text) -- node[lbl] {1} (ctx.text -| ctx.west);
@@ -2256,16 +2269,16 @@ protocol, so unit tests and \texttt{AskAIUITests} use a stub and
   \node[cls={cyan}{5.6cm}] (ch) at (-5.4,0) {\ctitle{\st{struct}\\\textbf{Challenge}}
     \nodepart{two}\raggedright +id, topicId, title: String\\ +difficulty: Difficulty\\ +statement, editorial: String\\ +constraints, hints: [String]\\ +functionName, returnType: String\\ +params: [Param]\\ +starters: [String: String]\\ +examples: [Example]
     \nodepart{three}\raggedright +starter(for: CodeLanguage) : String\\ +languages: [CodeLanguage] \{get\}};
-  \node[cls={orange}{5.0cm}] (cl) at (1.0,0) {\ctitle{\st{enum}\\\textbf{ChallengeLoader}}
+  \node[cls={orange}{5.0cm}] (cl) at (1.0,0) {\ctitle{\st{utility}\\\textbf{ChallengeLoader}}
     \nodepart{two}\raggedright +expectedSchemaVersion = 1
     \nodepart{three}\raggedright +decode(data, topicIds) : [Challenge]};
-  \node[cls={violet}{5.0cm}, anchor=north] (cat) at (1.0,-2.6) {\ctitle{\st{class}\\\textbf{ChallengeCatalog}}
+  \node[cls={violet}{5.0cm}, anchor=north] (cat) at (1.0,-2.6) {\ctitle{\textbf{ChallengeCatalog}}
     \nodepart{two}\raggedright +shared\\ +all: [Challenge]
     \nodepart{three}\raggedright +replace(with: [Challenge])\\ +next(after, solved) : Challenge?};
-  \node[cls={orange}{5.4cm}, anchor=north] (dr) at (1.0,-5.9) {\ctitle{\st{enum}\\\textbf{ChallengeDrafts}}
+  \node[cls={orange}{5.4cm}, anchor=north] (dr) at (1.0,-5.9) {\ctitle{\st{utility}\\\textbf{ChallengeDrafts}}
     \nodepart{two}\raggedright +directory: URL
     \nodepart{three}\raggedright +load(id, language) : String?\\ +save(code, id, language)\\ +remove(id, language), removeAll()};
-  \node[cls={gray}{5.2cm}] (run) at (7.2,0) {\ctitle{\st{protocol}\\\textbf{ChallengeRunning}}
+  \node[cls={gray}{5.2cm}] (run) at (7.2,0) {\ctitle{\st{interface}\\\textbf{ChallengeRunning}}
     \nodepart{two}~
     \nodepart{three}\raggedright +run(ChallengeRunRequest) : ChallengeVerdict};
   \node[cls={violet}{5.2cm}, anchor=north] (sb) at (7.2,-2.6) {\ctitle{\st{struct}\\\textbf{RemoteChallengeRunner}}
@@ -2427,7 +2440,7 @@ disallowed operation in Figure~\ref{fig:state} (risk R9).
   % operation list can never overlap them.
   \path (bf.south) ++(0,-1.3) coordinate (row1);
   \coordinate (xa) at (-6.4,0); \coordinate (xe) at (-1.9,0); \coordinate (xl) at (2.6,0);
-  \node[cls={orange}{4.1cm}, anchor=north] (a) at (row1 -| xa) {\ctitle{\textbf{SupabaseAuthProvider}\\\st{AuthProviding}}
+  \node[cls={orange}{4.1cm}, anchor=north] (a) at (row1 -| xa) {\ctitle{\textbf{SupabaseAuthProvider}}
     \nodepart{two}~\nodepart{three}\raggedright +signIn(presenting:) : AppUser?\\ +signOut()\\ +authStateStream()};
   \node[cls={violet}{4.1cm}, anchor=north] (e) at (row1 -| xe) {\ctitle{\textbf{SyncEngine}}
     \nodepart{two}\raggedright \priv remote: RemoteDeckStore?\\ \priv reachability: Reachability
@@ -2436,13 +2449,20 @@ disallowed operation in Figure~\ref{fig:state} (risk R9).
     \nodepart{two}~\nodepart{three}\raggedright held by the facade on\\ its ModelContext};
   \path (e.south) ++(0,-1.0) coordinate (row2);
   \coordinate (xr) at (-4.3,0); \coordinate (xn) at (0.5,0);
-  \node[cls={cyan}{4.6cm}, anchor=north] (r) at (row2 -| xr) {\ctitle{\textbf{SupabaseDataClient}\\\st{RemoteDeckStore}}
+  \node[cls={cyan}{4.6cm}, anchor=north] (r) at (row2 -| xr) {\ctitle{\textbf{SupabaseDataClient}}
     \nodepart{two}~\nodepart{three}\raggedright +upsertDecks(\_:)\qquad +upsertCards(\_:)\\ +fetchChanges(since:)\\ +fetchDeckVersions(ids:)\\ +fetchDeckSnapshot(id:)\\ +fetchProfile()\qquad +upsertProfile(\_:)\\ +appendSyncLog(\_:)\qquad +submitFeedback(\_:)\\ +fetchGroups()\qquad +createGroup(id:name:)\\ +joinGroup(code:)\qquad +leaveGroup(id:)\\ +fetchLeaderboard(groupID:)\\ +upsertWeeklyXP(weekStart:xp:)\\ +fetchProgressChanges(since:)\\ +upsertProgress(\_:)\qquad +fetchContent()};
-  \node[cls={violet}{3.4cm}, anchor=north] (n) at (row2 -| xn) {\ctitle{\textbf{NetworkMonitor}\\\st{Reachability}}
+  \node[cls={violet}{3.4cm}, anchor=north] (n) at (row2 -| xn) {\ctitle{\textbf{NetworkMonitor}}
     \nodepart{two}\raggedright +isReachable: Bool
     \nodepart{three}\raggedright +changes()};
   \draw[dep] (vm.east) -- node[lbl] {\st{use}} (db.west);
   \draw[realize] (bf.north -| db.south) -- (db.south);
+  \tikzset{lolli/.style={circle, draw, line width=0.6pt, fill=white, minimum size=2.2mm, inner sep=0pt}}
+  \draw[line width=0.6pt] (a.south) -- ++(0,-0.4) node[lolli, anchor=north] (la) {};
+  \node[font=\sffamily\scriptsize, right=1pt of la] {AuthProviding};
+  \draw[line width=0.6pt] (r.west) -- ++(-0.9,0) node[lolli, anchor=east] (lr) {};
+  \node[font=\sffamily\scriptsize, below=1pt of lr, xshift=-4mm] {RemoteDeckStore};
+  \draw[line width=0.6pt] (n.south) -- ++(0,-0.4) node[lolli, anchor=north] (ln) {};
+  \node[font=\sffamily\scriptsize, right=1pt of ln] {Reachability};
   \draw[dep] (views.south) |- node[lbl, pos=0.25] {\st{use}} ([yshift=-0.6cm]bf.north east);
   \draw[assoc] ([xshift=-2.6cm]bf.south) |- ++(0,-0.5) -| (a.north);
   \draw[assoc] ([xshift=-1.0cm]bf.south) |- ++(0,-0.75) -| (e.north);
@@ -2894,8 +2914,9 @@ Arnav Bawankule & \texttt{TheRealAxnav} & Installed, signed in & macOS (arm64) \
         committed to \texttt{dev} and squash-merged into \texttt{main} at the code
         freeze, after which \texttt{main} is merged back into \texttt{dev}.
   \item \textbf{Tags.} Each freeze is tagged: \texttt{sprint3-freeze} and
-        \texttt{sprint3-final} mark Sprint 3, and \texttt{final} marks the submitted
-        commit.
+        \texttt{sprint3-final} mark Sprint 3, \texttt{final} marks the submitted
+        code, and \texttt{v1.0.0} marks the public 1.0.0 release on GitHub (the same
+        code, plus the MIT license and this report's last corrections).
   \item \textbf{Pull request checklist.} \texttt{.github/pull\_request\_template.md}
         holds the security checklist (Activity~10.1, checklist item 1): tests pass, no
         secrets staged (\texttt{check-secrets.sh}), no tokens logged publicly, Supabase
@@ -2966,7 +2987,9 @@ history (only the final report and the files it uses remain), and the November 1
 squash, which made the final-release commits on \texttt{main} one commit and dropped
 their merges back into \texttt{dev}, which changed no files. On November 20 the
 final-release commit on \texttt{main} was replaced by one that also holds the final
-fixes; \texttt{dev} keeps both. The other commits and
+fixes; \texttt{dev} keeps both. On November 27 the 1.0.0 release commit (the MIT
+license and this report's last corrections) was added to both \texttt{main} and
+\texttt{dev}, with no code change. The other commits and
 their dates are unchanged, and the commit hashes in this report are the ones after these.
 
 % =====================================================================
@@ -3241,7 +3264,7 @@ TC-S08 & TLS 1.3, no ATS exceptions (NFR-06) & \texttt{TransportSecurityTests}, 
 TC-S09 & Hosts and TLS on the wire (NFR-24) & Capture Simulator traffic with Proxyman during sign-in, sync, and a leaderboard load. & Only Supabase, Google, and OpenRouter, all TLS 1.3 & Not run (limitation) & Not verified \\
 TC-S10 & File protection on device (NFR-04) & Install on an iPhone, read the store files' protection attribute. & \emph{complete unless open} & Not run on a device (limitation); \texttt{StoreFileProtectionTests} sets and checks the class & Not verified \\
 TC-S11 & SDK confinement (R7) & \texttt{scripts/check-imports.sh}. & Pass & Pass (local, Nov 15) & Pass \\
-TC-S12 & Database policies and triggers (NFR-07, NFR-25, FR-61) & \texttt{supabase test db}: pgTAP suites \texttt{rls.sql}, \texttt{progress.sql}, \texttt{history.sql}, \texttt{content.sql}, and \texttt{challenges.sql} against a fresh local database built from the 16 migrations. & 122 of 122 pass & 122 of 122 passed (local stack, Nov 20) & Pass \\
+TC-S12 & Database policies and triggers (NFR-07, NFR-25, FR-61) & \texttt{supabase test db}: pgTAP suites \texttt{rls.sql}, \texttt{progress.sql}, \texttt{history.sql}, \texttt{content.sql}, and \texttt{challenges.sql} against a fresh local database built from the 17 migrations. & 122 of 122 pass & 122 of 122 passed (local stack, Nov 20) & Pass \\
 \end{xltabular}
 
 \subsection{Software Security Checklist}
@@ -3744,61 +3767,67 @@ decisions.
 
 \textbf{StudyQueue.record(\_:)} (Activity~12.1) records a rating for the card on
 screen and moves on; ``Again'' also re-queues the card at the end, but only once per
-session (\texttt{Services/Study/StudyQueue.swift}, lines 45--52). Decisions: is there
-a card on screen (node 1), is the rating Again (3), and has this card not been
-repeated yet (4). \textbf{ExerciseValidator.check(answer:accepted:)} (FR-41) grades
+session (\texttt{Services/Study/StudyQueue.swift}, lines 45--52). \textbf{ExerciseValidator.check(answer:accepted:)} (FR-41) grades
 one blank: an empty answer is reported as such, and otherwise the answer passes if it
-matches any accepted answer after whitespace normalization. Decisions: is the answer
-empty (1), is there another accepted answer to try (3, the loop), and does it match
-(4).
+matches any accepted answer after whitespace normalization
+(\texttt{Services/Practice/ExerciseValidator.swift}, lines 37--48).
+
+Each node is numbered with the source line it stands for, as listed in Appendix~B.
+Consecutive statements with no branch between them share one node (48--49), and the
+closing brace of the method is the exit node. Line~47 of \texttt{record} holds a
+compound condition, so each of its two conditions is a node of its own (47a and 47b).
+Decisions in \texttt{record}: is there a card on screen (46), is the rating Again
+(47a), and has this card not been re-queued yet (47b). Decisions in \texttt{check}: is
+the answer empty (39), is there another accepted answer to try (42, the loop), and
+does it match (43).
 
 \begin{figure}[!htbp]
 \centering
 \begin{tikzpicture}[
-    cfg/.style={circle, draw, minimum size=7mm, inner sep=0pt, font=\small},
+    cfg/.style={circle, draw, minimum size=8.5mm, inner sep=0pt, font=\footnotesize},
     dec/.style={cfg, fill=black!12},
     lab/.style={font=\scriptsize, fill=white, inner sep=1pt},
-    >=Stealth, node distance=9mm]
-  % StudyQueue.record
-  \node[dec] (a1) {1};
-  \node[cfg, below left=7mm and 10mm of a1] (a2) {2};
-  \node[dec, below=of a1] (a3) {3};
-  \node[dec, below=of a3] (a4) {4};
-  \node[cfg, below=of a4] (a5) {5};
-  \node[cfg, below=of a5] (a6) {6};
-  \node[cfg, below=of a6] (a7) {7};
-  \draw[->] (a1) -- node[lab] {nil} (a2);
-  \draw[->] (a1) -- node[lab] {card} (a3);
-  \draw[->] (a3) -- node[lab] {Again} (a4);
-  \draw[->] (a3) to[bend left=50] node[lab] {other} (a6);
-  \draw[->] (a4) -- node[lab] {new} (a5);
-  \draw[->] (a4) to[bend left=40] node[lab] {repeated} (a6);
-  \draw[->] (a5) -- (a6);
-  \draw[->] (a6) -- (a7);
-  \draw[->] (a2) |- (a7);
-  \node[below=4mm of a7, font=\small, align=center] {\texttt{StudyQueue.record(\_:)}\\$E=9$, $N=7$, $V(G)=4$};
-  % ExerciseValidator.check
+    >=Stealth, node distance=8mm]
+  % StudyQueue.record, StudyQueue.swift lines 45--52
+  \node[dec] (a46) {46};
+  \node[dec, below=of a46] (a47a) {47a};
+  \node[dec, below=of a47a] (a47b) {47b};
+  \node[cfg, below=of a47b, font=\scriptsize] (a48) {48--49};
+  \node[cfg, below=of a48] (a51) {51};
+  \node[cfg, below=of a51] (a52) {52};
+  \draw[->] (a46) -- node[lab] {card} (a47a);
+  \draw[->] (a46.west) -- ++(-1.3,0) |- node[lab, pos=0.25] {nil} (a52.west);
+  \draw[->] (a47a) -- node[lab] {Again} (a47b);
+  \draw[->] (a47a.east) -- ++(1.5,0) |- node[lab, pos=0.25] {other} (a51.east);
+  \draw[->] (a47b) -- node[lab] {new} (a48);
+  \draw[->] (a47b.east) -- ++(0.6,0) |- node[lab, pos=0.25] {repeated} ([yshift=1.5mm]a51.east);
+  \draw[->] (a48) -- (a51);
+  \draw[->] (a51) -- (a52);
+  \node[below=4mm of a52, font=\small, align=center] {\texttt{StudyQueue.record(\_:)}\\$E=8$, $N=6$, $V(G)=4$};
+  % ExerciseValidator.check(answer:accepted:), ExerciseValidator.swift lines 37--48
   \begin{scope}[xshift=7.5cm]
-  \node[dec] (b1) {1};
-  \node[cfg, below left=7mm and 10mm of b1] (b2) {2};
-  \node[dec, below=of b1] (b3) {3};
-  \node[dec, below=of b3] (b4) {4};
-  \node[cfg, below right=7mm and 10mm of b4] (b5) {5};
-  \node[cfg, below=of b4] (b6) {6};
-  \node[cfg, below=18mm of b6] (b7) {7};
-  \draw[->] (b1) -- node[lab] {empty} (b2);
-  \draw[->] (b1) -- node[lab] {text} (b3);
-  \draw[->] (b3) -- node[lab] {next} (b4);
-  \draw[->] (b3.west) to[bend right=60] node[lab] {done} (b6.west);
-  \draw[->] (b4) -- node[lab] {match} (b5);
-  \draw[->] (b4.east) to[bend right=70] node[lab] {no} (b3.east);
-  \draw[->] (b6) -- (b7);
-  \draw[->] (b5) |- (b7);
-  \draw[->] (b2) |- (b7);
-  \node[below=4mm of b7, font=\small, align=center] {\texttt{ExerciseValidator.check}\\$E=9$, $N=7$, $V(G)=4$};
+  \node[cfg] (b38) {38};
+  \node[dec, below=of b38] (b39) {39};
+  \node[cfg, below left=6mm and 16mm of b39] (b40) {40};
+  \node[dec, below=of b39] (b42) {42};
+  \node[dec, below=of b42] (b43) {43};
+  \node[cfg, below right=6mm and 12mm of b43] (b44) {44};
+  \node[cfg, below=of b43] (b47) {47};
+  \node[cfg, below=of b47] (b48) {48};
+  \draw[->] (b38) -- (b39);
+  \draw[->] (b39) -- node[lab] {empty} (b40);
+  \draw[->] (b39) -- node[lab] {text} (b42);
+  \draw[->] (b42) -- node[lab] {next} (b43);
+  \draw[->] (b42.west) to[bend right=60] node[lab] {done} (b47.west);
+  \draw[->] (b43) -- node[lab] {match} (b44);
+  \draw[->] (b43.east) to[bend right=70] node[lab] {no} (b42.east);
+  \draw[->] (b47) -- (b48);
+  \draw[->] (b44) |- (b48.east);
+  \draw[->] (b40) |- (b48.west);
+  \node[below=4mm of b48, font=\small, align=center] {\texttt{ExerciseValidator.check}\\$E=10$, $N=8$, $V(G)=4$};
   \end{scope}
 \end{tikzpicture}
-\caption{Control flow graphs (shaded = decision). Left, \texttt{StudyQueue.record}: 1 card on screen?, 2 return, 3 rating is Again?, 4 not repeated yet?, 5 append and mark, 6 advance, 7 exit. Right, \texttt{ExerciseValidator.check}: 1 answer empty?, 2 return \texttt{.empty}, 3 another accepted answer?, 4 matches?, 5 return \texttt{.passed}, 6 return \texttt{.failed}, 7 exit.}
+\caption{Control flow graphs; each node is the source line it stands for (Appendix~B), shaded = decision. Left, \texttt{StudyQueue.record}: 46 \texttt{guard let id = current} (nil returns at once), 47a \texttt{rating == .again}, 47b \texttt{!requeued.contains(id)}, 48--49 append and mark the card, 51 \texttt{position += 1}, 52 exit. Right, \texttt{ExerciseValidator.check}: 38 normalize the answer, 39 \texttt{given.isEmpty}, 40 return \texttt{.empty}, 42 \texttt{for option in accepted}, 43 \texttt{normalize(option) == given}, 44 return \texttt{.passed}, 47 return \texttt{.failed}, 48 exit.}
 \label{fig:cfg}
 \end{figure}
 
@@ -3815,15 +3844,15 @@ empty (1), is there another accepted answer to try (3, the loop), and does it ma
 \bottomrule
 \endfoot
 \multicolumn{5}{@{}l}{\textit{StudyQueue.record(\_:)} (\texttt{StudyQueueTests})} \\
-Q1 & 1, 2, 7 & Finished queue $[a]$, \texttt{record(.again)}: nothing changes (position 1, cards $[a]$). & \texttt{recordingAfterFinishIsANoOp} & Pass \\
-Q2 & 1, 3, 6, 7 & Queue $[a]$, \texttt{record(.good)}: position 1, no repeat, finished. Also Hard and Easy. & \texttt{goodRatingsWalkTheQueueAndFinish}, \texttt{onlyAgainRequeues} & Pass \\
-Q3 & 1, 3, 4, 5, 6, 7 & Queue $[a, b]$, \texttt{record(.again)}: cards $[a, b, a]$, $a$ marked repeated, position 1. & \texttt{againRequeuesAtTheEndOnlyOnce} & Pass \\
-Q4 & 1, 3, 4, 6, 7 & Same queue at the repeat of $a$, \texttt{record(.again)} again: cards stay $[a, b, a]$, finished. & \texttt{againRequeuesAtTheEndOnlyOnce} & Pass \\
+Q1 & 46, 52 & Finished queue $[a]$, \texttt{record(.again)}: nothing changes (position 1, cards $[a]$). & \texttt{recordingAfterFinishIsANoOp} & Pass \\
+Q2 & 46, 47a, 51, 52 & Queue $[a]$, \texttt{record(.good)}: position 1, no repeat, finished. Also Hard and Easy. & \texttt{goodRatingsWalkTheQueueAndFinish}, \texttt{onlyAgainRequeues} & Pass \\
+Q3 & 46, 47a, 47b, 48--49, 51, 52 & Queue $[a, b]$, \texttt{record(.again)}: cards $[a, b, a]$, $a$ marked repeated, position 1. & \texttt{againRequeuesAtTheEndOnlyOnce} & Pass \\
+Q4 & 46, 47a, 47b, 51, 52 & Same queue at the repeat of $a$, \texttt{record(.again)} again: cards stay $[a, b, a]$, finished. & \texttt{againRequeuesAtTheEndOnlyOnce} & Pass \\
 \multicolumn{5}{@{}l}{\textit{ExerciseValidator.check(answer:accepted:)} (\texttt{ExerciseValidatorTests})} \\
-V1 & 1, 2, 7 & Answer \texttt{""}, \texttt{"   "}, or only tabs and newlines: \texttt{.empty}. & \texttt{pathEmptyAnswer} (3 inputs) & Pass \\
-V2 & 1, 3, 6, 7 & Answer \texttt{guard}, no accepted answers: \texttt{.failed}. & \texttt{pathNoAcceptedAnswers} & Pass \\
-V3 & 1, 3, 4, 5, 7 & Answer \texttt{guard}, accepted \texttt{[guard]}: \texttt{.passed} on the first try. & \texttt{pathFirstAcceptedMatches} & Pass \\
-V4 & 1, 3, 4, 3, 6, 7 & Answer \texttt{then}, accepted \texttt{[else]}: the loop ends with no match, \texttt{.failed}. & \texttt{pathNoMatchAfterLoop} & Pass \\
+V1 & 38, 39, 40, 48 & Answer \texttt{""}, \texttt{"   "}, or only tabs and newlines: \texttt{.empty}. & \texttt{pathEmptyAnswer} (3 inputs) & Pass \\
+V2 & 38, 39, 42, 47, 48 & Answer \texttt{guard}, no accepted answers: \texttt{.failed}. & \texttt{pathNoAcceptedAnswers} & Pass \\
+V3 & 38, 39, 42, 43, 44, 48 & Answer \texttt{guard}, accepted \texttt{[guard]}: \texttt{.passed} on the first try. & \texttt{pathFirstAcceptedMatches} & Pass \\
+V4 & 38, 39, 42, 43, 42, 47, 48 & Answer \texttt{then}, accepted \texttt{[else]}: the loop ends with no match, \texttt{.failed}. & \texttt{pathNoMatchAfterLoop} & Pass \\
 \end{xltabular}
 
 The paths cover every node and every edge of both graphs, so statement and branch
@@ -3858,7 +3887,7 @@ progress row types encode every column, sending \texttt{nil} as an explicit JSON
 showed it was missing).
 
 \textbf{Entry criteria.} Unit tests of both sides pass with no open major defect; the
-local Supabase stack runs with all 16 migrations; the stubs and drivers exist.
+local Supabase stack runs with all 17 migrations; the stubs and drivers exist.
 \textbf{Exit criteria.} All cases in Table~\ref{tab:inttests} pass; every defect found
 is fixed and has a regression test; the known limits are written down (Reset Progress
 is not sent to other devices; device clocks decide which review is the latest).
@@ -4278,7 +4307,7 @@ the database with \texttt{SUPABASE\_DB\_URL=\ldots{} scripts/backup.sh}.
 This appendix lists every source and configuration file in the repository, one per
 subsection, with line numbers; Table~\ref{tab:pattern-lines} refers to these line
 numbers. It is generated by \texttt{scripts/gen-appendix-b.sh} from the final Sprint~4
-commit \texttt{be8e766} on \texttt{dev}; the \texttt{final} tag on \texttt{main} holds the same code. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
+commit \texttt{be8e766} on \texttt{dev}; the \texttt{final} and \texttt{v1.0.0} tags on \texttt{main} hold the same code. \texttt{Config/Secrets.xcconfig} (real keys) is never in the
 repository and is not listed; \texttt{Secrets.example.xcconfig} shows its format.
 Generated color sets and the app icon images are not source code and are omitted, and
 so are the Markdown and \LaTeX{} documentation files. JSON files cannot hold comments,
@@ -4294,7 +4323,7 @@ so the content files are listed without a header comment.
 \else
 \noindent\emph{This reading copy lists the files but leaves the code out; the listings
 are in the full document, \texttt{Final\_Documentation.pdf}, and in the repository at
-the \texttt{final} tag.}
+the \texttt{v1.0.0} tag.}
 \renewcommand{\lstinputlisting}[2][]{}
 % Headings with no listing after them cannot break across pages, so the
 % reading copy lists each file as a numbered line instead.
